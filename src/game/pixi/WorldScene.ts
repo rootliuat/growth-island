@@ -49,6 +49,8 @@ export class WorldScene {
     this.homes.update(data);
     this.spirits.update(data);
     this.labels.update(data);
+    this.homes.updateZoom(this.camera.zoom);
+    this.spirits.updateZoom(this.camera.zoom);
     this.labels.updateZoom(this.camera.zoom, data.selectedChildId);
 
     if (previousSelected && data.selectedChildId !== previousSelected) {
@@ -71,7 +73,9 @@ export class WorldScene {
     this.ocean.update(ticker);
     this.effects.update(ticker);
     this.homes.updateFrame(ticker.deltaMS);
+    this.homes.updateZoom(this.camera.zoom);
     this.spirits.updateFrame(ticker);
+    this.spirits.updateZoom(this.camera.zoom);
     if (this.data) this.labels.updateZoom(this.camera.zoom, this.data.selectedChildId);
   }
 

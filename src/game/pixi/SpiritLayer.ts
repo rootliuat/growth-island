@@ -16,6 +16,7 @@ export class SpiritLayer {
   private readonly nodes = new Map<string, SpiritNode>();
   private elapsed = 0;
   private selectedChildId = "";
+  private zoomScale = 1;
 
   constructor(
     private readonly layer: Container,
@@ -41,9 +42,10 @@ export class SpiritLayer {
       }
       node.root.x = spirit.spritePosition.x;
       node.root.y = spirit.spritePosition.y;
-      node.root.scale.set(spirit.id === this.selectedChildId ? 1.1 : 0.88);
+      node.root.scale.set(this.getTargetScale(spirit.id));
       node.halo.visible = spirit.id === this.selectedChildId;
-      node.levelBadge.visible = spirit.child.level >= 2;
+      node.levelBadge.visible = spirit.child.level >= 2 && this.shouldShowBadge(spirit.id);
+      node.moodDot.visible = this.shouldShowBadge(spirit.id);
       node.moodDot.tint = this.moodTint(spirit.mood);
       const badgeText = node.levelBadge.getChildByLabel("level-text") as Text | undefined;
       if (badgeText) badgeText.text = `Lv.${spirit.child.level}`;
@@ -68,12 +70,20 @@ export class SpiritLayer {
     this.nodes.forEach((node, childId) => {
       const selected = childId === this.selectedChildId;
       const breath = 1 + Math.sin(this.elapsed * 2.2 + node.root.x * 0.004) * 0.028;
-      const targetRoot = selected ? 1.1 : 0.88;
+      const targetRoot = this.getTargetScale(childId);
       const rootScale = node.root.scale.x + (targetRoot - node.root.scale.x) * Math.min(1, ticker.deltaMS / 160);
       node.root.scale.set(rootScale);
       node.body.scale.set(node.body.scale.x + (breath - node.body.scale.x) * 0.08);
       node.body.y = -Math.abs(Math.sin(this.elapsed * 1.6 + node.root.x * 0.01)) * 5;
       node.halo.rotation += 0.006 * ticker.deltaTime;
+    });
+  }
+
+  updateZoom(zoom: number) {
+    this.zoomScale = zoom < 0.78 ? 0.78 : zoom < 1.05 ? 0.9 : 1;
+    this.nodes.forEach((node, childId) => {
+      node.levelBadge.visible = this.shouldShowBadge(childId);
+      node.moodDot.visible = this.shouldShowBadge(childId);
     });
   }
 
@@ -166,5 +176,14 @@ export class SpiritLayer {
     if (mood === "sad") return palette.negative;
     if (mood === "sleepy") return 0x90a5b6;
     return palette.grassMid;
+  }
+
+  private getTargetScale(childId: string) {
+    const selected = childId === this.selectedChildId;
+    return (selected ? 1.1 : 0.88) * this.zoomScale;
+  }
+
+  private shouldShowBadge(childId: string) {
+    return childId === this.selectedChildId || this.zoomScale >= 0.95;
   }
 }

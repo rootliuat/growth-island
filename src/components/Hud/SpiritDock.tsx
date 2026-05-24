@@ -1,4 +1,4 @@
-import { Search } from "lucide-react";
+import { ChevronDown, ChevronUp, Search } from "lucide-react";
 import type { CSSProperties } from "react";
 import { useMemo, useState } from "react";
 import type { ChildWithProgress, SpiritDefinition } from "../../types";
@@ -16,6 +16,8 @@ const regionFilters = ["全部", "红树林", "贝壳湾", "珍珠湾", "小镇"
 export function SpiritDock({ childrenWithProgress, spiritsById, selectedChildId, onSelectChild }: SpiritDockProps) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("全部");
+  const [collapsed, setCollapsed] = useState(false);
+  const selectedChild = childrenWithProgress.find((child) => child.id === selectedChildId) ?? childrenWithProgress[0];
   const filtered = useMemo(() => {
     const q = query.trim();
     return childrenWithProgress.filter((child, index) => {
@@ -27,8 +29,15 @@ export function SpiritDock({ childrenWithProgress, spiritsById, selectedChildId,
   }, [childrenWithProgress, query, filter]);
 
   return (
-    <section className="spirit-dock">
+    <section className={collapsed ? "spirit-dock collapsed" : "spirit-dock"}>
       <div className="dock-tools">
+        <div className="dock-tools-head">
+          <strong>{collapsed ? `${selectedChild.name} · Lv.${selectedChild.level}` : "精灵队伍"}</strong>
+          <button className="dock-collapse" onClick={() => setCollapsed((current) => !current)}>
+            {collapsed ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            {collapsed ? "展开" : "收起"}
+          </button>
+        </div>
         <div className="dock-search">
           <Search size={16} />
           <input value={query} placeholder="搜索幼儿或精灵" onChange={(event) => setQuery(event.target.value)} />
@@ -41,6 +50,7 @@ export function SpiritDock({ childrenWithProgress, spiritsById, selectedChildId,
           ))}
         </div>
       </div>
+      {collapsed && <div className="dock-selected-summary">{selectedChild.petName}</div>}
       <div className="dock-scroll">
         {filtered.map((child) => {
           const spirit = spiritsById.get(child.spiritId);

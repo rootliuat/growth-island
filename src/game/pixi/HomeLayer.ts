@@ -53,6 +53,17 @@ export class HomeLayer {
     });
   }
 
+  updateZoom(zoom: number) {
+    this.homeNodes.forEach((node) => {
+      const selected = node.label === this.selectedChildId;
+      const detailsVisible = zoom >= 1.05 || selected;
+      const plaque = node.getChildByLabel("home-plaque");
+      const decor = node.getChildByLabel("home-level-decor");
+      if (plaque) plaque.visible = zoom >= 0.92 || selected;
+      if (decor) decor.visible = detailsVisible;
+    });
+  }
+
   private createHome(home: WorldHome) {
     const node = new Container();
     node.label = home.childId;
@@ -180,6 +191,8 @@ export class HomeLayer {
   }
 
   private drawLevelDecor(node: Container, home: WorldHome) {
+    const decor = new Container();
+    decor.label = "home-level-decor";
     const g = new Graphics();
     if (home.level >= 2) {
       g.circle(-62, 62, 7).fill(palette.flowerPink);
@@ -192,17 +205,22 @@ export class HomeLayer {
       g.circle(-42, -42, 7).fill(palette.accent);
       g.circle(-42, -42, 18).fill({ color: palette.accent, alpha: 0.1 });
     }
-    const plaque = new Text({
+    decor.addChild(g);
+
+    const plaqueGroup = new Container();
+    plaqueGroup.label = "home-plaque";
+    const plaqueText = new Text({
       text: `Lv.${home.level}`,
       style: { fontFamily: "Georgia, Microsoft YaHei", fontSize: 15, fontWeight: "700", fill: 0x664325 },
     });
-    plaque.anchor.set(0.5);
-    plaque.y = 86;
+    plaqueText.anchor.set(0.5);
+    plaqueText.y = 86;
     const plaqueBg = new Graphics().roundRect(-28, 72, 56, 26, 12).fill(0xffe7a8).stroke({
       width: 2,
       color: palette.sandInk,
       alpha: 0.28,
     });
-    node.addChild(g, plaqueBg, plaque);
+    plaqueGroup.addChild(plaqueBg, plaqueText);
+    node.addChild(decor, plaqueGroup);
   }
 }
