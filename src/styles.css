@@ -2446,6 +2446,149 @@ button {
   content: "";
 }
 
+/* Character card pass: flatter game-card structure with stronger hierarchy. */
+.spirit-card {
+  isolation: isolate;
+  background: #f4f1e6;
+}
+
+.spirit-card::after {
+  position: absolute;
+  top: 78px;
+  right: 18px;
+  z-index: 0;
+  width: 14px;
+  height: 68px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--spirit-accent, #76b883) 70%, #fff7d8);
+  box-shadow: 0 20px 0 #fff0bf, 0 40px 0 color-mix(in srgb, var(--spirit-accent, #76b883) 48%, #fff7d8);
+  content: "";
+  opacity: 0.72;
+}
+
+.spirit-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.spirit-card-head span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 0 10px;
+  border: 2px solid rgba(214, 208, 190, 0.7);
+  border-radius: 999px;
+  background: #fff7d8;
+  box-shadow: inset 0 -3px 0 rgba(123, 128, 101, 0.08);
+}
+
+.spirit-portrait {
+  border: 2px solid rgba(214, 208, 190, 0.54);
+  border-radius: 24px;
+  background: #fff0bf;
+  box-shadow: inset 0 -8px 0 rgba(123, 128, 101, 0.08);
+}
+
+.spirit-portrait::before,
+.spirit-portrait::after {
+  position: absolute;
+  border-radius: 999px;
+  content: "";
+  pointer-events: none;
+}
+
+.spirit-portrait::before {
+  bottom: 18px;
+  width: 168px;
+  height: 24px;
+  background: rgba(53, 82, 74, 0.1);
+}
+
+.spirit-portrait::after {
+  top: 14px;
+  left: 22px;
+  width: 18px;
+  height: 18px;
+  background: color-mix(in srgb, var(--spirit-accent, #76b883) 58%, #fff7d8);
+  box-shadow: 246px 34px 0 #f2c94c, 224px 94px 0 #fff7d8;
+}
+
+.portrait-ring {
+  border-width: 5px;
+  box-shadow: inset 0 -10px 0 rgba(123, 128, 101, 0.1), 0 8px 0 rgba(53, 82, 74, 0.1);
+}
+
+.spirit-nameplate {
+  margin-top: 8px;
+  padding: 8px 10px 7px;
+  border: 2px solid rgba(214, 208, 190, 0.58);
+  border-radius: 18px;
+  background: #fff7d8;
+  box-shadow: inset 0 -5px 0 rgba(123, 128, 101, 0.08);
+}
+
+.xp-gem {
+  position: relative;
+  padding: 12px 12px 10px;
+}
+
+.xp-gem > div:first-child strong {
+  display: inline-grid;
+  min-width: 54px;
+  min-height: 28px;
+  place-items: center;
+  border: 2px solid #fff3cb;
+  border-radius: 999px;
+  color: #fff9df;
+  background: #2c8f99;
+  box-shadow: inset 0 -4px 0 rgba(26, 74, 77, 0.22);
+}
+
+.xp-gem > div:first-child span {
+  align-self: center;
+  color: #2f473f;
+}
+
+.score-actions {
+  padding: 8px;
+  border: 2px solid rgba(214, 208, 190, 0.54);
+  border-radius: 18px;
+  background: #ebe3cb;
+  box-shadow: inset 0 4px 0 rgba(255, 255, 255, 0.32), inset 0 -6px 0 rgba(123, 128, 101, 0.08);
+}
+
+.gain-button,
+.deduct-button {
+  position: relative;
+  overflow: hidden;
+  border-radius: 16px;
+}
+
+.gain-button::after,
+.deduct-button::after {
+  position: absolute;
+  top: 7px;
+  right: 9px;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.58);
+  content: "";
+}
+
+.quest-actions button {
+  border-radius: 16px;
+  background: #2c8f99;
+}
+
+.quest-actions button:nth-child(2) {
+  background: #6f61ac;
+}
+
+.quest-actions button:nth-child(3) {
+  background: #c98b4f;
+}
+
 @media (max-height: 820px) {
   .spirit-card {
     padding: 10px;
@@ -2462,11 +2605,12 @@ button {
 
   .spirit-portrait {
     height: 94px;
+    border-radius: 18px;
   }
 
   .portrait-ring {
-    width: 128px;
-    height: 82px;
+    width: 126px;
+    height: 78px;
   }
 
   .spirit-portrait img {
@@ -2474,8 +2618,28 @@ button {
     max-height: 104px;
   }
 
+  .spirit-portrait::before {
+    bottom: 9px;
+    width: 122px;
+    height: 18px;
+  }
+
+  .spirit-portrait::after {
+    top: 9px;
+    left: 16px;
+    width: 12px;
+    height: 12px;
+    box-shadow: 206px 22px 0 #f2c94c, 188px 62px 0 #fff7d8;
+  }
+
   .spirit-nameplate h2 {
     font-size: 19px;
+  }
+
+  .spirit-nameplate {
+    margin-top: 6px;
+    padding: 6px 8px;
+    border-radius: 15px;
   }
 
   .xp-gem {
@@ -2489,6 +2653,10 @@ button {
 
   .quest-actions {
     margin-top: 7px;
+  }
+
+  .score-actions {
+    padding: 6px;
   }
 
   .gain-button,
