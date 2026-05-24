@@ -28,6 +28,17 @@ export class DecorationLayer {
     plaza.ellipse(0, 90, 230, 60).fill({ color: palette.inkShadow, alpha: 0.12 });
     plaza.ellipse(0, 44, 205, 72).fill(0xf6e4aa).stroke({ width: 6, color: palette.sandInk, alpha: 0.16 });
     plaza.ellipse(0, 44, 138, 45).stroke({ width: 4, color: palette.accent, alpha: 0.5 });
+    [
+      { x: -240, y: 22, c1x: -152, c1y: 72, x2: -78, y2: 50 },
+      { x: 238, y: 18, c1x: 142, c1y: 76, x2: 78, y2: 50 },
+      { x: -150, y: 132, c1x: -78, c1y: 92, x2: -28, y2: 72 },
+      { x: 150, y: 132, c1x: 78, c1y: 92, x2: 28, y2: 72 },
+    ].forEach((root) => {
+      plaza.moveTo(root.x, root.y).quadraticCurveTo(root.c1x, root.c1y, root.x2, root.y2);
+      plaza.stroke({ width: 8, color: palette.accent, alpha: 0.16, cap: "round" });
+      plaza.moveTo(root.x, root.y).quadraticCurveTo(root.c1x, root.c1y, root.x2, root.y2);
+      plaza.stroke({ width: 3, color: 0xfff6cf, alpha: 0.26, cap: "round" });
+    });
     for (let i = 0; i < 18; i += 1) {
       const angle = (Math.PI * 2 * i) / 18;
       const radiusX = 170 + (i % 2) * 14;
@@ -81,7 +92,62 @@ export class DecorationLayer {
       tree.circle(x, y, i % 4 === 0 ? 7 : 5).fill({ color: 0xfff4c7, alpha: 0.76 });
       if (i % 4 === 0) tree.circle(x, y, 16).fill({ color: palette.accent, alpha: 0.08 });
     }
+    [
+      { x: -82, y: -144 },
+      { x: 16, y: -164 },
+      { x: 104, y: -92 },
+      { x: -124, y: -22 },
+      { x: 72, y: 3 },
+    ].forEach((gem, index) => {
+      tree.poly([gem.x, gem.y - 14, gem.x + 12, gem.y, gem.x, gem.y + 14, gem.x - 12, gem.y]).fill({
+        color: index % 2 ? 0xfff6cf : palette.accent,
+        alpha: 0.86,
+      });
+      tree.circle(gem.x, gem.y, 22).stroke({ width: 3, color: 0xfff6cf, alpha: 0.18 });
+    });
+    tree.roundRect(-76, 150, 152, 24, 10).fill(palette.woodLight).stroke({ width: 4, color: palette.woodDark, alpha: 0.42 });
+    for (let i = -2; i <= 2; i += 1) {
+      tree.rect(i * 28 - 5, 142, 10, 30).fill({ color: palette.woodDark, alpha: 0.22 });
+    }
     this.layer.addChild(tree);
+
+    const arena = new Graphics();
+    arena.x = arenaPosition.x;
+    arena.y = arenaPosition.y - 86;
+    arena.ellipse(0, 170, 322, 54).fill({ color: palette.inkShadow, alpha: 0.12 });
+    arena.ellipse(0, 128, 284, 76).fill(0xffe6a7).stroke({ width: 8, color: palette.arenaDark, alpha: 0.28 });
+    arena.ellipse(0, 128, 214, 48).stroke({ width: 6, color: palette.accent, alpha: 0.62 });
+    arena.roundRect(-178, 72, 356, 40, 16).fill({ color: palette.arena, alpha: 0.78 }).stroke({
+      width: 4,
+      color: palette.arenaDark,
+      alpha: 0.4,
+    });
+    arena.roundRect(-108, 18, 216, 66, 20).fill(0xfff0bf).stroke({ width: 6, color: palette.arenaDark, alpha: 0.46 });
+    arena.roundRect(-78, 36, 156, 44, 16).fill({ color: palette.arena, alpha: 0.52 });
+    [-138, 138].forEach((x) => {
+      arena.roundRect(x - 20, 8, 40, 96, 16).fill(0xf4d9a6).stroke({ width: 4, color: palette.arenaDark, alpha: 0.34 });
+      arena.circle(x, 8, 24).fill(palette.accent).stroke({ width: 3, color: 0xfff6cf, alpha: 0.68 });
+      arena.rect(x - 5, -78, 10, 88).fill(palette.woodDark);
+      arena.poly([x + 5, -78, x + 72, -58, x + 5, -38]).fill(x < 0 ? palette.roofRed : palette.arenaDark).stroke({
+        width: 2,
+        color: 0xfff6cf,
+        alpha: 0.38,
+      });
+    });
+    arena.roundRect(-50, -34, 100, 38, 11).fill(palette.arenaDark).stroke({ width: 3, color: 0xfff6cf, alpha: 0.6 });
+    for (let i = -3; i <= 3; i += 1) {
+      arena.rect(i * 42 - 15, 180, 30, 10).fill({ color: palette.arenaDark, alpha: 0.28 });
+    }
+    this.layer.addChild(arena);
+
+    const arenaText = new Text({
+      text: "20",
+      style: { fontFamily: "Georgia, Microsoft YaHei", fontSize: 26, fontWeight: "900", fill: 0xfff9df },
+    });
+    arenaText.anchor.set(0.5);
+    arenaText.x = arenaPosition.x;
+    arenaText.y = arenaPosition.y - 120;
+    this.layer.addChild(arenaText);
 
     const oldStreet = new Graphics();
     oldStreet.x = oldStreetPosition.x;
