@@ -1939,10 +1939,10 @@
       "state": "lv8",
       "level": 8,
       "prompt": "Use case: stylized-concept\nAsset type: chroma-key source sprite for a transparent RPG game sprite in Beihai Growth Island\nPrimary request: Create 童梦书灵 lv8, an original fantasy spirit companion. Core concept: Storybook spirit with page wings and dream stars. For this state, show same companion as a gentle guardian form, still cute and child-safe.\nStyle/medium: premium original anime fantasy RPG companion, high-detail 2D illustration, refined magical creature or spirit design, beautiful but preschool-friendly.\nComposition/framing: single centered full-body character or egg on a perfectly flat solid #ff00ff chroma-key background for background removal, clean readable silhouette, generous padding.\nLighting/mood: luminous eyes where applicable, soft magical glow, gentle inviting expression.\nColor palette: blue, gold, ivory, with tasteful accent colors; do not force every character into the same palette.\nMaterials/textures: delicate ornaments, soft fur, leaves, crystals, feathers, cloth-like magic, shell, paper, or starlight details as appropriate.\nConstraints: original design, no text, no logo, no watermark, no UI, no weapon, no scary monster, no realistic 3D render, no checkerboard background, no cast shadow, no contact shadow, no floor plane. Do not use #ff00ff anywhere in the subject.\nAvoid: copying commercial IP characters, outfits, symbols, poses, or color layouts; avoid cheap sticker style and generic classroom mascot look.",
-      "sourceImagePath": "",
+      "sourceImagePath": "C:/Users/Rootliu/.codex/generated_images/019e557e-b417-7fe3-864f-fc11150c2fcc/ig_0aeb2c850769ad8d016a1261b831ec81948c61d12338f653b6.png",
       "finalImagePath": "assets/generated/spirits/40-tongmeng-shuling/lv8.png",
-      "reviewStatus": "pending",
-      "notes": ""
+      "reviewStatus": "needs_revision",
+      "notes": "Visual revision needed: lv8 is a human/elf child mage with many books containing text-like markings and strong commercial anime character similarity; violates non-IP/non-text spirit companion direction. Regenerate as a non-human storybook spirit with blank abstract pages."
     }
   ]
 }
