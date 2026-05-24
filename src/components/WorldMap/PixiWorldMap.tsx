@@ -86,8 +86,8 @@ export const PixiWorldMap = forwardRef<PixiWorldMapHandle, PixiWorldMapProps>(fu
   }, [mapData, selectedChildId]);
 
   return (
-    <div className="pixi-world-host" ref={hostRef} aria-label="成长岛 PixiJS 精灵家园地图">
-      <div className="map-hint">拖拽移动 · 滚轮缩放 · 点击精灵之家聚焦</div>
+    <div className="pixi-world-host" ref={hostRef} aria-label="成长岛精灵家园地图">
+      <div className="map-hint">全岛巡览 · 家园能量稳定</div>
     </div>
   );
 });
