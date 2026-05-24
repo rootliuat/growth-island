@@ -1,7 +1,7 @@
 import { Container, Graphics, Text } from "pixi.js";
 import { palette } from "../artDirection";
 import { regions } from "../regionConfig";
-import type { WorldMapData, WorldSpirit } from "../types";
+import type { MapRegion, WorldMapData, WorldSpirit } from "../types";
 
 export class LabelLayer {
   private readonly regionLabels: Container[] = [];
@@ -13,21 +13,18 @@ export class LabelLayer {
       const node = new Container();
       node.x = region.signPosition.x;
       node.y = region.signPosition.y;
-      const width = region.name.length > 5 ? 174 : 132;
-      const pole = new Graphics();
-      pole.rect(-4, 16, 8, 52).fill(palette.woodDark);
-      pole.roundRect(-width / 2, -20, width, 38, 10).fill(0xffe4a8).stroke({
-        width: 3,
-        color: region.accent,
-        alpha: 0.52,
-      });
-      pole.circle(-width / 2 + 14, -1, 3).fill(0xf8f1d5);
-      pole.circle(width / 2 - 14, -1, 3).fill(0xf8f1d5);
+      const pole = this.createRegionSign(region);
       const text = new Text({
         text: region.name,
-        style: { fontFamily: "Microsoft YaHei, PingFang SC", fontSize: 20, fontWeight: "900", fill: palette.textMain },
+        style: {
+          fontFamily: "Microsoft YaHei, PingFang SC",
+          fontSize: region.name.length > 6 ? 20 : 22,
+          fontWeight: "900",
+          fill: palette.textMain,
+        },
       });
       text.anchor.set(0.5);
+      text.y = -7;
       node.addChild(pole, text);
       this.regionLabels.push(node);
       this.layer.addChild(node);
@@ -100,6 +97,96 @@ export class LabelLayer {
 
     node.addChild(bg, text, bubble);
     return node;
+  }
+
+  private createRegionSign(region: MapRegion) {
+    const width = region.name.length > 6 ? 206 : region.name.length > 4 ? 166 : 132;
+    const g = new Graphics();
+    const signFill = region.id === "pearl-bay" ? 0xe5f5ea : region.id === "math-arena" ? 0xf1dfaa : 0xffe7ad;
+    const shadowY = region.id === "growth-plaza" ? 34 : 46;
+    g.ellipse(0, shadowY, width * 0.43, 12).fill({ color: palette.inkShadow, alpha: 0.12 });
+
+    if (region.id === "growth-plaza") {
+      g.roundRect(-width / 2, -31, width, 48, 16).fill(0xf7e6aa).stroke({
+        width: 5,
+        color: palette.sandInk,
+        alpha: 0.3,
+      });
+      g.roundRect(-width / 2 + 8, -24, width - 16, 34, 12).fill(0xfff3c8).stroke({
+        width: 2,
+        color: region.accent,
+        alpha: 0.38,
+      });
+      g.circle(-width / 2 + 20, -7, 6).fill(region.accent);
+      g.circle(width / 2 - 20, -7, 6).fill(region.accent);
+      g.rect(-6, 16, 12, 46).fill({ color: palette.sandInk, alpha: 0.72 });
+      return g;
+    }
+
+    if (region.id === "math-arena") {
+      g.rect(-5, -8, 10, 78).fill(palette.woodDark);
+      g.poly([-width / 2 - 10, -32, width / 2 - 2, -32, width / 2 + 18, -6, width / 2 - 2, 20, -width / 2 - 10, 20]).fill(signFill).stroke({
+        width: 4,
+        color: region.accent,
+        alpha: 0.48,
+      });
+      g.poly([width / 2 - 2, -32, width / 2 + 18, -6, width / 2 - 2, 20]).fill({ color: region.accent, alpha: 0.18 });
+      g.circle(-width / 2 + 8, -7, 4).fill(0xfff7da);
+      return g;
+    }
+
+    if (region.id === "old-street") {
+      g.rect(-5, 13, 10, 60).fill(palette.woodDark);
+      g.roundRect(-width / 2, -27, width, 45, 8).fill(signFill).stroke({
+        width: 4,
+        color: region.accent,
+        alpha: 0.48,
+      });
+      g.poly([-width / 2 - 12, -27, width / 2 + 12, -27, width / 2 - 2, -45, -width / 2 + 2, -45]).fill(palette.roofRed).stroke({
+        width: 3,
+        color: palette.roofDark,
+        alpha: 0.35,
+      });
+      return g;
+    }
+
+    g.rect(-5, 14, 10, 58).fill(palette.woodDark);
+    g.roundRect(-width / 2, -31, width, 46, 12).fill(signFill).stroke({
+      width: 4,
+      color: region.accent,
+      alpha: 0.5,
+    });
+    g.roundRect(-width / 2 + 8, -24, width - 16, 31, 10).stroke({
+      width: 2,
+      color: 0xffffff,
+      alpha: 0.32,
+    });
+    g.circle(-width / 2 + 17, -9, 4).fill(0xf8f1d5);
+    g.circle(width / 2 - 17, -9, 4).fill(0xf8f1d5);
+    if (region.id === "mangrove") {
+      g.circle(-width / 2 - 8, -5, 13).fill({ color: palette.grassDark, alpha: 0.82 });
+      g.circle(-width / 2 + 8, -22, 14).fill({ color: palette.grassMid, alpha: 0.86 });
+    }
+    if (region.id === "shell-bay") {
+      g.moveTo(width / 2 - 18, 18);
+      g.arc(width / 2 - 18, 18, 18, Math.PI, 0).fill({ color: palette.shellPink, alpha: 0.9 }).stroke({
+        width: 2,
+        color: palette.sandInk,
+        alpha: 0.24,
+      });
+    }
+    if (region.id === "pearl-bay") {
+      g.circle(width / 2 - 12, 12, 12).fill({ color: palette.pearlWhite, alpha: 0.9 }).stroke({
+        width: 2,
+        color: region.accent,
+        alpha: 0.28,
+      });
+    }
+    if (region.id === "sun-town") {
+      g.poly([width / 2 - 28, 16, width / 2 - 10, -8, width / 2 + 8, 16]).fill({ color: palette.roofRed, alpha: 0.84 });
+      g.roundRect(width / 2 - 24, 14, 28, 18, 5).fill({ color: palette.wallLight, alpha: 0.9 });
+    }
+    return g;
   }
 
   private updateSpiritLabel(node: Container, spirit: WorldSpirit) {
