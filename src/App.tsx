@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { DialogueModal } from "./components/DialogueModal";
 import { GameTopBar } from "./components/Hud/GameTopBar";
 import { GrowthLogPanel } from "./components/Hud/GrowthLogPanel";
+import { HudPanelTabs, type HudPanel } from "./components/Hud/HudPanelTabs";
 import { SpiritDetailPanel } from "./components/Hud/SpiritDetailPanel";
 import { SpiritDock } from "./components/Hud/SpiritDock";
 import { TeacherActionPanel } from "./components/Hud/TeacherActionPanel";
@@ -59,6 +60,7 @@ export function App() {
   const [teacherMode, setTeacherMode] = useState(true);
   const [dialogueOpen, setDialogueOpen] = useState(false);
   const [pkPair, setPkPair] = useState<{ playerId: string; opponentId: string } | null>(null);
+  const [hudPanel, setHudPanel] = useState<HudPanel>("spirit");
   const [lastEvaluation, setLastEvaluation] = useState<MoralEvaluationResult | undefined>();
   const [syncStatus, setSyncStatus] = useState<SyncStatus>("connecting");
   const [assetVersion, setAssetVersion] = useState(0);
@@ -137,6 +139,10 @@ export function App() {
       cancelled = true;
     };
   }, [childrenWithProgress, spiritsById]);
+
+  useEffect(() => {
+    if (!teacherMode && hudPanel === "home") setHudPanel("spirit");
+  }, [hudPanel, teacherMode]);
 
   const commitLedger = (input: Omit<LedgerRecord, "id" | "createdAt">) => {
     if (syncStatus === "offline") {
@@ -294,25 +300,37 @@ export function App() {
         />
 
         <aside className="hud-rail">
-          <SpiritDetailPanel
-            child={selectedChild}
-            spirit={selectedSpirit}
-            spiritAssetUrl={selectedSpiritAsset?.url}
+          <HudPanelTabs
+            activePanel={hudPanel}
+            pendingReviewCount={pendingReviews.length}
             teacherMode={teacherMode}
-            lastEvaluation={lastEvaluation}
-            onAdjustXp={addLedger}
-            onUndoLast={undoLast}
-            onOpenDialogue={() => setDialogueOpen(true)}
-            onOpenPk={() => setPkPair({ playerId: selectedChild.id, opponentId: opponent.id })}
+            onChange={setHudPanel}
           />
-          <GrowthLogPanel
-            recentRecords={recentRecords}
-            pendingReviews={pendingReviews}
-            childrenWithProgress={childrenWithProgress}
-            onApprove={approveReview}
-            onReject={rejectReview}
-          />
-          <TeacherActionPanel child={selectedChild} teacherMode={teacherMode} onUpdateChild={updateSelectedChild} />
+          {hudPanel === "spirit" && (
+            <SpiritDetailPanel
+              child={selectedChild}
+              spirit={selectedSpirit}
+              spiritAssetUrl={selectedSpiritAsset?.url}
+              teacherMode={teacherMode}
+              lastEvaluation={lastEvaluation}
+              onAdjustXp={addLedger}
+              onUndoLast={undoLast}
+              onOpenDialogue={() => setDialogueOpen(true)}
+              onOpenPk={() => setPkPair({ playerId: selectedChild.id, opponentId: opponent.id })}
+            />
+          )}
+          {hudPanel === "growth" && (
+            <GrowthLogPanel
+              recentRecords={recentRecords}
+              pendingReviews={pendingReviews}
+              childrenWithProgress={childrenWithProgress}
+              onApprove={approveReview}
+              onReject={rejectReview}
+            />
+          )}
+          {hudPanel === "home" && (
+            <TeacherActionPanel child={selectedChild} teacherMode={teacherMode} onUpdateChild={updateSelectedChild} />
+          )}
         </aside>
       </section>
 

@@ -16,7 +16,7 @@ export function TeacherActionPanel({ child, teacherMode, onUpdateChild }: Teache
 
   return (
     <section className="teacher-action-panel">
-      <details>
+      <details open>
         <summary>
           <span className="section-title">
             <Pencil size={18} />
