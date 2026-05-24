@@ -1,11 +1,13 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef } from "react";
 import { PixiWorld } from "../../game/pixi/PixiWorld";
 import { buildWorldMapData } from "../../game/layout";
+import type { RegionId } from "../../game/types";
 import type { ChildWithProgress, LedgerRecord, SpiritDefinition } from "../../types";
 
 export interface PixiWorldMapHandle {
   focusFullIsland: () => void;
   focusSelected: () => void;
+  focusRegion: (regionId: RegionId) => void;
   zoomIn: () => void;
   zoomOut: () => void;
 }
@@ -46,6 +48,7 @@ export const PixiWorldMap = forwardRef<PixiWorldMapHandle, PixiWorldMapProps>(fu
   useImperativeHandle(ref, () => ({
     focusFullIsland: () => worldRef.current?.focusFullIsland(),
     focusSelected: () => worldRef.current?.focusSelected(),
+    focusRegion: (regionId) => worldRef.current?.focusRegion(regionId),
     zoomIn: () => worldRef.current?.zoomBy(0.18),
     zoomOut: () => worldRef.current?.zoomBy(-0.18),
   }));

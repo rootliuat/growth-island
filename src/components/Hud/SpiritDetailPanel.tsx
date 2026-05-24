@@ -15,6 +15,8 @@ interface SpiritDetailPanelProps {
   onOpenPk: () => void;
 }
 
+const evolutionLevels = [1, 2, 3, 4, 5, 6, 7, 8] as const;
+
 export function SpiritDetailPanel({
   child,
   spirit,
@@ -29,6 +31,7 @@ export function SpiritDetailPanel({
   const info = getLevelInfo(child.xp);
   const progress = xpProgressPercent(child.xp);
   const stageLabel = getSpiritStageLabel(child.state);
+  const remainingXp = info.level === 8 ? 0 : Math.max(0, info.nextXp - child.xp);
 
   return (
     <aside className="spirit-card" style={{ "--spirit-accent": spirit.accent } as CSSProperties}>
@@ -70,6 +73,29 @@ export function SpiritDetailPanel({
         <p>
           {info.progressLabel} · {stageLabel}
         </p>
+      </div>
+
+      <div className="evolution-board" aria-label="成长形态进度">
+        <div className="evolution-board-head">
+          <span>
+            <Sparkles size={15} />
+            成长形态
+          </span>
+          <strong>{info.level === 8 ? "守护者已稳定" : `还差 ${remainingXp} XP`}</strong>
+        </div>
+        <div className="evolution-track">
+          {evolutionLevels.map((level) => (
+            <span
+              key={level}
+              className={level < child.level ? "done" : level === child.level ? "current" : "locked"}
+              aria-label={`Lv.${level}`}
+            >
+              <i />
+              Lv.{level}
+            </span>
+          ))}
+        </div>
+        <p>{child.level === 1 ? "蛋壳会随 XP 逐步破壳" : "升级会同步点亮小屋装饰"}</p>
       </div>
 
       <div className="score-actions">

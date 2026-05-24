@@ -3133,3 +3133,255 @@ button {
     min-height: 84px;
   }
 }
+
+/* Region travel and evolution HUD pass */
+.map-travel-board {
+  position: absolute;
+  top: 104px;
+  left: 16px;
+  z-index: 5;
+  width: 132px;
+  padding: 8px;
+  border: 3px solid #f6e9ba;
+  border-radius: 18px;
+  color: var(--game-ink);
+  background: #f4f1e6;
+  box-shadow: 0 7px 0 rgba(44, 92, 86, 0.16), 0 15px 28px rgba(35, 66, 61, 0.2);
+}
+
+.map-travel-board::before {
+  position: absolute;
+  inset: 6px;
+  border: 2px solid rgba(255, 255, 255, 0.58);
+  border-radius: 13px;
+  content: "";
+  pointer-events: none;
+}
+
+.map-travel-board > * {
+  position: relative;
+  z-index: 1;
+}
+
+.map-travel-board strong {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 26px;
+  padding: 0 7px;
+  color: #35524a;
+  font-size: 13px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.map-travel-board > div {
+  display: grid;
+  gap: 5px;
+  margin-top: 5px;
+}
+
+.map-travel-board button {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  align-items: center;
+  gap: 5px;
+  min-height: 31px;
+  padding: 0 7px 0 5px;
+  border: 2px solid rgba(214, 208, 190, 0.68);
+  border-radius: 12px;
+  color: #3f5147;
+  font-size: 12px;
+  font-weight: 900;
+  background: #fff7d8;
+  box-shadow: inset 0 -3px 0 rgba(123, 128, 101, 0.08), 0 3px 0 rgba(53, 82, 74, 0.08);
+  transition: transform 0.16s ease, filter 0.16s ease, box-shadow 0.16s ease;
+}
+
+.map-travel-board button svg {
+  width: 24px;
+  height: 24px;
+  padding: 4px;
+  border-radius: 9px;
+  color: #fff9df;
+  background: var(--region-accent, #59b97c);
+  box-shadow: inset 0 -3px 0 rgba(53, 82, 74, 0.18);
+}
+
+.map-travel-board button span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.map-travel-board button:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.03);
+  box-shadow: inset 0 -3px 0 rgba(123, 128, 101, 0.08), 0 5px 0 rgba(53, 82, 74, 0.1);
+}
+
+.map-travel-board button.active {
+  border-color: #fff3cb;
+  color: #fff9df;
+  background: var(--region-accent, #59b97c);
+  box-shadow: inset 0 -4px 0 rgba(53, 82, 74, 0.18), 0 5px 0 rgba(53, 82, 74, 0.12);
+}
+
+.map-travel-board button.active svg {
+  color: var(--region-accent, #59b97c);
+  background: #fff7d8;
+}
+
+.evolution-board {
+  margin-top: 8px;
+  padding: 9px;
+  border: 2px solid rgba(214, 208, 190, 0.62);
+  border-radius: 16px;
+  background: #f4f1e6;
+  box-shadow: inset 0 -5px 0 rgba(123, 128, 101, 0.08);
+}
+
+.evolution-board-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.evolution-board-head span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #35524a;
+  font-size: 13px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.evolution-board-head strong {
+  overflow: hidden;
+  min-width: 0;
+  color: #8a6b3d;
+  font-size: 12px;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.evolution-track {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.evolution-track span {
+  display: grid;
+  min-width: 0;
+  min-height: 40px;
+  place-items: center;
+  gap: 3px;
+  padding: 4px 2px;
+  border: 2px solid rgba(214, 208, 190, 0.62);
+  border-radius: 12px;
+  color: #8a744c;
+  font-size: 10px;
+  font-weight: 900;
+  background: #fff7d8;
+  box-shadow: inset 0 -3px 0 rgba(123, 128, 101, 0.08);
+}
+
+.evolution-track span i {
+  width: 13px;
+  height: 13px;
+  border: 2px solid #fff3cb;
+  border-radius: 999px;
+  background: #d6d0be;
+  box-shadow: inset 0 -3px 0 rgba(53, 82, 74, 0.12);
+}
+
+.evolution-track span.done {
+  color: #4f604f;
+}
+
+.evolution-track span.done i {
+  background: #59b97c;
+}
+
+.evolution-track span.current {
+  color: #2f473f;
+  background: #fff0bf;
+  transform: translateY(-2px);
+}
+
+.evolution-track span.current i {
+  width: 16px;
+  height: 16px;
+  background: var(--spirit-accent, #f2c94c);
+}
+
+.evolution-track span.locked {
+  opacity: 0.72;
+}
+
+.evolution-board p {
+  margin: 6px 0 0;
+  overflow: hidden;
+  color: #7b8065;
+  font-size: 12px;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-height: 820px) {
+  .map-travel-board {
+    top: 88px;
+    width: 124px;
+    padding: 7px;
+  }
+
+  .map-travel-board strong {
+    min-height: 22px;
+    font-size: 12px;
+  }
+
+  .map-travel-board button {
+    min-height: 28px;
+    font-size: 11px;
+  }
+
+  .map-travel-board button svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .evolution-board {
+    margin-top: 6px;
+    padding: 7px;
+    border-radius: 14px;
+  }
+
+  .evolution-track {
+    gap: 3px;
+    margin-top: 6px;
+  }
+
+  .evolution-track span {
+    min-height: 30px;
+    border-radius: 10px;
+    font-size: 0;
+  }
+
+  .evolution-board p {
+    display: none;
+  }
+
+  .dock-tools {
+    align-self: center;
+  }
+
+  .dock-filters {
+    display: none;
+  }
+}

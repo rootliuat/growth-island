@@ -1,6 +1,8 @@
-import { forwardRef, lazy, Suspense, useMemo, type CSSProperties } from "react";
-import { Home, Sparkles } from "lucide-react";
+import { forwardRef, lazy, Suspense, useImperativeHandle, useMemo, useRef, useState, type CSSProperties } from "react";
+import { CircleDot, Home, Landmark, Leaf, Shell, Sparkles, Sun, Swords, TreePine, type LucideIcon } from "lucide-react";
 import type { PixiWorldMapHandle } from "./PixiWorldMap";
+import { regions } from "../../game/regionConfig";
+import type { RegionId } from "../../game/types";
 import type { ChildWithProgress, LedgerRecord, SpiritDefinition } from "../../types";
 
 interface WorldMapContainerProps {
@@ -16,10 +18,26 @@ interface WorldMapContainerProps {
 
 const PixiWorldMap = lazy(() => import("./PixiWorldMap").then((module) => ({ default: module.PixiWorldMap })));
 
+const travelMeta: Record<RegionId, { shortName: string; Icon: LucideIcon }> = {
+  "growth-plaza": { shortName: "广场", Icon: Sparkles },
+  mangrove: { shortName: "红树林", Icon: TreePine },
+  "shell-bay": { shortName: "贝壳湾", Icon: Shell },
+  "pearl-bay": { shortName: "珍珠湾", Icon: CircleDot },
+  "sun-town": { shortName: "小镇", Icon: Sun },
+  "math-arena": { shortName: "竞技场", Icon: Swords },
+  "old-street": { shortName: "老街", Icon: Landmark },
+};
+
+function toCssHex(color: number) {
+  return `#${color.toString(16).padStart(6, "0")}`;
+}
+
 export const WorldMapContainer = forwardRef<PixiWorldMapHandle, WorldMapContainerProps>(function WorldMapContainer(
   props,
   ref,
 ) {
+  const pixiMapRef = useRef<PixiWorldMapHandle | null>(null);
+  const [activeTravelRegion, setActiveTravelRegion] = useState<RegionId | null>(null);
   const selectedChild =
     props.childrenWithProgress.find((child) => child.id === props.selectedChildId) ?? props.childrenWithProgress[0];
   const selectedSpirit = selectedChild ? props.spiritsById.get(selectedChild.spiritId) : undefined;
@@ -29,6 +47,28 @@ export const WorldMapContainer = forwardRef<PixiWorldMapHandle, WorldMapContaine
   );
   const deltaText = selectedRecord ? `${selectedRecord.delta > 0 ? "+" : ""}${selectedRecord.delta} XP` : "待成长";
   const activityText = selectedRecord ? selectedRecord.reason.slice(0, 16) : "今天还没有新的成长记录";
+
+  useImperativeHandle(ref, () => ({
+    focusFullIsland: () => {
+      setActiveTravelRegion(null);
+      pixiMapRef.current?.focusFullIsland();
+    },
+    focusSelected: () => {
+      setActiveTravelRegion(null);
+      pixiMapRef.current?.focusSelected();
+    },
+    focusRegion: (regionId) => {
+      setActiveTravelRegion(regionId);
+      pixiMapRef.current?.focusRegion(regionId);
+    },
+    zoomIn: () => pixiMapRef.current?.zoomIn(),
+    zoomOut: () => pixiMapRef.current?.zoomOut(),
+  }));
+
+  const focusTravelRegion = (regionId: RegionId) => {
+    setActiveTravelRegion(regionId);
+    pixiMapRef.current?.focusRegion(regionId);
+  };
 
   return (
     <section className="world-map-shell">
@@ -51,6 +91,31 @@ export const WorldMapContainer = forwardRef<PixiWorldMapHandle, WorldMapContaine
           <em>{activityText}</em>
         </div>
       )}
+      <nav className="map-travel-board" aria-label="成长岛区域旅行">
+        <strong>
+          <Leaf size={15} />
+          岛屿旅行
+        </strong>
+        <div>
+          {regions.map((region) => {
+            const meta = travelMeta[region.id];
+            const Icon = meta.Icon;
+            return (
+              <button
+                key={region.id}
+                type="button"
+                className={activeTravelRegion === region.id ? "active" : undefined}
+                style={{ "--region-accent": toCssHex(region.accent) } as CSSProperties}
+                title={region.description}
+                onClick={() => focusTravelRegion(region.id)}
+              >
+                <Icon size={16} />
+                <span>{meta.shortName}</span>
+              </button>
+            );
+          })}
+        </div>
+      </nav>
       <Suspense
         fallback={
           <div className="pixi-world-host map-loading" aria-label="成长岛地图加载中">
@@ -58,7 +123,7 @@ export const WorldMapContainer = forwardRef<PixiWorldMapHandle, WorldMapContaine
           </div>
         }
       >
-        <PixiWorldMap ref={ref} {...props} />
+        <PixiWorldMap ref={pixiMapRef} {...props} />
       </Suspense>
     </section>
   );

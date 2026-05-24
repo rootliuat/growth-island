@@ -33,7 +33,7 @@ export class WorldScene {
   ) {
     this.ocean = new OceanLayer(this.layers.get("ocean"));
     new IslandLayer(this.layers.get("island"));
-    this.regions = new RegionLayer(this.layers.get("regions"), this.layers.get("labels"), this.focusRegion);
+    this.regions = new RegionLayer(this.layers.get("regions"), this.layers.get("labels"), this.focusRegionPoint);
     new PathLayer(this.layers.get("paths"));
     new DecorationLayer(this.layers.get("decorations"), {
       onFocusPoint: this.focusPoint,
@@ -110,6 +110,12 @@ export class WorldScene {
     if (selected) this.focusPoint(selected.homePosition.x, selected.homePosition.y + 54, cameraConfig.homeZoom);
   }
 
+  focusRegion(regionId: RegionId) {
+    const region = regionsById.get(regionId);
+    if (!region) return;
+    this.focusRegionPoint(region.id, region.center.x, region.center.y, cameraConfig.communityZoom);
+  }
+
   private selectChild = (childId: string) => {
     this.callbacks.onSelectChild(childId);
   };
@@ -118,7 +124,7 @@ export class WorldScene {
     this.camera.focus({ x, y, zoom });
   };
 
-  private focusRegion = (regionId: RegionId, x: number, y: number, zoom: number) => {
+  private focusRegionPoint = (regionId: RegionId, x: number, y: number, zoom: number) => {
     const region = regionsById.get(regionId);
     this.regions.setActive(regionId);
     this.camera.focus({ x, y, zoom: region?.id === "growth-plaza" ? 1.05 : zoom });

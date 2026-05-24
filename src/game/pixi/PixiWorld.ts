@@ -1,6 +1,6 @@
 import { Application, Ticker } from "pixi.js";
 import { WORLD_HEIGHT, WORLD_WIDTH } from "../mapConfig";
-import type { WorldMapCallbacks, WorldMapData } from "../types";
+import type { RegionId, WorldMapCallbacks, WorldMapData } from "../types";
 import { CameraController } from "./CameraController";
 import { InteractionManager } from "./InteractionManager";
 import { WorldScene } from "./WorldScene";
@@ -81,6 +81,11 @@ export class PixiWorld {
   focusChild(childId: string) {
     this.viewMode = "focused";
     this.scene?.focusChild(childId);
+  }
+
+  focusRegion(regionId: RegionId) {
+    this.viewMode = "focused";
+    this.scene?.focusRegion(regionId);
   }
 
   zoomBy(delta: number) {
