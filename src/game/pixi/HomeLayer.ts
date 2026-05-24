@@ -9,6 +9,7 @@ interface HomeNode {
   focusGlow: Graphics;
   prompt: Container;
   plaque: Container;
+  beacon: Container;
   decor: Container;
   hovered: boolean;
 }
@@ -16,6 +17,7 @@ interface HomeNode {
 export class HomeLayer {
   private readonly homeNodes = new Map<string, HomeNode>();
   private selectedChildId = "";
+  private elapsed = 0;
 
   constructor(
     private readonly layer: Container,
@@ -45,6 +47,7 @@ export class HomeLayer {
       node.root.scale.set(this.targetScale(home.childId, node));
       node.halo.visible = home.childId === this.selectedChildId;
       node.focusGlow.visible = home.childId === this.selectedChildId || node.hovered;
+      node.beacon.visible = home.childId === this.selectedChildId || node.hovered;
     });
     this.layer.children.sort((a, b) => a.y - b.y);
   }
@@ -56,11 +59,13 @@ export class HomeLayer {
   }
 
   updateFrame(deltaMS: number) {
+    this.elapsed += deltaMS / 1000;
     this.homeNodes.forEach((node) => {
       const target = this.targetScale(String(node.root.label), node);
       const next = node.root.scale.x + (target - node.root.scale.x) * Math.min(1, deltaMS / 180);
       node.root.scale.set(next);
       node.focusGlow.alpha += ((node.root.label === this.selectedChildId || node.hovered ? 1 : 0) - node.focusGlow.alpha) * Math.min(1, deltaMS / 170);
+      node.beacon.y = -104 - Math.sin(this.elapsed * 1.8 + node.root.x * 0.004) * 4;
     });
   }
 
@@ -69,7 +74,7 @@ export class HomeLayer {
       const selected = node.root.label === this.selectedChildId;
       node.plaque.visible = selected || zoom >= 1.45;
       node.decor.visible = selected || zoom >= 1.18;
-      node.prompt.visible = selected || (node.hovered && zoom >= 1);
+      node.prompt.visible = node.hovered && zoom >= 1.05;
       node.root.alpha = zoom < 0.72 && !selected ? 0.94 : 1;
     });
   }
@@ -105,20 +110,24 @@ export class HomeLayer {
 
     const { decor, plaque } = this.drawLevelDecor(home);
     const prompt = this.drawHomePrompt(home);
+    const beacon = this.drawSelectedBeacon(home);
     decor.visible = false;
     plaque.visible = false;
     prompt.visible = false;
-    node.addChild(decor, plaque, prompt);
-    const homeNode: HomeNode = { root: node, halo, focusGlow, decor, plaque, prompt, hovered: false };
+    beacon.visible = false;
+    node.addChild(decor, plaque, prompt, beacon);
+    const homeNode: HomeNode = { root: node, halo, focusGlow, decor, plaque, prompt, beacon, hovered: false };
     node.on("pointerover", () => {
       homeNode.hovered = true;
       focusGlow.visible = true;
       prompt.visible = true;
+      beacon.visible = true;
     });
     node.on("pointerout", () => {
       homeNode.hovered = false;
       focusGlow.visible = home.childId === this.selectedChildId;
-      prompt.visible = home.childId === this.selectedChildId;
+      prompt.visible = false;
+      beacon.visible = home.childId === this.selectedChildId;
     });
     return homeNode;
   }
@@ -459,6 +468,37 @@ export class HomeLayer {
     bg.circle(-width / 2 + 14, 0, 2.5).fill(0xfff6d7);
     prompt.addChild(bg, text);
     return prompt;
+  }
+
+  private drawSelectedBeacon(home: WorldHome) {
+    const beacon = new Container();
+    beacon.y = -104;
+    const labelName = home.petName.replace(/的小伙伴$/, "").replace(/的小精灵$/, "");
+    const text = new Text({
+      text: `${labelName}的小屋`,
+      style: { fontFamily: "Microsoft YaHei, PingFang SC", fontSize: 14, fontWeight: "900", fill: palette.textMain },
+    });
+    text.anchor.set(0.5);
+    text.x = 12;
+    text.y = -5;
+    const width = Math.max(94, Math.min(150, text.width + 42));
+    const g = new Graphics();
+    g.ellipse(4, 31, width * 0.36, 7).fill({ color: palette.inkShadow, alpha: 0.13 });
+    g.rect(-width / 2 - 13, -11, 7, 48).fill({ color: palette.woodDark, alpha: 0.82 });
+    g.roundRect(-width / 2, -27, width, 38, 14).fill(0xfff3c8).stroke({
+      width: 3,
+      color: home.accent,
+      alpha: 0.42,
+    });
+    g.poly([width / 2 - 10, -27, width / 2 + 17, -8, width / 2 - 10, 11]).fill({
+      color: home.accent,
+      alpha: 0.22,
+    });
+    g.circle(-width / 2 + 18, -8, 8).fill(home.accent);
+    g.circle(-width / 2 + 18, -8, 3.4).fill(0xfff3c8);
+    g.circle(width / 2 - 18, -9, 3.8).fill({ color: palette.accent, alpha: 0.9 });
+    beacon.addChild(g, text);
+    return beacon;
   }
 
   private targetScale(childId: string, node: HomeNode) {

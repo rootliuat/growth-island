@@ -20,17 +20,45 @@ interface GrowthWave {
   upgraded: boolean;
 }
 
+function quadraticPoint(from: WorldPoint, control: WorldPoint, to: WorldPoint, t: number) {
+  const inverse = 1 - t;
+  return {
+    x: inverse * inverse * from.x + 2 * inverse * t * control.x + t * t * to.x,
+    y: inverse * inverse * from.y + 2 * inverse * t * control.y + t * t * to.y,
+  };
+}
+
 export class EffectLayer {
   readonly xpParticles: XpParticleSystem;
+  private readonly selectedGuide = new Container();
+  private readonly selectedGuideLine = new Graphics();
+  private readonly selectedGuideDots: Graphics[] = [];
   private readonly treeGlow = new Graphics();
   private readonly growthWaves: GrowthWave[] = [];
+  private selectedGuideFrom?: WorldPoint;
+  private selectedGuideAccent = palette.accent;
   private time = 0;
 
   constructor(private readonly layer: Container) {
     this.xpParticles = new XpParticleSystem(layer);
+    this.selectedGuide.visible = false;
+    this.selectedGuide.addChild(this.selectedGuideLine);
+    for (let i = 0; i < 9; i += 1) {
+      const dot = new Graphics();
+      this.selectedGuideDots.push(dot);
+      this.selectedGuide.addChild(dot);
+    }
     this.treeGlow.x = growthTreePosition.x;
     this.treeGlow.y = growthTreePosition.y - 70;
+    this.layer.addChild(this.selectedGuide);
     this.layer.addChild(this.treeGlow);
+  }
+
+  setSelectedGuide(from?: WorldPoint, accent = palette.accent) {
+    this.selectedGuideFrom = from;
+    this.selectedGuideAccent = accent;
+    this.selectedGuide.visible = !!from;
+    this.drawSelectedGuide();
   }
 
   emitXp(from: WorldPoint, delta: number) {
@@ -87,8 +115,60 @@ export class EffectLayer {
     this.treeGlow.circle(0, 0, 136 + Math.sin(this.time) * 7).fill({ color: palette.accent, alpha: pulse * 0.14 });
     this.treeGlow.circle(0, 0, 84).stroke({ width: 4, color: 0xffe99b, alpha: 0.44 + pulse });
     this.treeGlow.circle(0, 0, 116).stroke({ width: 2, color: 0xfff5c8, alpha: 0.26 + pulse * 0.2 });
+    this.updateSelectedGuide();
     this.xpParticles.update(ticker);
     this.updateGrowthWaves(ticker);
+  }
+
+  private drawSelectedGuide() {
+    const from = this.selectedGuideFrom;
+    this.selectedGuideLine.clear();
+    if (!from) return;
+
+    const to = { x: growthTreePosition.x, y: growthTreePosition.y - 34 };
+    const control = {
+      x: (from.x + to.x) / 2,
+      y: Math.min(from.y, to.y) - 155,
+    };
+
+    this.selectedGuideLine.circle(from.x, from.y - 22, 15).fill({ color: palette.accent, alpha: 0.16 });
+    this.selectedGuideLine.moveTo(from.x, from.y - 22);
+    this.selectedGuideLine.quadraticCurveTo(control.x, control.y, to.x, to.y);
+    this.selectedGuideLine.stroke({ width: 22, color: 0xffffff, alpha: 0.18, cap: "round" });
+    this.selectedGuideLine.moveTo(from.x, from.y - 22);
+    this.selectedGuideLine.quadraticCurveTo(control.x, control.y, to.x, to.y);
+    this.selectedGuideLine.stroke({ width: 9, color: palette.accent, alpha: 0.36, cap: "round" });
+    this.selectedGuideLine.moveTo(from.x, from.y - 22);
+    this.selectedGuideLine.quadraticCurveTo(control.x, control.y, to.x, to.y);
+    this.selectedGuideLine.stroke({ width: 3, color: this.selectedGuideAccent, alpha: 0.44, cap: "round" });
+    this.selectedGuideLine.moveTo(from.x, from.y - 22);
+    this.selectedGuideLine.quadraticCurveTo(control.x, control.y, to.x, to.y);
+    this.selectedGuideLine.stroke({ width: 1.5, color: 0xfff6c9, alpha: 0.72, cap: "round" });
+    this.selectedGuideLine.circle(to.x, to.y, 18).fill({ color: this.selectedGuideAccent, alpha: 0.16 });
+    this.selectedGuideLine.circle(to.x, to.y, 9).fill({ color: 0xfff6c9, alpha: 0.42 });
+  }
+
+  private updateSelectedGuide() {
+    const from = this.selectedGuideFrom;
+    if (!from) return;
+
+    const start = { x: from.x, y: from.y - 22 };
+    const to = { x: growthTreePosition.x, y: growthTreePosition.y - 34 };
+    const control = {
+      x: (start.x + to.x) / 2,
+      y: Math.min(start.y, to.y) - 155,
+    };
+
+    this.selectedGuideDots.forEach((dot, index) => {
+      const t = (index / this.selectedGuideDots.length + this.time * 0.055) % 1;
+      const point = quadraticPoint(start, control, to, t);
+      const glow = 0.42 + Math.sin(this.time * 2.2 + index) * 0.12;
+      dot.clear();
+      dot.x = point.x;
+      dot.y = point.y + Math.sin(this.time * 1.8 + index) * 3;
+      dot.circle(0, 0, 6 + (index % 3)).fill({ color: index % 2 ? palette.accent : 0xfff6c9, alpha: glow + 0.12 });
+      dot.circle(-2, -2, 2.4).fill({ color: 0xffffff, alpha: 0.72 });
+    });
   }
 
   private updateGrowthWaves(ticker: Ticker) {

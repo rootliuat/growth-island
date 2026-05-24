@@ -55,12 +55,13 @@ export class WorldScene {
     this.homes.update(data);
     this.spirits.update(data);
     this.labels.update(data);
+    const selected = data.spirits.find((spirit) => spirit.id === data.selectedChildId);
+    this.effects.setSelectedGuide(selected?.spritePosition, selected?.accent);
     this.homes.updateZoom(this.camera.zoom);
     this.spirits.updateZoom(this.camera.zoom);
     this.labels.updateZoom(this.camera.zoom, data.selectedChildId);
 
     if (previousSelected && data.selectedChildId !== previousSelected) {
-      const selected = data.spirits.find((spirit) => spirit.id === data.selectedChildId);
       if (selected) this.focusPoint(selected.homePosition.x, selected.homePosition.y + 54, cameraConfig.homeZoom);
     }
 

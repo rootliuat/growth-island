@@ -43,6 +43,8 @@ export interface HomeSlot {
 export interface WorldHome {
   id: string;
   childId: string;
+  petName: string;
+  childName: string;
   regionId: RegionId;
   type: HomeType;
   level: number;

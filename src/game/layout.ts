@@ -51,6 +51,8 @@ export function buildWorldMapData({
     const home: WorldHome = {
       id: slot.id,
       childId: child.id,
+      petName: child.petName,
+      childName: child.name,
       regionId: slot.regionId,
       type: slot.type,
       level: homeLevel,
