@@ -1,0 +1,66 @@
+import type { ChildProfile, ChildWithProgress, LedgerRecord, SpiritState } from "../types";
+
+export const levelThresholds = [
+  { level: 1, minXp: 0, state: "egg-1" as SpiritState },
+  { level: 2, minXp: 100, state: "lv2" as SpiritState },
+  { level: 3, minXp: 250, state: "lv3" as SpiritState },
+  { level: 4, minXp: 450, state: "lv4" as SpiritState },
+  { level: 5, minXp: 700, state: "lv5" as SpiritState },
+  { level: 6, minXp: 1000, state: "lv6" as SpiritState },
+  { level: 7, minXp: 1400, state: "lv7" as SpiritState },
+  { level: 8, minXp: 1900, state: "lv8" as SpiritState },
+];
+
+export function getLevelInfo(xp: number) {
+  if (xp < 25) return { level: 1, state: "egg-1" as SpiritState, nextXp: 25, progressLabel: "完整精灵蛋" };
+  if (xp < 50) return { level: 1, state: "egg-2" as SpiritState, nextXp: 50, progressLabel: "蛋壳微微发亮" };
+  if (xp < 75) return { level: 1, state: "egg-3" as SpiritState, nextXp: 75, progressLabel: "小伙伴在里面动了" };
+  if (xp < 100) return { level: 1, state: "egg-4" as SpiritState, nextXp: 100, progressLabel: "马上要破壳了" };
+
+  let current = levelThresholds[1];
+  for (const threshold of levelThresholds) {
+    if (xp >= threshold.minXp) current = threshold;
+  }
+  const next = levelThresholds.find((threshold) => threshold.minXp > xp);
+  return {
+    level: current.level,
+    state: current.state,
+    nextXp: next?.minXp ?? current.minXp,
+    progressLabel: current.level === 8 ? "成长守护形态" : `距离 Lv.${current.level + 1}`,
+  };
+}
+
+export function getXpForChild(childId: string, ledger: LedgerRecord[]) {
+  return Math.max(
+    0,
+    ledger
+      .filter((record) => record.childId === childId && !record.undone && record.source !== "undo")
+      .reduce((sum, record) => sum + record.delta, 0),
+  );
+}
+
+export function enrichChildren(children: ChildProfile[], ledger: LedgerRecord[]): ChildWithProgress[] {
+  const withXp = children.map((child) => {
+    const xp = getXpForChild(child.id, ledger);
+    const info = getLevelInfo(xp);
+    return { ...child, xp, level: info.level, state: info.state, rank: 0 };
+  });
+  const sorted = [...withXp].sort((a, b) => b.xp - a.xp || a.name.localeCompare(b.name, "zh-Hans-CN"));
+  const ranks = new Map(sorted.map((child, index) => [child.id, index + 1]));
+  return withXp.map((child) => ({ ...child, rank: ranks.get(child.id) ?? 1 }));
+}
+
+export function xpProgressPercent(xp: number) {
+  const info = getLevelInfo(xp);
+  if (info.level === 8) return 100;
+  const currentMin = info.level === 1 ? (xp < 25 ? 0 : xp < 50 ? 25 : xp < 75 ? 50 : 75) : levelThresholds.find((item) => item.level === info.level)?.minXp ?? 0;
+  return Math.round(((xp - currentMin) / (info.nextXp - currentMin)) * 100);
+}
+
+export function makeLedgerRecord(input: Omit<LedgerRecord, "id" | "createdAt">): LedgerRecord {
+  return {
+    ...input,
+    id: crypto.randomUUID(),
+    createdAt: new Date().toISOString(),
+  };
+}

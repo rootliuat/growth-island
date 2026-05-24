@@ -1,0 +1,9 @@
+interface:
+  display_name: "Beihai Asset Imagegen"
+  short_description: "Consistent Beihai fantasy asset prompts"
+  brand_color: "#56B870"
+  default_prompt: "Use $beihai-asset-imagegen to create consistent Beihai Growth Island image prompts and assets."
+
+policy:
+  allow_implicit_invocation: true
+

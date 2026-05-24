@@ -1,0 +1,27 @@
+{
+  "name": "beihai-growth-island",
+  "private": true,
+  "version": "0.2.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "dev:vite": "vite --host 0.0.0.0",
+    "api": "node server/beihai-api.mjs",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview --host 0.0.0.0"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "^5.1.1",
+    "lucide-react": "^0.561.0",
+    "pixi-viewport": "^6.0.3",
+    "pixi.js": "^8.18.1",
+    "react": "^19.2.1",
+    "react-dom": "^19.2.1",
+    "vite": "^7.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
+    "typescript": "^5.9.3"
+  }
+}
