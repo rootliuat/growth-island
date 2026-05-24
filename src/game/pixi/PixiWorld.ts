@@ -14,6 +14,7 @@ export class PixiWorld {
   private host?: HTMLDivElement;
   private lastData?: WorldMapData;
   private disposed = false;
+  private viewMode: "overview" | "focused" | "manual" = "overview";
   private readonly tick = (ticker: Ticker) => {
     this.camera?.update(ticker);
     this.scene?.update(ticker);
@@ -50,6 +51,7 @@ export class PixiWorld {
     app.stage.addChild(this.scene.root);
     app.ticker.add(this.tick);
     this.resize(host.clientWidth || WORLD_WIDTH, host.clientHeight || WORLD_HEIGHT);
+    this.viewMode = "overview";
     this.scene.focusFullIsland();
 
     this.resizeObserver = new ResizeObserver(([entry]) => {
@@ -67,18 +69,22 @@ export class PixiWorld {
   }
 
   focusFullIsland() {
+    this.viewMode = "overview";
     this.scene?.focusFullIsland();
   }
 
   focusSelected() {
+    this.viewMode = "focused";
     this.scene?.focusSelected();
   }
 
   focusChild(childId: string) {
+    this.viewMode = "focused";
     this.scene?.focusChild(childId);
   }
 
   zoomBy(delta: number) {
+    this.viewMode = "manual";
     this.camera?.zoomBy(delta);
   }
 
@@ -88,6 +94,9 @@ export class PixiWorld {
     const safeHeight = Math.max(320, Math.floor(height));
     this.app.renderer.resize(safeWidth, safeHeight);
     this.camera.resize(safeWidth, safeHeight);
+    if (this.viewMode === "overview") {
+      this.scene?.focusFullIsland();
+    }
   }
 
   destroy() {
