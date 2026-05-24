@@ -6,8 +6,11 @@ import type { WorldHome, WorldMapData } from "../types";
 interface HomeNode {
   root: Container;
   halo: Graphics;
+  focusGlow: Graphics;
+  prompt: Container;
   plaque: Container;
   decor: Container;
+  hovered: boolean;
 }
 
 export class HomeLayer {
@@ -39,8 +42,9 @@ export class HomeLayer {
       node.root.x = home.position.x;
       node.root.y = home.position.y;
       node.root.alpha = 1;
-      node.root.scale.set(home.childId === this.selectedChildId ? 1.08 : 1);
+      node.root.scale.set(this.targetScale(home.childId, node));
       node.halo.visible = home.childId === this.selectedChildId;
+      node.focusGlow.visible = home.childId === this.selectedChildId || node.hovered;
     });
     this.layer.children.sort((a, b) => a.y - b.y);
   }
@@ -53,9 +57,10 @@ export class HomeLayer {
 
   updateFrame(deltaMS: number) {
     this.homeNodes.forEach((node) => {
-      const target = node.root.label === this.selectedChildId ? 1.08 : 1;
+      const target = this.targetScale(String(node.root.label), node);
       const next = node.root.scale.x + (target - node.root.scale.x) * Math.min(1, deltaMS / 180);
       node.root.scale.set(next);
+      node.focusGlow.alpha += ((node.root.label === this.selectedChildId || node.hovered ? 1 : 0) - node.focusGlow.alpha) * Math.min(1, deltaMS / 170);
     });
   }
 
@@ -64,6 +69,7 @@ export class HomeLayer {
       const selected = node.root.label === this.selectedChildId;
       node.plaque.visible = selected || zoom >= 1.45;
       node.decor.visible = selected || zoom >= 1.18;
+      node.prompt.visible = selected || (node.hovered && zoom >= 1);
       node.root.alpha = zoom < 0.72 && !selected ? 0.94 : 1;
     });
   }
@@ -85,15 +91,36 @@ export class HomeLayer {
     halo.ellipse(0, 46, 146, 50).stroke({ width: 2, color: home.accent, alpha: 0.28 });
     halo.visible = false;
 
+    const focusGlow = new Graphics();
+    focusGlow.ellipse(0, 54, 62, 18).fill({ color: home.accent, alpha: 0.24 });
+    focusGlow.ellipse(0, 54, 86, 28).stroke({ width: 3, color: 0xfff6c9, alpha: 0.58 });
+    focusGlow.circle(-42, 42, 5).fill({ color: palette.accent, alpha: 0.78 });
+    focusGlow.circle(42, 44, 4).fill({ color: palette.pearlWhite, alpha: 0.86 });
+    focusGlow.visible = false;
+    focusGlow.alpha = 0;
+
     const body = new Graphics();
     this.drawHome(body, home);
-    node.addChild(halo, body);
+    node.addChild(halo, focusGlow, body);
 
     const { decor, plaque } = this.drawLevelDecor(home);
+    const prompt = this.drawHomePrompt(home);
     decor.visible = false;
     plaque.visible = false;
-    node.addChild(decor, plaque);
-    return { root: node, halo, decor, plaque };
+    prompt.visible = false;
+    node.addChild(decor, plaque, prompt);
+    const homeNode: HomeNode = { root: node, halo, focusGlow, decor, plaque, prompt, hovered: false };
+    node.on("pointerover", () => {
+      homeNode.hovered = true;
+      focusGlow.visible = true;
+      prompt.visible = true;
+    });
+    node.on("pointerout", () => {
+      homeNode.hovered = false;
+      focusGlow.visible = home.childId === this.selectedChildId;
+      prompt.visible = home.childId === this.selectedChildId;
+    });
+    return homeNode;
   }
 
   private drawHome(g: Graphics, home: WorldHome) {
@@ -408,5 +435,34 @@ export class HomeLayer {
     });
     plaqueGroup.addChild(plaqueBg, plaqueText);
     return { decor, plaque: plaqueGroup };
+  }
+
+  private drawHomePrompt(home: WorldHome) {
+    const prompt = new Container();
+    prompt.y = -104;
+    const idNumber = home.id.replace(/\D/g, "").padStart(2, "0");
+    const text = new Text({
+      text: `家园 ${idNumber}`,
+      style: { fontFamily: "Microsoft YaHei, PingFang SC", fontSize: 13, fontWeight: "800", fill: palette.textMain },
+    });
+    text.anchor.set(0.5);
+    text.x = 8;
+    const width = Math.max(78, text.width + 34);
+    const bg = new Graphics();
+    bg.ellipse(0, 18, width * 0.34, 7).fill({ color: palette.inkShadow, alpha: 0.12 });
+    bg.roundRect(-width / 2, -14, width, 28, 12).fill(0xfff6d7).stroke({
+      width: 2,
+      color: home.accent,
+      alpha: 0.42,
+    });
+    bg.circle(-width / 2 + 14, 0, 5).fill(home.accent);
+    bg.circle(-width / 2 + 14, 0, 2.5).fill(0xfff6d7);
+    prompt.addChild(bg, text);
+    return prompt;
+  }
+
+  private targetScale(childId: string, node: HomeNode) {
+    if (childId === this.selectedChildId) return 1.09;
+    return node.hovered ? 1.04 : 1;
   }
 }
