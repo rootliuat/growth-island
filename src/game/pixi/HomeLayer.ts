@@ -3,8 +3,15 @@ import { palette } from "../artDirection";
 import { cameraConfig } from "../cameraConfig";
 import type { WorldHome, WorldMapData } from "../types";
 
+interface HomeNode {
+  root: Container;
+  halo: Graphics;
+  plaque: Container;
+  decor: Container;
+}
+
 export class HomeLayer {
-  private readonly homeNodes = new Map<string, Container>();
+  private readonly homeNodes = new Map<string, HomeNode>();
   private selectedChildId = "";
 
   constructor(
@@ -18,7 +25,7 @@ export class HomeLayer {
     const activeIds = new Set(data.homes.map((home) => home.id));
     for (const [id, node] of this.homeNodes) {
       if (activeIds.has(id)) continue;
-      node.destroy({ children: true });
+      node.root.destroy({ children: true });
       this.homeNodes.delete(id);
     }
 
@@ -27,40 +34,37 @@ export class HomeLayer {
       if (!node) {
         node = this.createHome(home);
         this.homeNodes.set(home.id, node);
-        this.layer.addChild(node);
+        this.layer.addChild(node.root);
       }
-      node.x = home.position.x;
-      node.y = home.position.y;
-      node.alpha = 1;
-      node.scale.set(home.childId === this.selectedChildId ? 1.08 : 1);
-      const halo = node.getChildByLabel("home-halo") as Graphics | undefined;
-      if (halo) halo.visible = home.childId === this.selectedChildId;
+      node.root.x = home.position.x;
+      node.root.y = home.position.y;
+      node.root.alpha = 1;
+      node.root.scale.set(home.childId === this.selectedChildId ? 1.08 : 1);
+      node.halo.visible = home.childId === this.selectedChildId;
     });
     this.layer.children.sort((a, b) => a.y - b.y);
   }
 
   pulse(childId: string) {
-    const node = [...this.homeNodes.values()].find((item) => item.label === childId);
+    const node = [...this.homeNodes.values()].find((item) => item.root.label === childId);
     if (!node) return;
-    node.scale.set(1.18);
+    node.root.scale.set(1.18);
   }
 
   updateFrame(deltaMS: number) {
     this.homeNodes.forEach((node) => {
-      const target = node.label === this.selectedChildId ? 1.08 : 1;
-      const next = node.scale.x + (target - node.scale.x) * Math.min(1, deltaMS / 180);
-      node.scale.set(next);
+      const target = node.root.label === this.selectedChildId ? 1.08 : 1;
+      const next = node.root.scale.x + (target - node.root.scale.x) * Math.min(1, deltaMS / 180);
+      node.root.scale.set(next);
     });
   }
 
   updateZoom(zoom: number) {
     this.homeNodes.forEach((node) => {
-      const selected = node.label === this.selectedChildId;
-      const detailsVisible = zoom >= 1.05 || selected;
-      const plaque = node.getChildByLabel("home-plaque");
-      const decor = node.getChildByLabel("home-level-decor");
-      if (plaque) plaque.visible = zoom >= 0.92 || selected;
-      if (decor) decor.visible = detailsVisible;
+      const selected = node.root.label === this.selectedChildId;
+      node.plaque.visible = selected || zoom >= 1.08;
+      node.decor.visible = selected || zoom >= 1.18;
+      node.root.alpha = zoom < 0.72 && !selected ? 0.94 : 1;
     });
   }
 
@@ -76,7 +80,6 @@ export class HomeLayer {
     });
 
     const halo = new Graphics();
-    halo.label = "home-halo";
     halo.ellipse(0, 44, 98, 30).fill({ color: palette.accent, alpha: 0.22 });
     halo.ellipse(0, 44, 118, 38).stroke({ width: 3, color: 0xfff6c9, alpha: 0.48 });
     halo.visible = false;
@@ -85,8 +88,11 @@ export class HomeLayer {
     this.drawHome(body, home);
     node.addChild(halo, body);
 
-    this.drawLevelDecor(node, home);
-    return node;
+    const { decor, plaque } = this.drawLevelDecor(home);
+    decor.visible = false;
+    plaque.visible = false;
+    node.addChild(decor, plaque);
+    return { root: node, halo, decor, plaque };
   }
 
   private drawHome(g: Graphics, home: WorldHome) {
@@ -190,9 +196,8 @@ export class HomeLayer {
     if (home.level >= 4) g.poly([44, -62, 74, -52, 44, -40]).fill(home.accent);
   }
 
-  private drawLevelDecor(node: Container, home: WorldHome) {
+  private drawLevelDecor(home: WorldHome) {
     const decor = new Container();
-    decor.label = "home-level-decor";
     const g = new Graphics();
     if (home.level >= 2) {
       g.circle(-62, 62, 7).fill(palette.flowerPink);
@@ -208,7 +213,6 @@ export class HomeLayer {
     decor.addChild(g);
 
     const plaqueGroup = new Container();
-    plaqueGroup.label = "home-plaque";
     const plaqueText = new Text({
       text: `Lv.${home.level}`,
       style: { fontFamily: "Georgia, Microsoft YaHei", fontSize: 15, fontWeight: "700", fill: 0x664325 },
@@ -221,6 +225,6 @@ export class HomeLayer {
       alpha: 0.28,
     });
     plaqueGroup.addChild(plaqueBg, plaqueText);
-    node.addChild(decor, plaqueGroup);
+    return { decor, plaque: plaqueGroup };
   }
 }

@@ -32,10 +32,7 @@ body,
 body {
   height: 100vh;
   overflow: hidden;
-  background:
-    radial-gradient(circle at 12% 10%, rgba(255, 239, 178, 0.6), transparent 26%),
-    radial-gradient(circle at 88% 18%, rgba(150, 216, 229, 0.42), transparent 28%),
-    linear-gradient(135deg, #174f58 0%, #285642 46%, #7f5b36 100%);
+  background: #1d5b64;
 }
 
 button,
@@ -65,7 +62,7 @@ button {
   padding: 8px 16px;
   border: 1px solid rgba(255, 246, 207, 0.48);
   border-radius: 22px;
-  background: linear-gradient(135deg, rgba(255, 248, 222, 0.88), rgba(232, 250, 241, 0.78));
+  background: rgba(244, 241, 230, 0.92);
   box-shadow: 0 18px 54px rgba(8, 25, 26, 0.22);
   backdrop-filter: blur(14px);
 }
@@ -96,7 +93,7 @@ button {
   font-family: Georgia, serif;
   font-size: 30px;
   font-weight: 900;
-  background: linear-gradient(145deg, #d35f52, #237f79);
+  background: #2c8f99;
   box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.55), 0 10px 24px rgba(0, 0, 0, 0.18);
 }
 
@@ -166,11 +163,11 @@ button {
 
 .teacher-toggle {
   color: #fff8dd;
-  background: linear-gradient(135deg, #416f5a, #284a5c);
+  background: #416f5a;
 }
 
 .teacher-toggle.active {
-  background: linear-gradient(135deg, #9f4c45, #c48728);
+  background: #d97155;
 }
 
 .main-stage {
@@ -188,9 +185,7 @@ button {
   place-items: center;
   border: 1px solid rgba(255, 246, 207, 0.54);
   border-radius: 26px;
-  background:
-    radial-gradient(circle at 50% 50%, rgba(255, 244, 190, 0.2), transparent 45%),
-    linear-gradient(135deg, rgba(255, 247, 223, 0.22), rgba(125, 213, 219, 0.13));
+  background: #1e7180;
   box-shadow: 0 24px 76px rgba(8, 25, 26, 0.28);
 }
 
@@ -231,7 +226,7 @@ button {
 .review-queue {
   border: 1px solid rgba(255, 247, 214, 0.56);
   border-radius: 20px;
-  background: linear-gradient(145deg, rgba(255, 248, 226, 0.86), rgba(237, 249, 241, 0.78));
+  background: rgba(244, 241, 230, 0.9);
   box-shadow: 0 14px 38px rgba(8, 25, 26, 0.2);
   backdrop-filter: blur(12px);
 }
@@ -267,9 +262,7 @@ button {
   overflow: hidden;
   place-items: center;
   border-radius: 18px;
-  background:
-    radial-gradient(circle at 48% 45%, color-mix(in srgb, var(--pet-accent) 36%, transparent), transparent 35%),
-    linear-gradient(160deg, rgba(255, 252, 233, 0.9), rgba(206, 238, 229, 0.82));
+  background: #fff7d8;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.72);
 }
 
@@ -326,7 +319,7 @@ button {
   color: #fff8df;
   font-size: 38px;
   font-weight: 900;
-  background: linear-gradient(135deg, var(--pet-accent), #f0c86c);
+  background: color-mix(in srgb, var(--pet-accent) 76%, #f0c86c);
   box-shadow: inset 0 0 0 4px rgba(255, 255, 255, 0.48), 0 16px 24px rgba(0, 0, 0, 0.14);
 }
 
@@ -391,7 +384,7 @@ button {
 .xp-fill {
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, #45a477, #d9a43e, #e86960);
+  background: #59b97c;
   transition: width 240ms ease;
 }
 
@@ -436,11 +429,11 @@ button {
 }
 
 .gain-button {
-  background: linear-gradient(135deg, #4f9a72, #82b64c);
+  background: #4f9a72;
 }
 
 .deduct-button {
-  background: linear-gradient(135deg, #c2684d, #a24d65);
+  background: #b96e6e;
 }
 
 .primary-actions {
@@ -451,12 +444,12 @@ button {
 }
 
 .primary-actions button {
-  background: linear-gradient(135deg, #2d7185, #6f68bf);
+  background: #2d7185;
 }
 
 .primary-actions button:nth-child(3) {
   grid-column: 1 / -1;
-  background: linear-gradient(135deg, #8b6840, #bd6d34);
+  background: #8b6840;
 }
 
 .agent-card {
@@ -464,7 +457,7 @@ button {
   padding: 12px;
   border-radius: 14px;
   color: #284534;
-  background: linear-gradient(135deg, rgba(196, 232, 194, 0.86), rgba(255, 243, 184, 0.9));
+  background: #fff0bf;
 }
 
 .agent-card > div {
@@ -728,7 +721,7 @@ button {
 
 .dock-child.active {
   color: #fff7df;
-  background: linear-gradient(135deg, #ad5d47, #2d7185);
+  background: #2d7185;
 }
 
 .modal-backdrop {
@@ -747,7 +740,7 @@ button {
   width: min(860px, 92vw);
   border: 2px solid rgba(255, 246, 207, 0.78);
   border-radius: 24px;
-  background: linear-gradient(145deg, #fff8df, #e7f8f0);
+  background: #fff8df;
   box-shadow: 0 26px 90px rgba(0, 0, 0, 0.36);
 }
 
@@ -822,7 +815,7 @@ button {
   border-radius: 16px;
   color: #fff9df;
   font-weight: 900;
-  background: linear-gradient(135deg, #4f9a72, #5866c8);
+  background: #4f9a72;
 }
 
 .submit-dialogue:disabled {
@@ -867,16 +860,12 @@ button {
   width: 118px;
   height: 118px;
   border-radius: 50%;
-  background:
-    radial-gradient(circle at 36% 31%, #fff 0 12%, transparent 13%),
-    radial-gradient(circle at 50% 58%, #e6ffe8 0 28%, #6bbf9e 29% 55%, #5679c8 56% 100%);
+  background: #6bbf9e;
   box-shadow: inset 0 0 0 5px rgba(255, 255, 255, 0.55), 0 18px 38px rgba(55, 82, 94, 0.28);
 }
 
 .battle-pet.right .battle-orb {
-  background:
-    radial-gradient(circle at 36% 31%, #fff 0 12%, transparent 13%),
-    radial-gradient(circle at 50% 58%, #fff1ce 0 28%, #e08a62 29% 55%, #8c5dc9 56% 100%);
+  background: #e08a62;
 }
 
 .battle-pet strong {
@@ -895,7 +884,7 @@ button {
 .hp-track div {
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, #67b95c, #e4b13b, #db4e45);
+  background: #67b95c;
 }
 
 .problem-card {
@@ -929,7 +918,7 @@ button {
   color: #fff7df;
   font-size: 24px;
   font-weight: 900;
-  background: linear-gradient(135deg, #2d7185, #6f68bf);
+  background: #2d7185;
 }
 
 .battle-log {
@@ -964,10 +953,7 @@ button {
 
 /* PixiJS game-map shell */
 body {
-  background:
-    radial-gradient(circle at 18% 12%, rgba(255, 229, 146, 0.24), transparent 22%),
-    radial-gradient(circle at 82% 8%, rgba(113, 218, 226, 0.18), transparent 22%),
-    linear-gradient(135deg, #123f4c 0%, #1d5b64 40%, #244f4e 100%);
+  background: #1d5b64;
 }
 
 button {
@@ -989,9 +975,7 @@ button {
   padding: 9px 14px;
   border: 1px solid rgba(255, 236, 174, 0.45);
   border-radius: 24px;
-  background:
-    linear-gradient(135deg, rgba(255, 248, 220, 0.9), rgba(221, 247, 239, 0.82)),
-    radial-gradient(circle at 50% 0%, rgba(255, 223, 127, 0.42), transparent 56%);
+  background: #f4f1e6;
   box-shadow: 0 18px 58px rgba(5, 21, 29, 0.28);
   backdrop-filter: blur(16px);
 }
@@ -1027,7 +1011,7 @@ button {
   font-family: Georgia, serif;
   font-size: 32px;
   font-weight: 900;
-  background: linear-gradient(145deg, #d86d4d, #278ea0 64%, #345e4d);
+  background: #2c8f99;
   box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.55), 0 12px 28px rgba(52, 79, 68, 0.25);
 }
 
@@ -1063,7 +1047,7 @@ button {
   min-height: 44px;
   border: 1px solid rgba(89, 94, 68, 0.2);
   color: #365044;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(255, 244, 207, 0.68));
+  background: #fff7d8;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 8px 18px rgba(49, 67, 54, 0.12);
 }
 
@@ -1105,9 +1089,7 @@ button {
   overflow: hidden;
   border: 1px solid rgba(255, 240, 188, 0.5);
   border-radius: 30px;
-  background:
-    linear-gradient(135deg, rgba(255, 247, 218, 0.16), rgba(105, 220, 225, 0.14)),
-    #1e7180;
+  background: #1e7180;
   box-shadow: 0 26px 80px rgba(4, 20, 29, 0.34);
 }
 
@@ -1161,9 +1143,7 @@ button {
 .teacher-action-panel {
   border: 1px solid rgba(255, 236, 177, 0.55);
   border-radius: 24px;
-  background:
-    radial-gradient(circle at 18% 0%, color-mix(in srgb, var(--spirit-accent, #76b883) 28%, transparent), transparent 42%),
-    linear-gradient(145deg, rgba(255, 249, 224, 0.92), rgba(229, 247, 239, 0.84));
+  background: #f4f1e6;
   box-shadow: 0 18px 48px rgba(6, 24, 31, 0.24);
   backdrop-filter: blur(14px);
 }
@@ -1198,7 +1178,7 @@ button {
   place-items: center;
   border-radius: 999px;
   color: #fff7dd;
-  background: linear-gradient(135deg, #b56941, #2e7b84);
+  background: #7b8065;
 }
 
 .spirit-portrait {
@@ -1215,7 +1195,7 @@ button {
   height: 128px;
   border: 2px solid color-mix(in srgb, var(--spirit-accent, #76b883) 58%, white);
   border-radius: 50%;
-  background: radial-gradient(circle, color-mix(in srgb, var(--spirit-accent, #76b883) 18%, transparent), transparent 62%);
+  background: #fff7d8;
   box-shadow: 0 16px 32px rgba(37, 60, 54, 0.16);
 }
 
@@ -1303,11 +1283,11 @@ button {
 }
 
 .gain-button {
-  background: linear-gradient(145deg, #50a873, #2e858a);
+  background: #59b97c;
 }
 
 .deduct-button {
-  background: linear-gradient(145deg, #9e6e63, #6c6875);
+  background: #b96e6e;
 }
 
 .quest-actions {
@@ -1321,7 +1301,7 @@ button {
   border-radius: 15px;
   color: #fff7db;
   font-weight: 900;
-  background: linear-gradient(145deg, #9b623c, #3b7184);
+  background: #2c8f99;
 }
 
 .agent-suggestion {
@@ -1440,7 +1420,7 @@ button {
   padding: 10px;
   border: 1px solid rgba(255, 236, 177, 0.44);
   border-radius: 26px;
-  background: linear-gradient(135deg, rgba(255, 247, 218, 0.86), rgba(214, 241, 237, 0.72));
+  background: #f4f1e6;
   box-shadow: 0 18px 52px rgba(5, 21, 29, 0.24);
   backdrop-filter: blur(14px);
 }
@@ -1538,7 +1518,7 @@ button {
 
 .dock-spirit.active {
   color: #fff8df;
-  background: linear-gradient(145deg, #b46942, #2f7f87);
+  background: #2c8f99;
 }
 
 .dock-avatar {

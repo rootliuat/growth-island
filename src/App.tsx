@@ -78,6 +78,14 @@ export function App() {
   const pkOpponent = pkPair ? childrenWithProgress.find((child) => child.id === pkPair.opponentId) : undefined;
   const pendingReviews = moralReviews.filter((review) => review.status === "pending_review");
 
+  const selectChildFromDock = (childId: string) => {
+    if (childId === selectedChild.id) {
+      worldMapRef.current?.focusSelected();
+      return;
+    }
+    setSelectedChildId(childId);
+  };
+
   const applySnapshot = (snapshot: ClassroomSnapshot) => {
     setChildren(snapshot.children);
     setLedger(snapshot.ledger);
@@ -281,7 +289,7 @@ export function App() {
         childrenWithProgress={childrenWithProgress}
         spiritsById={spiritsById}
         selectedChildId={selectedChild.id}
-        onSelectChild={setSelectedChildId}
+        onSelectChild={selectChildFromDock}
       />
 
       {dialogueOpen && <DialogueModal child={selectedChild} onClose={() => setDialogueOpen(false)} onSubmit={submitDialogue} />}

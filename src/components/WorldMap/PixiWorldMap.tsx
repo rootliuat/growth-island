@@ -29,6 +29,7 @@ export const PixiWorldMap = forwardRef<PixiWorldMapHandle, PixiWorldMapProps>(fu
   const onSelectRef = useRef(onSelectChild);
   const onOpenDialogueRef = useRef(onOpenDialogue);
   const onOpenPkRef = useRef(onOpenPk);
+  const previousSelectedChildIdRef = useRef(selectedChildId);
 
   useEffect(() => {
     onSelectRef.current = onSelectChild;
@@ -58,7 +59,10 @@ export const PixiWorldMap = forwardRef<PixiWorldMapHandle, PixiWorldMapProps>(fu
     worldRef.current = world;
     let cancelled = false;
     world.mount(hostRef.current).then(() => {
-      if (cancelled) return;
+      if (cancelled) {
+        world.destroy();
+        return;
+      }
       world.update(mapData);
     });
 
@@ -70,11 +74,18 @@ export const PixiWorldMap = forwardRef<PixiWorldMapHandle, PixiWorldMapProps>(fu
   }, []);
 
   useEffect(() => {
+    const selectedChanged = previousSelectedChildIdRef.current !== selectedChildId;
     worldRef.current?.update(mapData);
-  }, [mapData]);
+    if (!selectedChanged) return;
+    previousSelectedChildIdRef.current = selectedChildId;
+    const frame = requestAnimationFrame(() => {
+      worldRef.current?.focusChild(selectedChildId);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [mapData, selectedChildId]);
 
   return (
-    <div className="pixi-world-host" ref={hostRef} aria-label="北海成长岛 PixiJS 精灵家园地图">
+    <div className="pixi-world-host" ref={hostRef} aria-label="成长岛 PixiJS 精灵家园地图">
       <div className="map-hint">拖拽移动 · 滚轮缩放 · 点击精灵之家聚焦</div>
     </div>
   );

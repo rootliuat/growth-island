@@ -92,6 +92,11 @@ export class WorldScene {
     if (selected) this.focusPoint(selected.homePosition.x, selected.homePosition.y + 54, cameraConfig.homeZoom);
   }
 
+  focusChild(childId: string) {
+    const selected = this.data?.spirits.find((spirit) => spirit.id === childId);
+    if (selected) this.focusPoint(selected.homePosition.x, selected.homePosition.y + 54, cameraConfig.homeZoom);
+  }
+
   private selectChild = (childId: string) => {
     this.callbacks.onSelectChild(childId);
   };

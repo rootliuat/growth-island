@@ -28,12 +28,33 @@ export class DecorationLayer {
     plaza.ellipse(0, 90, 230, 60).fill({ color: palette.inkShadow, alpha: 0.12 });
     plaza.ellipse(0, 44, 205, 72).fill(0xf6e4aa).stroke({ width: 6, color: palette.sandInk, alpha: 0.16 });
     plaza.ellipse(0, 44, 138, 45).stroke({ width: 4, color: palette.accent, alpha: 0.5 });
+    for (let i = 0; i < 18; i += 1) {
+      const angle = (Math.PI * 2 * i) / 18;
+      const radiusX = 170 + (i % 2) * 14;
+      const radiusY = 58 + (i % 3) * 4;
+      plaza.circle(Math.cos(angle) * radiusX, 44 + Math.sin(angle) * radiusY, 7).fill({
+        color: i % 2 ? palette.sandLight : palette.accent,
+        alpha: 0.82,
+      });
+    }
     this.layer.addChild(plaza);
 
     const tree = new Graphics();
     tree.x = growthTreePosition.x;
     tree.y = growthTreePosition.y;
     tree.ellipse(0, 102, 146, 35).fill({ color: palette.inkShadow, alpha: 0.18 });
+    tree.moveTo(-25, 128).quadraticCurveTo(-88, 124, -122, 78).stroke({
+      width: 15,
+      color: palette.woodDark,
+      alpha: 0.48,
+      cap: "round",
+    });
+    tree.moveTo(24, 128).quadraticCurveTo(94, 120, 128, 72).stroke({
+      width: 15,
+      color: palette.woodDark,
+      alpha: 0.48,
+      cap: "round",
+    });
     tree.roundRect(-30, -12, 60, 176, 24).fill(palette.woodDark);
     tree.roundRect(-17, -72, 34, 105, 14).fill(palette.woodLight);
     tree.moveTo(-14, 44).quadraticCurveTo(-70, 18, -88, -58).stroke({ width: 13, color: palette.woodDark, alpha: 0.78, cap: "round" });
@@ -44,10 +65,21 @@ export class DecorationLayer {
       { x: 72, y: -70, r: 78, c: palette.grassLight },
       { x: 8, y: -35, r: 88, c: palette.grassMid },
     ].forEach((leaf) => tree.circle(leaf.x, leaf.y, leaf.r).fill(leaf.c));
-    tree.circle(0, -70, 120).stroke({ width: 7, color: palette.accent, alpha: 0.56 });
-    for (let i = 0; i < 12; i += 1) {
-      const angle = (Math.PI * 2 * i) / 12;
-      tree.circle(Math.cos(angle) * 130, -70 + Math.sin(angle) * 82, 5).fill({ color: 0xfff4c7, alpha: 0.75 });
+    [
+      { x: -54, y: -112, r: 15 },
+      { x: 38, y: -132, r: 13 },
+      { x: 92, y: -40, r: 12 },
+      { x: -110, y: -38, r: 11 },
+      { x: -8, y: -8, r: 10 },
+    ].forEach((spot) => tree.circle(spot.x, spot.y, spot.r).fill({ color: 0xd6e99b, alpha: 0.72 }));
+    tree.circle(0, -70, 122).stroke({ width: 7, color: palette.accent, alpha: 0.56 });
+    tree.circle(0, -70, 94).stroke({ width: 3, color: 0xfff4c7, alpha: 0.46 });
+    for (let i = 0; i < 16; i += 1) {
+      const angle = (Math.PI * 2 * i) / 16;
+      const x = Math.cos(angle) * 132;
+      const y = -70 + Math.sin(angle) * 86;
+      tree.circle(x, y, i % 4 === 0 ? 7 : 5).fill({ color: 0xfff4c7, alpha: 0.76 });
+      if (i % 4 === 0) tree.circle(x, y, 16).fill({ color: palette.accent, alpha: 0.08 });
     }
     this.layer.addChild(tree);
 

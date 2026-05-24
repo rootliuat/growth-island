@@ -13,6 +13,7 @@ export class PixiWorld {
   private resizeObserver?: ResizeObserver;
   private host?: HTMLDivElement;
   private lastData?: WorldMapData;
+  private disposed = false;
   private readonly tick = (ticker: Ticker) => {
     this.camera?.update(ticker);
     this.scene?.update(ticker);
@@ -22,7 +23,9 @@ export class PixiWorld {
 
   async mount(host: HTMLDivElement) {
     if (this.app) return;
+    this.disposed = false;
     this.host = host;
+    host.querySelectorAll("canvas.pixi-world-canvas").forEach((canvas) => canvas.remove());
     const app = new Application();
     await app.init({
       width: host.clientWidth || 1280,
@@ -32,6 +35,12 @@ export class PixiWorld {
       resolution: Math.min(window.devicePixelRatio || 1, 2),
       autoDensity: true,
     });
+    if (this.disposed || this.host !== host) {
+      const canvas = app.canvas;
+      app.destroy({ removeView: true }, { children: true, texture: false, textureSource: false });
+      canvas?.remove();
+      return;
+    }
     app.canvas.className = "pixi-world-canvas";
     host.appendChild(app.canvas);
 
@@ -65,6 +74,10 @@ export class PixiWorld {
     this.scene?.focusSelected();
   }
 
+  focusChild(childId: string) {
+    this.scene?.focusChild(childId);
+  }
+
   zoomBy(delta: number) {
     this.camera?.zoomBy(delta);
   }
@@ -78,10 +91,13 @@ export class PixiWorld {
   }
 
   destroy() {
+    this.disposed = true;
     this.interactions.destroy();
     this.app?.ticker.remove(this.tick);
     this.scene?.destroy();
+    const canvas = this.app?.canvas;
     this.app?.destroy({ removeView: true }, { children: true, texture: false, textureSource: false });
+    canvas?.remove();
     this.app = undefined;
     this.camera = undefined;
     this.scene = undefined;

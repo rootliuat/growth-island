@@ -10,6 +10,8 @@ interface SpiritNode {
   body: Container;
   levelBadge: Container;
   moodDot: Graphics;
+  rank: number;
+  level: number;
 }
 
 export class SpiritLayer {
@@ -42,8 +44,11 @@ export class SpiritLayer {
       }
       node.root.x = spirit.spritePosition.x;
       node.root.y = spirit.spritePosition.y;
+      node.rank = spirit.child.rank;
+      node.level = spirit.child.level;
       node.root.scale.set(this.getTargetScale(spirit.id));
       node.halo.visible = spirit.id === this.selectedChildId;
+      node.root.visible = this.shouldShowSpirit(spirit.id, node);
       node.levelBadge.visible = spirit.child.level >= 2 && this.shouldShowBadge(spirit.id);
       node.moodDot.visible = this.shouldShowBadge(spirit.id);
       node.moodDot.tint = this.moodTint(spirit.mood);
@@ -68,7 +73,7 @@ export class SpiritLayer {
   updateFrame(ticker: Ticker) {
     this.elapsed += ticker.deltaMS / 1000;
     this.nodes.forEach((node, childId) => {
-      const selected = childId === this.selectedChildId;
+      if (!node.root.visible) return;
       const breath = 1 + Math.sin(this.elapsed * 2.2 + node.root.x * 0.004) * 0.028;
       const targetRoot = this.getTargetScale(childId);
       const rootScale = node.root.scale.x + (targetRoot - node.root.scale.x) * Math.min(1, ticker.deltaMS / 160);
@@ -82,6 +87,7 @@ export class SpiritLayer {
   updateZoom(zoom: number) {
     this.zoomScale = zoom < 0.78 ? 0.78 : zoom < 1.05 ? 0.9 : 1;
     this.nodes.forEach((node, childId) => {
+      node.root.visible = this.shouldShowSpirit(childId, node);
       node.levelBadge.visible = this.shouldShowBadge(childId);
       node.moodDot.visible = this.shouldShowBadge(childId);
     });
@@ -140,7 +146,7 @@ export class SpiritLayer {
     moodDot.tint = this.moodTint(spirit.mood);
 
     root.addChild(halo, body, levelBadge, moodDot);
-    return { root, halo, body, levelBadge, moodDot };
+    return { root, halo, body, levelBadge, moodDot, rank: spirit.child.rank, level: spirit.child.level };
   }
 
   private drawFallback(spirit: WorldSpirit) {
@@ -185,5 +191,11 @@ export class SpiritLayer {
 
   private shouldShowBadge(childId: string) {
     return childId === this.selectedChildId || this.zoomScale >= 0.95;
+  }
+
+  private shouldShowSpirit(childId: string, node: SpiritNode) {
+    if (childId === this.selectedChildId) return true;
+    if (this.zoomScale >= 0.9) return true;
+    return node.rank <= 3 || node.level >= 7;
   }
 }
