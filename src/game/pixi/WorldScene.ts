@@ -19,6 +19,7 @@ export class WorldScene {
   readonly root = new Container();
   readonly layers = new LayerManager();
   readonly ocean: OceanLayer;
+  readonly regions: RegionLayer;
   readonly effects: EffectLayer;
   readonly homes: HomeLayer;
   readonly spirits: SpiritLayer;
@@ -32,7 +33,7 @@ export class WorldScene {
   ) {
     this.ocean = new OceanLayer(this.layers.get("ocean"));
     new IslandLayer(this.layers.get("island"));
-    new RegionLayer(this.layers.get("regions"), this.focusRegion);
+    this.regions = new RegionLayer(this.layers.get("regions"), this.layers.get("labels"), this.focusRegion);
     new PathLayer(this.layers.get("paths"));
     new DecorationLayer(this.layers.get("decorations"), {
       onFocusPoint: this.focusPoint,
@@ -75,6 +76,7 @@ export class WorldScene {
 
   update(ticker: Ticker) {
     this.ocean.update(ticker);
+    this.regions.update(ticker, this.camera.zoom);
     this.effects.update(ticker);
     this.homes.updateFrame(ticker.deltaMS);
     this.homes.updateZoom(this.camera.zoom);
@@ -107,6 +109,7 @@ export class WorldScene {
 
   private focusRegion = (regionId: RegionId, x: number, y: number, zoom: number) => {
     const region = regionsById.get(regionId);
+    this.regions.setActive(regionId);
     this.camera.focus({ x, y, zoom: region?.id === "growth-plaza" ? 1.05 : zoom });
   };
 

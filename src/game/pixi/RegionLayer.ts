@@ -1,13 +1,24 @@
-import { Container, Graphics } from "pixi.js";
+import { Container, Graphics, Text, Ticker } from "pixi.js";
 import { regions } from "../regionConfig";
 import { cameraConfig } from "../cameraConfig";
 import { palette } from "../artDirection";
 import type { RegionId } from "../types";
 import { drawOrganicPolygon, flatten } from "./drawing";
 
+interface RegionNode {
+  id: RegionId;
+  highlight: Graphics;
+  banner: Container;
+}
+
 export class RegionLayer {
+  private readonly nodes = new Map<RegionId, RegionNode>();
+  private activeRegionId?: RegionId;
+  private activeElapsed = 0;
+
   constructor(
     private readonly layer: Container,
+    private readonly overlayLayer: Container,
     private readonly onFocusRegion: (regionId: RegionId, x: number, y: number, zoom: number) => void,
   ) {
     this.draw();
@@ -15,6 +26,7 @@ export class RegionLayer {
 
   private draw() {
     regions.forEach((region) => {
+      const root = new Container();
       const g = new Graphics();
       g.poly(region.shape.map((point) => [point.x + 12, point.y + 18]).flat()).fill({
         color: palette.inkShadow,
@@ -29,8 +41,67 @@ export class RegionLayer {
       g.eventMode = "static";
       g.cursor = "pointer";
       g.on("pointertap", () => this.onFocusRegion(region.id, region.center.x, region.center.y, cameraConfig.communityZoom));
-      this.layer.addChild(g);
+
+      const highlight = new Graphics();
+      drawOrganicPolygon(highlight, region.shape, region.accent, region.accent, {
+        fillAlpha: 0.1,
+        strokeAlpha: 0.75,
+        strokeWidth: 10,
+      });
+      highlight.visible = false;
+
+      const banner = this.createRegionBanner(region.name, region.accent);
+      banner.x = region.center.x;
+      banner.y = region.center.y - Math.min(120, region.radiusY * 0.42);
+      banner.visible = false;
+
+      root.addChild(g, highlight);
+      this.overlayLayer.addChild(banner);
+      this.nodes.set(region.id, { id: region.id, highlight, banner });
+      this.layer.addChild(root);
     });
+  }
+
+  setActive(regionId: RegionId) {
+    this.activeRegionId = regionId;
+    this.activeElapsed = 0;
+    this.nodes.forEach((node, id) => {
+      const active = id === regionId;
+      node.highlight.visible = active;
+      node.banner.visible = active;
+      node.highlight.alpha = active ? 0.9 : 0;
+      node.banner.alpha = active ? 1 : 0;
+      node.banner.scale.set(0.96);
+    });
+    const activeNode = this.nodes.get(regionId);
+    if (activeNode) this.overlayLayer.addChild(activeNode.banner);
+  }
+
+  update(ticker: Ticker, zoom: number) {
+    if (!this.activeRegionId) return;
+    this.activeElapsed += ticker.deltaMS;
+    const node = this.nodes.get(this.activeRegionId);
+    if (!node) return;
+    const pulse = 0.78 + Math.sin(this.activeElapsed / 220) * 0.08;
+    node.highlight.alpha = this.activeElapsed > 1800 ? 0.38 : pulse;
+    node.banner.alpha = this.activeElapsed > 2200 || zoom >= 1.38 ? 0 : 1;
+    node.banner.visible = node.banner.alpha > 0.02;
+    node.banner.scale.set(0.96 + Math.min(this.activeElapsed / 420, 1) * 0.04);
+  }
+
+  private createRegionBanner(name: string, accent: number) {
+    const banner = new Container();
+    const width = Math.max(170, name.length * 22 + 40);
+    const board = new Graphics();
+    board.roundRect(-width / 2, -22, width, 44, 14).fill(0xfff6d7).stroke({ width: 4, color: accent, alpha: 0.48 });
+    board.rect(-5, 18, 10, 40).fill(palette.woodDark);
+    const text = new Text({
+      text: `进入 ${name}`,
+      style: { fontFamily: "Microsoft YaHei, PingFang SC", fontSize: 18, fontWeight: "900", fill: palette.textMain },
+    });
+    text.anchor.set(0.5);
+    banner.addChild(board, text);
+    return banner;
   }
 
   private drawTerrainDetails(g: Graphics, regionId: RegionId) {
