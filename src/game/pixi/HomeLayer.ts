@@ -62,7 +62,7 @@ export class HomeLayer {
   updateZoom(zoom: number) {
     this.homeNodes.forEach((node) => {
       const selected = node.root.label === this.selectedChildId;
-      node.plaque.visible = selected || zoom >= 1.08;
+      node.plaque.visible = selected || zoom >= 1.45;
       node.decor.visible = selected || zoom >= 1.18;
       node.root.alpha = zoom < 0.72 && !selected ? 0.94 : 1;
     });

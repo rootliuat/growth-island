@@ -19,6 +19,7 @@ export class SpiritLayer {
   private elapsed = 0;
   private selectedChildId = "";
   private zoomScale = 1;
+  private zoom = 1;
 
   constructor(
     private readonly layer: Container,
@@ -85,6 +86,7 @@ export class SpiritLayer {
   }
 
   updateZoom(zoom: number) {
+    this.zoom = zoom;
     this.zoomScale = zoom < 0.78 ? 0.78 : zoom < 1.05 ? 0.9 : 1;
     this.nodes.forEach((node, childId) => {
       node.root.visible = this.shouldShowSpirit(childId, node);
@@ -190,7 +192,7 @@ export class SpiritLayer {
   }
 
   private shouldShowBadge(childId: string) {
-    return childId === this.selectedChildId || this.zoomScale >= 0.95;
+    return childId === this.selectedChildId || this.zoom >= 1.45;
   }
 
   private shouldShowSpirit(childId: string, node: SpiritNode) {

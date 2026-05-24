@@ -6,6 +6,7 @@ import type { WorldMapData, WorldSpirit } from "../types";
 export class LabelLayer {
   private readonly regionLabels: Container[] = [];
   private readonly spiritLabels = new Map<string, Container>();
+  private readonly spiritMeta = new Map<string, { rank: number; level: number }>();
 
   constructor(private readonly layer: Container) {
     regions.forEach((region) => {
@@ -39,6 +40,7 @@ export class LabelLayer {
       if (activeIds.has(id)) continue;
       node.destroy({ children: true });
       this.spiritLabels.delete(id);
+      this.spiritMeta.delete(id);
     }
     data.spirits.forEach((spirit) => {
       let node = this.spiritLabels.get(spirit.id);
@@ -50,6 +52,7 @@ export class LabelLayer {
       node.x = spirit.spritePosition.x;
       node.y = spirit.spritePosition.y + 24;
       node.visible = spirit.id === data.selectedChildId;
+      this.spiritMeta.set(spirit.id, { rank: spirit.child.rank, level: spirit.child.level });
       this.updateSpiritLabel(node, spirit);
     });
   }
@@ -62,7 +65,9 @@ export class LabelLayer {
     });
     this.spiritLabels.forEach((label, childId) => {
       const selected = childId === selectedChildId;
-      label.visible = selected || zoom >= 1.15;
+      const meta = this.spiritMeta.get(childId);
+      const priority = !!meta && (meta.rank <= 3 || meta.level >= 6);
+      label.visible = selected || zoom >= 1.48 || (zoom >= 1.22 && priority);
       label.scale.set(zoom >= 1.45 ? 1 : 0.84);
       const bubble = label.getChildByLabel("activity-bubble");
       if (bubble) bubble.visible = selected && zoom >= 1.36;
