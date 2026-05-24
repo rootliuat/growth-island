@@ -333,7 +333,7 @@ export function App() {
             setSelectedChildId(pkPlayer.id);
             setPkPair(null);
           }}
-          onWin={() => addLedger(30, "数学魔法 PK 胜利 +30", "math-pk", pkPlayer.id, "积极阳光")}
+          onWin={(winner) => addLedger(30, "数学魔法 PK 胜利 +30", "math-pk", winner.id, "积极阳光")}
         />
       )}
     </main>
