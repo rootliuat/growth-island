@@ -135,12 +135,22 @@ export class HomeLayer {
             ? palette.sandLight
             : 0xf0dca2;
     const variant = this.variant(home);
+    const padAccent =
+      home.type === "treehouse"
+        ? palette.grassDark
+        : home.type === "pearl"
+          ? palette.oceanDarkLine
+          : home.type === "shell" || home.type === "tent"
+            ? palette.sandInk
+            : home.accent;
     g.ellipse(0, 66, 100, 28).fill({ color: palette.inkShadow, alpha: 0.16 });
+    g.ellipse(0, 58, 96, 28).fill({ color: padAccent, alpha: 0.11 });
     g.ellipse(0, 58, 88, 24).fill({ color: groundColor, alpha: 0.92 }).stroke({
       width: 3,
       color: palette.sandInk,
       alpha: 0.16,
     });
+    g.ellipse(0, 58, 74, 18).stroke({ width: 2, color: padAccent, alpha: 0.2 });
     g.ellipse(0, 50, 62, 14).fill({ color: 0xffffff, alpha: 0.13 });
     g.moveTo(-8, 63).quadraticCurveTo(variant % 2 === 0 ? 10 : -8, 88, variant % 2 === 0 ? 58 : -58, 104);
     g.stroke({ width: 14, color: 0xf7e6aa, alpha: 0.78, cap: "round" });
@@ -149,6 +159,21 @@ export class HomeLayer {
     for (let i = 0; i < 4; i += 1) {
       const side = variant % 2 === 0 ? 1 : -1;
       g.ellipse(side * (22 + i * 16), 73 + i * 8, 9, 4).fill({ color: 0xfff3c8, alpha: 0.62 });
+    }
+    if (home.type === "pearl") {
+      for (let i = -2; i <= 2; i += 1) {
+        g.circle(i * 26, 72 + Math.abs(i) * 3, 5 + (Math.abs(i) % 2) * 2).fill({ color: palette.pearlWhite, alpha: 0.72 });
+      }
+    }
+    if (home.type === "treehouse") {
+      [-55, -36, 50, 68].forEach((x, index) => {
+        g.circle(x, 60 + (index % 2) * 9, 7).fill({ color: index % 2 ? palette.grassMid : palette.grassDark, alpha: 0.72 });
+      });
+    }
+    if (home.type === "shell" || home.type === "tent") {
+      [-58, -30, 48, 70].forEach((x, index) => {
+        g.ellipse(x, 66 + (index % 2) * 8, 9, 4).stroke({ width: 2, color: palette.sandInk, alpha: 0.22 });
+      });
     }
     if (home.level >= 3) {
       const fenceY = 68;
@@ -316,6 +341,8 @@ export class HomeLayer {
   private drawHomePersonalDecor(g: Graphics, home: WorldHome) {
     const variant = this.variant(home);
     g.roundRect(-22, 58, 44, 10, 5).fill({ color: variant % 2 === 0 ? palette.roofRed : home.accent, alpha: 0.58 });
+    g.circle(-22, 63, 4).fill({ color: 0xfff6cf, alpha: 0.74 });
+    g.circle(22, 63, 4).fill({ color: 0xfff6cf, alpha: 0.74 });
     if (home.level >= 2) {
       const leftColor = variant % 3 === 0 ? palette.flowerYellow : palette.flowerPink;
       const rightColor = variant % 3 === 1 ? palette.flowerPink : palette.grassMid;
@@ -331,6 +358,18 @@ export class HomeLayer {
     if (home.level >= 4 && variant % 2 === 1) {
       g.rect(66, 16, 5, 48).fill(palette.woodDark);
       g.circle(68, 10, 12).fill(0xffe79a).stroke({ width: 2, color: 0xfff6d4, alpha: 0.72 });
+    }
+    if (home.level >= 5) {
+      const color = variant % 2 === 0 ? home.accent : palette.accent;
+      g.circle(-55, 38, 6).fill(color);
+      g.circle(55, 38, 6).fill(color);
+      g.moveTo(-62, 44).quadraticCurveTo(0, 24, 62, 44);
+      g.stroke({ width: 3, color, alpha: 0.3, cap: "round" });
+      g.poly([-6, -92, 0, -106, 6, -92, 0, -84]).fill({ color, alpha: 0.78 }).stroke({
+        width: 2,
+        color: 0xfff6cf,
+        alpha: 0.45,
+      });
     }
   }
 

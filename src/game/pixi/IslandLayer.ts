@@ -32,6 +32,7 @@ export class IslandLayer {
     g.poly(top).fill(palette.sandLight);
     g.poly(top).stroke({ width: 14, color: 0xffefbd, alpha: 0.9, join: "round" });
     g.poly(top).stroke({ width: 3, color: palette.sandInk, alpha: 0.2, join: "round" });
+    this.drawIslandStrata(g);
 
     const shelfShapes = [
       [
@@ -77,6 +78,45 @@ export class IslandLayer {
     }
     this.drawCoastFoam(g);
     this.layer.addChild(g);
+  }
+
+  private drawIslandStrata(g: Graphics) {
+    const strata = [
+      [
+        { x: 252, y: 1018 },
+        { x: 438, y: 1090 },
+        { x: 650, y: 1110 },
+      ],
+      [
+        { x: 780, y: 1276 },
+        { x: 1030, y: 1324 },
+        { x: 1320, y: 1320 },
+      ],
+      [
+        { x: 1518, y: 1300 },
+        { x: 1790, y: 1246 },
+        { x: 2012, y: 1124 },
+      ],
+      [
+        { x: 2038, y: 712 },
+        { x: 2130, y: 850 },
+        { x: 2078, y: 1010 },
+      ],
+    ];
+
+    strata.forEach(([start, control, end], index) => {
+      g.moveTo(start.x, start.y);
+      g.quadraticCurveTo(control.x, control.y, end.x, end.y);
+      g.stroke({
+        width: index === 1 ? 8 : 6,
+        color: palette.sandInk,
+        alpha: 0.13,
+        cap: "round",
+      });
+      g.moveTo(start.x + 18, start.y + 18);
+      g.quadraticCurveTo(control.x + 16, control.y + 12, end.x - 20, end.y + 16);
+      g.stroke({ width: 3, color: 0xfff1be, alpha: 0.33, cap: "round" });
+    });
   }
 
   private drawCoastFoam(g: Graphics) {

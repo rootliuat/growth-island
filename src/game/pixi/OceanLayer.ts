@@ -10,6 +10,7 @@ export class OceanLayer {
 
   constructor(private readonly layer: Container) {
     this.drawBase();
+    this.drawLargeWaterRhythm();
     for (let i = 0; i < 76; i += 1) {
       const mark = new Graphics();
       const width = 20 + ((i * 19) % 38);
@@ -51,6 +52,64 @@ export class OceanLayer {
   private drawBase() {
     const g = new Graphics();
     g.rect(0, 0, WORLD_WIDTH, WORLD_HEIGHT).fill(palette.oceanBase);
+    this.layer.addChild(g);
+  }
+
+  private drawLargeWaterRhythm() {
+    const g = new Graphics();
+    const ribbons = [
+      [
+        { x: 170, y: 364 },
+        { x: 430, y: 240 },
+        { x: 760, y: 214 },
+      ],
+      [
+        { x: 1530, y: 252 },
+        { x: 1840, y: 250 },
+        { x: 2175, y: 420 },
+      ],
+      [
+        { x: 2135, y: 910 },
+        { x: 2030, y: 1168 },
+        { x: 1702, y: 1325 },
+      ],
+      [
+        { x: 650, y: 1358 },
+        { x: 1015, y: 1430 },
+        { x: 1422, y: 1394 },
+      ],
+      [
+        { x: 56, y: 1030 },
+        { x: 146, y: 1230 },
+        { x: 380, y: 1374 },
+      ],
+    ];
+
+    ribbons.forEach(([start, control, end], index) => {
+      g.moveTo(start.x, start.y);
+      g.quadraticCurveTo(control.x, control.y, end.x, end.y);
+      g.stroke({ width: 18, color: palette.oceanDarkLine, alpha: 0.07, cap: "round" });
+      g.moveTo(start.x + 18, start.y + 16);
+      g.quadraticCurveTo(control.x + 22, control.y + 10, end.x - 18, end.y + 14);
+      g.stroke({ width: 5, color: palette.oceanLightLine, alpha: 0.2, cap: "round" });
+      if (index % 2 === 0) {
+        g.moveTo(start.x - 24, start.y + 52);
+        g.quadraticCurveTo(control.x - 12, control.y + 44, end.x - 44, end.y + 46);
+        g.stroke({ width: 3, color: palette.oceanLightLine, alpha: 0.14, cap: "round" });
+      }
+    });
+
+    for (let i = 0; i < 32; i += 1) {
+      const x = (i * 173 + 94) % WORLD_WIDTH;
+      const y = (i * 251 + 116) % WORLD_HEIGHT;
+      const size = 10 + (i % 5) * 4;
+      g.ellipse(x, y, size, size * 0.38).stroke({
+        width: 2,
+        color: i % 3 === 0 ? palette.oceanDarkLine : palette.oceanLightLine,
+        alpha: i % 3 === 0 ? 0.08 : 0.13,
+      });
+    }
+
     this.layer.addChild(g);
   }
 

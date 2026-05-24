@@ -1865,7 +1865,7 @@ button {
 }
 
 .game-layout {
-  grid-template-columns: minmax(820px, 1fr) 390px;
+  grid-template-columns: minmax(820px, 1fr) clamp(330px, 22vw, 390px);
   gap: 12px;
 }
 
@@ -1893,6 +1893,7 @@ button {
 .hud-rail {
   gap: 10px;
   padding-right: 0;
+  min-width: 0;
 }
 
 .spirit-card,
@@ -2249,7 +2250,7 @@ button {
   }
 
   .game-layout {
-    grid-template-columns: minmax(780px, 1fr) 390px;
+    grid-template-columns: minmax(780px, 1fr) clamp(322px, 23vw, 370px);
   }
 
   .spirit-card {
@@ -2838,6 +2839,16 @@ button {
 .quest-actions button {
   border-radius: 16px;
   background: #2c8f99;
+  gap: 4px;
+  padding: 0 6px;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.quest-actions button svg {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
 }
 
 .quest-actions button:nth-child(2) {
