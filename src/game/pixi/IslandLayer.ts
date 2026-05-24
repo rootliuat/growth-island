@@ -12,6 +12,9 @@ export class IslandLayer {
     const top = flatten(islandPolygon);
 
     const g = new Graphics();
+    g.poly(top).stroke({ width: 54, color: palette.oceanDarkLine, alpha: 0.12, join: "round" });
+    g.poly(top).stroke({ width: 34, color: palette.oceanLightLine, alpha: 0.24, join: "round" });
+    g.poly(top).stroke({ width: 18, color: 0xfff6cf, alpha: 0.2, join: "round" });
     g.ellipse(1215, 845, 1045, 545).fill({ color: palette.inkShadow, alpha: 0.14 });
     for (let i = 0; i < islandPolygon.length; i += 1) {
       const current = islandPolygon[i];
@@ -72,6 +75,40 @@ export class IslandLayer {
       g.quadraticCurveTo(midX, midY + 30, next.x - dx * 0.18, next.y - dy * 0.18 + 18);
       g.stroke({ width: 4, color: palette.sandInk, alpha: 0.18, cap: "round" });
     }
+    this.drawCoastFoam(g);
     this.layer.addChild(g);
+  }
+
+  private drawCoastFoam(g: Graphics) {
+    const foamLines = [
+      [
+        { x: 238, y: 1110 },
+        { x: 358, y: 1172 },
+        { x: 520, y: 1188 },
+      ],
+      [
+        { x: 840, y: 1320 },
+        { x: 1010, y: 1368 },
+        { x: 1210, y: 1354 },
+      ],
+      [
+        { x: 1538, y: 1326 },
+        { x: 1736, y: 1288 },
+        { x: 1954, y: 1198 },
+      ],
+      [
+        { x: 2076, y: 566 },
+        { x: 2134, y: 704 },
+        { x: 2094, y: 838 },
+      ],
+    ];
+    foamLines.forEach(([start, control, end]) => {
+      g.moveTo(start.x, start.y);
+      g.quadraticCurveTo(control.x, control.y, end.x, end.y);
+      g.stroke({ width: 6, color: 0xfff6cf, alpha: 0.32, cap: "round" });
+      g.moveTo(start.x + 20, start.y + 20);
+      g.quadraticCurveTo(control.x + 12, control.y + 12, end.x - 24, end.y + 12);
+      g.stroke({ width: 3, color: palette.oceanLightLine, alpha: 0.3, cap: "round" });
+    });
   }
 }
