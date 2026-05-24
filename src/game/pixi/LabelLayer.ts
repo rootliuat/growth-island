@@ -195,23 +195,33 @@ export class LabelLayer {
     const bubble = node.getChildByLabel("activity-bubble") as Container | undefined;
     if (text) text.text = spirit.child.name;
     if (bg) {
+      const width = Math.max(72, Math.min(126, (text?.width ?? 56) + 34));
       bg.clear();
-      bg.roundRect(-42, -13, 84, 26, 13).fill(0xfff6d7).stroke({
+      bg.ellipse(0, 14, width * 0.36, 7).fill({ color: palette.inkShadow, alpha: 0.1 });
+      bg.roundRect(-width / 2, -15, width, 29, 14).fill(0xfff6d7).stroke({
         width: 2,
         color: spirit.accent,
         alpha: 0.32,
       });
+      bg.circle(-width / 2 + 13, -1, 3).fill({ color: spirit.accent, alpha: 0.58 });
+      bg.circle(width / 2 - 13, -1, 3).fill({ color: spirit.accent, alpha: 0.58 });
     }
     const bubbleText = bubble?.getChildByLabel("bubble-text") as Text | undefined;
     const bubbleBg = bubble?.getChildByLabel("bubble-bg") as Graphics | undefined;
     if (bubbleText && bubbleBg) {
       const note = spirit.lastActivity ? spirit.lastActivity.slice(0, 14) : "今天也在成长";
       bubbleText.text = note;
+      const width = Math.max(118, Math.min(184, bubbleText.width + 32));
       bubbleBg.clear();
-      bubbleBg.roundRect(-68, -13, 136, 26, 13).fill(0xf4f1e6).stroke({
+      bubbleBg.roundRect(-width / 2, -14, width, 28, 13).fill(0xf4f1e6).stroke({
         width: 2,
         color: spirit.accent,
         alpha: 0.18,
+      });
+      bubbleBg.poly([-8, -14, 0, -22, 8, -14]).fill(0xf4f1e6).stroke({
+        width: 2,
+        color: spirit.accent,
+        alpha: 0.12,
       });
     }
   }

@@ -2,7 +2,7 @@ import { Container, Graphics, Text, Ticker } from "pixi.js";
 import { regions } from "../regionConfig";
 import { cameraConfig } from "../cameraConfig";
 import { palette } from "../artDirection";
-import type { RegionId, WorldPoint } from "../types";
+import type { MapRegion, RegionId, WorldPoint } from "../types";
 import { drawOrganicPolygon, flatten } from "./drawing";
 
 interface RegionNode {
@@ -51,7 +51,7 @@ export class RegionLayer {
       });
       highlight.visible = false;
 
-      const banner = this.createRegionBanner(region.name, region.accent);
+      const banner = this.createRegionBanner(region);
       banner.x = region.center.x;
       banner.y = region.center.y - Math.min(120, region.radiusY * 0.42);
       banner.visible = false;
@@ -109,19 +109,84 @@ export class RegionLayer {
     }));
   }
 
-  private createRegionBanner(name: string, accent: number) {
+  private createRegionBanner(region: MapRegion) {
     const banner = new Container();
-    const width = Math.max(170, name.length * 22 + 40);
+    const width = Math.max(226, region.name.length * 24 + 58);
     const board = new Graphics();
-    board.roundRect(-width / 2, -22, width, 44, 14).fill(0xfff6d7).stroke({ width: 4, color: accent, alpha: 0.48 });
-    board.rect(-5, 18, 10, 40).fill(palette.woodDark);
+    board.ellipse(0, 36, width * 0.42, 14).fill({ color: palette.inkShadow, alpha: 0.13 });
+    board.rect(-7, 20, 14, 54).fill(palette.woodDark);
+    board.roundRect(-width / 2, -33, width, 58, 16).fill(0xfff6d7).stroke({ width: 5, color: region.accent, alpha: 0.54 });
+    board.roundRect(-width / 2 + 10, -24, width - 20, 38, 12).fill(0xffedb7).stroke({ width: 2, color: 0xffffff, alpha: 0.46 });
+    board.circle(-width / 2 + 22, -4, 6).fill(region.accent);
+    board.circle(width / 2 - 22, -4, 6).fill(region.accent);
+    this.drawBannerEmblem(board, region.id, -width / 2 + 36, -4, region.accent);
     const text = new Text({
-      text: `进入 ${name}`,
-      style: { fontFamily: "Microsoft YaHei, PingFang SC", fontSize: 18, fontWeight: "900", fill: palette.textMain },
+      text: region.name,
+      style: { fontFamily: "Microsoft YaHei, PingFang SC", fontSize: 20, fontWeight: "900", fill: palette.textMain },
     });
     text.anchor.set(0.5);
-    banner.addChild(board, text);
+    text.x = 12;
+    text.y = -4;
+    const tag = new Text({
+      text: this.regionTagline(region.id),
+      style: { fontFamily: "Microsoft YaHei, PingFang SC", fontSize: 12, fontWeight: "800", fill: palette.textSubtle },
+    });
+    tag.anchor.set(0.5);
+    tag.x = 12;
+    tag.y = 18;
+    banner.addChild(board, text, tag);
     return banner;
+  }
+
+  private regionTagline(regionId: RegionId) {
+    const taglines: Record<RegionId, string> = {
+      "growth-plaza": "XP 光点汇聚",
+      mangrove: "树屋与木桥",
+      "shell-bay": "贝壳屋社区",
+      "pearl-bay": "珍珠水湾",
+      "sun-town": "花园小镇",
+      "math-arena": "数学魔法 PK",
+      "old-street": "德育任务街区",
+    };
+    return taglines[regionId];
+  }
+
+  private drawBannerEmblem(g: Graphics, regionId: RegionId, x: number, y: number, color: number) {
+    g.circle(x, y, 15).fill({ color, alpha: 0.84 }).stroke({ width: 3, color: 0xfff6d7, alpha: 0.7 });
+    if (regionId === "growth-plaza") {
+      g.rect(x - 2, y - 7, 4, 15).fill(0xfff6d7);
+      g.circle(x - 7, y - 8, 6).fill(0xfff6d7);
+      g.circle(x + 7, y - 8, 6).fill(0xfff6d7);
+      return;
+    }
+    if (regionId === "math-arena") {
+      g.roundRect(x - 9, y - 2, 18, 4, 2).fill(0xfff6d7);
+      g.roundRect(x - 2, y - 9, 4, 18, 2).fill(0xfff6d7);
+      return;
+    }
+    if (regionId === "pearl-bay") {
+      g.circle(x, y, 8).fill(0xfff6d7);
+      g.circle(x - 3, y - 3, 3).fill(0xffffff);
+      return;
+    }
+    if (regionId === "shell-bay") {
+      g.moveTo(x - 9, y + 4);
+      g.arc(x, y + 4, 10, Math.PI, 0).stroke({ width: 3, color: 0xfff6d7, alpha: 0.9 });
+      return;
+    }
+    if (regionId === "mangrove") {
+      g.rect(x - 2, y - 2, 4, 12).fill(0xfff6d7);
+      g.circle(x - 6, y - 5, 6).fill(0xfff6d7);
+      g.circle(x + 5, y - 8, 7).fill(0xfff6d7);
+      return;
+    }
+    if (regionId === "sun-town") {
+      g.poly([x - 9, y + 3, x, y - 9, x + 9, y + 3]).fill(0xfff6d7);
+      g.roundRect(x - 7, y + 3, 14, 9, 3).fill(0xfff6d7);
+      return;
+    }
+    g.rect(x - 9, y - 7, 18, 14).fill(0xfff6d7);
+    g.poly([x - 12, y - 7, x, y - 16, x + 12, y - 7]).fill(0xfff6d7);
   }
 
   private drawTerrainDetails(g: Graphics, regionId: RegionId) {
