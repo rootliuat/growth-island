@@ -1,5 +1,18 @@
 import { forwardRef, lazy, Suspense, useImperativeHandle, useMemo, useRef, useState, type CSSProperties } from "react";
-import { CircleDot, Home, Landmark, Leaf, Shell, Sparkles, Sun, Swords, TreePine, type LucideIcon } from "lucide-react";
+import {
+  CircleDot,
+  Crosshair,
+  Home,
+  Landmark,
+  Leaf,
+  MessageCircle,
+  Shell,
+  Sparkles,
+  Sun,
+  Swords,
+  TreePine,
+  type LucideIcon,
+} from "lucide-react";
 import type { PixiWorldMapHandle } from "./PixiWorldMap";
 import { regions } from "../../game/regionConfig";
 import type { RegionId } from "../../game/types";
@@ -116,6 +129,29 @@ export const WorldMapContainer = forwardRef<PixiWorldMapHandle, WorldMapContaine
           })}
         </div>
       </nav>
+      {selectedChild && (
+        <div className="map-companion-actions" style={{ "--focus-accent": selectedSpirit?.accent ?? "#59B97C" } as CSSProperties}>
+          <span className="companion-action-kicker">
+            <Sparkles size={15} />
+            家门口互动
+          </span>
+          <strong>{selectedChild.petName}</strong>
+          <div>
+            <button type="button" disabled={!props.onOpenDialogue} onClick={props.onOpenDialogue}>
+              <MessageCircle size={18} />
+              对话
+            </button>
+            <button type="button" disabled={!props.onOpenPk} onClick={props.onOpenPk}>
+              <Swords size={18} />
+              PK
+            </button>
+            <button type="button" onClick={() => pixiMapRef.current?.focusSelected()}>
+              <Crosshair size={18} />
+              家园
+            </button>
+          </div>
+        </div>
+      )}
       <Suspense
         fallback={
           <div className="pixi-world-host map-loading" aria-label="成长岛地图加载中">
