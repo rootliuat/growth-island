@@ -1,6 +1,6 @@
 import { ChevronDown, ChevronUp, Search } from "lucide-react";
 import type { CSSProperties } from "react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { ChildWithProgress, SpiritDefinition } from "../../types";
 import { getSpiritAsset } from "../../domain/spiritAssets";
 
@@ -14,6 +14,7 @@ interface SpiritDockProps {
 const regionFilters = ["全部", "红树林", "贝壳湾", "珍珠湾", "小镇", "老街", "竞技场"];
 
 export function SpiritDock({ childrenWithProgress, spiritsById, selectedChildId, onSelectChild }: SpiritDockProps) {
+  const dockScrollRef = useRef<HTMLDivElement | null>(null);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("全部");
   const [collapsed, setCollapsed] = useState(false);
@@ -27,6 +28,19 @@ export function SpiritDock({ childrenWithProgress, spiritsById, selectedChildId,
       return matchText && matchRegion;
     });
   }, [childrenWithProgress, query, filter]);
+  const selectedIsVisible = filtered.some((child) => child.id === selectedChildId);
+
+  useEffect(() => {
+    if (selectedIsVisible) return;
+    if (query.trim()) setQuery("");
+    if (filter !== regionFilters[0]) setFilter(regionFilters[0]);
+  }, [filter, query, selectedChildId, selectedIsVisible]);
+
+  useEffect(() => {
+    if (collapsed) return;
+    const activeCard = dockScrollRef.current?.querySelector<HTMLButtonElement>(".dock-spirit.active");
+    activeCard?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+  }, [collapsed, filtered, selectedChildId]);
 
   return (
     <section className={collapsed ? "spirit-dock collapsed" : "spirit-dock"}>
@@ -54,7 +68,7 @@ export function SpiritDock({ childrenWithProgress, spiritsById, selectedChildId,
         </div>
       </div>
       {collapsed && <div className="dock-selected-summary">{selectedChild.petName}</div>}
-      <div className="dock-scroll">
+      <div className="dock-scroll" ref={dockScrollRef}>
         {filtered.map((child) => {
           const spirit = spiritsById.get(child.spiritId);
           const asset = spirit ? getSpiritAsset(spirit, child.state) : undefined;
@@ -62,6 +76,7 @@ export function SpiritDock({ childrenWithProgress, spiritsById, selectedChildId,
             <button
               key={child.id}
               className={child.id === selectedChildId ? "dock-spirit active" : "dock-spirit"}
+              aria-current={child.id === selectedChildId ? "true" : undefined}
               onClick={() => onSelectChild(child.id)}
             >
               <span className="dock-avatar" style={{ "--dock-accent": spirit?.accent ?? "#6ebf8b" } as CSSProperties}>
