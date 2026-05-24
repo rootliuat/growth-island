@@ -12,7 +12,7 @@ import { initialChildren } from "./data/classroom";
 import { spirits } from "./data/spirits";
 import { evaluateMoralText } from "./domain/moralAgent";
 import { enrichChildren, makeLedgerRecord } from "./domain/progression";
-import { getSpiritAsset } from "./domain/spiritAssets";
+import { getSpiritAsset, loadSpiritAsset } from "./domain/spiritAssets";
 import {
   approveMoralReview,
   createLedgerRecord,
@@ -22,7 +22,15 @@ import {
   rejectMoralReview,
   undoLedgerRecord,
 } from "./services/classroomApi";
-import type { ChildProfile, ClassroomSnapshot, LedgerRecord, MoralEvaluationResult, MoralReviewItem } from "./types";
+import type {
+  ChildProfile,
+  ChildWithProgress,
+  ClassroomSnapshot,
+  LedgerRecord,
+  MoralEvaluationResult,
+  MoralReviewItem,
+  SpiritDefinition,
+} from "./types";
 
 type SyncStatus = "connecting" | "online" | "saving" | "offline";
 
@@ -53,12 +61,16 @@ export function App() {
   const [pkPair, setPkPair] = useState<{ playerId: string; opponentId: string } | null>(null);
   const [lastEvaluation, setLastEvaluation] = useState<MoralEvaluationResult | undefined>();
   const [syncStatus, setSyncStatus] = useState<SyncStatus>("connecting");
+  const [assetVersion, setAssetVersion] = useState(0);
 
   const spiritsById = useMemo(() => new Map(spirits.map((spirit) => [spirit.id, spirit])), []);
   const childrenWithProgress = useMemo(() => enrichChildren(children, ledger), [children, ledger]);
   const selectedChild = childrenWithProgress.find((child) => child.id === selectedChildId) ?? childrenWithProgress[0];
   const selectedSpirit = spiritsById.get(selectedChild.spiritId) ?? spirits[0];
-  const selectedSpiritAsset = getSpiritAsset(selectedSpirit, selectedChild.state);
+  const selectedSpiritAsset = useMemo(
+    () => getSpiritAsset(selectedSpirit, selectedChild.state),
+    [assetVersion, selectedChild.state, selectedSpirit],
+  );
   const allRecentRecords = useMemo(
     () =>
       [...ledger]
@@ -107,6 +119,24 @@ export function App() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const assetTargets = new Map<string, { spirit: SpiritDefinition; state: ChildWithProgress["state"] }>();
+    childrenWithProgress.forEach((child) => {
+      const spirit = spiritsById.get(child.spiritId);
+      if (!spirit) return;
+      assetTargets.set(`${spirit.id}:${child.state}`, { spirit, state: child.state });
+    });
+
+    Promise.all([...assetTargets.values()].map(({ spirit, state }) => loadSpiritAsset(spirit, state))).then((loaded) => {
+      if (!cancelled && loaded.some(Boolean)) setAssetVersion((current) => current + 1);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [childrenWithProgress, spiritsById]);
 
   const commitLedger = (input: Omit<LedgerRecord, "id" | "createdAt">) => {
     if (syncStatus === "offline") {
@@ -257,6 +287,7 @@ export function App() {
           spiritsById={spiritsById}
           selectedChildId={selectedChild.id}
           recentLedger={allRecentRecords}
+          assetVersion={assetVersion}
           onSelectChild={setSelectedChildId}
           onOpenDialogue={() => setDialogueOpen(true)}
           onOpenPk={() => setPkPair({ playerId: selectedChild.id, opponentId: opponent.id })}

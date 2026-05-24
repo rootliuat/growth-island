@@ -15,13 +15,14 @@ interface PixiWorldMapProps {
   spiritsById: Map<string, SpiritDefinition>;
   selectedChildId: string;
   recentLedger: LedgerRecord[];
+  assetVersion: number;
   onSelectChild: (childId: string) => void;
   onOpenDialogue?: () => void;
   onOpenPk?: () => void;
 }
 
 export const PixiWorldMap = forwardRef<PixiWorldMapHandle, PixiWorldMapProps>(function PixiWorldMap(
-  { childrenWithProgress, spiritsById, selectedChildId, recentLedger, onSelectChild, onOpenDialogue, onOpenPk },
+  { childrenWithProgress, spiritsById, selectedChildId, recentLedger, assetVersion, onSelectChild, onOpenDialogue, onOpenPk },
   ref,
 ) {
   const hostRef = useRef<HTMLDivElement | null>(null);
@@ -39,7 +40,7 @@ export const PixiWorldMap = forwardRef<PixiWorldMapHandle, PixiWorldMapProps>(fu
 
   const mapData = useMemo(
     () => buildWorldMapData({ childrenWithProgress, spiritsById, selectedChildId, recentLedger }),
-    [childrenWithProgress, spiritsById, selectedChildId, recentLedger],
+    [assetVersion, childrenWithProgress, spiritsById, selectedChildId, recentLedger],
   );
 
   useImperativeHandle(ref, () => ({

@@ -8,6 +8,7 @@ interface WorldMapContainerProps {
   spiritsById: Map<string, SpiritDefinition>;
   selectedChildId: string;
   recentLedger: LedgerRecord[];
+  assetVersion: number;
   onSelectChild: (childId: string) => void;
   onOpenDialogue?: () => void;
   onOpenPk?: () => void;
