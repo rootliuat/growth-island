@@ -3,6 +3,13 @@ import type { WorldPoint } from "./types";
 export const WORLD_WIDTH = 2400;
 export const WORLD_HEIGHT = 1500;
 
+export const mapOverviewBounds = {
+  x: 154,
+  y: 170,
+  width: 2056,
+  height: 1255,
+};
+
 export const growthTreePosition: WorldPoint = { x: 1210, y: 760 };
 
 export const islandPolygon: WorldPoint[] = [

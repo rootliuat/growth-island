@@ -2,12 +2,14 @@ import { Ticker } from "pixi.js";
 import { Viewport } from "pixi-viewport";
 import type { Application } from "pixi.js";
 import { cameraConfig } from "../cameraConfig";
-import { WORLD_HEIGHT, WORLD_WIDTH } from "../mapConfig";
+import { mapOverviewBounds, WORLD_HEIGHT, WORLD_WIDTH } from "../mapConfig";
 import { clamp, easeOutCubic, lerp } from "../easing";
 import type { CameraTarget } from "../types";
 
 export class CameraController {
   readonly viewport: Viewport;
+  private screenWidth: number;
+  private screenHeight: number;
   private animation?: {
     fromX: number;
     fromY: number;
@@ -17,7 +19,9 @@ export class CameraController {
     duration: number;
   };
 
-  constructor(private readonly app: Application) {
+  constructor(app: Application) {
+    this.screenWidth = app.screen.width;
+    this.screenHeight = app.screen.height;
     this.viewport = new Viewport({
       screenWidth: app.screen.width,
       screenHeight: app.screen.height,
@@ -36,6 +40,8 @@ export class CameraController {
   }
 
   resize(width: number, height: number) {
+    this.screenWidth = width;
+    this.screenHeight = height;
     this.viewport.resize(width, height, WORLD_WIDTH, WORLD_HEIGHT);
     this.viewport.clamp({ direction: "all", underflow: "center" });
   }
@@ -45,12 +51,12 @@ export class CameraController {
   }
 
   fullIslandTarget(): CameraTarget {
-    const horizontalZoom = (this.app.screen.width - 76) / WORLD_WIDTH;
-    const verticalZoom = (this.app.screen.height - 58) / WORLD_HEIGHT;
+    const horizontalZoom = (this.screenWidth - 76) / mapOverviewBounds.width;
+    const verticalZoom = (this.screenHeight - 58) / mapOverviewBounds.height;
     const fitZoom = Math.min(horizontalZoom, verticalZoom, cameraConfig.fullIslandZoom);
     return {
-      x: WORLD_WIDTH / 2,
-      y: WORLD_HEIGHT / 2,
+      x: mapOverviewBounds.x + mapOverviewBounds.width / 2,
+      y: mapOverviewBounds.y + mapOverviewBounds.height / 2,
       zoom: clamp(fitZoom, cameraConfig.minZoom, cameraConfig.fullIslandZoom),
     };
   }
