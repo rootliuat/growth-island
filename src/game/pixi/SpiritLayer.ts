@@ -1,4 +1,5 @@
 import { Container, Graphics, Rectangle, Sprite, Text, Ticker } from "pixi.js";
+import { palette } from "../artDirection";
 import { cameraConfig } from "../cameraConfig";
 import { makeSoftShadow, makeSpiritSprite } from "../pixiAssets";
 import type { WorldMapData, WorldSpirit } from "../types";
@@ -8,6 +9,7 @@ interface SpiritNode {
   halo: Graphics;
   body: Container;
   levelBadge: Container;
+  moodDot: Graphics;
 }
 
 export class SpiritLayer {
@@ -39,9 +41,10 @@ export class SpiritLayer {
       }
       node.root.x = spirit.spritePosition.x;
       node.root.y = spirit.spritePosition.y;
-      node.root.scale.set(spirit.id === this.selectedChildId ? 1.12 : 0.92);
+      node.root.scale.set(spirit.id === this.selectedChildId ? 1.1 : 0.88);
       node.halo.visible = spirit.id === this.selectedChildId;
       node.levelBadge.visible = spirit.child.level >= 2;
+      node.moodDot.tint = this.moodTint(spirit.mood);
       const badgeText = node.levelBadge.getChildByLabel("level-text") as Text | undefined;
       if (badgeText) badgeText.text = `Lv.${spirit.child.level}`;
     });
@@ -65,7 +68,7 @@ export class SpiritLayer {
     this.nodes.forEach((node, childId) => {
       const selected = childId === this.selectedChildId;
       const breath = 1 + Math.sin(this.elapsed * 2.2 + node.root.x * 0.004) * 0.028;
-      const targetRoot = selected ? 1.12 : 0.92;
+      const targetRoot = selected ? 1.1 : 0.88;
       const rootScale = node.root.scale.x + (targetRoot - node.root.scale.x) * Math.min(1, ticker.deltaMS / 160);
       node.root.scale.set(rootScale);
       node.body.scale.set(node.body.scale.x + (breath - node.body.scale.x) * 0.08);
@@ -78,7 +81,7 @@ export class SpiritLayer {
     const root = new Container();
     root.eventMode = "static";
     root.cursor = "pointer";
-    root.hitArea = new Rectangle(-54, -104, 108, 130);
+    root.hitArea = new Rectangle(-54, -104, 108, 132);
     root.on("pointertap", () => {
       this.onSelect(spirit.id);
       this.onFocus(spirit.homePosition.x, spirit.homePosition.y + 52, cameraConfig.homeZoom);
@@ -86,17 +89,18 @@ export class SpiritLayer {
     });
 
     const halo = new Graphics();
-    halo.ellipse(0, -34, 58, 34).stroke({ width: 5, color: 0xffe98c, alpha: 0.8 });
-    halo.ellipse(0, -34, 72, 44).stroke({ width: 2, color: 0xffffff, alpha: 0.35 });
+    halo.ellipse(0, -16, 54, 26).fill({ color: palette.accent, alpha: 0.18 });
+    halo.ellipse(0, -28, 64, 38).stroke({ width: 4, color: palette.accent, alpha: 0.72 });
+    halo.ellipse(0, -28, 78, 48).stroke({ width: 2, color: 0xfff7d2, alpha: 0.42 });
     halo.visible = false;
 
     const body = new Container();
-    body.addChild(makeSoftShadow(54, 14, 0.18));
+    body.addChild(makeSoftShadow(52, 13, 0.18));
     const fallback = this.drawFallback(spirit);
     fallback.y = -22;
     body.addChild(fallback);
     if (spirit.imageUrl) {
-      makeSpiritSprite(spirit.imageUrl, spirit.child.state.startsWith("egg") ? 78 : 92).then((sprite: Sprite) => {
+      makeSpiritSprite(spirit.imageUrl, spirit.child.state.startsWith("egg") ? 72 : 84).then((sprite: Sprite) => {
         if (body.destroyed) return;
         sprite.y = 10;
         body.removeChild(fallback);
@@ -106,26 +110,34 @@ export class SpiritLayer {
     }
 
     const levelBadge = new Container();
-    levelBadge.x = 34;
-    levelBadge.y = -78;
-    const badgeBg = new Graphics().roundRect(-24, -12, 48, 24, 12).fill(0xfff1bf).stroke({ width: 2, color: spirit.accent, alpha: 0.58 });
+    levelBadge.x = 32;
+    levelBadge.y = -74;
+    const badgeBg = new Graphics()
+      .circle(0, 0, 20)
+      .fill(0xffe7a8)
+      .stroke({ width: 3, color: spirit.accent, alpha: 0.52 });
     const badgeText = new Text({
       text: `Lv.${spirit.child.level}`,
-      style: { fontFamily: "Georgia, Microsoft YaHei", fontSize: 13, fontWeight: "800", fill: 0x573a25 },
+      style: { fontFamily: "Georgia, Microsoft YaHei", fontSize: 12, fontWeight: "800", fill: 0x573a25 },
     });
     badgeText.label = "level-text";
     badgeText.anchor.set(0.5);
     levelBadge.addChild(badgeBg, badgeText);
 
-    root.addChild(halo, body, levelBadge);
-    return { root, halo, body, levelBadge };
+    const moodDot = new Graphics().circle(0, 0, 6).fill(0xffffff).stroke({ width: 2, color: 0x66513a, alpha: 0.22 });
+    moodDot.x = -38;
+    moodDot.y = -20;
+    moodDot.tint = this.moodTint(spirit.mood);
+
+    root.addChild(halo, body, levelBadge, moodDot);
+    return { root, halo, body, levelBadge, moodDot };
   }
 
   private drawFallback(spirit: WorldSpirit) {
     const g = new Graphics();
     const accent = spirit.accent;
     if (spirit.child.state.startsWith("egg")) {
-      g.ellipse(0, -26, 34, 48).fill(0xfff9dd).stroke({ width: 4, color: accent, alpha: 0.55 });
+      g.ellipse(0, -26, 32, 46).fill(0xfff9dd).stroke({ width: 4, color: accent, alpha: 0.52 });
       g.ellipse(0, -32, 18, 30).fill({ color: accent, alpha: 0.16 });
       if (spirit.child.state === "egg-4") {
         g.circle(-10, -44, 6).fill(0xffffff);
@@ -136,7 +148,7 @@ export class SpiritLayer {
       return g;
     }
 
-    g.ellipse(0, -36, 40, 34).fill(0xfffbef).stroke({ width: 3, color: accent, alpha: 0.55 });
+    g.ellipse(0, -36, 38, 32).fill(0xfffbef).stroke({ width: 3, color: accent, alpha: 0.52 });
     g.circle(-28, -48, 16).fill({ color: accent, alpha: 0.36 });
     g.circle(28, -48, 16).fill({ color: accent, alpha: 0.36 });
     g.ellipse(0, -2, 30, 26).fill({ color: accent, alpha: 0.25 });
@@ -146,5 +158,13 @@ export class SpiritLayer {
     g.circle(13, -42, 4).fill(0x283940);
     if (spirit.child.level >= 6) g.circle(0, -32, 52).stroke({ width: 3, color: 0xffd869, alpha: 0.5 });
     return g;
+  }
+
+  private moodTint(mood: WorldSpirit["mood"]) {
+    if (mood === "happy") return palette.positive;
+    if (mood === "proud") return palette.accent;
+    if (mood === "sad") return palette.negative;
+    if (mood === "sleepy") return 0x90a5b6;
+    return palette.grassMid;
   }
 }

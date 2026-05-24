@@ -1,4 +1,5 @@
 import { Container, Graphics, Ticker } from "pixi.js";
+import { palette } from "../artDirection";
 import { easeOutCubic, lerp } from "../easing";
 import type { WorldPoint } from "../types";
 
@@ -23,7 +24,7 @@ export class XpParticleSystem {
       const negative = delta < 0;
       const node = new Graphics()
         .circle(0, 0, negative ? 5 : 6 + Math.random() * 3)
-        .fill({ color: negative ? 0x8d929a : 0xffdf6d, alpha: negative ? 0.58 : 0.9 });
+        .fill({ color: negative ? 0x8d929a : palette.accent, alpha: negative ? 0.58 : 0.9 });
       node.circle(-1, -1, 2).fill({ color: 0xffffff, alpha: negative ? 0.18 : 0.5 });
       const spread = negative ? 90 : 160;
       const fromJitter = { x: from.x + (Math.random() - 0.5) * 38, y: from.y + (Math.random() - 0.5) * 30 };

@@ -17,6 +17,8 @@ data/*.bak
 .superpowers/
 
 beihai-*.png
+current-frontend-preview.png
+growth-island-*-preview.png
 
 .agents/skills/*
 !.agents/skills/beihai-asset-imagegen/

@@ -25,6 +25,8 @@ export interface MapRegion {
   center: WorldPoint;
   radiusX: number;
   radiusY: number;
+  shape: WorldPoint[];
+  signPosition: WorldPoint;
   color: number;
   accent: number;
   labelZoom: number;

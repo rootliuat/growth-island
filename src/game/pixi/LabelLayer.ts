@@ -1,6 +1,7 @@
 import { Container, Graphics, Text } from "pixi.js";
+import { palette } from "../artDirection";
 import { regions } from "../regionConfig";
-import type { WorldMapData } from "../types";
+import type { WorldMapData, WorldSpirit } from "../types";
 
 export class LabelLayer {
   private readonly regionLabels: Container[] = [];
@@ -9,19 +10,24 @@ export class LabelLayer {
   constructor(private readonly layer: Container) {
     regions.forEach((region) => {
       const node = new Container();
-      node.x = region.center.x;
-      node.y = region.center.y - region.radiusY + 46;
-      const bg = new Graphics().roundRect(-82, -18, 164, 36, 18).fill({ color: 0xfff4ce, alpha: 0.82 }).stroke({
-        width: 2,
+      node.x = region.signPosition.x;
+      node.y = region.signPosition.y;
+      const width = region.name.length > 5 ? 174 : 132;
+      const pole = new Graphics();
+      pole.rect(-4, 16, 8, 52).fill(palette.woodDark);
+      pole.roundRect(-width / 2, -20, width, 38, 10).fill(0xffe4a8).stroke({
+        width: 3,
         color: region.accent,
-        alpha: 0.28,
+        alpha: 0.52,
       });
+      pole.circle(-width / 2 + 14, -1, 3).fill(0xf8f1d5);
+      pole.circle(width / 2 - 14, -1, 3).fill(0xf8f1d5);
       const text = new Text({
         text: region.name,
-        style: { fontFamily: "Microsoft YaHei, PingFang SC", fontSize: 22, fontWeight: "900", fill: 0x3c3327 },
+        style: { fontFamily: "Microsoft YaHei, PingFang SC", fontSize: 20, fontWeight: "900", fill: palette.textMain },
       });
       text.anchor.set(0.5);
-      node.addChild(bg, text);
+      node.addChild(pole, text);
       this.regionLabels.push(node);
       this.layer.addChild(node);
     });
@@ -37,43 +43,84 @@ export class LabelLayer {
     data.spirits.forEach((spirit) => {
       let node = this.spiritLabels.get(spirit.id);
       if (!node) {
-        node = this.createSpiritLabel(spirit.child.name);
+        node = this.createSpiritLabel();
         this.spiritLabels.set(spirit.id, node);
         this.layer.addChild(node);
       }
       node.x = spirit.spritePosition.x;
-      node.y = spirit.spritePosition.y + 22;
+      node.y = spirit.spritePosition.y + 24;
       node.visible = spirit.id === data.selectedChildId;
-      const text = node.getChildByLabel("name") as Text | undefined;
-      if (text) text.text = spirit.child.name;
+      this.updateSpiritLabel(node, spirit);
     });
   }
 
   updateZoom(zoom: number, selectedChildId: string) {
     this.regionLabels.forEach((label) => {
-      label.visible = zoom < 1.25;
-      label.alpha = zoom < 0.7 ? 1 : 0.72;
+      label.visible = zoom < 1.2;
+      label.alpha = zoom < 0.72 ? 1 : 0.76;
+      label.scale.set(zoom < 0.72 ? 1 : 0.9);
     });
     this.spiritLabels.forEach((label, childId) => {
-      label.visible = zoom >= 1.18 || childId === selectedChildId;
-      label.scale.set(zoom >= 1.55 ? 1 : 0.86);
+      const selected = childId === selectedChildId;
+      label.visible = selected || zoom >= 1.15;
+      label.scale.set(zoom >= 1.45 ? 1 : 0.84);
+      const bubble = label.getChildByLabel("activity-bubble");
+      if (bubble) bubble.visible = selected && zoom >= 1.36;
     });
   }
 
-  private createSpiritLabel(name: string) {
+  private createSpiritLabel() {
     const node = new Container();
-    const bg = new Graphics().roundRect(-38, -12, 76, 24, 12).fill({ color: 0xfff8de, alpha: 0.9 }).stroke({
-      width: 2,
-      color: 0xd79e42,
-      alpha: 0.32,
-    });
+    const bg = new Graphics();
+    bg.label = "name-bg";
     const text = new Text({
-      text: name,
-      style: { fontFamily: "Microsoft YaHei, PingFang SC", fontSize: 14, fontWeight: "800", fill: 0x4b3827 },
+      text: "",
+      style: { fontFamily: "Microsoft YaHei, PingFang SC", fontSize: 14, fontWeight: "900", fill: palette.textMain },
     });
     text.label = "name";
     text.anchor.set(0.5);
-    node.addChild(bg, text);
+
+    const bubble = new Container();
+    bubble.label = "activity-bubble";
+    bubble.y = 32;
+    const bubbleBg = new Graphics();
+    bubbleBg.label = "bubble-bg";
+    const bubbleText = new Text({
+      text: "",
+      style: { fontFamily: "Microsoft YaHei, PingFang SC", fontSize: 12, fontWeight: "700", fill: palette.textSubtle },
+    });
+    bubbleText.label = "bubble-text";
+    bubbleText.anchor.set(0.5);
+    bubble.addChild(bubbleBg, bubbleText);
+
+    node.addChild(bg, text, bubble);
     return node;
+  }
+
+  private updateSpiritLabel(node: Container, spirit: WorldSpirit) {
+    const bg = node.getChildByLabel("name-bg") as Graphics | undefined;
+    const text = node.getChildByLabel("name") as Text | undefined;
+    const bubble = node.getChildByLabel("activity-bubble") as Container | undefined;
+    if (text) text.text = spirit.child.name;
+    if (bg) {
+      bg.clear();
+      bg.roundRect(-42, -13, 84, 26, 13).fill(0xfff6d7).stroke({
+        width: 2,
+        color: spirit.accent,
+        alpha: 0.32,
+      });
+    }
+    const bubbleText = bubble?.getChildByLabel("bubble-text") as Text | undefined;
+    const bubbleBg = bubble?.getChildByLabel("bubble-bg") as Graphics | undefined;
+    if (bubbleText && bubbleBg) {
+      const note = spirit.lastActivity ? spirit.lastActivity.slice(0, 14) : "今天也在成长";
+      bubbleText.text = note;
+      bubbleBg.clear();
+      bubbleBg.roundRect(-68, -13, 136, 26, 13).fill(0xf4f1e6).stroke({
+        width: 2,
+        color: spirit.accent,
+        alpha: 0.18,
+      });
+    }
   }
 }
