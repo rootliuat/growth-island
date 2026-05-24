@@ -2,7 +2,7 @@ import { Container, Graphics, Text, Ticker } from "pixi.js";
 import { regions } from "../regionConfig";
 import { cameraConfig } from "../cameraConfig";
 import { palette } from "../artDirection";
-import type { RegionId } from "../types";
+import type { RegionId, WorldPoint } from "../types";
 import { drawOrganicPolygon, flatten } from "./drawing";
 
 interface RegionNode {
@@ -37,6 +37,7 @@ export class RegionLayer {
         strokeAlpha: 0.36,
         strokeWidth: 5,
       });
+      this.drawRegionContour(g, region.shape, region.accent);
       this.drawTerrainDetails(g, region.id);
       g.eventMode = "static";
       g.cursor = "pointer";
@@ -89,6 +90,25 @@ export class RegionLayer {
     node.banner.scale.set(0.96 + Math.min(this.activeElapsed / 420, 1) * 0.04);
   }
 
+  private drawRegionContour(g: Graphics, points: WorldPoint[], accent: number) {
+    const inner = this.scalePolygon(points, 0.94, 0, 6);
+    const innerFine = this.scalePolygon(points, 0.84, 0, 12);
+    g.poly(flatten(inner)).stroke({ width: 6, color: 0xfff6cf, alpha: 0.2, join: "round" });
+    g.poly(flatten(inner)).stroke({ width: 2, color: accent, alpha: 0.2, join: "round" });
+    g.poly(flatten(innerFine)).stroke({ width: 3, color: 0xffffff, alpha: 0.13, join: "round" });
+  }
+
+  private scalePolygon(points: WorldPoint[], factor: number, offsetX: number, offsetY: number) {
+    const center = points.reduce(
+      (sum, point) => ({ x: sum.x + point.x / points.length, y: sum.y + point.y / points.length }),
+      { x: 0, y: 0 },
+    );
+    return points.map((point) => ({
+      x: center.x + (point.x - center.x) * factor + offsetX,
+      y: center.y + (point.y - center.y) * factor + offsetY,
+    }));
+  }
+
   private createRegionBanner(name: string, accent: number) {
     const banner = new Container();
     const width = Math.max(170, name.length * 22 + 40);
@@ -129,6 +149,25 @@ export class RegionLayer {
         g.quadraticCurveTo(x + 28, y - 20, x + 58, y - 6);
         g.stroke({ width: 3, color: palette.grassDark, alpha: 0.3, cap: "round" });
       }
+      [
+        [
+          { x: 310, y: 610 },
+          { x: 450, y: 592 },
+          { x: 590, y: 628 },
+        ],
+        [
+          { x: 716, y: 452 },
+          { x: 836, y: 504 },
+          { x: 946, y: 560 },
+        ],
+      ].forEach(([start, control, end]) => {
+        g.moveTo(start.x, start.y);
+        g.quadraticCurveTo(control.x, control.y, end.x, end.y);
+        g.stroke({ width: 9, color: 0x3f7654, alpha: 0.24, cap: "round" });
+        g.moveTo(start.x + 4, start.y - 5);
+        g.quadraticCurveTo(control.x + 8, control.y - 10, end.x - 8, end.y - 4);
+        g.stroke({ width: 3, color: 0xfff6cf, alpha: 0.16, cap: "round" });
+      });
       return;
     }
 
@@ -141,6 +180,9 @@ export class RegionLayer {
       }
       g.moveTo(270, 1168).quadraticCurveTo(510, 1222, 730, 1185).quadraticCurveTo(878, 1162, 972, 1215);
       g.stroke({ width: 4, color: 0xfff0ba, alpha: 0.54, cap: "round" });
+      for (let i = 0; i < 7; i += 1) {
+        g.circle(382 + i * 72, 918 + (i % 2) * 42, 5).fill({ color: 0xfff6cf, alpha: 0.58 });
+      }
       return;
     }
 
@@ -158,6 +200,11 @@ export class RegionLayer {
       for (let i = 0; i < 7; i += 1) {
         g.circle(1540 + i * 84, 540 + Math.sin(i) * 80, 14 + (i % 3) * 8).fill({ color: palette.pearlWhite, alpha: 0.58 });
       }
+      for (let i = 0; i < 4; i += 1) {
+        const x = 1580 + i * 130;
+        const y = 640 + Math.sin(i * 1.8) * 48;
+        g.ellipse(x, y, 58, 18).stroke({ width: 3, color: palette.oceanLightLine, alpha: 0.28 });
+      }
       return;
     }
 
@@ -167,6 +214,8 @@ export class RegionLayer {
         g.circle(1472 + i * 138, 1033 + (i % 2) * 88, 6).fill(palette.flowerPink);
         g.circle(1502 + i * 138, 1035 + (i % 2) * 88, 6).fill(palette.flowerYellow);
       }
+      g.moveTo(1450, 964).quadraticCurveTo(1660, 1008, 1900, 982).quadraticCurveTo(2028, 974, 2070, 1042);
+      g.stroke({ width: 6, color: palette.townDark, alpha: 0.18, cap: "round" });
       return;
     }
 
@@ -174,10 +223,16 @@ export class RegionLayer {
       g.ellipse(1240, 1160, 230, 76).fill({ color: 0xffefc2, alpha: 0.88 });
       g.ellipse(1240, 1160, 286, 105).stroke({ width: 14, color: palette.arenaDark, alpha: 0.36 });
       g.ellipse(1240, 1160, 176, 48).stroke({ width: 5, color: palette.accent, alpha: 0.75 });
+      for (let i = -3; i <= 3; i += 1) {
+        g.rect(1240 + i * 54 - 18, 1268, 36, 10).fill({ color: palette.arenaDark, alpha: 0.26 });
+      }
       return;
     }
 
     if (regionId === "old-street") {
+      g.roundRect(892, 360, 430, 82, 22).fill({ color: 0xf4c27a, alpha: 0.34 });
+      g.moveTo(820, 488).quadraticCurveTo(1030, 472, 1246, 500).quadraticCurveTo(1340, 512, 1440, 468);
+      g.stroke({ width: 7, color: palette.oldStreetDark, alpha: 0.18, cap: "round" });
       for (let i = 0; i < 5; i += 1) {
         g.roundRect(840 + i * 126, 405 + (i % 2) * 42, 98, 42, 8).fill({ color: palette.wallLight, alpha: 0.48 });
       }
