@@ -19,17 +19,18 @@ export function ReviewQueue({ reviews, childrenWithProgress, onApprove, onReject
         {reviews.length > 0 && <em>{reviews.length}</em>}
       </div>
       {reviews.length === 0 ? (
-        <p className="empty-text">没有待复核记录</p>
+        <p className="empty-text review-empty">没有待复核记录</p>
       ) : (
         reviews.slice(0, 3).map((review) => (
           <article className="review-row" key={review.id}>
             <div>
               <strong>{childNames.get(review.childId) ?? "幼儿"}</strong>
-              <span>
-                {review.result.category ?? "未分类"} · {review.result.xpDelta > 0 ? "+" : ""}
-                {review.result.xpDelta} XP · {Math.round(review.result.confidence * 100)}%
-              </span>
+              <span>{Math.round(review.result.confidence * 100)}%</span>
             </div>
+            <em>
+              {review.result.category ?? "未分类"} · {review.result.xpDelta > 0 ? "+" : ""}
+              {review.result.xpDelta} XP
+            </em>
             <p>{review.transcript || review.result.reasonForTeacher}</p>
             <div className="review-actions">
               <button onClick={() => onApprove(review.id)}>
