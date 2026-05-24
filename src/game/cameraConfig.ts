@@ -1,5 +1,5 @@
 export const cameraConfig = {
-  minZoom: 0.48,
+  minZoom: 0.34,
   maxZoom: 1.75,
   fullIslandZoom: 0.48,
   communityZoom: 1,

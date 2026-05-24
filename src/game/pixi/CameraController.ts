@@ -41,7 +41,18 @@ export class CameraController {
   }
 
   fitWorld() {
-    this.focus({ x: WORLD_WIDTH / 2, y: WORLD_HEIGHT / 2, zoom: cameraConfig.fullIslandZoom }, 720);
+    this.focus(this.fullIslandTarget(), 720);
+  }
+
+  fullIslandTarget(): CameraTarget {
+    const horizontalZoom = (this.app.screen.width - 76) / WORLD_WIDTH;
+    const verticalZoom = (this.app.screen.height - 58) / WORLD_HEIGHT;
+    const fitZoom = Math.min(horizontalZoom, verticalZoom, cameraConfig.fullIslandZoom);
+    return {
+      x: WORLD_WIDTH / 2,
+      y: WORLD_HEIGHT / 2,
+      zoom: clamp(fitZoom, cameraConfig.minZoom, cameraConfig.fullIslandZoom),
+    };
   }
 
   focus(target: CameraTarget, duration = cameraConfig.focusDurationMs) {

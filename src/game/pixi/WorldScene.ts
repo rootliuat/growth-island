@@ -96,7 +96,7 @@ export class WorldScene {
   }
 
   focusFullIsland() {
-    this.camera.focus({ x: WORLD_WIDTH / 2, y: WORLD_HEIGHT / 2, zoom: cameraConfig.fullIslandZoom }, 720);
+    this.camera.focus(this.camera.fullIslandTarget(), 720);
   }
 
   focusSelected() {

@@ -9,15 +9,23 @@ export class IslandLayer {
   }
 
   private draw() {
-    const shadow = islandPolygon.flatMap((point) => [point.x + 34, point.y + 46]);
-    const deepSide = islandPolygon.flatMap((point) => [point.x + 18, point.y + 52]);
-    const thickness = islandPolygon.flatMap((point) => [point.x + 8, point.y + 28]);
     const top = flatten(islandPolygon);
 
     const g = new Graphics();
-    g.poly(shadow).fill({ color: palette.inkShadow, alpha: 0.22 });
-    g.poly(deepSide).fill({ color: palette.sandInk, alpha: 0.74 });
-    g.poly(thickness).fill(palette.sandSide);
+    g.ellipse(1215, 845, 1045, 545).fill({ color: palette.inkShadow, alpha: 0.14 });
+    for (let i = 0; i < islandPolygon.length; i += 1) {
+      const current = islandPolygon[i];
+      const next = islandPolygon[(i + 1) % islandPolygon.length];
+      const midX = (current.x + next.x) / 2;
+      const midY = (current.y + next.y) / 2;
+      const visibleSide = midY >= 920 || (midX > 1940 && midY >= 610);
+      if (!visibleSide) continue;
+      g.poly([current.x + 16, current.y + 42, next.x + 16, next.y + 42, next.x + 8, next.y + 28, current.x + 8, current.y + 28]).fill({
+        color: palette.sandInk,
+        alpha: 0.55,
+      });
+      g.poly([current.x, current.y, next.x, next.y, next.x + 8, next.y + 28, current.x + 8, current.y + 28]).fill(palette.sandSide);
+    }
     g.poly(top).fill(palette.sandLight);
     g.poly(top).stroke({ width: 14, color: 0xffefbd, alpha: 0.9, join: "round" });
     g.poly(top).stroke({ width: 3, color: palette.sandInk, alpha: 0.2, join: "round" });
@@ -57,8 +65,11 @@ export class IslandLayer {
       const next = islandPolygon[(i + 1) % islandPolygon.length];
       const midX = (current.x + next.x) / 2;
       const midY = (current.y + next.y) / 2;
-      g.moveTo(current.x, current.y + 16);
-      g.quadraticCurveTo(midX, midY + 34, next.x, next.y + 16);
+      const dx = next.x - current.x;
+      const dy = next.y - current.y;
+      if (midY < 930 || Math.abs(dy) > Math.abs(dx) * 1.8) continue;
+      g.moveTo(current.x + dx * 0.18, current.y + dy * 0.18 + 18);
+      g.quadraticCurveTo(midX, midY + 30, next.x - dx * 0.18, next.y - dy * 0.18 + 18);
       g.stroke({ width: 4, color: palette.sandInk, alpha: 0.18, cap: "round" });
     }
     this.layer.addChild(g);

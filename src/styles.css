@@ -1141,6 +1141,7 @@ button {
 .spirit-card,
 .growth-log-panel,
 .teacher-action-panel {
+  flex: 0 0 auto;
   border: 1px solid rgba(255, 236, 177, 0.55);
   border-radius: 24px;
   background: #f4f1e6;
@@ -1952,4 +1953,142 @@ button {
   max-width: 60px;
   max-height: 60px;
   filter: drop-shadow(0 6px 5px rgba(53, 82, 74, 0.18));
+}
+
+@media (max-height: 820px) {
+  .app-shell {
+    grid-template-rows: 64px minmax(0, 1fr) 112px;
+    gap: 8px;
+    padding: 10px 12px;
+  }
+
+  .game-topbar {
+    min-height: 64px;
+    padding: 6px 12px;
+  }
+
+  .game-brand-mark {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    font-size: 29px;
+  }
+
+  .game-brand h1 {
+    font-size: 24px;
+  }
+
+  .game-pill,
+  .teacher-toggle {
+    min-height: 38px;
+    padding: 0 12px;
+  }
+
+  .zoom-controls button {
+    width: 36px;
+    min-height: 36px;
+  }
+
+  .game-layout {
+    grid-template-columns: minmax(780px, 1fr) 390px;
+  }
+
+  .spirit-card {
+    padding: 12px;
+  }
+
+  .spirit-card::before {
+    inset: 8px;
+  }
+
+  .spirit-portrait {
+    height: 112px;
+    margin-top: 2px;
+  }
+
+  .portrait-ring {
+    width: 140px;
+    height: 92px;
+    border-width: 3px;
+  }
+
+  .spirit-portrait img {
+    max-width: 124px;
+    max-height: 116px;
+  }
+
+  .spirit-nameplate h2 {
+    font-size: 20px;
+  }
+
+  .spirit-nameplate p {
+    margin-top: 2px;
+    font-size: 13px;
+  }
+
+  .xp-gem {
+    margin-top: 8px;
+    padding: 8px 10px;
+    border-radius: 14px;
+  }
+
+  .xp-track {
+    height: 10px;
+    margin: 6px 0 4px;
+  }
+
+  .xp-gem p {
+    font-size: 13px;
+  }
+
+  .score-actions {
+    gap: 7px;
+    margin-top: 8px;
+  }
+
+  .gain-button,
+  .deduct-button,
+  .quest-actions button {
+    min-height: 36px;
+    border-radius: 12px;
+  }
+
+  .quest-actions {
+    margin-top: 8px;
+  }
+
+  .growth-log-panel,
+  .teacher-action-panel {
+    padding: 10px;
+  }
+
+  .record-row {
+    margin-top: 7px;
+    padding: 7px;
+  }
+
+  .spirit-dock {
+    grid-template-columns: 250px minmax(0, 1fr);
+    padding: 8px;
+  }
+
+  .dock-search {
+    min-height: 34px;
+  }
+
+  .dock-spirit {
+    flex-basis: 86px;
+    min-height: 88px;
+    padding: 6px 6px;
+  }
+
+  .dock-avatar {
+    width: 48px;
+    height: 48px;
+  }
+
+  .dock-avatar img {
+    max-width: 54px;
+    max-height: 54px;
+  }
 }

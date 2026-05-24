@@ -136,6 +136,7 @@ export class RegionLayer {
       for (let i = 0; i < 11; i += 1) {
         const x = 300 + i * 66;
         const y = 1010 + Math.sin(i * 1.7) * 96;
+        g.moveTo(x - 19, y);
         g.arc(x, y, 19, Math.PI, 0).stroke({ width: 3, color: palette.sandInk, alpha: 0.22 });
       }
       g.moveTo(270, 1168).quadraticCurveTo(510, 1222, 730, 1185).quadraticCurveTo(878, 1162, 972, 1215);

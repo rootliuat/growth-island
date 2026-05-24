@@ -1,6 +1,7 @@
 import { Container, Graphics } from "pixi.js";
 import { palette } from "../artDirection";
 import { arenaPosition, mainPath, oldStreetPath, pierPath } from "../mapConfig";
+import type { WorldPoint } from "../types";
 import { drawCurvedPath } from "./drawing";
 
 export class PathLayer {
@@ -9,14 +10,15 @@ export class PathLayer {
   }
 
   private draw() {
+    this.addCurvedPath(mainPath, 46, palette.woodDark, 0.16);
+    this.addCurvedPath(mainPath, 31, 0xffe8ae, 0.95);
+    this.addCurvedPath(mainPath, 7, palette.sandInk, 0.24);
+    this.addCurvedPath(oldStreetPath, 34, palette.oldStreetDark, 0.28);
+    this.addCurvedPath(oldStreetPath, 19, 0xffd996, 0.92);
+    this.addCurvedPath(pierPath, 42, palette.woodDark, 0.58);
+    this.addCurvedPath(pierPath, 19, palette.woodLight, 0.9);
+
     const g = new Graphics();
-    drawCurvedPath(g, mainPath, 46, palette.woodDark, 0.16);
-    drawCurvedPath(g, mainPath, 31, 0xffe8ae, 0.95);
-    drawCurvedPath(g, mainPath, 7, palette.sandInk, 0.24);
-    drawCurvedPath(g, oldStreetPath, 34, palette.oldStreetDark, 0.28);
-    drawCurvedPath(g, oldStreetPath, 19, 0xffd996, 0.92);
-    drawCurvedPath(g, pierPath, 42, palette.woodDark, 0.58);
-    drawCurvedPath(g, pierPath, 19, palette.woodLight, 0.9);
 
     for (let i = 0; i < pierPath.length - 1; i += 1) {
       const p = pierPath[i];
@@ -38,5 +40,11 @@ export class PathLayer {
       );
     }
     this.layer.addChild(g);
+  }
+
+  private addCurvedPath(points: WorldPoint[], width: number, color: number, alpha: number) {
+    const path = new Graphics();
+    drawCurvedPath(path, points, width, color, alpha);
+    this.layer.addChild(path);
   }
 }

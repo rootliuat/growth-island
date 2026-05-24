@@ -138,7 +138,9 @@ export class HomeLayer {
   }
 
   private drawShellHouse(g: Graphics, home: WorldHome) {
+    g.moveTo(-74, 18);
     g.arc(0, 18, 74, Math.PI, 0).fill(0xfff1bf).stroke({ width: 5, color: palette.sandInk, alpha: 0.36 });
+    g.moveTo(-58, 20);
     g.arc(0, 20, 58, Math.PI, 0).stroke({ width: 3, color: palette.shellPink, alpha: 0.66 });
     for (let i = -4; i <= 4; i += 1) {
       g.moveTo(0, 18).lineTo(i * 16, -46 + Math.abs(i) * 7).stroke({ width: 2, color: palette.sandInk, alpha: 0.32 });

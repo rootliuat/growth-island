@@ -233,6 +233,7 @@ export class DecorationLayer {
 
   private drawShell(g: Graphics, scallop: boolean) {
     g.ellipse(0, 14, scallop ? 48 : 42, 16).fill({ color: palette.inkShadow, alpha: 0.11 });
+    g.moveTo(scallop ? -42 : -34, 0);
     g.arc(0, 0, scallop ? 42 : 34, Math.PI, 0).fill(scallop ? palette.shellPink : 0xfff1c4).stroke({
       width: 4,
       color: palette.sandInk,
