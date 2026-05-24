@@ -66,6 +66,7 @@ export interface WorldSpirit {
   imageUrl?: string;
   imageKey?: string;
   lastActivity?: string;
+  lastActivityDelta?: number;
 }
 
 export interface WorldMapData {

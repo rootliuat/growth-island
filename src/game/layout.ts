@@ -42,6 +42,7 @@ export function buildWorldMapData({
     };
     const accent = toColor(spirit.accent);
     const homeLevel = Math.max(1, Math.min(5, Math.ceil(child.level / 2)));
+    const childLastRecord = recentLedger.find((record) => record.childId === child.id && !record.undone);
     const doorPosition = {
       x: slot.position.x + slot.doorOffset.x,
       y: slot.position.y + slot.doorOffset.y,
@@ -73,7 +74,8 @@ export function buildWorldMapData({
       accent,
       imageUrl: asset?.url,
       imageKey: asset?.key,
-      lastActivity: recentLedger.find((record) => record.childId === child.id && !record.undone)?.reason,
+      lastActivity: childLastRecord?.reason,
+      lastActivityDelta: childLastRecord?.delta,
     };
   });
 

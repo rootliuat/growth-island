@@ -67,7 +67,7 @@ export class LabelLayer {
       label.visible = selected || zoom >= 1.48 || (zoom >= 1.22 && priority);
       label.scale.set(zoom >= 1.45 ? 1 : 0.84);
       const bubble = label.getChildByLabel("activity-bubble");
-      if (bubble) bubble.visible = selected && zoom >= 1.36;
+      if (bubble) bubble.visible = selected && zoom >= 1.22;
     });
   }
 
@@ -87,13 +87,21 @@ export class LabelLayer {
     bubble.y = 32;
     const bubbleBg = new Graphics();
     bubbleBg.label = "bubble-bg";
+    const tokenBg = new Graphics();
+    tokenBg.label = "bubble-token-bg";
+    const tokenText = new Text({
+      text: "",
+      style: { fontFamily: "Georgia, Microsoft YaHei, PingFang SC", fontSize: 13, fontWeight: "900", fill: 0xfff9df },
+    });
+    tokenText.label = "bubble-token";
+    tokenText.anchor.set(0.5);
     const bubbleText = new Text({
       text: "",
-      style: { fontFamily: "Microsoft YaHei, PingFang SC", fontSize: 12, fontWeight: "700", fill: palette.textSubtle },
+      style: { fontFamily: "Microsoft YaHei, PingFang SC", fontSize: 12, fontWeight: "800", fill: palette.textSubtle },
     });
     bubbleText.label = "bubble-text";
     bubbleText.anchor.set(0.5);
-    bubble.addChild(bubbleBg, bubbleText);
+    bubble.addChild(bubbleBg, tokenBg, tokenText, bubbleText);
 
     node.addChild(bg, text, bubble);
     return node;
@@ -208,21 +216,42 @@ export class LabelLayer {
     }
     const bubbleText = bubble?.getChildByLabel("bubble-text") as Text | undefined;
     const bubbleBg = bubble?.getChildByLabel("bubble-bg") as Graphics | undefined;
-    if (bubbleText && bubbleBg) {
-      const note = spirit.lastActivity ? spirit.lastActivity.slice(0, 14) : "今天也在成长";
+    const tokenBg = bubble?.getChildByLabel("bubble-token-bg") as Graphics | undefined;
+    const tokenText = bubble?.getChildByLabel("bubble-token") as Text | undefined;
+    if (bubbleText && bubbleBg && tokenBg && tokenText) {
+      const note = spirit.lastActivity ? this.cleanActivity(spirit.lastActivity) : "今天也在成长";
+      const delta = spirit.lastActivityDelta ?? 0;
+      const positive = delta >= 0;
       bubbleText.text = note;
-      const width = Math.max(118, Math.min(184, bubbleText.width + 32));
+      tokenText.text = delta === 0 ? "XP" : delta > 0 ? `+${delta}` : `${delta}`;
+      const tokenWidth = Math.max(42, tokenText.width + 18);
+      const width = Math.max(142, Math.min(224, bubbleText.width + tokenWidth + 38));
+      const tokenX = -width / 2 + tokenWidth / 2 + 10;
       bubbleBg.clear();
-      bubbleBg.roundRect(-width / 2, -14, width, 28, 13).fill(0xf4f1e6).stroke({
+      bubbleBg.ellipse(0, 17, width * 0.34, 7).fill({ color: palette.inkShadow, alpha: 0.1 });
+      bubbleBg.roundRect(-width / 2, -15, width, 31, 14).fill(0xf4f1e6).stroke({
         width: 2,
         color: spirit.accent,
-        alpha: 0.18,
+        alpha: 0.22,
       });
-      bubbleBg.poly([-8, -14, 0, -22, 8, -14]).fill(0xf4f1e6).stroke({
+      bubbleBg.poly([-9, -15, 0, -24, 9, -15]).fill(0xf4f1e6).stroke({
         width: 2,
         color: spirit.accent,
         alpha: 0.12,
       });
+      tokenBg.clear();
+      tokenBg.roundRect(tokenX - tokenWidth / 2, -11, tokenWidth, 23, 11)
+        .fill(positive ? palette.positive : palette.negative)
+        .stroke({ width: 2, color: 0xfff6d7, alpha: 0.8 });
+      tokenBg.circle(tokenX + tokenWidth / 2 - 8, -2, 3).fill({ color: 0xffffff, alpha: 0.48 });
+      tokenText.x = tokenX;
+      tokenText.y = 0;
+      bubbleText.x = tokenX + tokenWidth / 2 + (width - tokenWidth - 22) / 2;
+      bubbleText.y = 0;
     }
+  }
+
+  private cleanActivity(reason: string) {
+    return reason.replace(/^手动[加减]分\s*[+-]?\d+/, "成长记录").replace(/^演示数据：/, "").slice(0, 13);
   }
 }
