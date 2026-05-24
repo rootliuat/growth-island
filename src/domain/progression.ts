@@ -11,6 +11,24 @@ export const levelThresholds = [
   { level: 8, minXp: 1900, state: "lv8" as SpiritState },
 ];
 
+export const spiritStageLabels: Record<SpiritState, string> = {
+  "egg-1": "完整蛋期",
+  "egg-2": "微裂发光期",
+  "egg-3": "壳内跃动期",
+  "egg-4": "探头破壳期",
+  lv2: "幼态伙伴",
+  lv3: "亮彩成长期",
+  lv4: "品德徽章期",
+  lv5: "华丽进化期",
+  lv6: "专属装备期",
+  lv7: "环绕特效期",
+  lv8: "成长守护者",
+};
+
+export function getSpiritStageLabel(state: SpiritState) {
+  return spiritStageLabels[state];
+}
+
 export function getLevelInfo(xp: number) {
   if (xp < 25) return { level: 1, state: "egg-1" as SpiritState, nextXp: 25, progressLabel: "完整精灵蛋" };
   if (xp < 50) return { level: 1, state: "egg-2" as SpiritState, nextXp: 50, progressLabel: "蛋壳微微发亮" };

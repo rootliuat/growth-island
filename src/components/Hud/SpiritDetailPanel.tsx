@@ -1,7 +1,7 @@
 import { Mic, Minus, Plus, RotateCcw, Sparkles, Swords } from "lucide-react";
 import type { CSSProperties } from "react";
 import type { ChildWithProgress, MoralEvaluationResult, SpiritDefinition } from "../../types";
-import { getLevelInfo, xpProgressPercent } from "../../domain/progression";
+import { getLevelInfo, getSpiritStageLabel, xpProgressPercent } from "../../domain/progression";
 
 interface SpiritDetailPanelProps {
   child: ChildWithProgress;
@@ -28,6 +28,7 @@ export function SpiritDetailPanel({
 }: SpiritDetailPanelProps) {
   const info = getLevelInfo(child.xp);
   const progress = xpProgressPercent(child.xp);
+  const stageLabel = getSpiritStageLabel(child.state);
 
   return (
     <aside className="spirit-card" style={{ "--spirit-accent": spirit.accent } as CSSProperties}>
@@ -57,7 +58,7 @@ export function SpiritDetailPanel({
           <div className="xp-fill" style={{ width: `${progress}%` }} />
         </div>
         <p>
-          {info.progressLabel} · {child.state}
+          {info.progressLabel} · {stageLabel}
         </p>
       </div>
 

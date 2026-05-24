@@ -1,7 +1,7 @@
 import { Mic, Minus, Plus, RotateCcw, ShieldCheck, Sparkles, Swords } from "lucide-react";
 import type { CSSProperties } from "react";
 import type { ChildWithProgress, LedgerRecord, MoralEvaluationResult, SpiritDefinition } from "../types";
-import { getLevelInfo, xpProgressPercent } from "../domain/progression";
+import { getLevelInfo, getSpiritStageLabel, xpProgressPercent } from "../domain/progression";
 
 interface ChildPanelProps {
   child: ChildWithProgress;
@@ -30,6 +30,7 @@ export function ChildPanel({
 }: ChildPanelProps) {
   const info = getLevelInfo(child.xp);
   const progress = xpProgressPercent(child.xp);
+  const stageLabel = getSpiritStageLabel(child.state);
 
   return (
     <aside className="child-panel">
@@ -51,7 +52,7 @@ export function ChildPanel({
             <span>{child.name.slice(0, 1)}</span>
           </div>
         )}
-        <div className="pet-stage-pill">{child.state}</div>
+        <div className="pet-stage-pill">{stageLabel}</div>
       </div>
 
       <div className="xp-block">
@@ -62,7 +63,7 @@ export function ChildPanel({
         <div className="xp-track">
           <div className="xp-fill" style={{ width: `${progress}%` }} />
         </div>
-        <p>{info.progressLabel} · {child.state}</p>
+        <p>{info.progressLabel} · {stageLabel}</p>
       </div>
 
       <div className="action-grid">
