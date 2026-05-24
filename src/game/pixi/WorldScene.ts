@@ -49,6 +49,7 @@ export class WorldScene {
   }
 
   updateData(data: WorldMapData) {
+    const previousData = this.data;
     const previousSelected = this.data?.selectedChildId;
     this.data = data;
     this.homes.update(data);
@@ -63,13 +64,22 @@ export class WorldScene {
       if (selected) this.focusPoint(selected.homePosition.x, selected.homePosition.y + 54, cameraConfig.homeZoom);
     }
 
+    if (!previousData) {
+      this.lastLedgerId = data.lastLedger?.id;
+      return;
+    }
+
     if (data.lastLedger && data.lastLedger.id !== this.lastLedgerId) {
       this.lastLedgerId = data.lastLedger.id;
       const target = data.spirits.find((spirit) => spirit.id === data.lastLedger?.childId);
       if (target) {
+        const previousTarget = previousData.spirits.find((spirit) => spirit.id === target.id);
         this.effects.emitXp(target.spritePosition, data.lastLedger.delta);
         this.spirits.bounce(target.id);
         this.homes.pulse(target.id);
+        if (previousTarget && (previousTarget.child.level !== target.child.level || previousTarget.child.state !== target.child.state)) {
+          this.effects.emitGrowthChange(target.homePosition, target.child.xp >= previousTarget.child.xp);
+        }
       }
     }
   }

@@ -1472,11 +1472,21 @@ button {
 }
 
 .dock-filters {
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
   gap: 6px;
+  min-height: 32px;
+  padding-bottom: 1px;
+  scrollbar-width: none;
+}
+
+.dock-filters::-webkit-scrollbar {
+  display: none;
 }
 
 .dock-filters button {
+  flex: 0 0 auto;
   min-height: 28px;
   padding: 0 9px;
   border-radius: 999px;
@@ -1494,8 +1504,10 @@ button {
 .dock-scroll {
   min-width: 0;
   overflow-x: auto;
-  gap: 9px;
-  padding-bottom: 2px;
+  overflow-y: hidden;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 2px 2px;
   scrollbar-width: none;
 }
 
@@ -1915,7 +1927,7 @@ button {
 
 .dock-spirit {
   flex-basis: 88px;
-  min-height: 100px;
+  min-height: 96px;
   border: 2px solid rgba(214, 208, 190, 0.78);
   border-radius: 18px;
   background: #fff7d8;
