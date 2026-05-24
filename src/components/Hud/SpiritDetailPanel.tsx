@@ -1,4 +1,4 @@
-import { Mic, Minus, Plus, RotateCcw, Sparkles, Swords } from "lucide-react";
+import { Home, Mic, Minus, Plus, RotateCcw, Sparkles, Swords, Trophy } from "lucide-react";
 import type { CSSProperties } from "react";
 import type { ChildWithProgress, MoralEvaluationResult, SpiritDefinition } from "../../types";
 import { getLevelInfo, getSpiritStageLabel, xpProgressPercent } from "../../domain/progression";
@@ -47,6 +47,16 @@ export function SpiritDetailPanel({
         <p>
           {child.name} · {spirit.name}
         </p>
+        <div className="spirit-meta-row">
+          <span>
+            <Home size={14} />
+            {child.slotId} 号家园
+          </span>
+          <span>
+            <Trophy size={14} />
+            全班第 {child.rank}
+          </span>
+        </div>
       </div>
 
       <div className="xp-gem">

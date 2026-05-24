@@ -32,7 +32,10 @@ export function SpiritDock({ childrenWithProgress, spiritsById, selectedChildId,
     <section className={collapsed ? "spirit-dock collapsed" : "spirit-dock"}>
       <div className="dock-tools">
         <div className="dock-tools-head">
-          <strong>{collapsed ? `${selectedChild.name} · Lv.${selectedChild.level}` : "精灵队伍"}</strong>
+          <strong>
+            {collapsed ? `${selectedChild.name} · Lv.${selectedChild.level}` : "精灵队伍"}
+            <small>{filtered.length}/{childrenWithProgress.length}</small>
+          </strong>
           <button className="dock-collapse" onClick={() => setCollapsed((current) => !current)}>
             {collapsed ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
             {collapsed ? "展开" : "收起"}

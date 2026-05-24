@@ -2695,6 +2695,19 @@ button {
   gap: 7px;
 }
 
+.dock-tools-head strong small {
+  display: inline-grid;
+  min-width: 48px;
+  min-height: 24px;
+  place-items: center;
+  border: 2px solid rgba(214, 208, 190, 0.72);
+  border-radius: 999px;
+  color: #6d684d;
+  font-size: 12px;
+  background: #fff7d8;
+  box-shadow: inset 0 -3px 0 rgba(123, 128, 101, 0.08);
+}
+
 .dock-tools-head strong::before {
   display: inline-block;
   width: 10px;
@@ -2704,6 +2717,11 @@ button {
   background: #2c8f99;
   box-shadow: inset 0 -4px 0 rgba(26, 74, 77, 0.24);
   content: "";
+}
+
+.dock-collapse {
+  border: 2px solid #fff3cb;
+  box-shadow: inset 0 -4px 0 rgba(26, 74, 77, 0.2), 0 4px 0 rgba(53, 82, 74, 0.1);
 }
 
 /* Character card pass: flatter game-card structure with stronger hierarchy. */
@@ -2785,6 +2803,30 @@ button {
   border-radius: 18px;
   background: #fff7d8;
   box-shadow: inset 0 -5px 0 rgba(123, 128, 101, 0.08);
+}
+
+.spirit-meta-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 7px;
+}
+
+.spirit-meta-row span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 26px;
+  padding: 0 7px;
+  border: 2px solid rgba(214, 208, 190, 0.66);
+  border-radius: 999px;
+  color: #5f6d54;
+  font-size: 12px;
+  font-weight: 900;
+  background: #f4f1e6;
+  box-shadow: inset 0 -3px 0 rgba(123, 128, 101, 0.08);
+  white-space: nowrap;
 }
 
 .xp-gem {
