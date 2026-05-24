@@ -80,8 +80,9 @@ export class HomeLayer {
     });
 
     const halo = new Graphics();
-    halo.ellipse(0, 44, 98, 30).fill({ color: palette.accent, alpha: 0.22 });
-    halo.ellipse(0, 44, 118, 38).stroke({ width: 3, color: 0xfff6c9, alpha: 0.48 });
+    halo.ellipse(0, 46, 104, 32).fill({ color: home.accent, alpha: 0.2 });
+    halo.ellipse(0, 46, 126, 41).stroke({ width: 4, color: 0xfff6c9, alpha: 0.5 });
+    halo.ellipse(0, 46, 146, 50).stroke({ width: 2, color: home.accent, alpha: 0.28 });
     halo.visible = false;
 
     const body = new Graphics();
@@ -118,7 +119,8 @@ export class HomeLayer {
     }
 
     if (home.level >= 5) {
-      g.ellipse(0, 10, 92, 58).stroke({ width: 3, color: palette.accent, alpha: 0.45 });
+      g.ellipse(0, 8, 98, 61).stroke({ width: 4, color: home.accent, alpha: 0.42 });
+      g.ellipse(0, 8, 116, 72).stroke({ width: 2, color: 0xfff6c9, alpha: 0.36 });
     }
     this.drawHomePersonalDecor(g, home);
   }
@@ -133,17 +135,28 @@ export class HomeLayer {
             ? palette.sandLight
             : 0xf0dca2;
     const variant = this.variant(home);
-    g.ellipse(0, 62, 92, 24).fill({ color: palette.inkShadow, alpha: 0.16 });
-    g.ellipse(0, 54, 78, 19).fill({ color: groundColor, alpha: 0.9 }).stroke({
+    g.ellipse(0, 66, 100, 28).fill({ color: palette.inkShadow, alpha: 0.16 });
+    g.ellipse(0, 58, 88, 24).fill({ color: groundColor, alpha: 0.92 }).stroke({
       width: 3,
       color: palette.sandInk,
       alpha: 0.16,
     });
-    g.moveTo(-10, 62).quadraticCurveTo(variant % 2 === 0 ? 8 : -4, 88, variant % 2 === 0 ? 52 : -52, 102);
-    g.stroke({ width: 12, color: 0xf7e6aa, alpha: 0.7, cap: "round" });
-    for (let i = 0; i < 3; i += 1) {
+    g.ellipse(0, 50, 62, 14).fill({ color: 0xffffff, alpha: 0.13 });
+    g.moveTo(-8, 63).quadraticCurveTo(variant % 2 === 0 ? 10 : -8, 88, variant % 2 === 0 ? 58 : -58, 104);
+    g.stroke({ width: 14, color: 0xf7e6aa, alpha: 0.78, cap: "round" });
+    g.moveTo(-8, 63).quadraticCurveTo(variant % 2 === 0 ? 10 : -8, 88, variant % 2 === 0 ? 58 : -58, 104);
+    g.stroke({ width: 3, color: palette.sandInk, alpha: 0.14, cap: "round" });
+    for (let i = 0; i < 4; i += 1) {
       const side = variant % 2 === 0 ? 1 : -1;
       g.ellipse(side * (22 + i * 16), 73 + i * 8, 9, 4).fill({ color: 0xfff3c8, alpha: 0.62 });
+    }
+    if (home.level >= 3) {
+      const fenceY = 68;
+      g.moveTo(-88, fenceY).lineTo(-42, fenceY - 3).stroke({ width: 4, color: palette.woodDark, alpha: 0.28, cap: "round" });
+      g.moveTo(42, fenceY - 3).lineTo(88, fenceY).stroke({ width: 4, color: palette.woodDark, alpha: 0.28, cap: "round" });
+      [-82, -62, -44, 44, 64, 84].forEach((x) => {
+        g.roundRect(x - 3, fenceY - 17, 6, 24, 3).fill({ color: palette.woodLight, alpha: 0.78 });
+      });
     }
   }
 
@@ -151,15 +164,25 @@ export class HomeLayer {
     const variant = this.variant(home);
     const canopyA = variant % 2 === 0 ? palette.grassDark : 0x4f9358;
     const canopyB = variant % 3 === 0 ? 0x87c86d : palette.grassMid;
+    g.ellipse(0, 68, 56, 13).fill({ color: palette.inkShadow, alpha: 0.13 });
     g.roundRect(-14, -22, 28, 94, 9).fill(palette.woodDark);
+    g.moveTo(-11, 52).lineTo(-42, 78).stroke({ width: 5, color: palette.woodDark, alpha: 0.7, cap: "round" });
+    g.moveTo(10, 54).lineTo(42, 76).stroke({ width: 5, color: palette.woodDark, alpha: 0.7, cap: "round" });
     g.circle(-46, -64, 42).fill(canopyA);
     g.circle(14, -82, 54).fill(canopyB);
     g.circle(50, -48, 40).fill(palette.grassLight);
+    g.circle(-6, -104, 24).fill({ color: 0xffffff, alpha: 0.1 });
+    g.roundRect(-60, 36, 120, 18, 7).fill({ color: palette.woodDark, alpha: 0.32 });
     g.roundRect(-58, -20, 116, 68, 14).fill(palette.woodLight).stroke({ width: 4, color: palette.woodDark, alpha: 0.42 });
+    g.roundRect(-56, 28, 112, 22, 9).fill({ color: palette.woodDark, alpha: 0.16 });
     g.rect(-46, -5, 28, 24).fill(0xffe5a8);
+    g.rect(-32, -5, 3, 24).fill({ color: palette.woodDark, alpha: 0.18 });
     g.rect(20, -4, 28, 23).fill(0xffe5a8);
+    g.rect(34, -4, 3, 23).fill({ color: palette.woodDark, alpha: 0.18 });
     g.poly([-68, -20, 0, -68, 68, -20]).fill(0xe8b46a).stroke({ width: 3, color: palette.woodDark, alpha: 0.35 });
+    g.poly([-62, -18, 0, -58, 62, -18, 54, -12, -54, -12]).fill({ color: palette.woodDark, alpha: 0.12 });
     g.roundRect(-16, 16, 32, 36, 10).fill(palette.woodDark);
+    g.roundRect(-9, 24, 18, 28, 8).fill({ color: 0x4f2f21, alpha: 0.46 });
     g.moveTo(54, 38).lineTo(84, 78).stroke({ width: 5, color: palette.woodDark, alpha: 0.75, cap: "round" });
     for (let i = 0; i < 3; i += 1) g.moveTo(58 + i * 8, 46 + i * 10).lineTo(76 + i * 8, 46 + i * 10).stroke({ width: 3, color: palette.wallLight, alpha: 0.7 });
     if (variant % 2 === 1) {
@@ -172,15 +195,21 @@ export class HomeLayer {
   private drawShellHouse(g: Graphics, home: WorldHome) {
     const variant = this.variant(home);
     const shellTint = variant % 2 === 0 ? 0xfff1bf : 0xffdfc8;
+    g.ellipse(0, 48, 82, 18).fill({ color: palette.sandInk, alpha: 0.1 });
     g.moveTo(-74, 18);
     g.arc(0, 18, 74, Math.PI, 0).fill(shellTint).stroke({ width: 5, color: palette.sandInk, alpha: 0.36 });
+    g.moveTo(-70, 20);
+    g.arc(0, 20, 70, Math.PI, 0).stroke({ width: 9, color: 0xffffff, alpha: 0.12 });
     g.moveTo(-58, 20);
     g.arc(0, 20, 58, Math.PI, 0).stroke({ width: 3, color: palette.shellPink, alpha: 0.66 });
     for (let i = -4; i <= 4; i += 1) {
       g.moveTo(0, 18).lineTo(i * 16, -46 + Math.abs(i) * 7).stroke({ width: 2, color: palette.sandInk, alpha: 0.32 });
     }
     g.roundRect(-23, 8, 46, 48, 15).fill(palette.woodDark);
+    g.roundRect(-14, 18, 28, 36, 11).fill({ color: 0x4f2f21, alpha: 0.42 });
+    g.ellipse(0, 58, 40, 8).fill({ color: palette.sandInk, alpha: 0.14 });
     g.circle(46, -5, 13).fill(palette.pearlWhite).stroke({ width: 2, color: home.accent, alpha: 0.48 });
+    g.circle(49, -8, 5).fill({ color: 0xffffff, alpha: 0.82 });
     if (variant >= 2) {
       g.circle(-48, 8, 10).fill({ color: palette.pearlWhite, alpha: 0.78 }).stroke({ width: 2, color: home.accent, alpha: 0.28 });
       g.circle(-70, 38, 7).fill({ color: palette.shellPink, alpha: 0.78 });
@@ -193,11 +222,15 @@ export class HomeLayer {
 
   private drawPearlHouse(g: Graphics, home: WorldHome) {
     const variant = this.variant(home);
+    g.ellipse(0, 52, 74, 20).fill({ color: palette.oceanDarkLine, alpha: 0.12 });
+    g.ellipse(0, 44, 88, 18).stroke({ width: 3, color: palette.oceanLightLine, alpha: 0.32 });
     g.circle(0, -2, 60).fill(palette.pearlWhite).stroke({ width: 6, color: palette.oceanDarkLine, alpha: 0.36 });
+    g.circle(0, 10, 58).fill({ color: palette.pearlBay, alpha: 0.18 });
     g.circle(-20, -22, 13).fill({ color: 0xffffff, alpha: 0.84 });
     g.circle(48, -20, 18).fill({ color: palette.pearlBay, alpha: 0.72 });
     g.circle(-58, 5, 13).fill({ color: palette.pearlBay, alpha: 0.68 });
     g.roundRect(-24, 18, 48, 40, 18).fill(0x6f9bad);
+    g.roundRect(-16, 28, 32, 30, 14).fill({ color: 0x375f70, alpha: 0.4 });
     g.rect(-46, 50, 92, 12).fill({ color: palette.oceanDarkLine, alpha: 0.24 });
     if (variant % 2 === 0) {
       g.circle(66, 16, 10).fill({ color: palette.pearlWhite, alpha: 0.7 }).stroke({ width: 2, color: home.accent, alpha: 0.25 });
@@ -212,9 +245,15 @@ export class HomeLayer {
   private drawTentHouse(g: Graphics, home: WorldHome) {
     const variant = this.variant(home);
     const fabric = variant % 2 === 0 ? 0xf0c66c : 0xf1b08e;
+    g.ellipse(0, 64, 82, 18).fill({ color: palette.sandInk, alpha: 0.12 });
     g.poly([-66, 56, 0, -64, 66, 56]).fill(fabric).stroke({ width: 5, color: palette.sandInk, alpha: 0.32 });
+    g.poly([-48, 56, 0, -48, 48, 56]).stroke({ width: 3, color: 0xfff6cf, alpha: 0.42 });
     g.poly([0, -64, 66, 56, 16, 56]).fill({ color: variant >= 2 ? home.accent : palette.roofRed, alpha: 0.38 });
     g.poly([-18, 56, 0, -18, 18, 56]).fill(palette.woodDark);
+    g.moveTo(-68, 56).lineTo(-94, 78).stroke({ width: 3, color: palette.woodDark, alpha: 0.4, cap: "round" });
+    g.moveTo(68, 56).lineTo(94, 78).stroke({ width: 3, color: palette.woodDark, alpha: 0.4, cap: "round" });
+    g.circle(-94, 78, 5).fill({ color: palette.woodDark, alpha: 0.44 });
+    g.circle(94, 78, 5).fill({ color: palette.woodDark, alpha: 0.44 });
     g.rect(-4, -88, 8, 34).fill(palette.woodDark);
     g.poly([4, -88, 38, -78, 4, -66]).fill(home.accent);
     if (variant % 3 === 1) {
@@ -229,11 +268,17 @@ export class HomeLayer {
 
   private drawGardenHouse(g: Graphics, home: WorldHome) {
     const variant = this.variant(home);
+    g.ellipse(0, 62, 80, 18).fill({ color: palette.inkShadow, alpha: 0.11 });
     g.roundRect(-54, -16, 108, 74, 16).fill(palette.wallLight).stroke({ width: 4, color: palette.wallDark, alpha: 0.45 });
+    g.roundRect(-54, 42, 108, 18, 8).fill({ color: palette.wallDark, alpha: 0.18 });
     g.poly([-66, -16, 0, -78, 66, -16]).fill(variant % 2 === 0 ? palette.roofRed : palette.roofBlue).stroke({ width: 3, color: palette.roofDark, alpha: 0.38 });
+    g.poly([-60, -16, 0, -66, 60, -16, 52, -10, -52, -10]).fill({ color: palette.roofDark, alpha: 0.16 });
     g.roundRect(-16, 16, 32, 42, 10).fill(palette.woodDark);
+    g.roundRect(-9, 25, 18, 32, 8).fill({ color: 0x4f2f21, alpha: 0.42 });
     g.rect(-42, 2, 24, 22).fill(0xffefb6);
+    g.rect(-30, 2, 3, 22).fill({ color: palette.wallDark, alpha: 0.2 });
     g.rect(20, 2, 24, 22).fill(0xffefb6);
+    g.rect(32, 2, 3, 22).fill({ color: palette.wallDark, alpha: 0.2 });
     g.moveTo(-78, 66).lineTo(78, 66).stroke({ width: 4, color: palette.woodDark, alpha: 0.48, cap: "round" });
     for (let i = -3; i <= 3; i += 1) g.roundRect(i * 22 - 4, 48, 8, 28, 4).fill(palette.woodLight);
     g.circle(-62, 48, 9).fill(palette.flowerPink);
@@ -248,12 +293,18 @@ export class HomeLayer {
   private drawCottage(g: Graphics, home: WorldHome) {
     const variant = this.variant(home);
     const roof = variant % 2 === 0 ? palette.roofRed : palette.roofBlue;
+    g.ellipse(0, 63, 82, 18).fill({ color: palette.inkShadow, alpha: 0.12 });
     g.roundRect(-58, -24, 116, 82, 17).fill(palette.wallLight).stroke({ width: 4, color: palette.wallDark, alpha: 0.45 });
+    g.roundRect(-58, 42, 116, 18, 8).fill({ color: palette.wallDark, alpha: 0.2 });
     if (variant >= 2) g.roundRect(-46, -72, 18, 38, 5).fill(palette.wallDark).stroke({ width: 2, color: palette.roofDark, alpha: 0.24 });
     g.poly([-72, -24, 0, -84, 72, -24]).fill(roof).stroke({ width: 3, color: palette.roofDark, alpha: 0.36 });
+    g.poly([-66, -23, 0, -72, 66, -23, 58, -15, -58, -15]).fill({ color: palette.roofDark, alpha: 0.17 });
     g.rect(-46, -1, 24, 22).fill(0xffefb6);
+    g.rect(-34, -1, 3, 22).fill({ color: palette.wallDark, alpha: 0.2 });
     g.rect(22, -1, 24, 22).fill(0xffefb6);
+    g.rect(34, -1, 3, 22).fill({ color: palette.wallDark, alpha: 0.2 });
     g.roundRect(-18, 14, 36, 46, 12).fill(palette.woodDark);
+    g.roundRect(-10, 24, 20, 34, 8).fill({ color: 0x4f2f21, alpha: 0.42 });
     g.rect(-64, 50, 128, 12).fill({ color: palette.wallDark, alpha: 0.35 });
     if (variant % 3 === 1) {
       g.roundRect(-50, 23, 22, 14, 5).fill({ color: home.accent, alpha: 0.48 });
