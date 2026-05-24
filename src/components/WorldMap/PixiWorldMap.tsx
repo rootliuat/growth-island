@@ -16,19 +16,25 @@ interface PixiWorldMapProps {
   selectedChildId: string;
   recentLedger: LedgerRecord[];
   onSelectChild: (childId: string) => void;
+  onOpenDialogue?: () => void;
+  onOpenPk?: () => void;
 }
 
 export const PixiWorldMap = forwardRef<PixiWorldMapHandle, PixiWorldMapProps>(function PixiWorldMap(
-  { childrenWithProgress, spiritsById, selectedChildId, recentLedger, onSelectChild },
+  { childrenWithProgress, spiritsById, selectedChildId, recentLedger, onSelectChild, onOpenDialogue, onOpenPk },
   ref,
 ) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const worldRef = useRef<PixiWorld | null>(null);
   const onSelectRef = useRef(onSelectChild);
+  const onOpenDialogueRef = useRef(onOpenDialogue);
+  const onOpenPkRef = useRef(onOpenPk);
 
   useEffect(() => {
     onSelectRef.current = onSelectChild;
-  }, [onSelectChild]);
+    onOpenDialogueRef.current = onOpenDialogue;
+    onOpenPkRef.current = onOpenPk;
+  }, [onOpenDialogue, onOpenPk, onSelectChild]);
 
   const mapData = useMemo(
     () => buildWorldMapData({ childrenWithProgress, spiritsById, selectedChildId, recentLedger }),
@@ -46,6 +52,8 @@ export const PixiWorldMap = forwardRef<PixiWorldMapHandle, PixiWorldMapProps>(fu
     if (!hostRef.current) return;
     const world = new PixiWorld({
       onSelectChild: (childId) => onSelectRef.current(childId),
+      onOpenDialogue: () => onOpenDialogueRef.current?.(),
+      onOpenPk: () => onOpenPkRef.current?.(),
     });
     worldRef.current = world;
     let cancelled = false;

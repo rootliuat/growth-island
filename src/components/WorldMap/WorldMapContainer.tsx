@@ -9,6 +9,8 @@ interface WorldMapContainerProps {
   selectedChildId: string;
   recentLedger: LedgerRecord[];
   onSelectChild: (childId: string) => void;
+  onOpenDialogue?: () => void;
+  onOpenPk?: () => void;
 }
 
 export const WorldMapContainer = forwardRef<PixiWorldMapHandle, WorldMapContainerProps>(function WorldMapContainer(

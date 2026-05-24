@@ -19,6 +19,7 @@ data/*.bak
 beihai-*.png
 current-frontend-preview.png
 growth-island-*-preview.png
+growth-island-*.png
 
 .agents/skills/*
 !.agents/skills/beihai-asset-imagegen/

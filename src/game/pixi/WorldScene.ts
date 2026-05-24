@@ -34,7 +34,11 @@ export class WorldScene {
     new IslandLayer(this.layers.get("island"));
     new RegionLayer(this.layers.get("regions"), this.focusRegion);
     new PathLayer(this.layers.get("paths"));
-    new DecorationLayer(this.layers.get("decorations"));
+    new DecorationLayer(this.layers.get("decorations"), {
+      onFocusPoint: this.focusPoint,
+      onOpenDialogue: this.callbacks.onOpenDialogue,
+      onOpenPk: this.callbacks.onOpenPk,
+    });
     this.effects = new EffectLayer(this.layers.get("effects"));
     this.homes = new HomeLayer(this.layers.get("homes"), this.selectChild, this.focusPoint);
     this.spirits = new SpiritLayer(this.layers.get("spirits"), this.selectChild, this.focusPoint);

@@ -250,6 +250,8 @@ export function App() {
           selectedChildId={selectedChild.id}
           recentLedger={allRecentRecords}
           onSelectChild={setSelectedChildId}
+          onOpenDialogue={() => setDialogueOpen(true)}
+          onOpenPk={() => setPkPair({ playerId: selectedChild.id, opponentId: opponent.id })}
         />
 
         <aside className="hud-rail">

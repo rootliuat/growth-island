@@ -9,13 +9,16 @@ export class OceanLayer {
 
   constructor(private readonly layer: Container) {
     this.drawBase();
-    for (let i = 0; i < 96; i += 1) {
-      const mark = new Graphics()
-        .roundRect(-28, -2, 56 + (i % 4) * 12, 4, 2)
-        .fill({ color: palette.oceanLightLine, alpha: 0.12 });
-      mark.x = (i * 181) % WORLD_WIDTH;
-      mark.y = 72 + ((i * 79) % (WORLD_HEIGHT - 120));
-      mark.alpha = 0.28 + (i % 5) * 0.04;
+    for (let i = 0; i < 76; i += 1) {
+      const mark = new Graphics();
+      const width = 20 + ((i * 19) % 38);
+      const height = 3 + (i % 3);
+      mark.ellipse(0, 0, width, height).fill({ color: palette.oceanLightLine, alpha: 0.1 + (i % 4) * 0.018 });
+      mark.circle(-width * 0.66, 0, height * 0.72).fill({ color: palette.oceanLightLine, alpha: 0.08 });
+      mark.circle(width * 0.66, 0, height * 0.72).fill({ color: palette.oceanLightLine, alpha: 0.08 });
+      mark.x = (i * 307) % WORLD_WIDTH;
+      mark.y = (i * 191) % WORLD_HEIGHT;
+      mark.rotation = ((i % 7) - 3) * 0.035;
       this.waveMarks.push(mark);
       this.layer.addChild(mark);
     }
@@ -41,8 +44,7 @@ export class OceanLayer {
     this.time += ticker.deltaMS / 1000;
     this.waveMarks.forEach((mark, index) => {
       mark.x += (0.012 + (index % 5) * 0.003) * ticker.deltaMS;
-      mark.y += Math.sin(this.time * 0.8 + index) * 0.018 * ticker.deltaMS;
-      mark.alpha = 0.22 + Math.sin(this.time * 0.9 + index * 0.7) * 0.05;
+      mark.alpha = 0.72 + Math.sin(this.time * 0.7 + index * 0.3) * 0.12;
       if (mark.x > WORLD_WIDTH + 80) mark.x = -80;
     });
     this.sparkles.forEach((sparkle, index) => {

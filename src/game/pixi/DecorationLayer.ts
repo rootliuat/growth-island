@@ -1,12 +1,23 @@
-import { Container, Graphics } from "pixi.js";
+import { Container, Graphics, Rectangle, Text } from "pixi.js";
 import { palette } from "../artDirection";
+import { cameraConfig } from "../cameraConfig";
 import { decorations, type DecorationItem } from "../decorationConfig";
-import { growthTreePosition, oldStreetPosition } from "../mapConfig";
+import { arenaPosition, growthTreePosition, oldStreetPosition } from "../mapConfig";
+
+interface DecorationLayerActions {
+  onOpenDialogue?: () => void;
+  onOpenPk?: () => void;
+  onFocusPoint: (x: number, y: number, zoom: number) => void;
+}
 
 export class DecorationLayer {
-  constructor(private readonly layer: Container) {
+  constructor(
+    private readonly layer: Container,
+    private readonly actions: DecorationLayerActions,
+  ) {
     this.drawLandmarks();
     decorations.forEach((item) => this.drawDecoration(item));
+    this.drawEntranceBadges();
     this.layer.children.sort((a, b) => a.y - b.y);
   }
 
@@ -51,6 +62,63 @@ export class DecorationLayer {
     oldStreet.poly([-28, -26, 52, -98, 132, -26]).fill(0xc66e4f);
     oldStreet.rect(-182, -48, 364, 24).fill(palette.oldStreetDark);
     this.layer.addChild(oldStreet);
+  }
+
+  private drawEntranceBadges() {
+    this.layer.addChild(
+      this.makeEntranceBadge({
+        label: "PK",
+        x: arenaPosition.x + 145,
+        y: arenaPosition.y - 132,
+        color: palette.arenaDark,
+        accent: palette.accent,
+        onTap: () => {
+          this.actions.onFocusPoint(arenaPosition.x, arenaPosition.y + 10, cameraConfig.detailZoom);
+          this.actions.onOpenPk?.();
+        },
+      }),
+    );
+    this.layer.addChild(
+      this.makeEntranceBadge({
+        label: "AI",
+        x: oldStreetPosition.x + 230,
+        y: oldStreetPosition.y - 108,
+        color: palette.oldStreetDark,
+        accent: palette.roofRed,
+        onTap: () => {
+          this.actions.onFocusPoint(oldStreetPosition.x, oldStreetPosition.y, cameraConfig.detailZoom);
+          this.actions.onOpenDialogue?.();
+        },
+      }),
+    );
+  }
+
+  private makeEntranceBadge(options: { label: string; x: number; y: number; color: number; accent: number; onTap: () => void }) {
+    const node = new Container();
+    node.x = options.x;
+    node.y = options.y;
+    node.eventMode = "static";
+    node.cursor = "pointer";
+    node.hitArea = new Rectangle(-58, -74, 116, 112);
+    node.on("pointertap", options.onTap);
+
+    const g = new Graphics();
+    g.ellipse(0, 34, 58, 15).fill({ color: palette.inkShadow, alpha: 0.14 });
+    g.rect(-5, -22, 10, 66).fill(palette.woodDark);
+    g.roundRect(-50, -62, 100, 48, 13).fill(0xffe7a8).stroke({ width: 4, color: options.color, alpha: 0.48 });
+    g.roundRect(-38, -52, 76, 28, 9).fill(options.accent).stroke({ width: 2, color: 0xfff6d4, alpha: 0.72 });
+    g.circle(-34, -38, 4).fill(0xfff6d4);
+    g.circle(34, -38, 4).fill(0xfff6d4);
+
+    const text = new Text({
+      text: options.label,
+      style: { fontFamily: "Georgia, Microsoft YaHei", fontSize: 20, fontWeight: "900", fill: 0xfff9df },
+    });
+    text.anchor.set(0.5);
+    text.y = -38;
+
+    node.addChild(g, text);
+    return node;
   }
 
   private drawDecoration(item: DecorationItem) {
