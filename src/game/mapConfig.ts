@@ -1,16 +1,17 @@
 import type { WorldPoint } from "./types";
+import { spreadBounds, spreadPoint } from "./mapLayout";
 
-export const WORLD_WIDTH = 2400;
-export const WORLD_HEIGHT = 1500;
+export const WORLD_WIDTH = 3200;
+export const WORLD_HEIGHT = 1980;
 
-export const mapOverviewBounds = {
+export const mapOverviewBounds = spreadBounds({
   x: 154,
   y: 170,
   width: 2056,
   height: 1255,
-};
+});
 
-export const growthTreePosition: WorldPoint = { x: 1210, y: 760 };
+export const growthTreePosition: WorldPoint = spreadPoint({ x: 1210, y: 760 });
 
 export const islandPolygon: WorldPoint[] = [
   { x: 205, y: 990 },
@@ -27,7 +28,7 @@ export const islandPolygon: WorldPoint[] = [
   { x: 1074, y: 1290 },
   { x: 637, y: 1215 },
   { x: 334, y: 1112 },
-];
+].map(spreadPoint);
 
 export const mainPath: WorldPoint[] = [
   { x: 502, y: 1058 },
@@ -39,20 +40,20 @@ export const mainPath: WorldPoint[] = [
   { x: 1785, y: 1030 },
   { x: 1390, y: 1110 },
   { x: 910, y: 1055 },
-];
+].map(spreadPoint);
 
 export const oldStreetPath: WorldPoint[] = [
   { x: 835, y: 455 },
   { x: 1015, y: 410 },
   { x: 1235, y: 435 },
   { x: 1390, y: 535 },
-];
+].map(spreadPoint);
 
 export const pierPath: WorldPoint[] = [
   { x: 442, y: 1114 },
   { x: 352, y: 1218 },
   { x: 270, y: 1310 },
-];
+].map(spreadPoint);
 
-export const arenaPosition: WorldPoint = { x: 1240, y: 1160 };
-export const oldStreetPosition: WorldPoint = { x: 1110, y: 430 };
+export const arenaPosition: WorldPoint = spreadPoint({ x: 1240, y: 1160 });
+export const oldStreetPosition: WorldPoint = spreadPoint({ x: 1110, y: 430 });

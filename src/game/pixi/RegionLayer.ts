@@ -3,6 +3,8 @@ import { regions } from "../regionConfig";
 import { cameraConfig } from "../cameraConfig";
 import { palette } from "../artDirection";
 import type { MapRegion, RegionId, WorldPoint } from "../types";
+import { v4RegionAssets, v4RegionAssetWidths } from "../v4MapAssets";
+import { addAssetSprite } from "./assetSprites";
 import { drawOrganicPolygon, flatten } from "./drawing";
 
 interface RegionNode {
@@ -27,27 +29,25 @@ export class RegionLayer {
   private draw() {
     regions.forEach((region) => {
       const root = new Container();
-      const g = new Graphics();
-      g.poly(region.shape.map((point) => [point.x + 12, point.y + 18]).flat()).fill({
-        color: palette.inkShadow,
-        alpha: 0.1,
+      addAssetSprite(root, {
+        id: `v4-region-${region.id}`,
+        url: v4RegionAssets[region.id],
+        x: region.center.x,
+        y: region.center.y,
+        width: v4RegionAssetWidths[region.id],
       });
-      drawOrganicPolygon(g, region.shape, region.color, region.accent, {
-        fillAlpha: 0.92,
-        strokeAlpha: 0.36,
-        strokeWidth: 5,
-      });
-      this.drawRegionContour(g, region.shape, region.accent);
-      this.drawTerrainDetails(g, region.id);
-      g.eventMode = "static";
-      g.cursor = "pointer";
-      g.on("pointertap", () => this.onFocusRegion(region.id, region.center.x, region.center.y, cameraConfig.communityZoom));
+
+      const hit = new Graphics();
+      hit.poly(region.shape.map((point) => [point.x, point.y]).flat()).fill({ color: 0xffffff, alpha: 0.001 });
+      hit.eventMode = "static";
+      hit.cursor = "pointer";
+      hit.on("pointertap", () => this.onFocusRegion(region.id, region.center.x, region.center.y, cameraConfig.communityZoom));
 
       const highlight = new Graphics();
       drawOrganicPolygon(highlight, region.shape, region.accent, region.accent, {
-        fillAlpha: 0.1,
-        strokeAlpha: 0.75,
-        strokeWidth: 10,
+        fillAlpha: 0.08,
+        strokeAlpha: 0.72,
+        strokeWidth: 9,
       });
       highlight.visible = false;
 
@@ -56,7 +56,7 @@ export class RegionLayer {
       banner.y = region.center.y - Math.min(120, region.radiusY * 0.42);
       banner.visible = false;
 
-      root.addChild(g, highlight);
+      root.addChild(hit, highlight);
       this.overlayLayer.addChild(banner);
       this.nodes.set(region.id, { id: region.id, highlight, banner });
       this.layer.addChild(root);

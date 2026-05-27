@@ -3087,6 +3087,156 @@ button {
   background: #c98b4f;
 }
 
+/* Keep the primary teacher actions visible on common 16:9 whiteboard viewports. */
+.hud-rail {
+  overflow-x: hidden;
+}
+
+.spirit-card {
+  max-height: 100%;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.spirit-card::-webkit-scrollbar {
+  display: none;
+}
+
+.spirit-portrait {
+  height: 138px;
+}
+
+.spirit-portrait img {
+  max-width: 146px;
+  max-height: 138px;
+}
+
+.spirit-portrait::before {
+  bottom: 12px;
+  width: 142px;
+  height: 20px;
+}
+
+.portrait-ring {
+  width: 154px;
+  height: 104px;
+}
+
+.spirit-nameplate {
+  margin-top: 6px;
+  padding: 7px 9px 6px;
+}
+
+.spirit-nameplate h2 {
+  font-size: 21px;
+}
+
+.xp-gem {
+  margin-top: 8px;
+  padding: 9px 10px 8px;
+}
+
+.evolution-track span {
+  min-height: 34px;
+}
+
+.score-actions {
+  margin-top: 8px;
+  padding: 7px;
+}
+
+.gain-button,
+.deduct-button,
+.quest-actions button {
+  min-height: 38px;
+}
+
+.quest-actions {
+  margin-top: 8px;
+}
+
+.app-shell {
+  grid-template-rows: 70px minmax(0, 1fr) 112px;
+}
+
+.spirit-portrait {
+  height: 116px;
+}
+
+.spirit-portrait img {
+  max-width: 128px;
+  max-height: 116px;
+}
+
+.spirit-portrait::before {
+  bottom: 9px;
+  width: 126px;
+  height: 17px;
+}
+
+.portrait-ring {
+  width: 138px;
+  height: 86px;
+}
+
+.spirit-portrait::after {
+  top: 10px;
+  left: 18px;
+  width: 13px;
+  height: 13px;
+  box-shadow: 220px 24px 0 #f2c94c, 204px 72px 0 #fff7d8;
+}
+
+.evolution-board {
+  margin-top: 7px;
+  padding: 7px;
+}
+
+.evolution-track {
+  margin-top: 6px;
+}
+
+.evolution-track span {
+  min-height: 29px;
+  font-size: 9px;
+}
+
+.evolution-track span i {
+  width: 11px;
+  height: 11px;
+}
+
+.evolution-track span.current i {
+  width: 13px;
+  height: 13px;
+}
+
+.evolution-board p {
+  margin-top: 4px;
+}
+
+.spirit-dock {
+  padding: 8px;
+}
+
+.dock-scroll {
+  padding: 7px 8px 4px;
+}
+
+.dock-spirit {
+  min-height: 82px;
+}
+
+.dock-avatar {
+  width: 48px;
+  height: 48px;
+}
+
+.dock-avatar img {
+  max-width: 54px;
+  max-height: 54px;
+}
+
 @media (max-height: 820px) {
   .spirit-card {
     padding: 10px;

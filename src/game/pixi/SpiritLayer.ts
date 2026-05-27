@@ -1,8 +1,10 @@
 import { Container, Graphics, Rectangle, Sprite, Text, Ticker } from "pixi.js";
 import { palette } from "../artDirection";
 import { cameraConfig } from "../cameraConfig";
-import { makeSoftShadow, makeSpiritSprite } from "../pixiAssets";
+import { makeSpiritSprite } from "../pixiAssets";
 import type { WorldMapData, WorldSpirit } from "../types";
+import { v4MapAssets } from "../v4MapAssets";
+import { addAssetSprite } from "./assetSprites";
 
 interface SpiritNode {
   root: Container;
@@ -102,7 +104,7 @@ export class SpiritLayer {
     root.hitArea = new Rectangle(-54, -104, 108, 132);
     root.on("pointertap", () => {
       this.onSelect(spirit.id);
-      this.onFocus(spirit.homePosition.x, spirit.homePosition.y + 52, cameraConfig.homeZoom);
+      this.onFocus(spirit.spritePosition.x, spirit.spritePosition.y - 34, cameraConfig.spiritZoom);
       this.bounce(spirit.id);
     });
 
@@ -113,7 +115,14 @@ export class SpiritLayer {
     halo.visible = false;
 
     const body = new Container();
-    body.addChild(makeSoftShadow(52, 13, 0.18));
+    addAssetSprite(body, {
+      id: `${spirit.id}-spirit-shadow`,
+      url: v4MapAssets.spiritShadow,
+      x: 0,
+      y: -6,
+      width: 70,
+      alpha: 0.62,
+    });
     const fallback = this.drawFallback(spirit);
     fallback.y = -22;
     body.addChild(fallback);
@@ -192,7 +201,7 @@ export class SpiritLayer {
   }
 
   private shouldShowBadge(childId: string) {
-    return childId === this.selectedChildId || this.zoom >= 1.45;
+    return childId === this.selectedChildId || this.zoom >= 1.62;
   }
 
   private shouldShowSpirit(childId: string, node: SpiritNode) {

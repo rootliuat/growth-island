@@ -1,7 +1,8 @@
 import type { MapRegion } from "./types";
 import { palette } from "./artDirection";
+import { spreadDistanceX, spreadDistanceY, spreadPoint } from "./mapLayout";
 
-export const regions: MapRegion[] = [
+const baseRegions: MapRegion[] = [
   {
     id: "growth-plaza",
     name: "成长树广场",
@@ -158,5 +159,14 @@ export const regions: MapRegion[] = [
     labelZoom: 0.5,
   },
 ];
+
+export const regions: MapRegion[] = baseRegions.map((region) => ({
+  ...region,
+  center: spreadPoint(region.center),
+  radiusX: spreadDistanceX(region.radiusX),
+  radiusY: spreadDistanceY(region.radiusY),
+  shape: region.shape.map(spreadPoint),
+  signPosition: spreadPoint(region.signPosition),
+}));
 
 export const regionsById = new Map(regions.map((region) => [region.id, region]));

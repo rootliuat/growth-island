@@ -62,7 +62,7 @@ export class WorldScene {
     this.labels.updateZoom(this.camera.zoom, data.selectedChildId);
 
     if (previousSelected && data.selectedChildId !== previousSelected) {
-      if (selected) this.focusPoint(selected.homePosition.x, selected.homePosition.y + 54, cameraConfig.homeZoom);
+      if (selected) this.focusSpirit(selected);
     }
 
     if (!previousData) {
@@ -102,12 +102,12 @@ export class WorldScene {
 
   focusSelected() {
     const selected = this.data?.spirits.find((spirit) => spirit.id === this.data?.selectedChildId);
-    if (selected) this.focusPoint(selected.homePosition.x, selected.homePosition.y + 54, cameraConfig.homeZoom);
+    if (selected) this.focusSpirit(selected);
   }
 
   focusChild(childId: string) {
     const selected = this.data?.spirits.find((spirit) => spirit.id === childId);
-    if (selected) this.focusPoint(selected.homePosition.x, selected.homePosition.y + 54, cameraConfig.homeZoom);
+    if (selected) this.focusSpirit(selected);
   }
 
   focusRegion(regionId: RegionId) {
@@ -123,6 +123,10 @@ export class WorldScene {
   private focusPoint = (x: number, y: number, zoom: number) => {
     this.camera.focus({ x, y, zoom });
   };
+
+  private focusSpirit(spirit: WorldMapData["spirits"][number]) {
+    this.focusPoint(spirit.spritePosition.x, spirit.spritePosition.y - 34, cameraConfig.spiritZoom);
+  }
 
   private focusRegionPoint = (regionId: RegionId, x: number, y: number, zoom: number) => {
     const region = regionsById.get(regionId);

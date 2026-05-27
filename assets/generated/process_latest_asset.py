@@ -14,7 +14,7 @@ from PIL import Image
 
 
 ROOT = Path(r"F:\TestCode\Points_game")
-BATCH_PATH = ROOT / "assets/generated/batch-02-160-prompts.json"
+DEFAULT_BATCH_PATH = ROOT / "assets/generated/batch-02-160-prompts.json"
 MANIFEST_PATH = ROOT / "assets/generated/asset-manifest.json"
 GENERATED_ROOT = Path(r"C:\Users\Rootliu\.codex\generated_images")
 REMOVE_KEY = Path(
@@ -129,11 +129,12 @@ def update_record(
 
 def main() -> None:
     parser = argparse.ArgumentParser()
+    parser.add_argument("--batch-path", default=str(DEFAULT_BATCH_PATH))
     parser.add_argument("--status", choices=["pending", "needs_revision"], default=None)
     parser.add_argument("--notes", default="")
     args = parser.parse_args()
 
-    batch = load_json(BATCH_PATH)
+    batch = load_json(Path(args.batch_path))
     manifest = load_json(MANIFEST_PATH)
     index, asset = next_asset(batch)
     source = latest_png()

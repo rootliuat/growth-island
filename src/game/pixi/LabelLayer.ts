@@ -2,6 +2,8 @@ import { Container, Graphics, Text } from "pixi.js";
 import { palette } from "../artDirection";
 import { regions } from "../regionConfig";
 import type { MapRegion, WorldMapData, WorldSpirit } from "../types";
+import { v4MapAssets } from "../v4MapAssets";
+import { addAssetSprite } from "./assetSprites";
 
 export class LabelLayer {
   private readonly regionLabels: Container[] = [];
@@ -13,7 +15,12 @@ export class LabelLayer {
       const node = new Container();
       node.x = region.signPosition.x;
       node.y = region.signPosition.y;
-      const pole = this.createRegionSign(region);
+      addAssetSprite(node, {
+        id: `v4-region-sign-${region.id}`,
+        url: v4MapAssets.regionSign,
+        y: 1,
+        width: region.name.length > 6 ? 198 : region.name.length > 4 ? 170 : 145,
+      });
       const text = new Text({
         text: region.name,
         style: {
@@ -24,8 +31,8 @@ export class LabelLayer {
         },
       });
       text.anchor.set(0.5);
-      text.y = -7;
-      node.addChild(pole, text);
+      text.y = -3;
+      node.addChild(text);
       this.regionLabels.push(node);
       this.layer.addChild(node);
     });
@@ -64,8 +71,8 @@ export class LabelLayer {
       const selected = childId === selectedChildId;
       const meta = this.spiritMeta.get(childId);
       const priority = !!meta && (meta.rank <= 3 || meta.level >= 6);
-      label.visible = selected || zoom >= 1.48 || (zoom >= 1.22 && priority);
-      label.scale.set(zoom >= 1.45 ? 1 : 0.84);
+      label.visible = selected || (zoom >= 1.62 && priority) || zoom >= 1.72;
+      label.scale.set(zoom >= 1.62 ? 1 : 0.84);
       const bubble = label.getChildByLabel("activity-bubble");
       if (bubble) bubble.visible = selected && zoom >= 1.22;
     });

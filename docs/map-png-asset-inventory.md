@@ -4,6 +4,11 @@
 
 当前阶段只做资产清单和接入预留，不做地图几何视觉优化。
 
+配套文档：
+
+- 地图 PNG 美术规范：[map-png-style-guide.md](./map-png-style-guide.md)
+- WSL 生产与验收流程：[map-png-generation-guide.md](./map-png-generation-guide.md)
+
 ## 替换入口
 
 | 场景层 | 当前代码位置 | 需要替换的内容 | PNG 接入方式 |

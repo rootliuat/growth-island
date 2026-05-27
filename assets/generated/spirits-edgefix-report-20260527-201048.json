@@ -1,0 +1,412 @@
+{
+  "backupRoot": "/mnt/f/TestCode/Points_game/assets/generated/spirits-edgefix-backup-20260527-201048",
+  "processed": [
+    {
+      "path": "/mnt/f/TestCode/Points_game/assets/generated/spirits/24-shuangye-huling/lv4.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "targetPixels": 1038392,
+      "validPixels": 526684,
+      "changedPixels": 1038392,
+      "beforeMagentaTransparentPixels": 0,
+      "beforeMagentaSemiTransparentPixels": 39,
+      "afterMagentaTransparentPixels": 0,
+      "afterMagentaSemiTransparentPixels": 0
+    },
+    {
+      "path": "/mnt/f/TestCode/Points_game/assets/generated/spirits/24-shuangye-huling/lv7.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "targetPixels": 875245,
+      "validPixels": 601772,
+      "changedPixels": 875244,
+      "beforeMagentaTransparentPixels": 31541,
+      "beforeMagentaSemiTransparentPixels": 0,
+      "afterMagentaTransparentPixels": 0,
+      "afterMagentaSemiTransparentPixels": 0
+    },
+    {
+      "path": "/mnt/f/TestCode/Points_game/assets/generated/spirits/26-shanhu-tuling/egg-2.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "targetPixels": 976746,
+      "validPixels": 589824,
+      "changedPixels": 976746,
+      "beforeMagentaTransparentPixels": 970467,
+      "beforeMagentaSemiTransparentPixels": 6279,
+      "afterMagentaTransparentPixels": 0,
+      "afterMagentaSemiTransparentPixels": 0
+    },
+    {
+      "path": "/mnt/f/TestCode/Points_game/assets/generated/spirits/26-shanhu-tuling/egg-3.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "targetPixels": 936414,
+      "validPixels": 631011,
+      "changedPixels": 936414,
+      "beforeMagentaTransparentPixels": 931299,
+      "beforeMagentaSemiTransparentPixels": 5113,
+      "afterMagentaTransparentPixels": 0,
+      "afterMagentaSemiTransparentPixels": 0
+    },
+    {
+      "path": "/mnt/f/TestCode/Points_game/assets/generated/spirits/26-shanhu-tuling/lv3.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "targetPixels": 1077133,
+      "validPixels": 484932,
+      "changedPixels": 1077133,
+      "beforeMagentaTransparentPixels": 1063435,
+      "beforeMagentaSemiTransparentPixels": 13698,
+      "afterMagentaTransparentPixels": 0,
+      "afterMagentaSemiTransparentPixels": 0
+    },
+    {
+      "path": "/mnt/f/TestCode/Points_game/assets/generated/spirits/26-shanhu-tuling/lv4.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "targetPixels": 944802,
+      "validPixels": 605752,
+      "changedPixels": 944802,
+      "beforeMagentaTransparentPixels": 913520,
+      "beforeMagentaSemiTransparentPixels": 31282,
+      "afterMagentaTransparentPixels": 0,
+      "afterMagentaSemiTransparentPixels": 0
+    },
+    {
+      "path": "/mnt/f/TestCode/Points_game/assets/generated/spirits/26-shanhu-tuling/lv5.png",
+      "size": [
+        1284,
+        1225
+      ],
+      "targetPixels": 945561,
+      "validPixels": 601174,
+      "changedPixels": 945561,
+      "beforeMagentaTransparentPixels": 912627,
+      "beforeMagentaSemiTransparentPixels": 32933,
+      "afterMagentaTransparentPixels": 0,
+      "afterMagentaSemiTransparentPixels": 0
+    },
+    {
+      "path": "/mnt/f/TestCode/Points_game/assets/generated/spirits/26-shanhu-tuling/lv6.png",
+      "size": [
+        1284,
+        1225
+      ],
+      "targetPixels": 925401,
+      "validPixels": 616608,
+      "changedPixels": 925401,
+      "beforeMagentaTransparentPixels": 888958,
+      "beforeMagentaSemiTransparentPixels": 36441,
+      "afterMagentaTransparentPixels": 0,
+      "afterMagentaSemiTransparentPixels": 0
+    },
+    {
+      "path": "/mnt/f/TestCode/Points_game/assets/generated/spirits/28-yunduo-yangling/egg-4.png",
+      "size": [
+        1203,
+        1307
+      ],
+      "targetPixels": 986394,
+      "validPixels": 534651,
+      "changedPixels": 986394,
+      "beforeMagentaTransparentPixels": 981948,
+      "beforeMagentaSemiTransparentPixels": 4445,
+      "afterMagentaTransparentPixels": 0,
+      "afterMagentaSemiTransparentPixels": 0
+    },
+    {
+      "path": "/mnt/f/TestCode/Points_game/assets/generated/spirits/28-yunduo-yangling/lv2.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "targetPixels": 1181721,
+      "validPixels": 383441,
+      "changedPixels": 1181721,
+      "beforeMagentaTransparentPixels": 1172156,
+      "beforeMagentaSemiTransparentPixels": 9561,
+      "afterMagentaTransparentPixels": 0,
+      "afterMagentaSemiTransparentPixels": 0
+    },
+    {
+      "path": "/mnt/f/TestCode/Points_game/assets/generated/spirits/28-yunduo-yangling/lv3.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "targetPixels": 1096282,
+      "validPixels": 464006,
+      "changedPixels": 1096282,
+      "beforeMagentaTransparentPixels": 1085335,
+      "beforeMagentaSemiTransparentPixels": 10944,
+      "afterMagentaTransparentPixels": 0,
+      "afterMagentaSemiTransparentPixels": 0
+    },
+    {
+      "path": "/mnt/f/TestCode/Points_game/assets/generated/spirits/28-yunduo-yangling/lv4.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "targetPixels": 997852,
+      "validPixels": 557780,
+      "changedPixels": 997852,
+      "beforeMagentaTransparentPixels": 981108,
+      "beforeMagentaSemiTransparentPixels": 16732,
+      "afterMagentaTransparentPixels": 0,
+      "afterMagentaSemiTransparentPixels": 0
+    },
+    {
+      "path": "/mnt/f/TestCode/Points_game/assets/generated/spirits/28-yunduo-yangling/lv5.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "targetPixels": 913453,
+      "validPixels": 642500,
+      "changedPixels": 913453,
+      "beforeMagentaTransparentPixels": 893372,
+      "beforeMagentaSemiTransparentPixels": 20070,
+      "afterMagentaTransparentPixels": 0,
+      "afterMagentaSemiTransparentPixels": 0
+    },
+    {
+      "path": "/mnt/f/TestCode/Points_game/assets/generated/spirits/28-yunduo-yangling/lv6.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "targetPixels": 884472,
+      "validPixels": 672710,
+      "changedPixels": 884472,
+      "beforeMagentaTransparentPixels": 863723,
+      "beforeMagentaSemiTransparentPixels": 20738,
+      "afterMagentaTransparentPixels": 0,
+      "afterMagentaSemiTransparentPixels": 0
+    },
+    {
+      "path": "/mnt/f/TestCode/Points_game/assets/generated/spirits/28-yunduo-yangling/lv7.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "targetPixels": 841959,
+      "validPixels": 579460,
+      "changedPixels": 841959,
+      "beforeMagentaTransparentPixels": 781476,
+      "beforeMagentaSemiTransparentPixels": 60456,
+      "afterMagentaTransparentPixels": 0,
+      "afterMagentaSemiTransparentPixels": 0
+    },
+    {
+      "path": "/mnt/f/TestCode/Points_game/assets/generated/spirits/28-yunduo-yangling/lv8.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "targetPixels": 806702,
+      "validPixels": 650766,
+      "changedPixels": 806702,
+      "beforeMagentaTransparentPixels": 761213,
+      "beforeMagentaSemiTransparentPixels": 45201,
+      "afterMagentaTransparentPixels": 0,
+      "afterMagentaSemiTransparentPixels": 0
+    },
+    {
+      "path": "/mnt/f/TestCode/Points_game/assets/generated/spirits/31-zhuyin-xiongmaoling/egg-1.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "targetPixels": 1067856,
+      "validPixels": 500618,
+      "changedPixels": 1067856,
+      "beforeMagentaTransparentPixels": 1064630,
+      "beforeMagentaSemiTransparentPixels": 3226,
+      "afterMagentaTransparentPixels": 0,
+      "afterMagentaSemiTransparentPixels": 0
+    },
+    {
+      "path": "/mnt/f/TestCode/Points_game/assets/generated/spirits/31-zhuyin-xiongmaoling/egg-2.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "targetPixels": 1060851,
+      "validPixels": 507983,
+      "changedPixels": 1060851,
+      "beforeMagentaTransparentPixels": 1056868,
+      "beforeMagentaSemiTransparentPixels": 3983,
+      "afterMagentaTransparentPixels": 0,
+      "afterMagentaSemiTransparentPixels": 0
+    },
+    {
+      "path": "/mnt/f/TestCode/Points_game/assets/generated/spirits/31-zhuyin-xiongmaoling/egg-3.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "targetPixels": 1013901,
+      "validPixels": 551257,
+      "changedPixels": 1013901,
+      "beforeMagentaTransparentPixels": 1009426,
+      "beforeMagentaSemiTransparentPixels": 4475,
+      "afterMagentaTransparentPixels": 0,
+      "afterMagentaSemiTransparentPixels": 0
+    },
+    {
+      "path": "/mnt/f/TestCode/Points_game/assets/generated/spirits/31-zhuyin-xiongmaoling/egg-4.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "targetPixels": 991361,
+      "validPixels": 577246,
+      "changedPixels": 991361,
+      "beforeMagentaTransparentPixels": 986643,
+      "beforeMagentaSemiTransparentPixels": 4718,
+      "afterMagentaTransparentPixels": 0,
+      "afterMagentaSemiTransparentPixels": 0
+    },
+    {
+      "path": "/mnt/f/TestCode/Points_game/assets/generated/spirits/31-zhuyin-xiongmaoling/lv2.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "targetPixels": 1077720,
+      "validPixels": 482844,
+      "changedPixels": 1077720,
+      "beforeMagentaTransparentPixels": 1065219,
+      "beforeMagentaSemiTransparentPixels": 12501,
+      "afterMagentaTransparentPixels": 0,
+      "afterMagentaSemiTransparentPixels": 0
+    },
+    {
+      "path": "/mnt/f/TestCode/Points_game/assets/generated/spirits/31-zhuyin-xiongmaoling/lv3.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "targetPixels": 1000695,
+      "validPixels": 559119,
+      "changedPixels": 1000695,
+      "beforeMagentaTransparentPixels": 986230,
+      "beforeMagentaSemiTransparentPixels": 14462,
+      "afterMagentaTransparentPixels": 0,
+      "afterMagentaSemiTransparentPixels": 0
+    },
+    {
+      "path": "/mnt/f/TestCode/Points_game/assets/generated/spirits/31-zhuyin-xiongmaoling/lv4.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "targetPixels": 958313,
+      "validPixels": 602226,
+      "changedPixels": 958313,
+      "beforeMagentaTransparentPixels": 942102,
+      "beforeMagentaSemiTransparentPixels": 16208,
+      "afterMagentaTransparentPixels": 0,
+      "afterMagentaSemiTransparentPixels": 0
+    },
+    {
+      "path": "/mnt/f/TestCode/Points_game/assets/generated/spirits/31-zhuyin-xiongmaoling/lv5.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "targetPixels": 938980,
+      "validPixels": 621023,
+      "changedPixels": 938980,
+      "beforeMagentaTransparentPixels": 921626,
+      "beforeMagentaSemiTransparentPixels": 17352,
+      "afterMagentaTransparentPixels": 0,
+      "afterMagentaSemiTransparentPixels": 0
+    },
+    {
+      "path": "/mnt/f/TestCode/Points_game/assets/generated/spirits/31-zhuyin-xiongmaoling/lv6.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "targetPixels": 971249,
+      "validPixels": 591287,
+      "changedPixels": 971249,
+      "beforeMagentaTransparentPixels": 959101,
+      "beforeMagentaSemiTransparentPixels": 12145,
+      "afterMagentaTransparentPixels": 0,
+      "afterMagentaSemiTransparentPixels": 0
+    },
+    {
+      "path": "/mnt/f/TestCode/Points_game/assets/generated/spirits/31-zhuyin-xiongmaoling/lv7.png",
+      "size": [
+        1163,
+        1352
+      ],
+      "targetPixels": 1111401,
+      "validPixels": 429094,
+      "changedPixels": 1111401,
+      "beforeMagentaTransparentPixels": 1039541,
+      "beforeMagentaSemiTransparentPixels": 31798,
+      "afterMagentaTransparentPixels": 0,
+      "afterMagentaSemiTransparentPixels": 0
+    },
+    {
+      "path": "/mnt/f/TestCode/Points_game/assets/generated/spirits/31-zhuyin-xiongmaoling/lv8.png",
+      "size": [
+        1163,
+        1353
+      ],
+      "targetPixels": 896686,
+      "validPixels": 608308,
+      "changedPixels": 896686,
+      "beforeMagentaTransparentPixels": 721267,
+      "beforeMagentaSemiTransparentPixels": 175386,
+      "afterMagentaTransparentPixels": 0,
+      "afterMagentaSemiTransparentPixels": 0
+    },
+    {
+      "path": "/mnt/f/TestCode/Points_game/assets/generated/spirits/40-tongmeng-shuling/egg-4.png",
+      "size": [
+        1163,
+        1352
+      ],
+      "targetPixels": 1055312,
+      "validPixels": 509654,
+      "changedPixels": 1055312,
+      "beforeMagentaTransparentPixels": 0,
+      "beforeMagentaSemiTransparentPixels": 8769,
+      "afterMagentaTransparentPixels": 0,
+      "afterMagentaSemiTransparentPixels": 0
+    },
+    {
+      "path": "/mnt/f/TestCode/Points_game/assets/generated/spirits/40-tongmeng-shuling/lv2.png",
+      "size": [
+        1163,
+        1353
+      ],
+      "targetPixels": 1032988,
+      "validPixels": 534917,
+      "changedPixels": 1032988,
+      "beforeMagentaTransparentPixels": 0,
+      "beforeMagentaSemiTransparentPixels": 10476,
+      "afterMagentaTransparentPixels": 0,
+      "afterMagentaSemiTransparentPixels": 0
+    }
+  ],
+  "missing": []
+}

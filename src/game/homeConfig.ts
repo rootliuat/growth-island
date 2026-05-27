@@ -1,6 +1,7 @@
 import type { HomeSlot } from "./types";
+import { spreadPoint } from "./mapLayout";
 
-export const homeSlots: HomeSlot[] = [
+const baseHomeSlots: HomeSlot[] = [
   { id: "home-01", regionId: "mangrove", type: "treehouse", position: { x: 430, y: 470 }, doorOffset: { x: 10, y: 62 } },
   { id: "home-02", regionId: "mangrove", type: "treehouse", position: { x: 590, y: 405 }, doorOffset: { x: 4, y: 66 } },
   { id: "home-03", regionId: "mangrove", type: "cottage", position: { x: 750, y: 492 }, doorOffset: { x: 10, y: 58 } },
@@ -42,6 +43,11 @@ export const homeSlots: HomeSlot[] = [
   { id: "home-34", regionId: "math-arena", type: "tent", position: { x: 1518, y: 1215 }, doorOffset: { x: 8, y: 54 } },
   { id: "home-35", regionId: "math-arena", type: "pearl", position: { x: 1380, y: 1110 }, doorOffset: { x: 10, y: 60 } },
 ];
+
+export const homeSlots: HomeSlot[] = baseHomeSlots.map((slot) => ({
+  ...slot,
+  position: spreadPoint(slot.position),
+}));
 
 export function getHomeSlot(index: number) {
   return homeSlots[index % homeSlots.length];

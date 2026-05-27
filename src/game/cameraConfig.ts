@@ -4,6 +4,7 @@ export const cameraConfig = {
   fullIslandZoom: 0.58,
   communityZoom: 1,
   homeZoom: 1.35,
+  spiritZoom: 1.56,
   detailZoom: 1.65,
   focusDurationMs: 650,
 };

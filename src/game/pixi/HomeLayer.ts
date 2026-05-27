@@ -2,6 +2,8 @@ import { Container, Graphics, Rectangle, Text } from "pixi.js";
 import { palette } from "../artDirection";
 import { cameraConfig } from "../cameraConfig";
 import type { WorldHome, WorldMapData } from "../types";
+import { v4HomeAssetUrl, v4HomePadUrl, v4HomeTargetWidth, v4MapAssets } from "../v4MapAssets";
+import { addAssetSprite } from "./assetSprites";
 
 interface HomeNode {
   root: Container;
@@ -84,7 +86,7 @@ export class HomeLayer {
     node.label = home.childId;
     node.eventMode = "static";
     node.cursor = "pointer";
-    node.hitArea = new Rectangle(-82, -112, 164, 188);
+    node.hitArea = new Rectangle(-105, -150, 210, 245);
     node.on("pointertap", () => {
       this.onSelect(home.childId);
       this.onFocus(home.doorPosition.x, home.doorPosition.y + 12, cameraConfig.homeZoom);
@@ -104,8 +106,8 @@ export class HomeLayer {
     focusGlow.visible = false;
     focusGlow.alpha = 0;
 
-    const body = new Graphics();
-    this.drawHome(body, home);
+    const body = new Container();
+    this.addHomeArtwork(body, home);
     node.addChild(halo, focusGlow, body);
 
     const { decor, plaque } = this.drawLevelDecor(home);
@@ -130,6 +132,33 @@ export class HomeLayer {
       beacon.visible = home.childId === this.selectedChildId;
     });
     return homeNode;
+  }
+
+  private addHomeArtwork(body: Container, home: WorldHome) {
+    addAssetSprite(body, {
+      id: `${home.id}-shadow`,
+      url: v4MapAssets.homeShadow,
+      x: 0,
+      y: 58,
+      width: 138,
+      alpha: 0.34,
+    });
+    addAssetSprite(body, {
+      id: `${home.id}-pad`,
+      url: v4HomePadUrl(home.regionId),
+      x: 0,
+      y: 67,
+      width: home.type === "treehouse" ? 150 : 138,
+      alpha: 0.92,
+    });
+    addAssetSprite(body, {
+      id: `${home.id}-artwork`,
+      url: v4HomeAssetUrl(home.type, home.level),
+      x: 0,
+      y: home.type === "treehouse" ? -2 : 5,
+      width: v4HomeTargetWidth(home.type, home.level),
+      anchorY: 0.56,
+    });
   }
 
   private drawHome(g: Graphics, home: WorldHome) {
