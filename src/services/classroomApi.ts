@@ -1,6 +1,12 @@
 import type { ChildProfile, ClassroomSnapshot, LedgerRecord, MoralAgentResponse } from "../types";
 
-const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? "http://localhost:5174").replace(/\/$/, "");
+function getDefaultApiBaseUrl() {
+  if (typeof window === "undefined") return "http://localhost:5174";
+  const { protocol, hostname } = window.location;
+  return `${protocol}//${hostname}:5174`;
+}
+
+const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? getDefaultApiBaseUrl()).replace(/\/$/, "");
 
 async function requestSnapshot(path: string, init?: RequestInit): Promise<ClassroomSnapshot> {
   const response = await fetch(`${apiBaseUrl}${path}`, {

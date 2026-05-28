@@ -11,10 +11,46 @@ interface SpiritNode {
   root: Container;
   halo: Graphics;
   body: Container;
+  artwork?: Container;
+  artworkReveal?: ArtworkReveal;
+  evolvePulse?: EvolvePulse;
+  imageKey?: string;
+  loadVersion: number;
   levelBadge: Container;
   moodDot: Graphics;
   rank: number;
   level: number;
+}
+
+interface ArtworkReveal {
+  elapsed: number;
+  duration: number;
+  baseScaleX: number;
+  baseScaleY: number;
+  startY: number;
+  targetY: number;
+}
+
+interface EvolvePulse {
+  elapsed: number;
+  duration: number;
+  upgraded: boolean;
+}
+
+function clamp01(value: number) {
+  return Math.max(0, Math.min(1, value));
+}
+
+function easeOutCubic(value: number) {
+  const t = clamp01(value);
+  return 1 - Math.pow(1 - t, 3);
+}
+
+function easeOutBack(value: number) {
+  const t = clamp01(value);
+  const c1 = 1.5;
+  const c3 = c1 + 1;
+  return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
 }
 
 export class SpiritLayer {
@@ -50,6 +86,7 @@ export class SpiritLayer {
       node.root.y = spirit.spritePosition.y;
       node.rank = spirit.child.rank;
       node.level = spirit.child.level;
+      this.updateArtwork(node, spirit);
       node.root.scale.set(this.getTargetScale(spirit.id));
       node.halo.visible = spirit.id === this.selectedChildId;
       node.root.visible = this.shouldShowSpirit(spirit.id, node);
@@ -75,6 +112,18 @@ export class SpiritLayer {
     node.body.scale.set(1.2);
   }
 
+  evolve(childId: string, upgraded: boolean) {
+    const node = this.nodes.get(childId);
+    if (!node) return;
+    node.evolvePulse = {
+      elapsed: 0,
+      duration: upgraded ? 1900 : 760,
+      upgraded,
+    };
+    node.body.scale.set(upgraded ? 0.72 : 0.92);
+    node.body.rotation = upgraded ? -0.035 : 0;
+  }
+
   updateFrame(ticker: Ticker) {
     this.elapsed += ticker.deltaMS / 1000;
     this.nodes.forEach((node, childId) => {
@@ -83,9 +132,14 @@ export class SpiritLayer {
       const targetRoot = this.getTargetScale(childId);
       const rootScale = node.root.scale.x + (targetRoot - node.root.scale.x) * Math.min(1, ticker.deltaMS / 160);
       node.root.scale.set(rootScale);
-      node.body.scale.set(node.body.scale.x + (breath - node.body.scale.x) * 0.08);
-      node.body.y = -Math.abs(Math.sin(this.elapsed * 1.6 + node.root.x * 0.01)) * 5;
+      const pulse = this.updateEvolvePulse(node, childId, ticker.deltaMS);
+      node.body.scale.set(node.body.scale.x + (breath * pulse.scale - node.body.scale.x) * pulse.lerp);
+      node.body.y = -Math.abs(Math.sin(this.elapsed * 1.6 + node.root.x * 0.01)) * 5 + pulse.y;
+      node.body.rotation += (pulse.rotation - node.body.rotation) * 0.12;
       node.halo.rotation += 0.006 * ticker.deltaTime;
+      node.halo.visible = pulse.haloVisible;
+      node.halo.alpha = pulse.haloAlpha;
+      this.updateArtworkReveal(node, ticker.deltaMS);
     });
   }
 
@@ -127,18 +181,6 @@ export class SpiritLayer {
       width: assetScaleRules.spirit.shadowWidth,
       alpha: 0.5,
     });
-    const fallback = this.drawFallback(spirit);
-    fallback.y = -22;
-    body.addChild(fallback);
-    if (spirit.imageUrl) {
-      makeSpiritSprite(spirit.imageUrl, getSpiritTargetWidth(spirit.child.state)).then((sprite: Sprite) => {
-        if (body.destroyed) return;
-        sprite.y = 10;
-        body.removeChild(fallback);
-        fallback.destroy();
-        body.addChild(sprite);
-      });
-    }
 
     const levelBadge = new Container();
     levelBadge.x = -44;
@@ -161,7 +203,126 @@ export class SpiritLayer {
     moodDot.tint = this.moodTint(spirit.mood);
 
     root.addChild(halo, body, levelBadge, moodDot);
-    return { root, halo, body, levelBadge, moodDot, rank: spirit.child.rank, level: spirit.child.level };
+    const node = { root, halo, body, levelBadge, moodDot, rank: spirit.child.rank, level: spirit.child.level, loadVersion: 0 };
+    this.updateArtwork(node, spirit);
+    return node;
+  }
+
+  private updateArtwork(node: SpiritNode, spirit: WorldSpirit) {
+    const imageKey = spirit.imageKey ?? `fallback:${spirit.child.state}:${spirit.accent}`;
+    if (node.imageKey === imageKey) return;
+
+    node.imageKey = imageKey;
+    node.loadVersion += 1;
+    const loadVersion = node.loadVersion;
+    if (!spirit.imageUrl) {
+      this.showFallback(node, spirit);
+      return;
+    }
+    if (!node.artwork) this.showFallback(node, spirit);
+
+    makeSpiritSprite(spirit.imageUrl, getSpiritTargetWidth(spirit.child.state))
+      .then((sprite: Sprite) => {
+        if (node.body.destroyed || loadVersion !== node.loadVersion) {
+          sprite.destroy();
+          return;
+        }
+        sprite.y = 10;
+        const baseScaleX = sprite.scale.x;
+        const baseScaleY = sprite.scale.y;
+        sprite.alpha = 0;
+        sprite.scale.set(baseScaleX * 0.16, baseScaleY * 0.16);
+        sprite.y = 42;
+        node.artwork?.destroy();
+        node.body.addChild(sprite);
+        node.artwork = sprite;
+        node.artworkReveal = {
+          elapsed: 0,
+          duration: 1720,
+          baseScaleX,
+          baseScaleY,
+          startY: 42,
+          targetY: 10,
+        };
+      })
+      .catch(() => undefined);
+  }
+
+  private showFallback(node: SpiritNode, spirit: WorldSpirit) {
+    node.artwork?.destroy();
+    const fallback = this.drawFallback(spirit);
+    fallback.y = -22;
+    node.body.addChild(fallback);
+    node.artwork = fallback;
+    node.artworkReveal = undefined;
+  }
+
+  private updateArtworkReveal(node: SpiritNode, deltaMS: number) {
+    const reveal = node.artworkReveal;
+    const artwork = node.artwork;
+    if (!reveal || !artwork) return;
+
+    reveal.elapsed += deltaMS;
+    const t = clamp01(reveal.elapsed / reveal.duration);
+    const rise = easeOutCubic(t);
+    const scaleOvershoot =
+      t < 0.56
+        ? 0.16 + easeOutBack(t / 0.56) * 1.02
+        : t < 0.8
+          ? 1.18 - easeOutCubic((t - 0.56) / 0.24) * 0.22
+          : 0.96 + easeOutCubic((t - 0.8) / 0.2) * 0.04;
+    artwork.alpha = easeOutCubic(t / 0.34);
+    artwork.scale.set(reveal.baseScaleX * scaleOvershoot, reveal.baseScaleY * scaleOvershoot);
+    artwork.y = reveal.startY + (reveal.targetY - reveal.startY) * rise - Math.sin(Math.PI * t) * 18;
+    artwork.rotation = Math.sin(Math.PI * t) * 0.035;
+
+    if (t >= 1) {
+      artwork.alpha = 1;
+      artwork.scale.set(reveal.baseScaleX, reveal.baseScaleY);
+      artwork.y = reveal.targetY;
+      artwork.rotation = 0;
+      node.artworkReveal = undefined;
+    }
+  }
+
+  private updateEvolvePulse(node: SpiritNode, childId: string, deltaMS: number) {
+    const pulse = node.evolvePulse;
+    if (!pulse) {
+      const selected = childId === this.selectedChildId;
+      return {
+        scale: 1,
+        y: 0,
+        rotation: 0,
+        lerp: 0.08,
+        haloVisible: selected,
+        haloAlpha: selected ? 1 : 0,
+      };
+    }
+
+    pulse.elapsed += deltaMS;
+    const t = clamp01(pulse.elapsed / pulse.duration);
+    const lift = Math.sin(Math.PI * t);
+    const scale = pulse.upgraded
+      ? t < 0.52
+        ? 0.7 + easeOutBack(t / 0.52) * 0.54
+        : 1.24 - easeOutCubic((t - 0.52) / 0.48) * 0.24
+      : 0.94 + lift * 0.08;
+    const result = {
+      scale,
+      y: pulse.upgraded ? -lift * 22 : -lift * 6,
+      rotation: pulse.upgraded ? Math.sin(Math.PI * t * 1.2) * 0.045 : 0,
+      lerp: pulse.upgraded ? 0.18 : 0.12,
+      haloVisible: pulse.upgraded || childId === this.selectedChildId,
+      haloAlpha: pulse.upgraded ? 0.52 + lift * 0.38 : 0.32,
+    };
+
+    if (t >= 1) {
+      node.evolvePulse = undefined;
+      node.body.rotation = 0;
+      node.halo.alpha = 1;
+    }
+
+    return result;
   }
 
   private drawFallback(spirit: WorldSpirit) {

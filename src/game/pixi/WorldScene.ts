@@ -76,12 +76,13 @@ export class WorldScene {
       const target = data.spirits.find((spirit) => spirit.id === data.lastLedger?.childId);
       if (target) {
         const previousTarget = previousData.spirits.find((spirit) => spirit.id === target.id);
+        const changedStage = !!previousTarget && (previousTarget.child.level !== target.child.level || previousTarget.child.state !== target.child.state);
+        const upgraded = !!previousTarget && target.child.xp >= previousTarget.child.xp;
         this.effects.emitXp(target.spritePosition, data.lastLedger.delta);
-        this.spirits.bounce(target.id);
+        if (changedStage) this.spirits.evolve(target.id, upgraded);
+        else this.spirits.bounce(target.id);
         this.homes.pulse(target.id);
-        if (previousTarget && (previousTarget.child.level !== target.child.level || previousTarget.child.state !== target.child.state)) {
-          this.effects.emitGrowthChange(target.homePosition, target.child.xp >= previousTarget.child.xp);
-        }
+        if (changedStage) this.effects.emitGrowthChange(target.spritePosition, upgraded, target.accent);
       }
     }
   }
