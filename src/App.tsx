@@ -10,6 +10,7 @@ import { TeacherActionPanel } from "./components/Hud/TeacherActionPanel";
 import { MathPkModal } from "./components/MathPkModal";
 import { ModulePlaceholder } from "./components/modules/ModulePlaceholder";
 import { RollCallModule } from "./components/modules/RollCallModule";
+import { VoiceRecordModule } from "./components/modules/VoiceRecordModule";
 import { moduleConfigById, type AppModuleId } from "./components/modules/moduleConfig";
 import { WorldMapContainer } from "./components/WorldMap/WorldMapContainer";
 import type { PixiWorldMapHandle } from "./components/WorldMap/PixiWorldMap";
@@ -319,6 +320,31 @@ export function App() {
     setRollCallCalledIds([]);
   };
 
+  const analyzeVoiceRecord = async (childId: string, transcript: string) => {
+    setSelectedChildId(childId);
+    const result = evaluateMoralText(transcript);
+    setLastEvaluation(result);
+    return result;
+  };
+
+  const confirmVoiceRecord = (childId: string, transcript: string, result: MoralEvaluationResult) => {
+    setSelectedChildId(childId);
+    setLastEvaluation(result);
+    if (result.xpDelta === 0) return;
+    commitLedger({
+      childId,
+      operatorChildId: childId,
+      delta: result.xpDelta,
+      source: "dialogue-agent",
+      category: result.category,
+      reason: `语音记录：${transcript}`,
+    });
+  };
+
+  const rejectVoiceSuggestion = (result: MoralEvaluationResult) => {
+    setLastEvaluation({ ...result, status: "rejected" });
+  };
+
   const returnToHome = () => {
     focusChildOnHome();
   };
@@ -410,6 +436,21 @@ export function App() {
           onDraw={drawRollCallChild}
           onReset={resetRollCall}
           onToggleExcludeCalled={() => setRollCallExcludeCalled((current) => !current)}
+          onFocusChild={focusChildOnHome}
+        />
+      ) : activeModule === "voice-record" ? (
+        <VoiceRecordModule
+          childrenWithProgress={childrenWithProgress}
+          spiritsById={spiritsById}
+          selectedChild={selectedChild}
+          pendingReviews={pendingReviews}
+          recentRecords={allRecentRecords}
+          onSelectChild={setSelectedChildId}
+          onAnalyze={analyzeVoiceRecord}
+          onConfirm={confirmVoiceRecord}
+          onRejectSuggestion={rejectVoiceSuggestion}
+          onApproveReview={approveReview}
+          onRejectReview={rejectReview}
           onFocusChild={focusChildOnHome}
         />
       ) : (
