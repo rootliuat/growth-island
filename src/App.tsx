@@ -10,8 +10,10 @@ import { TeacherActionPanel } from "./components/Hud/TeacherActionPanel";
 import { MathPkModal } from "./components/MathPkModal";
 import { ModulePlaceholder } from "./components/modules/ModulePlaceholder";
 import { LeaderboardModule } from "./components/modules/LeaderboardModule";
+import { LotteryModule } from "./components/modules/LotteryModule";
 import { MathArenaModule } from "./components/modules/MathArenaModule";
 import { RollCallModule } from "./components/modules/RollCallModule";
+import { ShopModule } from "./components/modules/ShopModule";
 import { VoiceRecordModule } from "./components/modules/VoiceRecordModule";
 import { moduleConfigById, type AppModuleId } from "./components/modules/moduleConfig";
 import { WorldMapContainer } from "./components/WorldMap/WorldMapContainer";
@@ -482,6 +484,22 @@ export function App() {
           childrenWithProgress={childrenWithProgress}
           spiritsById={spiritsById}
           selectedChild={selectedChild}
+          onFocusChild={focusChildOnHome}
+        />
+      ) : activeModule === "lottery" ? (
+        <LotteryModule
+          childrenWithProgress={childrenWithProgress}
+          spiritsById={spiritsById}
+          selectedChild={selectedChild}
+          onSelectChild={setSelectedChildId}
+          onFocusChild={focusChildOnHome}
+        />
+      ) : activeModule === "shop" ? (
+        <ShopModule
+          childrenWithProgress={childrenWithProgress}
+          spiritsById={spiritsById}
+          selectedChild={selectedChild}
+          onSelectChild={setSelectedChildId}
           onFocusChild={focusChildOnHome}
         />
       ) : (
