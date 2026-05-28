@@ -97,7 +97,7 @@ export const moduleConfigs: ModuleConfig[] = [
       { title: "20 以内算术", description: "第一版统一使用加减法，保持低龄儿童可理解。" },
       { title: "胜者奖励", description: "胜者 +30 XP，败者不扣 XP，并写入成长记录。" },
     ],
-    futureItems: ["独立竞技场页面", "题目难度分层", "战斗记录", "PK 入口与地图建筑联动"],
+    futureItems: ["题目难度分层", "战斗记录", "PK 入口与地图建筑联动", "班级挑战赛"],
     homeLinkDescription: "PK 结束后返回首页，胜者精灵 XP 与成长记录同步更新。",
     Icon: Swords,
   },

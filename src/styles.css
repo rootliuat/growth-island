@@ -998,9 +998,25 @@ button {
   background: #fff4c8;
 }
 
+.battle-orb.has-image {
+  overflow: visible;
+  background: #fff7d8;
+}
+
+.battle-orb img {
+  max-width: 142px;
+  max-height: 142px;
+  object-fit: contain;
+  filter: drop-shadow(0 12px 0 rgba(58, 77, 56, 0.12));
+}
+
 .battle-pet.right .battle-orb {
   background: #de815f;
   box-shadow: inset 14px -16px 0 rgba(126, 63, 51, 0.17), 0 18px 30px rgba(55, 82, 94, 0.24);
+}
+
+.battle-pet.right .battle-orb.has-image {
+  background: #fff2cf;
 }
 
 .battle-pet.active .battle-orb {
@@ -4950,6 +4966,438 @@ button {
   line-height: 1.6;
 }
 
+.math-arena-page {
+  grid-template-rows: auto minmax(0, 1fr);
+  color: #35524a;
+}
+
+.math-arena-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 22px 24px;
+  border: 3px solid #d6d0be;
+  border-radius: 24px;
+  background: #f4f1e6;
+  box-shadow: 0 9px 0 rgba(123, 128, 101, 0.16), 0 18px 34px rgba(43, 67, 61, 0.12);
+}
+
+.math-arena-header h1 {
+  margin: 14px 0 8px;
+  color: #2f473f;
+  font-size: clamp(34px, 3.2vw, 52px);
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+.math-arena-header p {
+  max-width: 760px;
+  margin: 0;
+  color: #66715e;
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.65;
+}
+
+.math-arena-home-button,
+.math-arena-primary,
+.math-arena-secondary,
+.math-arena-focus-winner {
+  border: 0;
+  font-family: inherit;
+}
+
+.math-arena-home-button,
+.math-arena-primary,
+.math-arena-secondary,
+.math-arena-focus-winner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 15px;
+  border: 2px solid #d6d0be;
+  border-radius: 15px;
+  font-weight: 950;
+  box-shadow: inset 0 -4px 0 rgba(123, 76, 46, 0.12), 0 4px 0 rgba(44, 92, 86, 0.12);
+}
+
+.math-arena-home-button,
+.math-arena-primary,
+.math-arena-focus-winner {
+  color: #fff9df;
+  border-color: #6f61ac;
+  background: #7c6abd;
+}
+
+.math-arena-secondary {
+  color: #365044;
+  background: #fff7d8;
+}
+
+.math-arena-primary:disabled,
+.math-arena-focus-winner:disabled {
+  cursor: not-allowed;
+  color: #7b8065;
+  border-color: #d6d0be;
+  background: #e7dfc9;
+  box-shadow: none;
+}
+
+.math-arena-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 420px);
+  gap: 18px;
+  min-height: 0;
+}
+
+.math-arena-stage,
+.math-arena-side,
+.math-arena-setup,
+.math-arena-battle-shell,
+.math-fighter-card {
+  min-width: 0;
+}
+
+.math-arena-stage,
+.math-arena-side {
+  display: grid;
+  gap: 14px;
+  min-height: 0;
+}
+
+.math-arena-stage {
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.math-arena-side {
+  grid-template-rows: auto auto minmax(0, 1fr);
+}
+
+.math-arena-setup,
+.math-arena-battle-shell,
+.math-arena-scoreboard,
+.math-arena-rules,
+.math-arena-history {
+  border: 3px solid #d6d0be;
+  border-radius: 24px;
+  background: #f4f1e6;
+  box-shadow: 0 9px 0 rgba(123, 128, 101, 0.14), 0 18px 34px rgba(43, 67, 61, 0.12);
+}
+
+.math-arena-setup {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 160px;
+  gap: 12px;
+  padding: 14px;
+}
+
+.math-fighter-card {
+  display: grid;
+  grid-template-columns: 78px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  border: 2px solid rgba(214, 208, 190, 0.82);
+  border-radius: 19px;
+  background: #fff7d8;
+}
+
+.math-fighter-avatar {
+  display: grid;
+  width: 78px;
+  height: 78px;
+  place-items: center;
+  overflow: hidden;
+  border: 3px solid #f0d38c;
+  border-radius: 28px;
+  background: #f4f1e6;
+  color: #315e49;
+  font-size: 31px;
+  font-weight: 950;
+}
+
+.math-fighter-avatar img {
+  width: 92%;
+  height: 92%;
+  object-fit: contain;
+}
+
+.math-fighter-copy {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.math-fighter-copy label {
+  color: #7b8065;
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.math-fighter-copy select {
+  width: 100%;
+  min-height: 40px;
+  border: 2px solid rgba(214, 208, 190, 0.95);
+  border-radius: 14px;
+  color: #35524a;
+  background: #f4f1e6;
+  font-weight: 900;
+  outline: none;
+}
+
+.math-fighter-copy em {
+  overflow: hidden;
+  color: #66715e;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.math-arena-command-panel {
+  display: grid;
+  align-content: center;
+  gap: 10px;
+}
+
+.math-arena-command-panel button {
+  width: 100%;
+}
+
+.math-arena-battle-shell {
+  min-height: 510px;
+  padding: 16px;
+}
+
+.math-arena-battle-shell .battlefield {
+  min-height: 432px;
+  grid-template-columns: minmax(132px, 0.86fr) minmax(236px, 1.04fr) minmax(132px, 0.86fr);
+  gap: 12px;
+  margin-top: 0;
+  padding: 28px 14px 24px;
+}
+
+.math-arena-battle-shell .battle-pet {
+  min-height: 300px;
+  padding-inline: 2px;
+}
+
+.math-arena-battle-shell .battle-shadow {
+  width: 120px;
+}
+
+.math-arena-battle-shell .battle-orb {
+  width: 118px;
+  height: 118px;
+  border-width: 5px;
+}
+
+.math-arena-battle-shell .battle-orb img {
+  max-width: 124px;
+  max-height: 124px;
+}
+
+.math-arena-battle-shell .battle-orb span {
+  width: 58px;
+  height: 58px;
+  font-size: 32px;
+}
+
+.math-arena-battle-shell .battle-nameplate {
+  min-width: 122px;
+  padding: 7px 9px;
+}
+
+.math-arena-battle-shell .battle-nameplate strong {
+  font-size: 20px;
+}
+
+.math-arena-battle-shell .battle-nameplate em {
+  max-width: 132px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.math-arena-battle-shell .battle-pet .hp-track {
+  width: min(150px, 90%);
+}
+
+.math-arena-battle-shell .problem-card {
+  padding: 21px 18px;
+}
+
+.math-arena-battle-shell .problem-card strong {
+  font-size: 52px;
+}
+
+.math-arena-battle-shell .answer-grid button {
+  min-height: 58px;
+}
+
+.math-arena-empty {
+  display: grid;
+  min-height: 100%;
+  place-items: center;
+  align-content: center;
+  gap: 12px;
+  padding: 24px;
+  border: 3px dashed rgba(124, 106, 189, 0.3);
+  border-radius: 22px;
+  color: #6f61ac;
+  background: #fff7d8;
+  text-align: center;
+}
+
+.math-arena-empty strong {
+  color: #2f473f;
+  font-size: 30px;
+}
+
+.math-arena-empty p {
+  max-width: 360px;
+  margin: 0;
+  color: #66715e;
+  font-weight: 900;
+  line-height: 1.6;
+}
+
+.math-arena-scoreboard,
+.math-arena-rules,
+.math-arena-history {
+  padding: 16px;
+}
+
+.math-arena-side-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid rgba(214, 208, 190, 0.74);
+  color: #315e49;
+}
+
+.math-arena-side-title strong {
+  font-size: 18px;
+}
+
+.math-arena-scoreboard dl {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 14px 0;
+}
+
+.math-arena-scoreboard dl div {
+  display: grid;
+  gap: 5px;
+  padding: 10px;
+  border: 2px solid rgba(214, 208, 190, 0.7);
+  border-radius: 15px;
+  background: #fff7d8;
+}
+
+.math-arena-scoreboard dt,
+.math-arena-scoreboard dd {
+  margin: 0;
+  font-weight: 950;
+}
+
+.math-arena-scoreboard dt {
+  color: #7b8065;
+  font-size: 12px;
+}
+
+.math-arena-scoreboard dd {
+  color: #2f473f;
+  font-size: 17px;
+  white-space: nowrap;
+}
+
+.math-arena-focus-winner {
+  width: 100%;
+}
+
+.math-arena-rules ul,
+.math-arena-history ol {
+  display: grid;
+  gap: 9px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.math-arena-rules li {
+  padding: 9px 11px;
+  border: 2px solid rgba(214, 208, 190, 0.64);
+  border-radius: 14px;
+  color: #66715e;
+  background: #fff7d8;
+  font-size: 14px;
+  font-weight: 850;
+  line-height: 1.45;
+}
+
+.math-arena-history {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.math-arena-history ol {
+  max-height: 100%;
+  overflow: auto;
+}
+
+.math-arena-history li {
+  display: grid;
+  grid-template-columns: 50px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+  border: 2px solid rgba(214, 208, 190, 0.64);
+  border-radius: 15px;
+  background: #fff7d8;
+}
+
+.math-arena-history li > span {
+  display: grid;
+  min-height: 40px;
+  place-items: center;
+  border-radius: 13px;
+  color: #fff9df;
+  background: #7c6abd;
+  font-weight: 950;
+}
+
+.math-arena-history strong,
+.math-arena-history em {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.math-arena-history strong {
+  color: #2f473f;
+  font-size: 15px;
+}
+
+.math-arena-history em,
+.math-arena-muted {
+  color: #7b8065;
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.math-arena-muted {
+  margin: 14px 0 0;
+}
+
 .voice-record-page {
   grid-template-rows: auto minmax(0, 1fr) auto;
   color: #35524a;
@@ -5429,17 +5877,22 @@ button {
 @media (max-width: 1160px) {
   .roll-call-layout,
   .roll-call-header,
+  .math-arena-layout,
+  .math-arena-setup,
+  .math-arena-header,
   .voice-record-layout,
   .voice-record-header {
     grid-template-columns: 1fr;
   }
 
   .roll-call-header,
+  .math-arena-header,
   .voice-record-header {
     flex-direction: column;
   }
 
   .roll-call-home-button,
+  .math-arena-home-button,
   .voice-home-button {
     width: 100%;
   }

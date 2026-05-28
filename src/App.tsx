@@ -9,6 +9,7 @@ import { SpiritDock } from "./components/Hud/SpiritDock";
 import { TeacherActionPanel } from "./components/Hud/TeacherActionPanel";
 import { MathPkModal } from "./components/MathPkModal";
 import { ModulePlaceholder } from "./components/modules/ModulePlaceholder";
+import { MathArenaModule } from "./components/modules/MathArenaModule";
 import { RollCallModule } from "./components/modules/RollCallModule";
 import { VoiceRecordModule } from "./components/modules/VoiceRecordModule";
 import { moduleConfigById, type AppModuleId } from "./components/modules/moduleConfig";
@@ -195,6 +196,18 @@ export function App() {
       source,
       category,
       reason,
+    });
+  };
+
+  const recordMathPkWin = (winner: ChildWithProgress) => {
+    setSelectedChildId(winner.id);
+    commitLedger({
+      childId: winner.id,
+      operatorChildId: winner.id,
+      delta: 30,
+      source: "math-pk",
+      category: "积极阳光",
+      reason: "数学魔法 PK 胜利 +30",
     });
   };
 
@@ -453,6 +466,16 @@ export function App() {
           onRejectReview={rejectReview}
           onFocusChild={focusChildOnHome}
         />
+      ) : activeModule === "math-arena" ? (
+        <MathArenaModule
+          childrenWithProgress={childrenWithProgress}
+          spiritsById={spiritsById}
+          selectedChild={selectedChild}
+          recentRecords={allRecentRecords}
+          onSelectChild={setSelectedChildId}
+          onWin={recordMathPkWin}
+          onFocusChild={focusChildOnHome}
+        />
       ) : (
         <ModulePlaceholder
           module={activeModuleConfig}
@@ -468,11 +491,12 @@ export function App() {
         <MathPkModal
           player={pkPlayer}
           opponent={pkOpponent}
+          spiritsById={spiritsById}
           onClose={() => {
             setSelectedChildId(pkPlayer.id);
             setPkPair(null);
           }}
-          onWin={(winner) => addLedger(30, "数学魔法 PK 胜利 +30", "math-pk", winner.id, "积极阳光")}
+          onWin={recordMathPkWin}
         />
       )}
     </AppShell>
