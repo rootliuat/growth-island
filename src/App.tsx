@@ -9,10 +9,12 @@ import { SpiritDock } from "./components/Hud/SpiritDock";
 import { TeacherActionPanel } from "./components/Hud/TeacherActionPanel";
 import { MathPkModal } from "./components/MathPkModal";
 import { ModulePlaceholder } from "./components/modules/ModulePlaceholder";
+import { DataManagementModule } from "./components/modules/DataManagementModule";
 import { LeaderboardModule } from "./components/modules/LeaderboardModule";
 import { LotteryModule } from "./components/modules/LotteryModule";
 import { MathArenaModule } from "./components/modules/MathArenaModule";
 import { RollCallModule } from "./components/modules/RollCallModule";
+import { SettingsModule } from "./components/modules/SettingsModule";
 import { ShopModule } from "./components/modules/ShopModule";
 import { VoiceRecordModule } from "./components/modules/VoiceRecordModule";
 import { moduleConfigById, type AppModuleId } from "./components/modules/moduleConfig";
@@ -501,6 +503,25 @@ export function App() {
           selectedChild={selectedChild}
           onSelectChild={setSelectedChildId}
           onFocusChild={focusChildOnHome}
+        />
+      ) : activeModule === "data" ? (
+        <DataManagementModule
+          childrenWithProgress={childrenWithProgress}
+          spiritsById={spiritsById}
+          selectedChild={selectedChild}
+          recentRecords={allRecentRecords}
+          pendingReviews={pendingReviews}
+          onFocusChild={focusChildOnHome}
+          onApproveReview={approveReview}
+          onRejectReview={rejectReview}
+        />
+      ) : activeModule === "settings" ? (
+        <SettingsModule
+          childrenCount={children.length}
+          teacherMode={teacherMode}
+          syncStatus={syncStatus}
+          onToggleTeacherMode={() => setTeacherMode((current) => !current)}
+          onReturnHome={returnToHome}
         />
       ) : (
         <ModulePlaceholder
