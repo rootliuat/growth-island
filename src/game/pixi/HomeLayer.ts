@@ -1,4 +1,5 @@
 import { Container, Graphics, Rectangle, Text } from "pixi.js";
+import { assetScaleRules, getDoorFocusTarget, getHomePadWidth } from "../assetScaleRules";
 import { palette } from "../artDirection";
 import { cameraConfig } from "../cameraConfig";
 import type { WorldHome, WorldMapData } from "../types";
@@ -49,7 +50,7 @@ export class HomeLayer {
       node.root.scale.set(this.targetScale(home.childId, node));
       node.halo.visible = home.childId === this.selectedChildId;
       node.focusGlow.visible = home.childId === this.selectedChildId || node.hovered;
-      node.beacon.visible = home.childId === this.selectedChildId || node.hovered;
+      node.beacon.visible = node.hovered;
     });
     this.layer.children.sort((a, b) => a.y - b.y);
   }
@@ -74,9 +75,11 @@ export class HomeLayer {
   updateZoom(zoom: number) {
     this.homeNodes.forEach((node) => {
       const selected = node.root.label === this.selectedChildId;
-      node.plaque.visible = selected || zoom >= 1.45;
-      node.decor.visible = selected || zoom >= 1.18;
+      node.halo.visible = selected && zoom < 1.32;
+      node.plaque.visible = false;
+      node.decor.visible = selected || (zoom >= 1.18 && zoom < 1.45);
       node.prompt.visible = node.hovered && zoom >= 1.05;
+      node.beacon.visible = node.hovered && zoom < 1.24;
       node.root.alpha = zoom < 0.72 && !selected ? 0.94 : 1;
     });
   }
@@ -89,7 +92,8 @@ export class HomeLayer {
     node.hitArea = new Rectangle(-105, -150, 210, 245);
     node.on("pointertap", () => {
       this.onSelect(home.childId);
-      this.onFocus(home.doorPosition.x, home.doorPosition.y + 12, cameraConfig.homeZoom);
+      const target = getDoorFocusTarget(home.doorPosition, cameraConfig.homeZoom);
+      this.onFocus(target.x, target.y, target.zoom);
     });
 
     const halo = new Graphics();
@@ -99,10 +103,10 @@ export class HomeLayer {
     halo.visible = false;
 
     const focusGlow = new Graphics();
-    focusGlow.ellipse(0, 54, 62, 18).fill({ color: home.accent, alpha: 0.24 });
-    focusGlow.ellipse(0, 54, 86, 28).stroke({ width: 3, color: 0xfff6c9, alpha: 0.58 });
-    focusGlow.circle(-42, 42, 5).fill({ color: palette.accent, alpha: 0.78 });
-    focusGlow.circle(42, 44, 4).fill({ color: palette.pearlWhite, alpha: 0.86 });
+    focusGlow.ellipse(0, 54, 46, 14).fill({ color: home.accent, alpha: 0.14 });
+    focusGlow.ellipse(0, 54, 62, 20).stroke({ width: 2, color: 0xfff6c9, alpha: 0.34 });
+    focusGlow.circle(-31, 46, 4).fill({ color: palette.accent, alpha: 0.58 });
+    focusGlow.circle(31, 47, 3).fill({ color: palette.pearlWhite, alpha: 0.66 });
     focusGlow.visible = false;
     focusGlow.alpha = 0;
 
@@ -123,13 +127,13 @@ export class HomeLayer {
       homeNode.hovered = true;
       focusGlow.visible = true;
       prompt.visible = true;
-      beacon.visible = true;
+      beacon.visible = false;
     });
     node.on("pointerout", () => {
       homeNode.hovered = false;
       focusGlow.visible = home.childId === this.selectedChildId;
       prompt.visible = false;
-      beacon.visible = home.childId === this.selectedChildId;
+      beacon.visible = false;
     });
     return homeNode;
   }
@@ -148,7 +152,7 @@ export class HomeLayer {
       url: v4HomePadUrl(home.regionId),
       x: 0,
       y: 67,
-      width: home.type === "treehouse" ? 150 : 138,
+      width: getHomePadWidth(home.type),
       alpha: 0.92,
     });
     addAssetSprite(body, {
@@ -531,7 +535,7 @@ export class HomeLayer {
   }
 
   private targetScale(childId: string, node: HomeNode) {
-    if (childId === this.selectedChildId) return 1.09;
-    return node.hovered ? 1.04 : 1;
+    if (childId === this.selectedChildId) return assetScaleRules.home.selectedScale;
+    return node.hovered ? assetScaleRules.home.hoverScale : 1;
   }
 }

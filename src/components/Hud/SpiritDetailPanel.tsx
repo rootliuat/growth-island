@@ -98,7 +98,15 @@ export function SpiritDetailPanel({
         <p>{child.level === 1 ? "蛋壳会随 XP 逐步破壳" : "升级会同步点亮小屋装饰"}</p>
       </div>
 
-      <div className="score-actions">
+      <details className="growth-action-drawer" open>
+        <summary>
+          <span>
+            <Sparkles size={16} />
+            成长操作
+          </span>
+          <strong>加分 / 扣分</strong>
+        </summary>
+        <div className="score-actions">
         {[10, 20, 30].map((value) => (
           <button key={value} className="gain-button" onClick={() => onAdjustXp(value, `手动加分 +${value}`)}>
             <Plus size={18} />
@@ -111,9 +119,9 @@ export function SpiritDetailPanel({
             {value}
           </button>
         ))}
-      </div>
+        </div>
 
-      <div className="quest-actions">
+        <div className="quest-actions">
         <button onClick={onOpenDialogue}>
           <Mic size={20} />
           对话记录
@@ -128,20 +136,22 @@ export function SpiritDetailPanel({
             撤销记录
           </button>
         )}
-      </div>
+        </div>
+      </details>
 
       {lastEvaluation && (
-        <div className="agent-suggestion">
-          <div>
+        <details className="agent-suggestion">
+          <summary>
             <Sparkles size={17} />
             <strong>AI 德育建议</strong>
-          </div>
+            <small>展开复核</small>
+          </summary>
           <p>{lastEvaluation.reasonForChild}</p>
           <small>
             {lastEvaluation.category ?? "待确认"} · {lastEvaluation.xpDelta > 0 ? "+" : ""}
             {lastEvaluation.xpDelta} XP · 置信度 {Math.round(lastEvaluation.confidence * 100)}%
           </small>
-        </div>
+        </details>
       )}
     </aside>
   );

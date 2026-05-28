@@ -1,4 +1,5 @@
 import { Container, Graphics, Rectangle, Sprite, Text, Ticker } from "pixi.js";
+import { assetScaleRules, getDoorFocusTarget, getSpiritTargetWidth } from "../assetScaleRules";
 import { palette } from "../artDirection";
 import { cameraConfig } from "../cameraConfig";
 import { makeSpiritSprite } from "../pixiAssets";
@@ -52,8 +53,9 @@ export class SpiritLayer {
       node.root.scale.set(this.getTargetScale(spirit.id));
       node.halo.visible = spirit.id === this.selectedChildId;
       node.root.visible = this.shouldShowSpirit(spirit.id, node);
-      node.levelBadge.visible = spirit.child.level >= 2 && this.shouldShowBadge(spirit.id);
-      node.moodDot.visible = this.shouldShowBadge(spirit.id);
+      node.levelBadge.visible = this.shouldShowBadge(spirit.id);
+      node.levelBadge.scale.set(this.getBadgeScale(spirit.id));
+      node.moodDot.visible = this.shouldShowMoodDot(spirit.id);
       node.moodDot.tint = this.moodTint(spirit.mood);
       const badgeText = node.levelBadge.getChildByLabel("level-text") as Text | undefined;
       if (badgeText) badgeText.text = `Lv.${spirit.child.level}`;
@@ -93,7 +95,8 @@ export class SpiritLayer {
     this.nodes.forEach((node, childId) => {
       node.root.visible = this.shouldShowSpirit(childId, node);
       node.levelBadge.visible = this.shouldShowBadge(childId);
-      node.moodDot.visible = this.shouldShowBadge(childId);
+      node.levelBadge.scale.set(this.getBadgeScale(childId));
+      node.moodDot.visible = this.shouldShowMoodDot(childId);
     });
   }
 
@@ -101,17 +104,18 @@ export class SpiritLayer {
     const root = new Container();
     root.eventMode = "static";
     root.cursor = "pointer";
-    root.hitArea = new Rectangle(-54, -104, 108, 132);
+    root.hitArea = new Rectangle(-70, -118, 140, 154);
     root.on("pointertap", () => {
       this.onSelect(spirit.id);
-      this.onFocus(spirit.spritePosition.x, spirit.spritePosition.y - 34, cameraConfig.spiritZoom);
+      const target = getDoorFocusTarget(spirit.doorPosition, cameraConfig.spiritZoom);
+      this.onFocus(target.x, target.y, target.zoom);
       this.bounce(spirit.id);
     });
 
     const halo = new Graphics();
-    halo.ellipse(0, -16, 54, 26).fill({ color: palette.accent, alpha: 0.18 });
-    halo.ellipse(0, -28, 64, 38).stroke({ width: 4, color: palette.accent, alpha: 0.72 });
-    halo.ellipse(0, -28, 78, 48).stroke({ width: 2, color: 0xfff7d2, alpha: 0.42 });
+    halo.ellipse(0, -10, 34, 15).fill({ color: palette.accent, alpha: 0.11 });
+    halo.ellipse(0, -13, 43, 21).stroke({ width: 2, color: palette.accent, alpha: 0.45 });
+    halo.ellipse(0, -13, 52, 26).stroke({ width: 1.5, color: 0xfff7d2, alpha: 0.28 });
     halo.visible = false;
 
     const body = new Container();
@@ -120,14 +124,14 @@ export class SpiritLayer {
       url: v4MapAssets.spiritShadow,
       x: 0,
       y: -6,
-      width: 70,
-      alpha: 0.62,
+      width: assetScaleRules.spirit.shadowWidth,
+      alpha: 0.5,
     });
     const fallback = this.drawFallback(spirit);
     fallback.y = -22;
     body.addChild(fallback);
     if (spirit.imageUrl) {
-      makeSpiritSprite(spirit.imageUrl, spirit.child.state.startsWith("egg") ? 72 : 84).then((sprite: Sprite) => {
+      makeSpiritSprite(spirit.imageUrl, getSpiritTargetWidth(spirit.child.state)).then((sprite: Sprite) => {
         if (body.destroyed) return;
         sprite.y = 10;
         body.removeChild(fallback);
@@ -137,15 +141,15 @@ export class SpiritLayer {
     }
 
     const levelBadge = new Container();
-    levelBadge.x = 32;
-    levelBadge.y = -74;
+    levelBadge.x = -44;
+    levelBadge.y = -58;
     const badgeBg = new Graphics()
-      .circle(0, 0, 20)
+      .circle(0, 0, 12)
       .fill(0xffe7a8)
-      .stroke({ width: 3, color: spirit.accent, alpha: 0.52 });
+      .stroke({ width: 2, color: spirit.accent, alpha: 0.5 });
     const badgeText = new Text({
       text: `Lv.${spirit.child.level}`,
-      style: { fontFamily: "Georgia, Microsoft YaHei", fontSize: 12, fontWeight: "800", fill: 0x573a25 },
+      style: { fontFamily: "Georgia, Microsoft YaHei", fontSize: 8, fontWeight: "800", fill: 0x573a25 },
     });
     badgeText.label = "level-text";
     badgeText.anchor.set(0.5);
@@ -164,26 +168,26 @@ export class SpiritLayer {
     const g = new Graphics();
     const accent = spirit.accent;
     if (spirit.child.state.startsWith("egg")) {
-      g.ellipse(0, -26, 32, 46).fill(0xfff9dd).stroke({ width: 4, color: accent, alpha: 0.52 });
-      g.ellipse(0, -32, 18, 30).fill({ color: accent, alpha: 0.16 });
+      g.ellipse(0, -22, 23, 34).fill(0xfff9dd).stroke({ width: 3, color: accent, alpha: 0.46 });
+      g.ellipse(0, -27, 12, 21).fill({ color: accent, alpha: 0.14 });
       if (spirit.child.state === "egg-4") {
-        g.circle(-10, -44, 6).fill(0xffffff);
-        g.circle(10, -44, 6).fill(0xffffff);
-        g.circle(-10, -44, 3).fill(0x24313a);
-        g.circle(10, -44, 3).fill(0x24313a);
+        g.circle(-8, -36, 4).fill(0xffffff);
+        g.circle(8, -36, 4).fill(0xffffff);
+        g.circle(-8, -36, 2).fill(0x24313a);
+        g.circle(8, -36, 2).fill(0x24313a);
       }
       return g;
     }
 
-    g.ellipse(0, -36, 38, 32).fill(0xfffbef).stroke({ width: 3, color: accent, alpha: 0.52 });
-    g.circle(-28, -48, 16).fill({ color: accent, alpha: 0.36 });
-    g.circle(28, -48, 16).fill({ color: accent, alpha: 0.36 });
-    g.ellipse(0, -2, 30, 26).fill({ color: accent, alpha: 0.25 });
-    g.circle(-13, -42, 8).fill(0xffffff);
-    g.circle(13, -42, 8).fill(0xffffff);
-    g.circle(-13, -42, 4).fill(0x283940);
-    g.circle(13, -42, 4).fill(0x283940);
-    if (spirit.child.level >= 6) g.circle(0, -32, 52).stroke({ width: 3, color: 0xffd869, alpha: 0.5 });
+    g.ellipse(0, -29, 28, 24).fill(0xfffbef).stroke({ width: 3, color: accent, alpha: 0.46 });
+    g.circle(-19, -39, 10).fill({ color: accent, alpha: 0.25 });
+    g.circle(19, -39, 10).fill({ color: accent, alpha: 0.25 });
+    g.ellipse(0, -4, 22, 19).fill({ color: accent, alpha: 0.18 });
+    g.circle(-9, -33, 5).fill(0xffffff);
+    g.circle(9, -33, 5).fill(0xffffff);
+    g.circle(-9, -33, 2.3).fill(0x283940);
+    g.circle(9, -33, 2.3).fill(0x283940);
+    if (spirit.child.level >= 6) g.circle(0, -28, 36).stroke({ width: 2, color: 0xffd869, alpha: 0.42 });
     return g;
   }
 
@@ -197,16 +201,36 @@ export class SpiritLayer {
 
   private getTargetScale(childId: string) {
     const selected = childId === this.selectedChildId;
-    return (selected ? 1.1 : 0.88) * this.zoomScale;
+    const base =
+      this.zoom < 0.78
+        ? assetScaleRules.spirit.overviewScale
+        : this.zoom < 1.15
+          ? assetScaleRules.spirit.communityScale
+          : assetScaleRules.spirit.homeScale;
+    return selected
+      ? this.zoom >= 1.45
+        ? assetScaleRules.spirit.selectedHomeScale
+        : assetScaleRules.spirit.selectedCommunityScale
+      : base;
+  }
+
+  private getBadgeScale(childId: string) {
+    if (childId !== this.selectedChildId) return 0.72;
+    return this.zoom >= 1.45 ? 0.68 : 0.74;
   }
 
   private shouldShowBadge(childId: string) {
-    return childId === this.selectedChildId || this.zoom >= 1.62;
+    return childId === this.selectedChildId && this.zoom >= 1.38;
+  }
+
+  private shouldShowMoodDot(childId: string) {
+    return childId === this.selectedChildId && this.zoom >= 0.9 && this.zoom < 1.18;
   }
 
   private shouldShowSpirit(childId: string, node: SpiritNode) {
     if (childId === this.selectedChildId) return true;
-    if (this.zoomScale >= 0.9) return true;
-    return node.rank <= 3 || node.level >= 7;
+    if (this.zoom >= 1.32) return false;
+    if (this.zoom < 0.72) return true;
+    return this.zoomScale >= 0.9 || node.rank <= 3 || node.level >= 7;
   }
 }

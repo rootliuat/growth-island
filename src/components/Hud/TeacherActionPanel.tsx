@@ -16,7 +16,7 @@ export function TeacherActionPanel({ child, teacherMode, onUpdateChild }: Teache
 
   return (
     <section className="teacher-action-panel">
-      <details open>
+      <details>
         <summary>
           <span className="section-title">
             <Pencil size={18} />
@@ -40,7 +40,12 @@ export function TeacherActionPanel({ child, teacherMode, onUpdateChild }: Teache
               <Sparkles size={15} />
               精灵昵称
             </span>
-            <input value={child.petName} onChange={(event) => onUpdateChild({ petName: event.target.value })} />
+            <input
+              id="teacher-pet-name"
+              name="teacherPetName"
+              value={child.petName}
+              onChange={(event) => onUpdateChild({ petName: event.target.value })}
+            />
           </label>
           <label>
             <span>
@@ -48,7 +53,12 @@ export function TeacherActionPanel({ child, teacherMode, onUpdateChild }: Teache
               选择精灵
             </span>
             <span className="select-wrap">
-              <select value={child.spiritId} onChange={(event) => onUpdateChild({ spiritId: event.target.value })}>
+              <select
+                id="teacher-spirit-id"
+                name="teacherSpiritId"
+                value={child.spiritId}
+                onChange={(event) => onUpdateChild({ spiritId: event.target.value })}
+              >
                 {spirits.map((spirit) => (
                   <option key={spirit.id} value={spirit.id}>
                     {spirit.id}. {spirit.name}
@@ -64,7 +74,12 @@ export function TeacherActionPanel({ child, teacherMode, onUpdateChild }: Teache
               家园点位
             </span>
             <span className="select-wrap">
-              <select value={child.slotId} onChange={(event) => onUpdateChild({ slotId: Number(event.target.value) })}>
+              <select
+                id="teacher-slot-id"
+                name="teacherSlotId"
+                value={child.slotId}
+                onChange={(event) => onUpdateChild({ slotId: Number(event.target.value) })}
+              >
                 {islandSlots.map((slot) => (
                   <option key={slot.id} value={slot.id}>
                     {slot.id} 号点位 · {slot.zone}

@@ -1,4 +1,5 @@
 import { Container } from "pixi.js";
+import { assetScaleRules } from "../assetScaleRules";
 import { growthTreePosition } from "../mapConfig";
 import { mapSpread, spreadPoint } from "../mapLayout";
 import { v4MapAssets } from "../v4MapAssets";
@@ -12,7 +13,7 @@ export class IslandLayer {
   private draw() {
     const centerX = growthTreePosition.x;
     const centerY = spreadPoint({ x: 1210, y: 804 }).y;
-    const islandWidth = 2060 * mapSpread.island;
+    const islandWidth = assetScaleRules.island.shadowBaseWidth * mapSpread.island;
     addAssetSprite(this.layer, {
       id: "v4-island-shadow",
       url: v4MapAssets.islandShadow,
@@ -33,14 +34,14 @@ export class IslandLayer {
       url: v4MapAssets.islandSurface,
       x: centerX,
       y: centerY,
-      width: 2040 * mapSpread.island,
+      width: assetScaleRules.island.surfaceBaseWidth * mapSpread.island,
     });
     addAssetSprite(this.layer, {
       id: "v4-shoreline-foam",
       url: v4MapAssets.shorelineFoam,
       x: centerX,
       y: centerY - 6,
-      width: 2085 * mapSpread.island,
+      width: assetScaleRules.island.shorelineBaseWidth * mapSpread.island,
       alpha: 0.78,
     });
   }

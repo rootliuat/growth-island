@@ -1,4 +1,5 @@
 import { Container, Ticker } from "pixi.js";
+import { getDoorFocusTarget } from "../assetScaleRules";
 import { cameraConfig } from "../cameraConfig";
 import { WORLD_HEIGHT, WORLD_WIDTH } from "../mapConfig";
 import { regionsById } from "../regionConfig";
@@ -56,7 +57,7 @@ export class WorldScene {
     this.spirits.update(data);
     this.labels.update(data);
     const selected = data.spirits.find((spirit) => spirit.id === data.selectedChildId);
-    this.effects.setSelectedGuide(selected?.spritePosition, selected?.accent);
+    this.effects.setSelectedGuide(undefined, selected?.accent);
     this.homes.updateZoom(this.camera.zoom);
     this.spirits.updateZoom(this.camera.zoom);
     this.labels.updateZoom(this.camera.zoom, data.selectedChildId);
@@ -125,7 +126,8 @@ export class WorldScene {
   };
 
   private focusSpirit(spirit: WorldMapData["spirits"][number]) {
-    this.focusPoint(spirit.spritePosition.x, spirit.spritePosition.y - 34, cameraConfig.spiritZoom);
+    const target = getDoorFocusTarget(spirit.doorPosition, cameraConfig.spiritZoom);
+    this.focusPoint(target.x, target.y, target.zoom);
   }
 
   private focusRegionPoint = (regionId: RegionId, x: number, y: number, zoom: number) => {

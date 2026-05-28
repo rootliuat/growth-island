@@ -8,6 +8,7 @@
 
 - 地图 PNG 美术规范：[map-png-style-guide.md](./map-png-style-guide.md)
 - WSL 生产与验收流程：[map-png-generation-guide.md](./map-png-generation-guide.md)
+- 生图、模型抠图与边缘修复记录：[asset-generation-and-cutout-log.md](./asset-generation-and-cutout-log.md)
 
 ## 替换入口
 

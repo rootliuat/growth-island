@@ -8,6 +8,7 @@ export class PathLayer {
   }
 
   private draw() {
+    this.layer.sortableChildren = true;
     v4PathPlacements.forEach((placement) => {
       addAssetSprite(this.layer, {
         id: placement.id,
@@ -17,6 +18,9 @@ export class PathLayer {
         width: placement.width,
         alpha: placement.alpha ?? 1,
         rotation: placement.rotation,
+        anchorX: placement.anchor?.x,
+        anchorY: placement.anchor?.y,
+        zIndex: placement.zIndex,
       });
     });
   }

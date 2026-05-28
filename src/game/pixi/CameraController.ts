@@ -3,7 +3,7 @@ import { Viewport } from "pixi-viewport";
 import type { Application } from "pixi.js";
 import { cameraConfig } from "../cameraConfig";
 import { mapOverviewBounds, WORLD_HEIGHT, WORLD_WIDTH } from "../mapConfig";
-import { clamp, easeOutCubic, lerp } from "../easing";
+import { clamp, easeInOutCubic, lerp } from "../easing";
 import type { CameraTarget } from "../types";
 
 export class CameraController {
@@ -51,8 +51,8 @@ export class CameraController {
   }
 
   fullIslandTarget(): CameraTarget {
-    const horizontalZoom = (this.screenWidth - 76) / mapOverviewBounds.width;
-    const verticalZoom = (this.screenHeight - 58) / mapOverviewBounds.height;
+    const horizontalZoom = (this.screenWidth - 132) / mapOverviewBounds.width;
+    const verticalZoom = (this.screenHeight - 112) / mapOverviewBounds.height;
     const fitZoom = Math.min(horizontalZoom, verticalZoom, cameraConfig.fullIslandZoom);
     return {
       x: mapOverviewBounds.x + mapOverviewBounds.width / 2,
@@ -90,7 +90,7 @@ export class CameraController {
   update(ticker: Ticker) {
     if (!this.animation) return;
     this.animation.elapsed += ticker.deltaMS;
-    const t = easeOutCubic(clamp(this.animation.elapsed / this.animation.duration, 0, 1));
+    const t = easeInOutCubic(clamp(this.animation.elapsed / this.animation.duration, 0, 1));
     const x = lerp(this.animation.fromX, this.animation.target.x, t);
     const y = lerp(this.animation.fromY, this.animation.target.y, t);
     const zoom = lerp(this.animation.fromZoom, this.animation.target.zoom, t);

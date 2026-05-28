@@ -62,6 +62,7 @@ export interface WorldSpirit {
   homeType: HomeType;
   homeLevel: number;
   homePosition: WorldPoint;
+  doorPosition: WorldPoint;
   spritePosition: WorldPoint;
   mood: SpiritMood;
   accent: number;

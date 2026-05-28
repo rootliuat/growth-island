@@ -1,15 +1,22 @@
 import type { WorldPoint } from "./types";
 import { spreadBounds, spreadPoint } from "./mapLayout";
 
-export const WORLD_WIDTH = 3200;
-export const WORLD_HEIGHT = 1980;
+export const WORLD_WIDTH = 3600;
+export const WORLD_HEIGHT = 2280;
 
-export const mapOverviewBounds = spreadBounds({
+const islandFocusBounds = spreadBounds({
   x: 154,
   y: 170,
   width: 2056,
   height: 1255,
 });
+
+export const mapOverviewBounds = {
+  x: islandFocusBounds.x - 190,
+  y: islandFocusBounds.y - 150,
+  width: islandFocusBounds.width + 380,
+  height: islandFocusBounds.height + 310,
+};
 
 export const growthTreePosition: WorldPoint = spreadPoint({ x: 1210, y: 760 });
 

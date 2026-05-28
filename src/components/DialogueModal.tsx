@@ -56,7 +56,13 @@ export function DialogueModal({ child, onClose, onSubmit }: DialogueModalProps) 
           ))}
         </div>
 
-        <textarea value={text} onChange={(event) => setText(event.target.value)} />
+        <textarea
+          id="dialogue-transcript"
+          name="dialogueTranscript"
+          aria-label="成长表现文本"
+          value={text}
+          onChange={(event) => setText(event.target.value)}
+        />
 
         <button className="submit-dialogue" onClick={submit} disabled={submitting}>
           <WandSparkles size={22} />

@@ -1,15 +1,15 @@
 import type { WorldPoint } from "./types";
 
 const sourceCenter: WorldPoint = { x: 1210, y: 760 };
-export const mapCenter: WorldPoint = { x: 1600, y: 990 };
+export const mapCenter: WorldPoint = { x: 1800, y: 1130 };
 
 export const mapSpread = {
-  x: 1.28,
-  y: 1.22,
-  island: 1.28,
-  region: 1.2,
-  path: 1.22,
-  landmark: 1.08,
+  x: 1.48,
+  y: 1.36,
+  island: 1.36,
+  region: 1.24,
+  path: 1.25,
+  landmark: 1.12,
 };
 
 export function spreadPoint(point: WorldPoint): WorldPoint {

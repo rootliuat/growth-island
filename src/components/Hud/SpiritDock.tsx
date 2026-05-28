@@ -17,7 +17,7 @@ export function SpiritDock({ childrenWithProgress, spiritsById, selectedChildId,
   const dockScrollRef = useRef<HTMLDivElement | null>(null);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("全部");
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
   const selectedChild = childrenWithProgress.find((child) => child.id === selectedChildId) ?? childrenWithProgress[0];
   const filtered = useMemo(() => {
     const q = query.trim();
@@ -57,7 +57,14 @@ export function SpiritDock({ childrenWithProgress, spiritsById, selectedChildId,
         </div>
         <div className="dock-search">
           <Search size={16} />
-          <input value={query} placeholder="搜索幼儿或精灵" onChange={(event) => setQuery(event.target.value)} />
+          <input
+            id="spirit-dock-search"
+            name="spiritDockSearch"
+            aria-label="搜索幼儿或精灵"
+            value={query}
+            placeholder="搜索幼儿或精灵"
+            onChange={(event) => setQuery(event.target.value)}
+          />
         </div>
         <div className="dock-filters">
           {regionFilters.map((item) => (
@@ -67,7 +74,6 @@ export function SpiritDock({ childrenWithProgress, spiritsById, selectedChildId,
           ))}
         </div>
       </div>
-      {collapsed && <div className="dock-selected-summary">{selectedChild.petName}</div>}
       <div className="dock-scroll" ref={dockScrollRef}>
         {filtered.map((child) => {
           const spirit = spiritsById.get(child.spiritId);

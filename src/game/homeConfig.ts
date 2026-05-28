@@ -1,5 +1,28 @@
-import type { HomeSlot } from "./types";
+import type { HomeSlot, HomeType, RegionId, WorldPoint } from "./types";
 import { spreadPoint } from "./mapLayout";
+
+const homeRegionOrder = ["mangrove", "shell-bay", "pearl-bay", "sun-town", "old-street", "math-arena"] as const satisfies
+  readonly RegionId[];
+
+const doorOffsetByType: Record<HomeType, WorldPoint> = {
+  shell: { x: 12, y: 62 },
+  treehouse: { x: 8, y: 64 },
+  cottage: { x: 11, y: 58 },
+  pearl: { x: 9, y: 60 },
+  tent: { x: 8, y: 54 },
+  garden: { x: 11, y: 58 },
+};
+
+const overflowOffsets: WorldPoint[] = [
+  { x: -76, y: -46 },
+  { x: 76, y: -38 },
+  { x: -92, y: 50 },
+  { x: 92, y: 46 },
+  { x: 0, y: -82 },
+  { x: 0, y: 82 },
+  { x: -132, y: 4 },
+  { x: 132, y: 6 },
+];
 
 const baseHomeSlots: HomeSlot[] = [
   { id: "home-01", regionId: "mangrove", type: "treehouse", position: { x: 430, y: 470 }, doorOffset: { x: 10, y: 62 } },
@@ -44,11 +67,74 @@ const baseHomeSlots: HomeSlot[] = [
   { id: "home-35", regionId: "math-arena", type: "pearl", position: { x: 1380, y: 1110 }, doorOffset: { x: 10, y: 60 } },
 ];
 
-export const homeSlots: HomeSlot[] = baseHomeSlots.map((slot) => ({
-  ...slot,
-  position: spreadPoint(slot.position),
-}));
+function normalizeDoorOffset(slot: HomeSlot): WorldPoint {
+  return doorOffsetByType[slot.type] ?? slot.doorOffset;
+}
+
+function materializeHomeSlot(slot: HomeSlot): HomeSlot {
+  return {
+    ...slot,
+    doorOffset: normalizeDoorOffset(slot),
+    position: spreadPoint(slot.position),
+  };
+}
+
+export const homeSlots: HomeSlot[] = baseHomeSlots.map(materializeHomeSlot);
+
+export const homeSlotsByRegion: Record<RegionId, HomeSlot[]> = homeRegionOrder.reduce(
+  (groups, regionId) => {
+    groups[regionId] = homeSlots.filter((slot) => slot.regionId === regionId);
+    return groups;
+  },
+  {
+    "growth-plaza": [],
+    mangrove: [],
+    "shell-bay": [],
+    "pearl-bay": [],
+    "sun-town": [],
+    "math-arena": [],
+    "old-street": [],
+  } as Record<RegionId, HomeSlot[]>,
+);
+
+const rawHomeSlotsByRegion: Record<RegionId, HomeSlot[]> = homeRegionOrder.reduce(
+  (groups, regionId) => {
+    groups[regionId] = baseHomeSlots.filter((slot) => slot.regionId === regionId);
+    return groups;
+  },
+  {
+    "growth-plaza": [],
+    mangrove: [],
+    "shell-bay": [],
+    "pearl-bay": [],
+    "sun-town": [],
+    "math-arena": [],
+    "old-street": [],
+  } as Record<RegionId, HomeSlot[]>,
+);
+
+function createOverflowHomeSlot(index: number): HomeSlot {
+  const overflowIndex = index - baseHomeSlots.length;
+  const regionId = homeRegionOrder[overflowIndex % homeRegionOrder.length];
+  const regionOverflowIndex = Math.floor(overflowIndex / homeRegionOrder.length);
+  const regionSlots = rawHomeSlotsByRegion[regionId];
+  const template = regionSlots[regionOverflowIndex % regionSlots.length] ?? baseHomeSlots[index % baseHomeSlots.length];
+  const offset = overflowOffsets[regionOverflowIndex % overflowOffsets.length];
+  const ring = Math.floor(regionOverflowIndex / overflowOffsets.length);
+  const ringDirection = regionOverflowIndex % 2 === 0 ? 1 : -1;
+  const position = spreadPoint({
+    x: template.position.x + offset.x + ring * 42 * ringDirection,
+    y: template.position.y + offset.y + ring * 34,
+  });
+
+  return {
+    ...template,
+    id: `home-extra-${String(index + 1).padStart(2, "0")}`,
+    position,
+    doorOffset: normalizeDoorOffset(template),
+  };
+}
 
 export function getHomeSlot(index: number) {
-  return homeSlots[index % homeSlots.length];
+  return homeSlots[index] ?? createOverflowHomeSlot(index);
 }

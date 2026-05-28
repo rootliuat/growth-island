@@ -1,4 +1,5 @@
 import { Container, Graphics, Text } from "pixi.js";
+import { assetScaleRules, getRegionSignWidth } from "../assetScaleRules";
 import { palette } from "../artDirection";
 import { regions } from "../regionConfig";
 import type { MapRegion, WorldMapData, WorldSpirit } from "../types";
@@ -19,7 +20,7 @@ export class LabelLayer {
         id: `v4-region-sign-${region.id}`,
         url: v4MapAssets.regionSign,
         y: 1,
-        width: region.name.length > 6 ? 198 : region.name.length > 4 ? 170 : 145,
+        width: getRegionSignWidth(region.name.length),
       });
       const text = new Text({
         text: region.name,
@@ -53,8 +54,8 @@ export class LabelLayer {
         this.spiritLabels.set(spirit.id, node);
         this.layer.addChild(node);
       }
-      node.x = spirit.spritePosition.x;
-      node.y = spirit.spritePosition.y + 24;
+      node.x = spirit.spritePosition.x + assetScaleRules.label.selectedNameOffset.x;
+      node.y = spirit.spritePosition.y + assetScaleRules.label.selectedNameOffset.y;
       node.visible = spirit.id === data.selectedChildId;
       this.spiritMeta.set(spirit.id, { rank: spirit.child.rank, level: spirit.child.level });
       this.updateSpiritLabel(node, spirit);
@@ -69,12 +70,10 @@ export class LabelLayer {
     });
     this.spiritLabels.forEach((label, childId) => {
       const selected = childId === selectedChildId;
-      const meta = this.spiritMeta.get(childId);
-      const priority = !!meta && (meta.rank <= 3 || meta.level >= 6);
-      label.visible = selected || (zoom >= 1.62 && priority) || zoom >= 1.72;
-      label.scale.set(zoom >= 1.62 ? 1 : 0.84);
+      label.visible = selected && zoom >= 0.86;
+      label.scale.set(zoom >= 1.42 ? 0.74 : 0.68);
       const bubble = label.getChildByLabel("activity-bubble");
-      if (bubble) bubble.visible = selected && zoom >= 1.22;
+      if (bubble) bubble.visible = selected && zoom >= 1.55;
     });
   }
 
@@ -84,7 +83,7 @@ export class LabelLayer {
     bg.label = "name-bg";
     const text = new Text({
       text: "",
-      style: { fontFamily: "Microsoft YaHei, PingFang SC", fontSize: 14, fontWeight: "900", fill: palette.textMain },
+      style: { fontFamily: "Microsoft YaHei, PingFang SC", fontSize: 12, fontWeight: "900", fill: palette.textMain },
     });
     text.label = "name";
     text.anchor.set(0.5);
@@ -98,13 +97,13 @@ export class LabelLayer {
     tokenBg.label = "bubble-token-bg";
     const tokenText = new Text({
       text: "",
-      style: { fontFamily: "Georgia, Microsoft YaHei, PingFang SC", fontSize: 13, fontWeight: "900", fill: 0xfff9df },
+      style: { fontFamily: "Georgia, Microsoft YaHei, PingFang SC", fontSize: 10, fontWeight: "900", fill: 0xfff9df },
     });
     tokenText.label = "bubble-token";
     tokenText.anchor.set(0.5);
     const bubbleText = new Text({
       text: "",
-      style: { fontFamily: "Microsoft YaHei, PingFang SC", fontSize: 12, fontWeight: "800", fill: palette.textSubtle },
+      style: { fontFamily: "Microsoft YaHei, PingFang SC", fontSize: 10, fontWeight: "800", fill: palette.textSubtle },
     });
     bubbleText.label = "bubble-text";
     bubbleText.anchor.set(0.5);
@@ -210,10 +209,10 @@ export class LabelLayer {
     const bubble = node.getChildByLabel("activity-bubble") as Container | undefined;
     if (text) text.text = spirit.child.name;
     if (bg) {
-      const width = Math.max(72, Math.min(126, (text?.width ?? 56) + 34));
+      const width = Math.max(60, Math.min(102, (text?.width ?? 50) + 24));
       bg.clear();
       bg.ellipse(0, 14, width * 0.36, 7).fill({ color: palette.inkShadow, alpha: 0.1 });
-      bg.roundRect(-width / 2, -15, width, 29, 14).fill(0xfff6d7).stroke({
+      bg.roundRect(-width / 2, -14, width, 27, 13).fill(0xfff6d7).stroke({
         width: 2,
         color: spirit.accent,
         alpha: 0.32,
@@ -231,12 +230,12 @@ export class LabelLayer {
       const positive = delta >= 0;
       bubbleText.text = note;
       tokenText.text = delta === 0 ? "XP" : delta > 0 ? `+${delta}` : `${delta}`;
-      const tokenWidth = Math.max(42, tokenText.width + 18);
-      const width = Math.max(142, Math.min(224, bubbleText.width + tokenWidth + 38));
+      const tokenWidth = Math.max(36, tokenText.width + 14);
+      const width = Math.max(96, Math.min(136, bubbleText.width + tokenWidth + 20));
       const tokenX = -width / 2 + tokenWidth / 2 + 10;
       bubbleBg.clear();
       bubbleBg.ellipse(0, 17, width * 0.34, 7).fill({ color: palette.inkShadow, alpha: 0.1 });
-      bubbleBg.roundRect(-width / 2, -15, width, 31, 14).fill(0xf4f1e6).stroke({
+      bubbleBg.roundRect(-width / 2, -14, width, 28, 13).fill(0xf4f1e6).stroke({
         width: 2,
         color: spirit.accent,
         alpha: 0.22,
@@ -247,7 +246,7 @@ export class LabelLayer {
         alpha: 0.12,
       });
       tokenBg.clear();
-      tokenBg.roundRect(tokenX - tokenWidth / 2, -11, tokenWidth, 23, 11)
+      tokenBg.roundRect(tokenX - tokenWidth / 2, -10, tokenWidth, 20, 10)
         .fill(positive ? palette.positive : palette.negative)
         .stroke({ width: 2, color: 0xfff6d7, alpha: 0.8 });
       tokenBg.circle(tokenX + tokenWidth / 2 - 8, -2, 3).fill({ color: 0xffffff, alpha: 0.48 });
@@ -259,6 +258,9 @@ export class LabelLayer {
   }
 
   private cleanActivity(reason: string) {
-    return reason.replace(/^手动[加减]分\s*[+-]?\d+/, "成长记录").replace(/^演示数据：/, "").slice(0, 13);
+    if (reason.includes("撤销")) return "撤销记录";
+    if (reason.includes("减分") || reason.includes("扣分")) return "调整记录";
+    if (reason.includes("加分")) return "成长记录";
+    return reason.replace(/^演示数据[:：]?\s*/, "").slice(0, 8);
   }
 }

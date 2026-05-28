@@ -13,6 +13,7 @@ export interface AssetSpriteOptions {
   rotation?: number;
   anchorX?: number;
   anchorY?: number;
+  zIndex?: number;
   onLoaded?: (sprite: Sprite) => void;
 }
 
@@ -32,6 +33,7 @@ export function addAssetSprite(layer: Container, options: AssetSpriteOptions) {
   root.y = options.y ?? 0;
   root.alpha = options.alpha ?? 1;
   root.rotation = options.rotation ?? 0;
+  root.zIndex = options.zIndex ?? 0;
   layer.addChild(root);
 
   loadAssetTexture(options.url)

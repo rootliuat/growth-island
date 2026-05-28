@@ -1,6 +1,19 @@
 ﻿import type { HomeType, RegionId } from "./types";
 
-import { mapSpread, spreadPoint } from "./mapLayout";
+import { getHomeArtworkWidth } from "./assetScaleRules";
+import {
+  compareMapPlacements,
+  materializeMapPlacement,
+  type MapPlacement,
+  type RawMapPlacement,
+} from "./mapAssetPlacement";
+import { mapSpread } from "./mapLayout";
+import {
+  allRawPlacements,
+  createRawV4PlacementGroups,
+  placementRegionIds,
+  rawPlacementsByLayer,
+} from "./mapPlacementConfig";
 
 const base = "/assets/map/v4";
 
@@ -104,11 +117,7 @@ export function v4HomeAssetUrl(type: HomeType, homeLevel: number) {
 }
 
 export function v4HomeTargetWidth(type: HomeType, homeLevel: number) {
-  const levelBoost = Math.min(24, Math.max(0, homeLevel - 1) * 8);
-  if (type === "treehouse") return 158 + levelBoost;
-  if (type === "cottage" || type === "garden") return 152 + levelBoost;
-  if (type === "tent") return 150 + levelBoost;
-  return 142 + levelBoost;
+  return getHomeArtworkWidth(type, homeLevel);
 }
 
 export function v4HomePadUrl(regionId: RegionId) {
@@ -119,87 +128,40 @@ export function v4HomePadUrl(regionId: RegionId) {
   return asset("batch15", "batch15-001-home-pad-grass.png");
 }
 
-export interface V4Placement {
-  id: string;
-  url: string;
-  x: number;
-  y: number;
-  width: number;
-  alpha?: number;
-  rotation?: number;
-  interactive?: "pk" | "dialogue";
+export type V4Placement = MapPlacement;
+
+function layerWidthScale(layer: RawMapPlacement["layer"]) {
+  if (layer === "path") return mapSpread.path;
+  if (layer === "landmark") return mapSpread.landmark;
+  return 1;
 }
 
-function spreadPlacement(placement: V4Placement, widthScale = 1): V4Placement {
-  const point = spreadPoint({ x: placement.x, y: placement.y });
-  return {
-    ...placement,
-    x: point.x,
-    y: point.y,
-    width: placement.width * widthScale,
-  };
+function spreadPlacement(placement: RawMapPlacement): V4Placement {
+  return materializeMapPlacement(placement, layerWidthScale(placement.layer));
 }
 
-const baseV4PathPlacements: V4Placement[] = [
-  { id: "route-main-loop", url: v4MapAssets.routeMainLoop, x: 1210, y: 823, width: 1275 },
-  { id: "route-shell-branch", url: v4MapAssets.routeShellBranch, x: 660, y: 1055, width: 530 },
-  { id: "route-stone-branch", url: v4MapAssets.routeStoneBranch, x: 1668, y: 715, width: 560 },
-  { id: "route-wood-bridge-network", url: v4MapAssets.routeWoodBridgeNetwork, x: 640, y: 605, width: 610 },
-  { id: "cliff-stair-large", url: v4MapAssets.cliffStairLarge, x: 2075, y: 925, width: 285 },
-  { id: "road-y-old-street", url: v4MapAssets.roadJunctionY, x: 1070, y: 540, width: 150, rotation: -0.08 },
-  { id: "road-t-arena", url: v4MapAssets.roadJunctionT, x: 1235, y: 1046, width: 170 },
-  { id: "road-shell-short", url: v4MapAssets.roadShellShort, x: 455, y: 1116, width: 128, rotation: -0.3 },
-  { id: "road-stone-short-a", url: v4MapAssets.roadStoneShort, x: 1560, y: 965, width: 118, rotation: 0.25 },
-  { id: "bridge-left", url: v4MapAssets.bridgeLeft, x: 520, y: 585, width: 155, rotation: -0.2 },
-  { id: "bridge-right", url: v4MapAssets.bridgeRight, x: 780, y: 610, width: 155, rotation: 0.18 },
-];
+const rawV4PlacementGroups = createRawV4PlacementGroups(v4MapAssets);
 
-export const v4PathPlacements: V4Placement[] = baseV4PathPlacements.map((placement) => spreadPlacement(placement, mapSpread.path));
-
-const baseV4LandmarkPlacements: V4Placement[] = [
-  { id: "growth-tree-ring", url: v4MapAssets.growthTreeRing, x: 1210, y: 805, width: 520, alpha: 0.96 },
-  { id: "growth-tree-large", url: v4MapAssets.growthTreeLarge, x: 1210, y: 652, width: 390 },
-  { id: "home-selection-plaza", url: v4MapAssets.homeSelectionPlaza, x: 1035, y: 800, width: 250, alpha: 0.92 },
-  { id: "math-arena-building", url: v4MapAssets.mathArenaBuilding, x: 1245, y: 1120, width: 470, interactive: "pk" },
-  { id: "math-pk-gate", url: v4MapAssets.mathPkGate, x: 1464, y: 1048, width: 185, interactive: "pk" },
-  { id: "leaderboard-stage", url: v4MapAssets.leaderboardStage, x: 1458, y: 1225, width: 245 },
-  { id: "old-street-arch", url: v4MapAssets.oldStreetArch, x: 895, y: 425, width: 245, interactive: "dialogue" },
-  { id: "old-street-shop-row", url: v4MapAssets.oldStreetShopRow, x: 1168, y: 412, width: 405 },
-  { id: "dialogue-pavilion", url: v4MapAssets.dialoguePavilion, x: 1415, y: 500, width: 240, interactive: "dialogue" },
-  { id: "asr-corner", url: v4MapAssets.asrRecordingCorner, x: 980, y: 565, width: 205, interactive: "dialogue" },
-  { id: "teacher-review-kiosk", url: v4MapAssets.teacherReviewKiosk, x: 1518, y: 748, width: 225, interactive: "dialogue" },
-  { id: "task-board", url: v4MapAssets.taskBoard, x: 1342, y: 542, width: 205, interactive: "dialogue" },
-  { id: "mangrove-waterwalk", url: v4MapAssets.mangroveWaterwalk, x: 690, y: 710, width: 330 },
-  { id: "seaside-pier", url: v4MapAssets.seasidePier, x: 365, y: 1208, width: 310 },
-  { id: "silver-beach-corner", url: v4MapAssets.silverBeachCorner, x: 275, y: 1035, width: 250 },
-  { id: "lighthouse-small", url: v4MapAssets.lighthouseSmall, x: 2030, y: 650, width: 175 },
-  { id: "small-fishing-boat", url: v4MapAssets.smallFishingBoat, x: 245, y: 1328, width: 165 },
-  { id: "arcade-lantern-row", url: v4MapAssets.arcadeLanternRow, x: 1118, y: 520, width: 260 },
-];
-
-export const v4LandmarkPlacements: V4Placement[] = baseV4LandmarkPlacements.map((placement) =>
-  spreadPlacement(placement, mapSpread.landmark),
+export const v4PlacementGroups: Record<RegionId, V4Placement[]> = placementRegionIds.reduce(
+  (groups, regionId) => {
+    groups[regionId] = rawV4PlacementGroups[regionId].map(spreadPlacement).sort(compareMapPlacements);
+    return groups;
+  },
+  {} as Record<RegionId, V4Placement[]>,
 );
 
-const baseV4DecorPlacements: V4Placement[] = [
-  { id: "pk-glow", url: v4MapAssets.pkGlow, x: 1245, y: 1120, width: 290, alpha: 0.68, interactive: "pk" },
-  { id: "asr-glow", url: v4MapAssets.asrGlow, x: 980, y: 565, width: 145, alpha: 0.55, interactive: "dialogue" },
-  { id: "review-glow", url: v4MapAssets.reviewGlow, x: 1518, y: 748, width: 165, alpha: 0.5, interactive: "dialogue" },
-  { id: "task-glow", url: v4MapAssets.taskGlow, x: 1342, y: 542, width: 160, alpha: 0.46, interactive: "dialogue" },
-  { id: "edge-grass-a", url: v4MapAssets.edgeGrass, x: 338, y: 760, width: 88 },
-  { id: "edge-grass-b", url: v4MapAssets.edgeGrass, x: 2074, y: 895, width: 82, rotation: 0.2 },
-  { id: "edge-flower-a", url: v4MapAssets.edgeFlower, x: 488, y: 1142, width: 105 },
-  { id: "edge-flower-b", url: v4MapAssets.edgeFlower, x: 1868, y: 1242, width: 115 },
-  { id: "edge-shell-a", url: v4MapAssets.edgeShell, x: 540, y: 1190, width: 84 },
-  { id: "edge-shell-b", url: v4MapAssets.edgeShell, x: 760, y: 912, width: 76, rotation: 0.2 },
-  { id: "edge-rock-a", url: v4MapAssets.edgeRock, x: 1605, y: 410, width: 84 },
-  { id: "edge-rock-b", url: v4MapAssets.edgeRock, x: 835, y: 822, width: 74 },
-  { id: "reed-cluster-a", url: v4MapAssets.reedCluster, x: 1536, y: 665, width: 92 },
-  { id: "reed-cluster-b", url: v4MapAssets.reedCluster, x: 1958, y: 725, width: 84, rotation: -0.2 },
-  { id: "edge-bush-a", url: v4MapAssets.edgeBush, x: 432, y: 708, width: 92 },
-  { id: "edge-bush-b", url: v4MapAssets.edgeBush, x: 1750, y: 882, width: 104 },
-  { id: "area-arch-shell", url: v4MapAssets.areaArchBlank, x: 530, y: 840, width: 132 },
-  { id: "area-arch-town", url: v4MapAssets.areaArchBlank, x: 1780, y: 855, width: 132 },
-];
+export const v4PathPlacements: V4Placement[] = rawPlacementsByLayer(rawV4PlacementGroups, "path")
+  .map(spreadPlacement)
+  .sort(compareMapPlacements);
 
-export const v4DecorPlacements: V4Placement[] = baseV4DecorPlacements.map((placement) => spreadPlacement(placement));
+export const v4LandmarkPlacements: V4Placement[] = rawPlacementsByLayer(rawV4PlacementGroups, "landmark")
+  .map(spreadPlacement)
+  .sort(compareMapPlacements);
+
+export const v4DecorPlacements: V4Placement[] = rawPlacementsByLayer(rawV4PlacementGroups, "decoration")
+  .map(spreadPlacement)
+  .sort(compareMapPlacements);
+
+export const v4ScenePlacements: V4Placement[] = allRawPlacements(rawV4PlacementGroups)
+  .map(spreadPlacement)
+  .sort(compareMapPlacements);

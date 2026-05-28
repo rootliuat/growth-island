@@ -71,6 +71,7 @@ export function buildWorldMapData({
       homeType: slot.type,
       homeLevel,
       homePosition: slot.position,
+      doorPosition,
       spritePosition: { x: doorPosition.x + 20, y: doorPosition.y + 22 },
       mood: moodFor(child, lastLedger),
       accent,

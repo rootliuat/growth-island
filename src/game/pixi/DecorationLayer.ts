@@ -1,4 +1,5 @@
 import { Container, Graphics, Rectangle, Text } from "pixi.js";
+import { assetScaleRules } from "../assetScaleRules";
 import { palette } from "../artDirection";
 import { cameraConfig } from "../cameraConfig";
 import { arenaPosition, oldStreetPosition } from "../mapConfig";
@@ -16,10 +17,11 @@ export class DecorationLayer {
     private readonly layer: Container,
     private readonly actions: DecorationLayerActions,
   ) {
+    this.layer.sortableChildren = true;
     this.drawPlacements(v4DecorPlacements);
     this.drawPlacements(v4LandmarkPlacements);
     this.drawEntranceBadges();
-    this.layer.children.sort((a, b) => a.y - b.y);
+    this.layer.sortChildren();
   }
 
   private drawPlacements(placements: V4Placement[]) {
@@ -32,18 +34,35 @@ export class DecorationLayer {
         width: placement.width,
         alpha: placement.alpha ?? 1,
         rotation: placement.rotation,
+        anchorX: placement.anchor?.x,
+        anchorY: placement.anchor?.y,
+        zIndex: placement.zIndex,
       });
       if (!placement.interactive) return;
       root.eventMode = "static";
       root.cursor = "pointer";
-      root.hitArea = new Rectangle(-placement.width * 0.38, -placement.width * 0.28, placement.width * 0.76, placement.width * 0.56);
+      root.hitArea = this.hitAreaFor(placement);
       root.on("pointertap", () => this.activatePlacement(placement));
     });
   }
 
+  private hitAreaFor(placement: V4Placement) {
+    const widthRatio = placement.collision?.widthRatio ?? 0.76;
+    const heightRatio = placement.collision?.heightRatio ?? 0.56;
+    const offsetX = placement.width * (placement.collision?.offsetXRatio ?? 0);
+    const offsetY = placement.width * (placement.collision?.offsetYRatio ?? 0);
+    const width = placement.width * widthRatio;
+    const height = placement.width * heightRatio;
+    return new Rectangle(offsetX - width / 2, offsetY - height / 2, width, height);
+  }
+
   private activatePlacement(placement: V4Placement) {
     if (placement.interactive === "pk") {
-      this.actions.onFocusPoint(arenaPosition.x, arenaPosition.y + 10, cameraConfig.detailZoom);
+      this.actions.onFocusPoint(
+        arenaPosition.x + assetScaleRules.focus.arenaLandingOffset.x,
+        arenaPosition.y + assetScaleRules.focus.arenaLandingOffset.y,
+        cameraConfig.detailZoom,
+      );
       this.actions.onOpenPk?.();
       return;
     }
@@ -59,7 +78,11 @@ export class DecorationLayer {
         y: arenaPosition.y - 142,
         color: palette.arenaDark,
         onTap: () => {
-          this.actions.onFocusPoint(arenaPosition.x, arenaPosition.y + 10, cameraConfig.detailZoom);
+          this.actions.onFocusPoint(
+            arenaPosition.x + assetScaleRules.focus.arenaLandingOffset.x,
+            arenaPosition.y + assetScaleRules.focus.arenaLandingOffset.y,
+            cameraConfig.detailZoom,
+          );
           this.actions.onOpenPk?.();
         },
       }),
@@ -82,6 +105,7 @@ export class DecorationLayer {
     const node = new Container();
     node.x = options.x;
     node.y = options.y;
+    node.zIndex = 920;
     node.eventMode = "static";
     node.cursor = "pointer";
     node.hitArea = new Rectangle(-44, -54, 88, 86);

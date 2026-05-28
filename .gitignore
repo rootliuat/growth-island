@@ -20,6 +20,20 @@ beihai-*.png
 current-frontend-preview.png
 growth-island-*-preview.png
 growth-island-*.png
+roll-call-mvp.png
+
+# Local asset-generation workbench outputs. Keep production-ready map PNGs in
+# public/assets/map/v4 tracked separately.
+assets/generated/.latest-map-workbench-dir
+assets/generated/map-prompts-*.json
+assets/generated/map-workbench/
+assets/generated/map-workbench-*/
+assets/generated/review-sheets/
+assets/generated/v3/
+assets/generated/v4/
+assets/generated/spirits-cutout-birefnet-dynamic/
+assets/generated/spirits-edgefix-backup-*/
+*:Zone.Identifier
 
 .agents/skills/*
 !.agents/skills/beihai-asset-imagegen/

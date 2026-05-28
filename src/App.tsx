@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { AppShell } from "./components/AppShell";
 import { DialogueModal } from "./components/DialogueModal";
 import { GameTopBar } from "./components/Hud/GameTopBar";
 import { GrowthLogPanel } from "./components/Hud/GrowthLogPanel";
@@ -7,6 +8,9 @@ import { SpiritDetailPanel } from "./components/Hud/SpiritDetailPanel";
 import { SpiritDock } from "./components/Hud/SpiritDock";
 import { TeacherActionPanel } from "./components/Hud/TeacherActionPanel";
 import { MathPkModal } from "./components/MathPkModal";
+import { ModulePlaceholder } from "./components/modules/ModulePlaceholder";
+import { RollCallModule } from "./components/modules/RollCallModule";
+import { moduleConfigById, type AppModuleId } from "./components/modules/moduleConfig";
 import { WorldMapContainer } from "./components/WorldMap/WorldMapContainer";
 import type { PixiWorldMapHandle } from "./components/WorldMap/PixiWorldMap";
 import { initialChildren } from "./data/classroom";
@@ -58,6 +62,10 @@ export function App() {
   const [moralReviews, setMoralReviews] = useState<MoralReviewItem[]>([]);
   const [selectedChildId, setSelectedChildId] = useState(initialChildren[0].id);
   const [teacherMode, setTeacherMode] = useState(true);
+  const [activeModule, setActiveModule] = useState<AppModuleId>("home");
+  const [rollCallCurrentId, setRollCallCurrentId] = useState<string | undefined>();
+  const [rollCallCalledIds, setRollCallCalledIds] = useState<string[]>([]);
+  const [rollCallExcludeCalled, setRollCallExcludeCalled] = useState(true);
   const [dialogueOpen, setDialogueOpen] = useState(false);
   const [pkPair, setPkPair] = useState<{ playerId: string; opponentId: string } | null>(null);
   const [hudPanel, setHudPanel] = useState<HudPanel>("spirit");
@@ -91,6 +99,7 @@ export function App() {
   const pkPlayer = pkPair ? childrenWithProgress.find((child) => child.id === pkPair.playerId) : undefined;
   const pkOpponent = pkPair ? childrenWithProgress.find((child) => child.id === pkPair.opponentId) : undefined;
   const pendingReviews = moralReviews.filter((review) => review.status === "pending_review");
+  const activeModuleConfig = moduleConfigById.get(activeModule) ?? moduleConfigById.get("home")!;
 
   const selectChildFromDock = (childId: string) => {
     if (childId === selectedChild.id) {
@@ -143,6 +152,16 @@ export function App() {
   useEffect(() => {
     if (!teacherMode && hudPanel === "home") setHudPanel("spirit");
   }, [hudPanel, teacherMode]);
+
+  useEffect(() => {
+    const existingIds = new Set(children.map((child) => child.id));
+
+    setRollCallCalledIds((current) => {
+      const next = current.filter((childId) => existingIds.has(childId));
+      return next.length === current.length ? current : next;
+    });
+    setRollCallCurrentId((current) => (current && existingIds.has(current) ? current : undefined));
+  }, [children]);
 
   const commitLedger = (input: Omit<LedgerRecord, "id" | "createdAt">) => {
     if (syncStatus === "offline") {
@@ -273,73 +292,134 @@ export function App() {
     rejectMoralReview(reviewId, selectedChild.id).then(applySnapshot).catch(() => setSyncStatus("offline"));
   };
 
+  const focusChildOnHome = (childId = selectedChild.id) => {
+    setSelectedChildId(childId);
+    setActiveModule("home");
+    window.setTimeout(() => worldMapRef.current?.focusSelected(), 160);
+  };
+
+  const drawRollCallChild = () => {
+    const calledSet = new Set(rollCallCalledIds);
+    const pool = rollCallExcludeCalled
+      ? childrenWithProgress.filter((child) => !calledSet.has(child.id))
+      : childrenWithProgress;
+
+    if (pool.length === 0) return;
+
+    const nextChild = pool[Math.floor(Math.random() * pool.length)];
+    setRollCallCurrentId(nextChild.id);
+    setSelectedChildId(nextChild.id);
+    setRollCallCalledIds((current) =>
+      rollCallExcludeCalled && current.includes(nextChild.id) ? current : [nextChild.id, ...current],
+    );
+  };
+
+  const resetRollCall = () => {
+    setRollCallCurrentId(undefined);
+    setRollCallCalledIds([]);
+  };
+
+  const returnToHome = () => {
+    focusChildOnHome();
+  };
+
   return (
-    <main className="app-shell">
-      <GameTopBar
-        teacherMode={teacherMode}
-        onToggleTeacherMode={() => setTeacherMode((current) => !current)}
-        childrenCount={children.length}
-        syncStatus={syncStatus}
-        onZoomIn={() => worldMapRef.current?.zoomIn()}
-        onZoomOut={() => worldMapRef.current?.zoomOut()}
-        onFocusSelected={() => worldMapRef.current?.focusSelected()}
-        onFullIsland={() => worldMapRef.current?.focusFullIsland()}
-      />
-
-      <section className="game-layout">
-        <WorldMapContainer
-          ref={worldMapRef}
-          childrenWithProgress={childrenWithProgress}
-          spiritsById={spiritsById}
-          selectedChildId={selectedChild.id}
-          recentLedger={allRecentRecords}
-          assetVersion={assetVersion}
-          onSelectChild={setSelectedChildId}
-          onOpenDialogue={() => setDialogueOpen(true)}
-          onOpenPk={() => setPkPair({ playerId: selectedChild.id, opponentId: opponent.id })}
-        />
-
-        <aside className="hud-rail">
-          <HudPanelTabs
-            activePanel={hudPanel}
-            pendingReviewCount={pendingReviews.length}
+    <AppShell
+      activeModule={activeModule}
+      childrenCount={children.length}
+      selectedChildName={selectedChild.name}
+      syncStatus={syncStatus}
+      onModuleChange={setActiveModule}
+    >
+      {activeModule === "home" ? (
+        <section className="home-module app-shell" aria-label="北海成长岛首页">
+          <GameTopBar
             teacherMode={teacherMode}
-            onChange={setHudPanel}
+            onToggleTeacherMode={() => setTeacherMode((current) => !current)}
+            childrenCount={children.length}
+            syncStatus={syncStatus}
+            onZoomIn={() => worldMapRef.current?.zoomIn()}
+            onZoomOut={() => worldMapRef.current?.zoomOut()}
+            onFocusSelected={() => worldMapRef.current?.focusSelected()}
+            onFullIsland={() => worldMapRef.current?.focusFullIsland()}
           />
-          {hudPanel === "spirit" && (
-            <SpiritDetailPanel
-              child={selectedChild}
-              spirit={selectedSpirit}
-              spiritAssetUrl={selectedSpiritAsset?.url}
-              teacherMode={teacherMode}
-              lastEvaluation={lastEvaluation}
-              onAdjustXp={addLedger}
-              onUndoLast={undoLast}
+
+          <section className="game-layout">
+            <WorldMapContainer
+              ref={worldMapRef}
+              childrenWithProgress={childrenWithProgress}
+              spiritsById={spiritsById}
+              selectedChildId={selectedChild.id}
+              recentLedger={allRecentRecords}
+              assetVersion={assetVersion}
+              onSelectChild={setSelectedChildId}
               onOpenDialogue={() => setDialogueOpen(true)}
               onOpenPk={() => setPkPair({ playerId: selectedChild.id, opponentId: opponent.id })}
             />
-          )}
-          {hudPanel === "growth" && (
-            <GrowthLogPanel
-              recentRecords={recentRecords}
-              pendingReviews={pendingReviews}
-              childrenWithProgress={childrenWithProgress}
-              onApprove={approveReview}
-              onReject={rejectReview}
-            />
-          )}
-          {hudPanel === "home" && (
-            <TeacherActionPanel child={selectedChild} teacherMode={teacherMode} onUpdateChild={updateSelectedChild} />
-          )}
-        </aside>
-      </section>
 
-      <SpiritDock
-        childrenWithProgress={childrenWithProgress}
-        spiritsById={spiritsById}
-        selectedChildId={selectedChild.id}
-        onSelectChild={selectChildFromDock}
-      />
+            <aside className="hud-rail">
+              <HudPanelTabs
+                activePanel={hudPanel}
+                pendingReviewCount={pendingReviews.length}
+                teacherMode={teacherMode}
+                onChange={setHudPanel}
+              />
+              {hudPanel === "spirit" && (
+                <SpiritDetailPanel
+                  child={selectedChild}
+                  spirit={selectedSpirit}
+                  spiritAssetUrl={selectedSpiritAsset?.url}
+                  teacherMode={teacherMode}
+                  lastEvaluation={lastEvaluation}
+                  onAdjustXp={addLedger}
+                  onUndoLast={undoLast}
+                  onOpenDialogue={() => setDialogueOpen(true)}
+                  onOpenPk={() => setPkPair({ playerId: selectedChild.id, opponentId: opponent.id })}
+                />
+              )}
+              {hudPanel === "growth" && (
+                <GrowthLogPanel
+                  recentRecords={recentRecords}
+                  pendingReviews={pendingReviews}
+                  childrenWithProgress={childrenWithProgress}
+                  onApprove={approveReview}
+                  onReject={rejectReview}
+                />
+              )}
+              {hudPanel === "home" && (
+                <TeacherActionPanel child={selectedChild} teacherMode={teacherMode} onUpdateChild={updateSelectedChild} />
+              )}
+            </aside>
+          </section>
+
+          <SpiritDock
+            childrenWithProgress={childrenWithProgress}
+            spiritsById={spiritsById}
+            selectedChildId={selectedChild.id}
+            onSelectChild={selectChildFromDock}
+          />
+        </section>
+      ) : activeModule === "roll-call" ? (
+        <RollCallModule
+          childrenWithProgress={childrenWithProgress}
+          spiritsById={spiritsById}
+          selectedChild={selectedChild}
+          currentChildId={rollCallCurrentId}
+          calledChildIds={rollCallCalledIds}
+          excludeCalled={rollCallExcludeCalled}
+          onDraw={drawRollCallChild}
+          onReset={resetRollCall}
+          onToggleExcludeCalled={() => setRollCallExcludeCalled((current) => !current)}
+          onFocusChild={focusChildOnHome}
+        />
+      ) : (
+        <ModulePlaceholder
+          module={activeModuleConfig}
+          selectedChild={selectedChild}
+          pendingReviewCount={pendingReviews.length}
+          onReturnHome={returnToHome}
+        />
+      )}
 
       {dialogueOpen && <DialogueModal child={selectedChild} onClose={() => setDialogueOpen(false)} onSubmit={submitDialogue} />}
 
@@ -354,6 +434,6 @@ export function App() {
           onWin={(winner) => addLedger(30, "数学魔法 PK 胜利 +30", "math-pk", winner.id, "积极阳光")}
         />
       )}
-    </main>
+    </AppShell>
   );
 }
