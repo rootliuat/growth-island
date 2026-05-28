@@ -6,6 +6,8 @@ import { arenaPosition, oldStreetPosition } from "../mapConfig";
 import { type V4Placement, v4DecorPlacements, v4LandmarkPlacements } from "../v4MapAssets";
 import { addAssetSprite } from "./assetSprites";
 
+const decorationAssetDelayMs = 8500;
+
 interface DecorationLayerActions {
   onOpenDialogue?: () => void;
   onOpenPk?: () => void;
@@ -37,6 +39,7 @@ export class DecorationLayer {
         anchorX: placement.anchor?.x,
         anchorY: placement.anchor?.y,
         zIndex: placement.zIndex,
+        loadDelayMs: placement.layer === "decoration" ? decorationAssetDelayMs : 0,
       });
       if (!placement.interactive) return;
       root.eventMode = "static";

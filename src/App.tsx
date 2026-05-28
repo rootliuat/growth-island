@@ -46,6 +46,14 @@ import type {
 
 type SyncStatus = "connecting" | "online" | "saving" | "offline";
 
+const backgroundSpiritBatchSize = 2;
+const backgroundSpiritBatchDelayMs = 1100;
+const backgroundSpiritInitialDelayMs = 1400;
+
+function spiritAssetKey(child: ChildWithProgress) {
+  return `${child.spiritId}:${child.state}`;
+}
+
 const seededLedger: LedgerRecord[] = initialChildren.slice(0, 16).flatMap((child, index) => {
   const base = [30, 70, 110, 160, 260, 470, 720, 1010, 1450, 1910][index % 10];
   return [
@@ -140,21 +148,52 @@ export function App() {
 
   useEffect(() => {
     let cancelled = false;
-    const assetTargets = new Map<string, { spirit: SpiritDefinition; state: ChildWithProgress["state"] }>();
+    const timers: number[] = [];
+    const assetTargets = new Map<string, { child: ChildWithProgress; spirit: SpiritDefinition }>();
+
     childrenWithProgress.forEach((child) => {
       const spirit = spiritsById.get(child.spiritId);
       if (!spirit) return;
-      assetTargets.set(`${spirit.id}:${child.state}`, { spirit, state: child.state });
+      assetTargets.set(spiritAssetKey(child), { child, spirit });
     });
 
-    Promise.all([...assetTargets.values()].map(({ spirit, state }) => loadSpiritAsset(spirit, state))).then((loaded) => {
+    const selectedTarget = selectedChild ? assetTargets.get(spiritAssetKey(selectedChild)) : undefined;
+    const backgroundTargets = [...assetTargets.values()]
+      .filter(({ child }) => child.id !== selectedChild.id)
+      .sort((a, b) => a.child.rank - b.child.rank);
+
+    const applyLoadedAssets = (loaded: boolean[]) => {
       if (!cancelled && loaded.some(Boolean)) setAssetVersion((current) => current + 1);
-    });
+    };
+
+    if (selectedTarget) {
+      loadSpiritAsset(selectedTarget.spirit, selectedTarget.child.state).then((loaded) => applyLoadedAssets([loaded]));
+    }
+
+    let cursor = 0;
+    const schedule = (callback: () => void, delay: number) => {
+      const timer = window.setTimeout(callback, delay);
+      timers.push(timer);
+    };
+    const loadNextBatch = () => {
+      if (cancelled || cursor >= backgroundTargets.length) return;
+      const batch = backgroundTargets.slice(cursor, cursor + backgroundSpiritBatchSize);
+      cursor += backgroundSpiritBatchSize;
+      Promise.all(batch.map(({ child, spirit }) => loadSpiritAsset(spirit, child.state))).then((loaded) => {
+        applyLoadedAssets(loaded);
+        if (!cancelled && cursor < backgroundTargets.length) {
+          schedule(loadNextBatch, backgroundSpiritBatchDelayMs);
+        }
+      });
+    };
+
+    schedule(loadNextBatch, backgroundSpiritInitialDelayMs);
 
     return () => {
       cancelled = true;
+      timers.forEach((timer) => window.clearTimeout(timer));
     };
-  }, [childrenWithProgress, spiritsById]);
+  }, [childrenWithProgress, selectedChild, spiritsById]);
 
   useEffect(() => {
     if (!teacherMode && hudPanel === "home") setHudPanel("spirit");

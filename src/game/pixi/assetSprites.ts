@@ -14,6 +14,7 @@ export interface AssetSpriteOptions {
   anchorX?: number;
   anchorY?: number;
   zIndex?: number;
+  loadDelayMs?: number;
   onLoaded?: (sprite: Sprite) => void;
 }
 
@@ -36,24 +37,33 @@ export function addAssetSprite(layer: Container, options: AssetSpriteOptions) {
   root.zIndex = options.zIndex ?? 0;
   layer.addChild(root);
 
-  loadAssetTexture(options.url)
-    .then((texture) => {
-      if (root.destroyed) return;
-      const sprite = new Sprite(texture);
-      sprite.anchor.set(options.anchorX ?? 0.5, options.anchorY ?? 0.5);
-      if (options.width) {
-        const scale = options.width / texture.width;
-        sprite.scale.set(scale);
-      } else if (options.height) {
-        const scale = options.height / texture.height;
-        sprite.scale.set(scale);
-      }
-      root.addChild(sprite);
-      options.onLoaded?.(sprite);
-    })
-    .catch(() => {
-      root.visible = false;
-    });
+  const load = () => {
+    if (root.destroyed) return;
+    loadAssetTexture(options.url)
+      .then((texture) => {
+        if (root.destroyed) return;
+        const sprite = new Sprite(texture);
+        sprite.anchor.set(options.anchorX ?? 0.5, options.anchorY ?? 0.5);
+        if (options.width) {
+          const scale = options.width / texture.width;
+          sprite.scale.set(scale);
+        } else if (options.height) {
+          const scale = options.height / texture.height;
+          sprite.scale.set(scale);
+        }
+        root.addChild(sprite);
+        options.onLoaded?.(sprite);
+      })
+      .catch(() => {
+        root.visible = false;
+      });
+  };
+
+  if (options.loadDelayMs && options.loadDelayMs > 0) {
+    window.setTimeout(load, options.loadDelayMs);
+  } else {
+    load();
+  }
 
   return root;
 }
