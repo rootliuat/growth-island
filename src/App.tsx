@@ -9,6 +9,7 @@ import { SpiritDock } from "./components/Hud/SpiritDock";
 import { TeacherActionPanel } from "./components/Hud/TeacherActionPanel";
 import { MathPkModal } from "./components/MathPkModal";
 import { ModulePlaceholder } from "./components/modules/ModulePlaceholder";
+import { LeaderboardModule } from "./components/modules/LeaderboardModule";
 import { MathArenaModule } from "./components/modules/MathArenaModule";
 import { RollCallModule } from "./components/modules/RollCallModule";
 import { VoiceRecordModule } from "./components/modules/VoiceRecordModule";
@@ -474,6 +475,13 @@ export function App() {
           recentRecords={allRecentRecords}
           onSelectChild={setSelectedChildId}
           onWin={recordMathPkWin}
+          onFocusChild={focusChildOnHome}
+        />
+      ) : activeModule === "leaderboard" ? (
+        <LeaderboardModule
+          childrenWithProgress={childrenWithProgress}
+          spiritsById={spiritsById}
+          selectedChild={selectedChild}
           onFocusChild={focusChildOnHome}
         />
       ) : (

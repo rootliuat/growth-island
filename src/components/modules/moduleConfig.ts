@@ -145,7 +145,7 @@ export const moduleConfigs: ModuleConfig[] = [
       { title: "总榜排序", description: "第一版按当前 XP 排序，作为可落地的榜单基础。" },
       { title: "个人位置", description: "老师可快速找到某个孩子并回到成长岛聚焦。" },
     ],
-    futureItems: ["真实周榜", "真实月榜", "榜单时间范围", "精灵榜单展示卡"],
+    futureItems: ["真实周榜", "真实月榜", "榜单时间范围", "榜单展示模式"],
     homeLinkDescription: "点击孩子后返回首页，聚焦对应精灵家园。",
     Icon: BarChart3,
   },
