@@ -4553,7 +4553,10 @@ button {
 .roll-call-home-button,
 .roll-call-primary,
 .roll-call-secondary,
-.roll-call-list button {
+.roll-call-record-actions button,
+.roll-call-filter-panel button,
+.roll-call-list button,
+.roll-call-copy-button {
   border: 0;
   font-family: inherit;
 }
@@ -4676,6 +4679,20 @@ button {
   filter: drop-shadow(0 12px 0 rgba(58, 77, 56, 0.12));
 }
 
+.roll-call-winner.is-rolling .roll-call-avatar {
+  animation: roll-call-bounce 0.18s ease-in-out infinite alternate;
+}
+
+@keyframes roll-call-bounce {
+  from {
+    transform: translateY(0) scale(0.99);
+  }
+
+  to {
+    transform: translateY(-7px) scale(1.02);
+  }
+}
+
 .roll-call-fallback {
   color: #315e49;
   font-size: 88px;
@@ -4756,6 +4773,50 @@ button {
   background: #f4f1e6;
 }
 
+.roll-call-record-actions {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.roll-call-record-actions button {
+  display: inline-flex;
+  min-width: 0;
+  min-height: 46px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 12px;
+  border: 2px solid rgba(79, 154, 114, 0.28);
+  border-radius: 16px;
+  color: #315e49;
+  background: #e3f1d7;
+  font-size: 14px;
+  font-weight: 950;
+  box-shadow: inset 0 -4px 0 rgba(49, 94, 73, 0.1);
+}
+
+.roll-call-record-actions button:disabled {
+  cursor: not-allowed;
+  color: #8b917d;
+  border-color: rgba(214, 208, 190, 0.8);
+  background: #ece5d2;
+  box-shadow: none;
+}
+
+.roll-call-action-status {
+  position: relative;
+  z-index: 1;
+  min-height: 20px;
+  margin: -4px 0 0;
+  color: #66715e;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.5;
+}
+
 .roll-call-toggle {
   position: relative;
   z-index: 1;
@@ -4789,9 +4850,83 @@ button {
 
 .roll-call-side {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr);
   gap: 16px;
   min-height: 0;
+}
+
+.roll-call-filter-panel {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  padding: 16px;
+  border: 3px solid #d6d0be;
+  border-radius: 22px;
+  color: #35524a;
+  background: #fff7d8;
+  box-shadow: 0 6px 0 rgba(123, 128, 101, 0.14);
+}
+
+.roll-call-filter-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.roll-call-filter-title span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #315e49;
+  font-size: 15px;
+  font-weight: 950;
+}
+
+.roll-call-filter-title strong {
+  min-width: 54px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  color: #fff9df;
+  background: #4f9a72;
+  font-size: 13px;
+  text-align: center;
+}
+
+.roll-call-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.roll-call-chip-row button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 2px solid rgba(214, 208, 190, 0.88);
+  border-radius: 999px;
+  color: #536456;
+  background: #f4f1e6;
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.roll-call-chip-row.compact button {
+  min-width: 72px;
+  justify-content: center;
+}
+
+.roll-call-chip-row button.active {
+  color: #fff9df;
+  border-color: #34765f;
+  background: #4f9a72;
+}
+
+.roll-call-chip-row button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .roll-call-stats {
@@ -4842,15 +4977,44 @@ button {
   border-bottom: 2px solid rgba(214, 208, 190, 0.76);
 }
 
+.roll-call-list-title div {
+  min-width: 0;
+}
+
 .roll-call-list-title strong {
+  display: block;
   color: #2f473f;
   font-size: 20px;
 }
 
 .roll-call-list-title span {
+  display: block;
+  margin-top: 2px;
   color: #7b8065;
   font-size: 13px;
   font-weight: 950;
+}
+
+.roll-call-copy-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 38px;
+  padding: 0 12px;
+  border: 2px solid rgba(79, 154, 114, 0.28);
+  border-radius: 14px;
+  color: #315e49;
+  background: #e3f1d7;
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.roll-call-copy-status {
+  margin: 10px 2px 0;
+  color: #66715e;
+  font-size: 12px;
+  font-weight: 900;
 }
 
 .roll-call-list {
@@ -7293,6 +7457,12 @@ button {
     grid-template-columns: 1fr;
   }
 
+  .roll-call-actions,
+  .roll-call-record-actions,
+  .roll-call-stats {
+    grid-template-columns: 1fr;
+  }
+
   .lottery-prize-grid,
   .shop-grid-panel,
   .settings-class-grid,
@@ -7310,5 +7480,109 @@ button {
 
   .voice-history-list {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  html,
+  body,
+  #root {
+    min-width: 0;
+  }
+
+  .product-shell {
+    grid-template-columns: 70px minmax(0, 1fr);
+  }
+
+  .product-sidebar {
+    gap: 10px;
+    padding: 10px 7px;
+  }
+
+  .sidebar-brand {
+    justify-content: center;
+    padding: 4px 0;
+  }
+
+  .sidebar-brand > div:not(.sidebar-brand-mark),
+  .classroom-card,
+  .sidebar-collapse-hint,
+  .module-nav button span {
+    display: none;
+  }
+
+  .sidebar-brand-mark {
+    width: 42px;
+    height: 42px;
+  }
+
+  .module-nav button {
+    justify-content: center;
+    min-height: 42px;
+    padding: 0;
+  }
+
+  .module-page {
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .roll-call-header,
+  .roll-call-stage,
+  .roll-call-filter-panel,
+  .roll-call-list-panel {
+    border-width: 2px;
+    border-radius: 18px;
+  }
+
+  .roll-call-header,
+  .roll-call-stage {
+    padding: 16px;
+  }
+
+  .roll-call-header h1 {
+    font-size: 34px;
+  }
+
+  .roll-call-stage {
+    min-height: 0;
+  }
+
+  .roll-call-stage::before {
+    inset: 10px;
+    border-radius: 16px;
+  }
+
+  .roll-call-ring {
+    top: 34px;
+    width: min(72%, 230px);
+    border-width: 12px;
+  }
+
+  .roll-call-avatar {
+    min-width: 170px;
+  }
+
+  .roll-call-nameplate {
+    width: 100%;
+    padding: 13px;
+  }
+
+  .roll-call-nameplate strong {
+    font-size: 30px;
+  }
+
+  .roll-call-chip-row button {
+    max-width: 100%;
+  }
+
+  .roll-call-list li button {
+    grid-template-columns: 30px 44px minmax(0, 1fr);
+  }
+
+  .roll-call-mini-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 15px;
   }
 }

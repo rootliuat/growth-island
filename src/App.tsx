@@ -317,11 +317,15 @@ export function App() {
     window.setTimeout(() => worldMapRef.current?.focusSelected(), 160);
   };
 
-  const drawRollCallChild = () => {
+  const drawRollCallChild = (eligibleChildIds?: string[]) => {
     const calledSet = new Set(rollCallCalledIds);
-    const pool = rollCallExcludeCalled
-      ? childrenWithProgress.filter((child) => !calledSet.has(child.id))
+    const eligibleSet = eligibleChildIds ? new Set(eligibleChildIds) : undefined;
+    const basePool = eligibleSet
+      ? childrenWithProgress.filter((child) => eligibleSet.has(child.id))
       : childrenWithProgress;
+    const pool = rollCallExcludeCalled
+      ? basePool.filter((child) => !calledSet.has(child.id))
+      : basePool;
 
     if (pool.length === 0) return;
 
@@ -336,6 +340,23 @@ export function App() {
   const resetRollCall = () => {
     setRollCallCurrentId(undefined);
     setRollCallCalledIds([]);
+  };
+
+  const quickRecordRollCallChild = (childId: string) => {
+    setSelectedChildId(childId);
+    commitLedger({
+      childId,
+      operatorChildId: childId,
+      delta: 10,
+      source: "manual",
+      category: "积极阳光",
+      reason: "随机点名：课堂积极回应 +10",
+    });
+  };
+
+  const openVoiceRecordFromRollCall = (childId: string) => {
+    setSelectedChildId(childId);
+    setActiveModule("voice-record");
   };
 
   const analyzeVoiceRecord = async (childId: string, transcript: string) => {
@@ -454,6 +475,8 @@ export function App() {
           onDraw={drawRollCallChild}
           onReset={resetRollCall}
           onToggleExcludeCalled={() => setRollCallExcludeCalled((current) => !current)}
+          onQuickRecord={quickRecordRollCallChild}
+          onOpenVoiceRecord={openVoiceRecordFromRollCall}
           onFocusChild={focusChildOnHome}
         />
       ) : activeModule === "voice-record" ? (
