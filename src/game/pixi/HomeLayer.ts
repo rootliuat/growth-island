@@ -97,16 +97,14 @@ export class HomeLayer {
     });
 
     const halo = new Graphics();
-    halo.ellipse(0, 46, 104, 32).fill({ color: home.accent, alpha: 0.2 });
-    halo.ellipse(0, 46, 126, 41).stroke({ width: 4, color: 0xfff6c9, alpha: 0.5 });
-    halo.ellipse(0, 46, 146, 50).stroke({ width: 2, color: home.accent, alpha: 0.28 });
+    halo.ellipse(0, 46, 108, 34).fill({ color: home.accent, alpha: 0.12 });
+    halo.ellipse(0, 46, 128, 42).stroke({ width: 3, color: 0xfff6c9, alpha: 0.34 });
+    halo.ellipse(0, 46, 148, 50).stroke({ width: 1.5, color: home.accent, alpha: 0.2 });
     halo.visible = false;
 
     const focusGlow = new Graphics();
-    focusGlow.ellipse(0, 54, 46, 14).fill({ color: home.accent, alpha: 0.14 });
-    focusGlow.ellipse(0, 54, 62, 20).stroke({ width: 2, color: 0xfff6c9, alpha: 0.34 });
-    focusGlow.circle(-31, 46, 4).fill({ color: palette.accent, alpha: 0.58 });
-    focusGlow.circle(31, 47, 3).fill({ color: palette.pearlWhite, alpha: 0.66 });
+    focusGlow.ellipse(0, 55, 52, 15).fill({ color: home.accent, alpha: 0.09 });
+    focusGlow.ellipse(0, 55, 66, 20).stroke({ width: 1.5, color: 0xfff6c9, alpha: 0.22 });
     focusGlow.visible = false;
     focusGlow.alpha = 0;
 
@@ -139,13 +137,17 @@ export class HomeLayer {
   }
 
   private addHomeArtwork(body: Container, home: WorldHome) {
+    const contactShadow = new Graphics();
+    contactShadow.ellipse(-3, 66, 78, 21).fill({ color: palette.inkShadow, alpha: 0.1 });
+    contactShadow.ellipse(10, 57, 44, 10).fill({ color: 0xffffff, alpha: 0.035 });
+    body.addChild(contactShadow);
     addAssetSprite(body, {
       id: `${home.id}-shadow`,
       url: v4MapAssets.homeShadow,
       x: 0,
-      y: 58,
-      width: 138,
-      alpha: 0.34,
+      y: 64,
+      width: 168,
+      alpha: 0.22,
     });
     addAssetSprite(body, {
       id: `${home.id}-pad`,
@@ -153,7 +155,7 @@ export class HomeLayer {
       x: 0,
       y: 67,
       width: getHomePadWidth(home.type),
-      alpha: 0.92,
+      alpha: 0.86,
     });
     addAssetSprite(body, {
       id: `${home.id}-artwork`,
@@ -162,6 +164,7 @@ export class HomeLayer {
       y: home.type === "treehouse" ? -2 : 5,
       width: v4HomeTargetWidth(home.type, home.level),
       anchorY: 0.56,
+      alpha: 0.98,
     });
   }
 
@@ -451,15 +454,17 @@ export class HomeLayer {
     const decor = new Container();
     const g = new Graphics();
     if (home.level >= 2) {
-      g.circle(-62, 62, 7).fill(palette.flowerPink);
-      g.circle(60, 60, 7).fill(palette.grassMid);
+      g.circle(-62, 62, 4.5).fill({ color: palette.flowerPink, alpha: 0.42 });
+      g.circle(-64, 60, 2).fill({ color: 0xffffff, alpha: 0.34 });
+      g.circle(60, 60, 4.5).fill({ color: palette.grassMid, alpha: 0.38 });
+      g.circle(62, 58, 2).fill({ color: 0xffffff, alpha: 0.24 });
     }
     if (home.level >= 3) {
-      g.moveTo(-72, 70).lineTo(72, 70).stroke({ width: 3, color: palette.woodDark, alpha: 0.38, cap: "round" });
+      g.moveTo(-72, 70).lineTo(72, 70).stroke({ width: 2, color: palette.woodDark, alpha: 0.2, cap: "round" });
     }
     if (home.level >= 4) {
-      g.circle(-42, -42, 7).fill(palette.accent);
-      g.circle(-42, -42, 18).fill({ color: palette.accent, alpha: 0.1 });
+      g.circle(-42, -42, 5).fill({ color: palette.accent, alpha: 0.34 });
+      g.circle(-42, -42, 16).fill({ color: palette.accent, alpha: 0.04 });
     }
     decor.addChild(g);
 

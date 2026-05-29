@@ -26,8 +26,7 @@ export async function makeSpiritSprite(url: string, size: number) {
   const texture = await loadPixiTexture(url);
   const sprite = new Sprite(texture);
   sprite.anchor.set(0.5, 0.9);
-  sprite.width = size;
-  sprite.height = size;
+  sprite.scale.set(size / texture.width);
   return sprite;
 }
 

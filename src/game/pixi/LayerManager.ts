@@ -16,6 +16,7 @@ export class LayerManager {
   readonly layers = new Map<LayerName, Container>();
 
   constructor() {
+    let actorLayer: Container | undefined;
     ([
       "ocean",
       "island",
@@ -27,8 +28,16 @@ export class LayerManager {
       "effects",
       "labels",
     ] as LayerName[]).forEach((name) => {
+      if (name === "spirits" && actorLayer) {
+        this.layers.set(name, actorLayer);
+        return;
+      }
       const layer = new Container();
-      layer.label = name;
+      layer.label = name === "homes" ? "actors" : name;
+      if (name === "homes") {
+        layer.sortableChildren = true;
+        actorLayer = layer;
+      }
       this.layers.set(name, layer);
       this.root.addChild(layer);
     });

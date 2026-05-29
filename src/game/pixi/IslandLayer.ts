@@ -20,7 +20,7 @@ export class IslandLayer {
       x: centerX + 18,
       y: centerY + 72,
       width: islandWidth,
-      alpha: 0.78,
+      alpha: 0.68,
     });
     addAssetSprite(this.layer, {
       id: "v4-island-side",
@@ -42,7 +42,7 @@ export class IslandLayer {
       x: centerX,
       y: centerY - 6,
       width: assetScaleRules.island.shorelineBaseWidth * mapSpread.island,
-      alpha: 0.78,
+      alpha: 0.7,
     });
   }
 }

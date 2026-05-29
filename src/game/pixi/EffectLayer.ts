@@ -239,9 +239,9 @@ export class EffectLayer {
     this.time += ticker.deltaMS / 1000;
     this.treeGlow.clear();
     const pulse = 0.28 + Math.sin(this.time * 1.4) * 0.08;
-    this.treeGlow.circle(0, 0, 136 + Math.sin(this.time) * 7).fill({ color: palette.accent, alpha: pulse * 0.14 });
-    this.treeGlow.circle(0, 0, 84).stroke({ width: 4, color: 0xffe99b, alpha: 0.44 + pulse });
-    this.treeGlow.circle(0, 0, 116).stroke({ width: 2, color: 0xfff5c8, alpha: 0.26 + pulse * 0.2 });
+    this.treeGlow.circle(0, 0, 136 + Math.sin(this.time) * 7).fill({ color: palette.accent, alpha: pulse * 0.08 });
+    this.treeGlow.circle(0, 0, 84).stroke({ width: 3, color: 0xffe99b, alpha: 0.26 + pulse * 0.38 });
+    this.treeGlow.circle(0, 0, 116).stroke({ width: 1.5, color: 0xfff5c8, alpha: 0.18 + pulse * 0.14 });
     this.updateSelectedGuide();
     this.xpParticles.update(ticker);
     this.updateGrowthWaves(ticker);
@@ -310,7 +310,7 @@ export class EffectLayer {
       const afterglow = clamp01((wave.elapsed - 2100) / Math.max(1, wave.duration - 2100));
       const fade = clamp01((wave.elapsed - (wave.duration - 920)) / 920);
 
-      wave.root.alpha = wave.upgraded ? 1 - fade * 0.88 : 0.72 - t * 0.62;
+      wave.root.alpha = wave.upgraded ? 0.9 - fade * 0.78 : 0.64 - t * 0.56;
       wave.root.scale.set(wave.upgraded ? 0.98 + Math.sin(Math.PI * birth) * 0.035 : 1);
       this.drawGrowthPool(wave, charge, release, birthEase, afterglow);
       this.drawGrowthVeil(wave, charge, release, birthEase, afterglow);
@@ -328,7 +328,7 @@ export class EffectLayer {
         const radius = wave.upgraded ? (scatter > 0 ? scatterRadius : gatherRadius) : dot.distance * easeOutCubic(local) * 0.4;
         const rise = wave.upgraded ? dot.lift * scatter + Math.sin(local * Math.PI) * 20 : dot.lift * local;
         const fall = wave.upgraded ? Math.max(0, afterglow - 0.22) * 34 * (index % 2 ? 0.8 : 1.1) : 0;
-        const alpha = wave.upgraded ? Math.sin(Math.PI * clamp01(local)) * (0.3 + (index % 4) * 0.07) * (1 - fade * 0.72) : 0.34 * (1 - local);
+        const alpha = wave.upgraded ? Math.sin(Math.PI * clamp01(local)) * (0.24 + (index % 4) * 0.055) * (1 - fade * 0.72) : 0.28 * (1 - local);
         dot.node.clear();
         dot.node.x = Math.cos(orbit) * radius;
         dot.node.y = -54 + Math.sin(orbit) * radius * 0.32 - rise + fall;
@@ -386,10 +386,10 @@ export class EffectLayer {
       ribbon.node.clear();
       ribbon.node.moveTo(x * 0.42, y - 12);
       ribbon.node.quadraticCurveTo(x + sway, y - ribbon.height * 0.42 * reveal, x * 0.18 - sway * 0.34, y - ribbon.height * reveal);
-      ribbon.node.stroke({ width: 6.8, color: 0xffffff, alpha: baseAlpha * 0.1 * reveal, cap: "round" });
+      ribbon.node.stroke({ width: 5.6, color: 0xffffff, alpha: baseAlpha * 0.08 * reveal, cap: "round" });
       ribbon.node.moveTo(x * 0.42, y - 12);
       ribbon.node.quadraticCurveTo(x + sway, y - ribbon.height * 0.42 * reveal, x * 0.18 - sway * 0.34, y - ribbon.height * reveal);
-      ribbon.node.stroke({ width: 1.65, color: ribbon.color, alpha: baseAlpha * 0.48 * reveal, cap: "round" });
+      ribbon.node.stroke({ width: 1.45, color: ribbon.color, alpha: baseAlpha * 0.38 * reveal, cap: "round" });
     });
   }
 
@@ -437,7 +437,7 @@ export class EffectLayer {
       const drift = easeOutCubic(local);
       const radius = 14 + petal.distance * drift;
       const angle = petal.angle + Math.sin(this.time * 0.9 + index) * 0.12;
-      const alpha = Math.sin(Math.PI * local) * 0.34 * (1 - fade * 0.76);
+      const alpha = Math.sin(Math.PI * local) * 0.26 * (1 - fade * 0.76);
       petal.node.clear();
       petal.node.x = Math.cos(angle) * radius;
       petal.node.y = -56 + Math.sin(angle) * radius * 0.28 - petal.lift * drift + Math.max(0, local - 0.55) * 40;

@@ -156,6 +156,7 @@ export class SpiritLayer {
 
   private createNode(spirit: WorldSpirit): SpiritNode {
     const root = new Container();
+    root.label = spirit.id;
     root.eventMode = "static";
     root.cursor = "pointer";
     root.hitArea = new Rectangle(-70, -118, 140, 154);
@@ -173,13 +174,17 @@ export class SpiritLayer {
     halo.visible = false;
 
     const body = new Container();
+    const contactShadow = new Graphics();
+    contactShadow.ellipse(0, 13, 42, 12).fill({ color: palette.inkShadow, alpha: 0.12 });
+    contactShadow.ellipse(8, 8, 22, 5).fill({ color: 0xffffff, alpha: 0.04 });
+    body.addChild(contactShadow);
     addAssetSprite(body, {
       id: `${spirit.id}-spirit-shadow`,
       url: v4MapAssets.spiritShadow,
       x: 0,
-      y: -6,
+      y: 13,
       width: assetScaleRules.spirit.shadowWidth,
-      alpha: 0.5,
+      alpha: 0.28,
     });
 
     const levelBadge = new Container();
@@ -384,8 +389,8 @@ export class SpiritLayer {
     return childId === this.selectedChildId && this.zoom >= 1.38;
   }
 
-  private shouldShowMoodDot(childId: string) {
-    return childId === this.selectedChildId && this.zoom >= 0.9 && this.zoom < 1.18;
+  private shouldShowMoodDot(_childId: string) {
+    return false;
   }
 
   private shouldShowSpirit(childId: string, node: SpiritNode) {
