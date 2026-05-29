@@ -49,9 +49,18 @@ type SyncStatus = "connecting" | "online" | "saving" | "offline";
 const backgroundSpiritBatchSize = 2;
 const backgroundSpiritBatchDelayMs = 1100;
 const backgroundSpiritInitialDelayMs = 1400;
+const backgroundSpiritPreloadLimit = 12;
 
 function spiritAssetKey(child: ChildWithProgress) {
   return `${child.spiritId}:${child.state}`;
+}
+
+function getBackgroundSpiritPriority(child: ChildWithProgress, selectedChild: ChildWithProgress) {
+  if (child.rank <= 3) return child.rank;
+
+  const slotDistance = Math.abs(child.slotId - selectedChild.slotId);
+  const levelBias = child.level >= 7 ? -4 : 0;
+  return 10 + Math.min(slotDistance, 18) + child.rank / 100 + levelBias;
 }
 
 const seededLedger: LedgerRecord[] = initialChildren.slice(0, 16).flatMap((child, index) => {
@@ -160,7 +169,11 @@ export function App() {
     const selectedTarget = selectedChild ? assetTargets.get(spiritAssetKey(selectedChild)) : undefined;
     const backgroundTargets = [...assetTargets.values()]
       .filter(({ child }) => child.id !== selectedChild.id)
-      .sort((a, b) => a.child.rank - b.child.rank);
+      .sort(
+        (a, b) =>
+          getBackgroundSpiritPriority(a.child, selectedChild) - getBackgroundSpiritPriority(b.child, selectedChild),
+      )
+      .slice(0, backgroundSpiritPreloadLimit);
 
     const applyLoadedAssets = (loaded: boolean[]) => {
       if (!cancelled && loaded.some(Boolean)) setAssetVersion((current) => current + 1);
