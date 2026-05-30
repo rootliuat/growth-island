@@ -65,11 +65,11 @@ export function LotteryModule({
             班级激励
           </span>
           <h1 id="lottery-title">积分抽奖</h1>
-          <p>选择孩子后进行本地随机抽奖。当前版本只演示奖品结果，不消耗 XP，也不写入成长流水。</p>
+          <p>选择孩子抽取班级奖励。本轮不消耗 XP，不写入成长流水。</p>
         </div>
         <button type="button" className="reward-home-button" onClick={() => onFocusChild(activeChild.id)}>
           <Home size={18} />
-          聚焦成长岛
+          回到成长岛
         </button>
       </div>
 
@@ -105,7 +105,7 @@ export function LotteryModule({
             ) : (
               <>
                 <span>等待抽奖</span>
-                <strong>本地奖池</strong>
+                <strong>班级奖池</strong>
                 <p>点击开始抽奖后展示结果。此处不会扣减孩子 XP。</p>
               </>
             )}
@@ -127,7 +127,7 @@ export function LotteryModule({
           <section className="reward-panel">
             <div className="reward-panel-title">
               <Trophy size={19} />
-              <strong>静态奖池</strong>
+              <strong>班级奖池</strong>
             </div>
             <div className="lottery-prize-grid">
               {lotteryPrizes.map((prize) => (
@@ -143,7 +143,7 @@ export function LotteryModule({
           <section className="reward-panel lottery-history-panel">
             <div className="reward-panel-title">
               <Gift size={19} />
-              <strong>本地记录</strong>
+              <strong>本轮结果</strong>
             </div>
             {drawHistory.length === 0 ? (
               <p className="reward-muted">本轮还没有抽奖结果。</p>

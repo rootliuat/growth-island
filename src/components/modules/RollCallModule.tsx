@@ -134,7 +134,7 @@ export function RollCallModule({
   const handleQuickRecord = () => {
     if (!hasDrawnChild || isRolling) return;
     onQuickRecord(currentChild.id);
-    setActionStatus(`${currentChild.name} +10`);
+    setActionStatus(`已给 ${currentChild.name} +10`);
   };
 
   const handleCopyRound = async () => {
@@ -164,7 +164,7 @@ export function RollCallModule({
         </div>
         <button type="button" className="roll-call-home-button" onClick={() => onFocusChild(currentChild.id)}>
           <Home size={18} />
-          聚焦
+          回岛
         </button>
       </div>
 
@@ -192,7 +192,7 @@ export function RollCallModule({
           <div className="roll-call-actions">
             <button type="button" className="roll-call-primary" onClick={handleDraw} disabled={isPoolEmpty || isRolling}>
               <Search size={21} />
-              {isRolling ? "抽取中" : isPoolEmpty ? "已点完" : "开始"}
+              {isRolling ? "抽取中" : isPoolEmpty ? "已点完" : "抽一名"}
             </button>
             <button type="button" className="roll-call-secondary" onClick={onReset}>
               <RotateCcw size={19} />
@@ -203,11 +203,11 @@ export function RollCallModule({
           <div className="roll-call-record-actions" aria-label="抽中后记录成长行为">
             <button type="button" onClick={handleQuickRecord} disabled={!hasDrawnChild || isRolling}>
               <PlusCircle size={19} />
-              记录 +10
+              {hasDrawnChild ? `给 ${currentChild.name} +10` : "记录 +10"}
             </button>
             <button type="button" onClick={() => onOpenVoiceRecord(currentChild.id)} disabled={!hasDrawnChild || isRolling}>
               <Mic size={19} />
-              语音记录
+              文本记录
             </button>
           </div>
           <p className="roll-call-action-status">{actionStatus}</p>

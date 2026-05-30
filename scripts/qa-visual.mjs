@@ -9,6 +9,7 @@ const oneMb = 1024 * 1024;
 const viewports = [
   { name: "whiteboard", width: 1850, height: 1150 },
   { name: "compact", width: 1600, height: 900 },
+  { name: "mobile", width: 390, height: 844 },
 ];
 
 const checks = [
@@ -24,6 +25,26 @@ const checks = [
   { name: "shop", module: "shop", viewports: ["whiteboard"], kind: "shop-flow" },
   { name: "data-management", module: "data-management", viewports: ["whiteboard"], kind: "data-flow", offline: true },
   { name: "settings", module: "settings", viewports: ["whiteboard"], kind: "module", selector: ".settings-page" },
+  { name: "mobile-home", module: "home", viewports: ["mobile"], kind: "module", selector: ".home-module" },
+  {
+    name: "mobile-teacher-workbench",
+    module: "teacher-workbench",
+    viewports: ["mobile"],
+    kind: "module",
+    selector: ".teacher-workbench-page",
+  },
+  { name: "mobile-roll-call", module: "roll-call", viewports: ["mobile"], kind: "module", selector: ".roll-call-page" },
+  {
+    name: "mobile-voice-record",
+    module: "voice-record",
+    viewports: ["mobile"],
+    kind: "module",
+    selector: ".voice-record-page",
+  },
+  { name: "mobile-math-arena", module: "math-arena", viewports: ["mobile"], kind: "module", selector: ".math-arena-page" },
+  { name: "mobile-shop", module: "shop", viewports: ["mobile"], kind: "module", selector: ".shop-page" },
+  { name: "mobile-data-management", module: "data-management", viewports: ["mobile"], kind: "module", selector: ".data-page" },
+  { name: "mobile-settings", module: "settings", viewports: ["mobile"], kind: "module", selector: ".settings-page" },
 ];
 
 function ensureCleanDir(dir) {
@@ -164,7 +185,7 @@ async function inspectTeacherCards(page) {
 }
 
 async function exerciseRollCall(page) {
-  const startButton = page.getByRole("button", { name: /开始(?:点名)?/ }).first();
+  const startButton = page.getByRole("button", { name: /抽一名|开始(?:点名)?/ }).first();
   await startButton.click();
   await page.waitForTimeout(1250);
   return page.evaluate(() => {
@@ -173,8 +194,8 @@ async function exerciseRollCall(page) {
       hasTitle: text.includes("随机点名"),
       hasDrawnStatus: text.includes("已抽出孩子") || text.includes("本轮点名"),
       hasAvatar: Boolean(document.querySelector(".roll-call-avatar img, .roll-call-fallback")),
-      hasFocusAction: text.includes("聚焦"),
-      hasRecordAction: text.includes("记录 +10"),
+      hasFocusAction: text.includes("回岛") || text.includes("回到成长岛"),
+      hasRecordAction: text.includes("记录 +10") || /给\s*\S+\s*\+10/.test(text),
     };
   });
 }
@@ -188,7 +209,7 @@ async function exerciseTeacherFlow(page, scoreScreenshot, homeScreenshot) {
   const selectedBefore = await page.locator(".workbench-selected-child.compact").innerText();
   const name = selectedBefore.match(/当前孩子\s*([^\n]+)/)?.[1]?.trim() ?? extractSelectedChildName(selectedBefore);
   const xpBefore = Number(selectedBefore.match(/(\d+)\s*XP/)?.[1] ?? Number.NaN);
-  await page.locator(".batch-score-grid button").first().click();
+  await targetCard.locator(".student-card-actions button").first().click();
   await page.waitForFunction(
     ({ expectedXp }) => document.querySelector(".workbench-selected-child.compact")?.textContent?.includes(`${expectedXp} XP`),
     { expectedXp: xpBefore + 10 },
@@ -325,7 +346,7 @@ async function exerciseVoiceFlow(page, confirmedScreenshot, suggestionScreenshot
   });
   await page.screenshot({ path: confirmedScreenshot, fullPage: false });
 
-  await page.getByRole("button", { name: /聚焦成长岛/ }).click();
+  await page.getByRole("button", { name: /回到成长岛|回岛/ }).click();
   await page.waitForSelector(".home-module");
   await page.waitForTimeout(1200);
   await waitForPixiIdle(page);
@@ -478,7 +499,7 @@ async function exerciseProfileFlow(page, workbenchProfileScreenshot, homeProfile
   const selectedBefore = await page.locator(".workbench-selected-child.compact").innerText();
   const name = selectedBefore.match(/当前孩子\s*([^\n]+)/)?.[1]?.trim() ?? extractSelectedChildName(selectedBefore);
   const xpBefore = Number(selectedBefore.match(/(\d+)\s*XP/)?.[1] ?? Number.NaN);
-  await page.locator(".batch-score-grid button").first().click();
+  await targetCard.locator(".student-card-actions button").first().click();
   await page.waitForFunction(
     ({ expectedXp }) => document.querySelector(".workbench-selected-child.compact")?.textContent?.includes(`${expectedXp} XP`),
     { expectedXp: xpBefore + 10 },
@@ -609,7 +630,7 @@ async function exerciseShopFlow(page, shopScreenshot, insufficientScreenshot, ho
   await page.selectOption("#shop-child", "child-10");
   await page.waitForTimeout(150);
   await page.locator(".shop-reward-card.available button").first().click();
-  await page.waitForFunction(() => (document.querySelector(".shop-intent-card")?.textContent ?? "").includes("演示兑换已选择"));
+  await page.waitForFunction(() => (document.querySelector(".shop-intent-card")?.textContent ?? "").includes("已选择奖励"));
   const availableText = await page.locator(".shop-intent-card").innerText();
   const balanceText = await page.locator(".shop-balance-card").innerText();
   const ledgerCountAfter = await page.evaluate(() => (window.__growthIslandLedger ?? []).length);
@@ -624,7 +645,7 @@ async function exerciseShopFlow(page, shopScreenshot, insufficientScreenshot, ho
 
   return {
     hasInsufficientState: insufficientText.includes("XP 暂时不足"),
-    hasAvailableState: availableText.includes("演示兑换已选择"),
+    hasAvailableState: availableText.includes("已选择奖励"),
     hasBalance: balanceText.includes("当前 XP"),
     ledgerUnchanged: ledgerCountBefore === ledgerCountAfter,
     homeFocused: homeText.includes("可可"),
@@ -766,13 +787,24 @@ async function inspectPage(browser, check, viewport) {
     await page.screenshot({ path: screenshot, fullPage: false });
   }
 
-  const common = await page.evaluate(() => ({
-    bodyOverflowX: document.body.scrollWidth > document.documentElement.clientWidth,
-    bodyOverflowY: document.body.scrollHeight > document.documentElement.clientHeight,
-    imageCount: document.images.length,
-    failedImageCount: [...document.images].filter((img) => !img.complete || img.naturalWidth === 0).length,
-    viewport: { width: innerWidth, height: innerHeight },
-  }));
+  const common = await page.evaluate(() => {
+    const imageStates = [...document.images].map((img) => {
+      const rect = img.getBoundingClientRect();
+      const visible = rect.bottom > 0 && rect.top < innerHeight && rect.right > 0 && rect.left < innerWidth;
+      const ready = img.complete && img.naturalWidth > 0;
+      const loadedBroken = img.complete && img.naturalWidth === 0;
+      return { visible, ready, loadedBroken };
+    });
+
+    return {
+      bodyOverflowX: document.body.scrollWidth > document.documentElement.clientWidth,
+      bodyOverflowY: document.body.scrollHeight > document.documentElement.clientHeight,
+      imageCount: document.images.length,
+      failedImageCount: imageStates.filter((image) => image.loadedBroken || (image.visible && !image.ready)).length,
+      deferredImageCount: imageStates.filter((image) => !image.visible && !image.ready && !image.loadedBroken).length,
+      viewport: { width: innerWidth, height: innerHeight },
+    };
+  });
 
   const resourceSummary = summarizeResources(resources);
   const pngBytes = resourceSummary.png?.bytes ?? 0;

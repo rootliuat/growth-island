@@ -115,10 +115,6 @@ export function TeacherWorkbenchModule({
     onQuickRecord([selectedChild.id], template.delta, template.reason, template.category);
   };
 
-  const scoreSelected = (delta: number, reason: string, category: VirtueCategory) => {
-    onQuickRecord([selectedChild.id], delta, reason, category);
-  };
-
   const updateTranscript = (value: string) => {
     setTranscript(value);
     setResult(undefined);
@@ -150,7 +146,7 @@ export function TeacherWorkbenchModule({
       <div className="workbench-header">
         <button type="button" className="workbench-home-button" onClick={() => onFocusChild(selectedChild.id)}>
           <Home size={18} />
-          聚焦
+          回岛
         </button>
       </div>
 
@@ -168,7 +164,7 @@ export function TeacherWorkbenchModule({
                       <em>Lv.{child.level}</em>
                       <button type="button" className="student-card-focus" onClick={() => onFocusChild(child.id)}>
                         <Home size={13} />
-                        聚焦
+                        回岛
                       </button>
                     </div>
                   </div>
@@ -218,21 +214,8 @@ export function TeacherWorkbenchModule({
 
           <div className="workbench-section-title">
             <Sparkles size={18} />
-            <strong>快速奖励</strong>
+            <strong>行为记录</strong>
           </div>
-          <div className="batch-score-grid">
-            {[10, 20, 30].map((value) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => scoreSelected(value, `课堂记录：快速加分 +${value}`, "积极阳光")}
-              >
-                <Plus size={18} />
-                +{value}
-              </button>
-            ))}
-          </div>
-
           <div className="template-grid">
             {behaviorTemplates.map((template) => (
               <button
@@ -250,7 +233,7 @@ export function TeacherWorkbenchModule({
           <div className="manual-score-pad">
             <div className="workbench-section-title">
               <UserRound size={18} />
-              <strong>手动 XP</strong>
+              <strong>调整 XP</strong>
             </div>
             <div className="manual-score-grid">
               {[10, 20, 30].map((value) => (
@@ -282,6 +265,31 @@ export function TeacherWorkbenchModule({
             </button>
           </div>
 
+          <section className="workbench-record-panel">
+            <div className="workbench-section-title">
+              <BadgeCheck size={18} />
+              <strong>最近记录</strong>
+              <span>{selectedRecords.length}</span>
+            </div>
+            <div className="workbench-record-list">
+              {selectedRecords.length === 0 ? (
+                <p>暂无记录</p>
+              ) : (
+                selectedRecords.map((record) => (
+                  <article key={record.id} className={record.delta < 0 ? "negative" : undefined}>
+                    <span>{formatDelta(record.delta)}</span>
+                    <div>
+                      <strong>{record.reason}</strong>
+                      <em>
+                        {record.category ?? "成长记录"} · {formatRecordTime(record.createdAt)}
+                      </em>
+                    </div>
+                  </article>
+                ))
+              )}
+            </div>
+          </section>
+
           <section className="workbench-ai-panel" aria-label="AI 德育建议">
             <div className="workbench-section-title">
               <ShieldCheck size={18} />
@@ -306,7 +314,7 @@ export function TeacherWorkbenchModule({
             <div className="workbench-ai-actions">
               <button type="button" className="workbench-secondary-action" disabled>
                 <Mic size={18} />
-                录音占位
+                语音稍后
               </button>
               <button type="button" className="workbench-primary-action" onClick={submitAnalysis} disabled={!canAnalyze}>
                 <WandSparkles size={18} />
@@ -332,31 +340,6 @@ export function TeacherWorkbenchModule({
                 </div>
               </article>
             ) : null}
-          </section>
-
-          <section>
-            <div className="workbench-section-title">
-              <BadgeCheck size={18} />
-              <strong>最近记录</strong>
-              <span>{selectedRecords.length}</span>
-            </div>
-            <div className="workbench-record-list">
-              {selectedRecords.length === 0 ? (
-                <p>暂无记录</p>
-              ) : (
-                selectedRecords.map((record) => (
-                  <article key={record.id} className={record.delta < 0 ? "negative" : undefined}>
-                    <span>{formatDelta(record.delta)}</span>
-                    <div>
-                      <strong>{record.reason}</strong>
-                      <em>
-                        {record.category ?? "成长记录"} · {formatRecordTime(record.createdAt)}
-                      </em>
-                    </div>
-                  </article>
-                ))
-              )}
-            </div>
           </section>
 
           <section className="workbench-review-panel" aria-label="待复核">

@@ -12,7 +12,7 @@ export function TeacherBar({ teacherMode, onToggleTeacherMode, childrenCount, sy
     connecting: { label: "连接数据", icon: <LoaderCircle size={18} /> },
     online: { label: "已保存", icon: <Cloud size={18} /> },
     saving: { label: "保存中", icon: <LoaderCircle size={18} /> },
-    offline: { label: "离线演示", icon: <CloudOff size={18} /> },
+    offline: { label: "离线模式", icon: <CloudOff size={18} /> },
   }[syncStatus];
 
   return (

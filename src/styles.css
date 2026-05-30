@@ -24,7 +24,7 @@ html,
 body,
 #root {
   width: 100%;
-  min-width: 1120px;
+  min-width: 0;
   height: 100%;
   margin: 0;
 }
@@ -4435,7 +4435,7 @@ button {
 .module-hero h1 {
   margin: 17px 0 9px;
   color: #2f473f;
-  font-size: clamp(34px, 3.4vw, 54px);
+  font-size: clamp(18px, 2vw, 22px);
   line-height: 1;
   letter-spacing: 0;
 }
@@ -4653,7 +4653,7 @@ button {
 .roll-call-header h1 {
   margin: 14px 0 8px;
   color: #2f473f;
-  font-size: clamp(34px, 3.2vw, 52px);
+  font-size: clamp(18px, 2vw, 22px);
   line-height: 1;
   letter-spacing: 0;
 }
@@ -5267,7 +5267,7 @@ button {
 .math-arena-header h1 {
   margin: 14px 0 8px;
   color: #2f473f;
-  font-size: clamp(34px, 3.2vw, 52px);
+  font-size: clamp(18px, 2vw, 22px);
   line-height: 1;
   letter-spacing: 0;
 }
@@ -5699,7 +5699,7 @@ button {
 .leaderboard-header h1 {
   margin: 14px 0 8px;
   color: #2f473f;
-  font-size: clamp(34px, 3.2vw, 52px);
+  font-size: clamp(18px, 2vw, 22px);
   line-height: 1;
   letter-spacing: 0;
 }
@@ -6153,7 +6153,7 @@ button {
 .reward-header h1 {
   margin: 14px 0 8px;
   color: #2f473f;
-  font-size: clamp(34px, 3.2vw, 52px);
+  font-size: clamp(18px, 2vw, 22px);
   line-height: 1;
   letter-spacing: 0;
 }
@@ -6605,7 +6605,7 @@ button {
 .settings-header h1 {
   margin: 14px 0 8px;
   color: #2f473f;
-  font-size: clamp(34px, 3.2vw, 52px);
+  font-size: clamp(18px, 2vw, 22px);
   line-height: 1;
   letter-spacing: 0;
 }
@@ -6624,8 +6624,7 @@ button {
 .settings-home-button,
 .data-child-list button,
 .data-review-actions button,
-.settings-mode-grid button,
-.settings-action-list button {
+.settings-mode-grid button {
   border: 0;
   font-family: inherit;
 }
@@ -6633,8 +6632,7 @@ button {
 .data-home-button,
 .settings-home-button,
 .data-review-actions button:first-child,
-.settings-mode-grid button,
-.settings-action-list button {
+.settings-mode-grid button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -6962,6 +6960,7 @@ button {
 .settings-class-grid article,
 .settings-mode-grid article,
 .settings-rule-grid article,
+.settings-action-list article,
 .settings-score-rules span {
   padding: 12px;
   border: 2px solid rgba(214, 208, 190, 0.72);
@@ -6990,13 +6989,25 @@ button {
   line-height: 1.16;
 }
 
-.settings-mode-grid p,
-.settings-action-note {
+.settings-mode-grid p {
   margin: 8px 0 0;
   color: #66715e;
   font-size: 14px;
   font-weight: 850;
   line-height: 1.55;
+}
+
+.settings-mode-grid article > em {
+  display: inline-flex;
+  width: fit-content;
+  margin-top: 12px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  color: #315e49;
+  background: #e3f1d7;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 950;
 }
 
 .settings-mode-grid button {
@@ -7034,9 +7045,11 @@ button {
   font-weight: 900;
 }
 
-.settings-action-list button {
+.settings-action-list article {
   display: grid;
   grid-template-columns: 28px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
   justify-content: stretch;
   min-height: 50px;
   text-align: left;
@@ -7074,7 +7087,7 @@ button {
 .voice-record-header h1 {
   margin: 14px 0 8px;
   color: #2f473f;
-  font-size: clamp(34px, 3.2vw, 52px);
+  font-size: clamp(18px, 2vw, 22px);
   line-height: 1;
   letter-spacing: 0;
 }
@@ -7521,7 +7534,7 @@ button {
 .profile-header h1 {
   margin: 14px 0 8px;
   color: #2f473f;
-  font-size: clamp(34px, 3.2vw, 52px);
+  font-size: clamp(18px, 2vw, 22px);
   line-height: 1;
   letter-spacing: 0;
 }
@@ -8856,7 +8869,7 @@ button {
   }
 
   .roll-call-header h1 {
-    font-size: 34px;
+    font-size: 20px;
   }
 
   .roll-call-stage {
@@ -8914,8 +8927,9 @@ button {
 .profile-header {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  min-height: 44px;
+  justify-content: space-between;
+  min-height: 52px;
+  gap: 12px;
   padding: 0;
   border: 0;
   border-radius: 0;
@@ -8932,6 +8946,57 @@ button {
 .voice-record-header > div,
 .workbench-header > div,
 .profile-header > div {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+}
+
+.roll-call-header .module-eyebrow,
+.math-arena-header .module-eyebrow,
+.leaderboard-header .module-eyebrow,
+.reward-header .module-eyebrow,
+.data-header .module-eyebrow,
+.settings-header .module-eyebrow,
+.voice-record-header .module-eyebrow,
+.workbench-header .module-eyebrow,
+.profile-header .module-eyebrow {
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid rgba(45, 140, 133, 0.18);
+  border-radius: 999px;
+  color: var(--apple-accent);
+  background: var(--apple-accent-soft);
+  font-size: 12px;
+}
+
+.roll-call-header h1,
+.math-arena-header h1,
+.leaderboard-header h1,
+.reward-header h1,
+.data-header h1,
+.settings-header h1,
+.voice-record-header h1,
+.workbench-header h1,
+.profile-header h1 {
+  margin: 0;
+  overflow: hidden;
+  color: var(--apple-text);
+  font-size: 20px;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.roll-call-header p,
+.math-arena-header p,
+.leaderboard-header p,
+.reward-header p,
+.data-header p,
+.settings-header p,
+.voice-record-header p,
+.workbench-header p,
+.profile-header p {
   display: none;
 }
 
@@ -8941,7 +9006,9 @@ button {
 
 .module-hero-copy {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   padding: 0;
   border: 0;
   border-radius: 0;
@@ -8949,31 +9016,44 @@ button {
   box-shadow: none;
 }
 
-.module-hero-copy > .module-eyebrow,
-.module-hero-copy > h1,
 .module-hero-copy > p {
   display: none;
+}
+
+.module-hero-copy > .module-eyebrow {
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid rgba(45, 140, 133, 0.18);
+  color: var(--apple-accent);
+  background: var(--apple-accent-soft);
+}
+
+.module-hero-copy > h1 {
+  margin: 0 auto 0 0;
+  color: var(--apple-text);
+  font-size: 20px;
+  line-height: 1.1;
 }
 
 .module-hero-copy .module-actions {
   justify-content: flex-end;
 }
 
-/* P3 Apple-style product baseline for teacher/admin modules.
+/* P3 Beihai cockpit baseline for teacher/admin modules.
    Keep Growth Island fantasy artwork intact; only quiet the operating surfaces. */
 :root {
-  --apple-page: #f4f7f2;
-  --apple-surface: rgba(255, 255, 255, 0.82);
-  --apple-surface-solid: #fffef9;
-  --apple-muted: #f0f3ec;
-  --apple-border: rgba(39, 64, 57, 0.12);
-  --apple-border-strong: rgba(39, 64, 57, 0.18);
-  --apple-text: #1f332d;
-  --apple-text-soft: #68776e;
-  --apple-accent: #24895f;
-  --apple-accent-soft: #dff2e6;
-  --apple-shadow: 0 18px 42px rgba(31, 51, 45, 0.09);
-  --apple-shadow-soft: 0 8px 24px rgba(31, 51, 45, 0.06);
+  --apple-page: #eef6f0;
+  --apple-surface: rgba(255, 248, 234, 0.9);
+  --apple-surface-solid: #fff9ec;
+  --apple-muted: #f3e8c8;
+  --apple-border: rgba(126, 104, 54, 0.18);
+  --apple-border-strong: rgba(126, 104, 54, 0.28);
+  --apple-text: #174c5a;
+  --apple-text-soft: #65756f;
+  --apple-accent: #2d8c85;
+  --apple-accent-soft: #dff2ea;
+  --apple-shadow: 0 18px 42px rgba(23, 76, 90, 0.1);
+  --apple-shadow-soft: 0 8px 24px rgba(23, 76, 90, 0.07);
 }
 
 .product-shell {
@@ -9052,6 +9132,7 @@ button {
 .settings-class-grid article,
 .settings-mode-grid article,
 .settings-rule-grid article,
+.settings-action-list article,
 .settings-score-rules span,
 .data-toolbar,
 .data-child-panel,
@@ -9094,7 +9175,6 @@ button {
 .roll-call-copy-button,
 .settings-home-button,
 .settings-mode-grid button,
-.settings-action-list button,
 .data-home-button,
 .data-review-actions button,
 .template-grid button,
@@ -9112,7 +9192,6 @@ button {
 .workbench-review-actions button:first-child,
 .settings-home-button,
 .settings-mode-grid button,
-.settings-action-list button,
 .data-home-button,
 .data-review-actions button:first-child {
   color: #ffffff;
@@ -9270,7 +9349,7 @@ button {
 }
 
 .settings-action-list em {
-  color: rgba(255, 255, 255, 0.74);
+  color: var(--apple-text-soft);
 }
 
 .spirit-profile-button,
@@ -9298,20 +9377,20 @@ button {
   background: rgba(223, 242, 230, 0.96);
 }
 
-/* Alma-inspired minimal pass: lighter shell, fewer instructional labels. */
+/* Minimal Beihai pass: lighter shell, fewer instructional labels. */
 :root {
-  --apple-page: #f7f8f5;
-  --apple-surface: rgba(255, 255, 255, 0.92);
-  --apple-surface-solid: #ffffff;
-  --apple-muted: #f1f3ee;
-  --apple-border: rgba(30, 42, 38, 0.11);
-  --apple-border-strong: rgba(30, 42, 38, 0.18);
-  --apple-text: #172722;
-  --apple-text-soft: #6b746f;
-  --apple-accent: #317d68;
-  --apple-accent-soft: #e7f1ec;
-  --apple-shadow: 0 20px 48px rgba(23, 39, 34, 0.07);
-  --apple-shadow-soft: 0 10px 28px rgba(23, 39, 34, 0.055);
+  --apple-page: #f3f7f0;
+  --apple-surface: rgba(255, 249, 236, 0.94);
+  --apple-surface-solid: #fffaf0;
+  --apple-muted: #f1e6c9;
+  --apple-border: rgba(126, 104, 54, 0.16);
+  --apple-border-strong: rgba(126, 104, 54, 0.26);
+  --apple-text: #174c5a;
+  --apple-text-soft: #6c786f;
+  --apple-accent: #2d8c85;
+  --apple-accent-soft: #e0f2ea;
+  --apple-shadow: 0 20px 48px rgba(23, 76, 90, 0.08);
+  --apple-shadow-soft: 0 10px 28px rgba(23, 76, 90, 0.055);
 }
 
 .product-shell {
@@ -9895,6 +9974,118 @@ button {
   }
 }
 
+/* Second-pass mobile fix: avoid clipping roll-call content behind overflow guards. */
+@media (max-width: 720px) {
+  .roll-call-page {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    overflow: auto;
+  }
+
+  .roll-call-header {
+    align-items: stretch;
+    gap: 8px;
+    min-height: auto;
+  }
+
+  .roll-call-header > div {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .roll-call-home-button {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .roll-call-layout {
+    width: 100%;
+    min-width: 0;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .roll-call-stage {
+    width: 100%;
+    min-width: 0;
+    min-height: auto;
+    gap: 14px;
+    padding: 16px;
+  }
+
+  .roll-call-winner {
+    width: 100%;
+    gap: 12px;
+  }
+
+  .roll-call-ring {
+    top: 32px;
+    width: min(70vw, 230px);
+  }
+
+  .roll-call-avatar {
+    width: min(68vw, 220px);
+    min-width: 0;
+  }
+
+  .roll-call-nameplate {
+    width: 100%;
+    padding: 12px 14px;
+  }
+
+  .roll-call-nameplate strong {
+    font-size: clamp(32px, 10vw, 40px);
+  }
+
+  .roll-call-actions,
+  .roll-call-record-actions,
+  .roll-call-stats {
+    width: 100%;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .roll-call-side {
+    width: 100%;
+    grid-template-rows: auto;
+    gap: 12px;
+  }
+
+  .roll-call-filter-panel,
+  .roll-call-list-panel {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .roll-call-chip-row button {
+    min-height: 44px;
+  }
+
+  .settings-page {
+    grid-template-rows: auto auto;
+    align-content: start;
+    overflow: auto;
+  }
+
+  .settings-layout {
+    display: flex;
+    height: auto;
+    min-height: 0;
+    flex-direction: column;
+    overflow: visible;
+  }
+
+  .settings-class-panel,
+  .settings-mode-panel,
+  .settings-rule-panel,
+  .settings-action-panel {
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    flex: none;
+    overflow: visible;
+  }
+}
+
 /* P0 home big-screen pass: the island is the primary surface. */
 .home-screen-shell {
   grid-template-columns: 72px minmax(0, 1fr);
@@ -9967,7 +10158,7 @@ button {
 
 .home-screen-shell .sidebar-collapse-hint {
   width: 44px;
-  min-height: 36px;
+  min-height: 44px;
   padding: 0;
   border-color: rgba(31, 74, 66, 0.14);
   color: #52635d;
@@ -10024,8 +10215,8 @@ button {
 }
 
 .home-screen-shell .zoom-controls button {
-  width: 34px;
-  min-height: 34px;
+  width: 44px;
+  min-height: 44px;
 }
 
 .home-screen-shell .product-workspace .game-layout {
@@ -10239,5 +10430,398 @@ button {
 
   .home-screen-shell .hud-rail {
     display: none;
+  }
+}
+
+/* P0 module cleanup: compact workflow panels instead of landing-page feature blocks. */
+.module-page {
+  overflow-x: hidden;
+}
+
+.module-page .module-hero {
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 300px);
+  gap: 12px;
+}
+
+.module-page .module-hero-copy {
+  align-items: center;
+  min-height: 44px;
+}
+
+.module-page .module-actions {
+  gap: 8px;
+  margin-top: 0;
+}
+
+.module-page .module-primary-action,
+.module-page .module-secondary-action,
+.module-page .island-link-panel button {
+  min-height: 44px;
+  border-radius: 999px;
+}
+
+.module-page .module-current-child {
+  gap: 4px;
+  padding: 14px 16px;
+  border-width: 1px;
+  border-radius: 18px;
+  background: #fffdf6;
+  box-shadow: 0 10px 24px rgba(31, 51, 45, 0.07);
+}
+
+.module-page .module-current-child strong {
+  font-size: 22px;
+}
+
+.module-page .module-current-child em {
+  padding-top: 6px;
+  font-size: 12px;
+}
+
+.module-page .module-lower-grid {
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 340px);
+  gap: 12px;
+}
+
+.module-page .module-panel {
+  border-width: 1px;
+  border-radius: 18px;
+  background: #fffdf6;
+  box-shadow: 0 10px 24px rgba(31, 51, 45, 0.07);
+}
+
+.module-page .module-panel-title {
+  font-size: 16px;
+}
+
+.module-page .module-panel ul {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.module-page .module-panel li {
+  min-height: 44px;
+  border-width: 1px;
+  background: #f7f3df;
+}
+
+@media (max-width: 860px) {
+  .module-page {
+    padding: 12px;
+  }
+
+  .module-page .module-hero,
+  .module-page .module-lower-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .module-page .module-hero-copy,
+  .module-page .module-actions {
+    justify-content: stretch;
+  }
+
+  .module-page .module-primary-action,
+  .module-page .module-secondary-action {
+    flex: 1;
+  }
+
+  .module-page .module-panel ul {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Teacher command pad density pass: one selected-child action surface, faster scanning. */
+.teacher-workbench-page .workbench-board-layout {
+  grid-template-columns: minmax(0, 1fr) clamp(340px, 22vw, 390px);
+}
+
+.teacher-workbench-page .workbench-score-drawer {
+  gap: 10px;
+  padding: 12px;
+}
+
+.teacher-workbench-page .workbench-selected-child.compact {
+  grid-template-columns: 62px minmax(0, 1fr);
+  padding: 10px;
+  border-radius: 16px;
+}
+
+.teacher-workbench-page .workbench-selected-child.compact .workbench-child-avatar {
+  width: 62px;
+  height: 62px;
+  border-radius: 18px;
+}
+
+.teacher-workbench-page .workbench-selected-child.compact strong {
+  margin: 2px 0;
+  font-size: 21px;
+}
+
+.teacher-workbench-page .workbench-selected-child.compact em {
+  font-size: 13px;
+}
+
+.teacher-workbench-page .template-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.teacher-workbench-page .template-grid button {
+  grid-template-columns: 42px minmax(0, 1fr);
+  align-items: center;
+  gap: 9px;
+  min-height: 52px;
+  padding: 8px 10px;
+  border-radius: 14px;
+}
+
+.teacher-workbench-page .template-grid button span {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  color: #174c5a;
+  background: rgba(246, 179, 82, 0.26);
+  font-size: 18px;
+  line-height: 1;
+}
+
+.teacher-workbench-page .template-grid button.watch span {
+  color: #8f4e49;
+  background: rgba(255, 122, 89, 0.18);
+}
+
+.teacher-workbench-page .template-grid button strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--apple-text);
+  font-size: 14px;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.teacher-workbench-page .manual-score-pad,
+.teacher-workbench-page .workbench-record-panel,
+.teacher-workbench-page .workbench-ai-panel,
+.teacher-workbench-page .workbench-review-panel {
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--apple-border);
+}
+
+.teacher-workbench-page .manual-score-grid {
+  gap: 8px;
+}
+
+.teacher-workbench-page .manual-score-grid button,
+.teacher-workbench-page .workbench-review-actions button {
+  min-height: 44px;
+}
+
+.teacher-workbench-page .template-grid button:focus-visible,
+.teacher-workbench-page .manual-score-grid button:focus-visible,
+.teacher-workbench-page .workbench-profile-button:focus-visible,
+.teacher-workbench-page .workbench-primary-action:focus-visible,
+.teacher-workbench-page .workbench-secondary-action:focus-visible,
+.teacher-workbench-page .workbench-undo-button:focus-visible,
+.teacher-workbench-page .workbench-result-actions button:focus-visible,
+.teacher-workbench-page .workbench-review-actions button:focus-visible {
+  outline: 3px solid rgba(246, 179, 82, 0.72);
+  outline-offset: 2px;
+}
+
+/* P0 narrow-screen guard: keep the app usable instead of squeezing desktop columns. */
+@media (max-width: 720px) {
+  .workbench-profile-button,
+  .spirit-profile-button,
+  .manual-score-grid button,
+  .voice-review-actions button,
+  .home-screen-shell .spirit-dock.collapsed .dock-collapse {
+    min-height: 44px;
+  }
+
+  .product-shell,
+  .home-screen-shell {
+    grid-template-columns: 64px minmax(0, 1fr);
+  }
+
+  .product-sidebar,
+  .home-screen-shell .product-sidebar {
+    gap: 8px;
+    min-width: 0;
+    padding: 10px 6px;
+  }
+
+  .sidebar-brand > div:not(.sidebar-brand-mark),
+  .classroom-card,
+  .sidebar-collapse-hint,
+  .module-nav-group > strong,
+  .module-nav button span,
+  .home-screen-shell .sidebar-brand > div:not(.sidebar-brand-mark),
+  .home-screen-shell .classroom-card,
+  .home-screen-shell .module-nav-group > strong,
+  .home-screen-shell .module-nav button span {
+    display: none;
+  }
+
+  .module-nav button,
+  .home-screen-shell .module-nav button {
+    justify-content: center;
+    width: 44px;
+    min-height: 44px;
+    padding: 0;
+  }
+
+  .product-workspace,
+  .product-workspace .app-shell,
+  .product-workspace .game-layout,
+  .module-page {
+    min-width: 0;
+    overflow-x: hidden;
+  }
+
+  .home-screen-shell .home-module.app-shell {
+    grid-template-rows: 52px minmax(0, 1fr) 76px;
+  }
+
+  .home-screen-shell .game-topbar {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 6px;
+    padding: 4px 6px;
+  }
+
+  .home-screen-shell .game-brand {
+    gap: 8px;
+  }
+
+  .home-screen-shell .game-brand h1 {
+    display: none;
+  }
+
+  .home-screen-shell .zoom-controls {
+    justify-self: end;
+    gap: 4px;
+    padding: 2px;
+  }
+
+  .home-screen-shell .zoom-controls button {
+    flex: 0 0 44px;
+    width: 44px;
+    min-height: 44px;
+  }
+
+  .teacher-workbench-page .workbench-board-layout,
+  .settings-layout,
+  .reward-layout,
+  .shop-layout,
+  .voice-record-layout,
+  .data-layout,
+  .profile-layout,
+  .math-arena-layout,
+  .math-arena-setup,
+  .leaderboard-page .leaderboard-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .teacher-workbench-page .workbench-board-layout {
+    align-self: start;
+    height: auto;
+    overflow: visible;
+    align-items: start;
+  }
+
+  .teacher-workbench-page {
+    grid-template-rows: auto auto;
+    align-content: start;
+    overflow: auto;
+  }
+
+  .workbench-class-board {
+    order: 2;
+    display: block;
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+  }
+
+  .workbench-class-grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-auto-rows: minmax(190px, auto);
+    height: auto;
+    overflow: visible;
+    padding: 4px;
+  }
+
+  .workbench-student-card {
+    height: auto;
+    min-height: 168px;
+    grid-template-rows: 30px 86px 44px;
+  }
+
+  .student-card-main {
+    grid-template-columns: 96px minmax(0, 1fr);
+    grid-template-rows: 1fr;
+    align-items: center;
+    justify-items: start;
+    gap: 10px;
+    text-align: left;
+  }
+
+  .student-card-avatar {
+    width: 96px;
+    height: 82px;
+    align-self: center;
+    border-radius: 18px;
+  }
+
+  .student-card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    height: auto;
+    padding: 0;
+  }
+
+  .student-card-actions button {
+    min-height: 44px;
+  }
+
+  .workbench-score-drawer,
+  .settings-action-panel,
+  .settings-rule-panel {
+    grid-column: auto;
+    grid-row: auto;
+  }
+
+  .workbench-score-drawer {
+    order: 1;
+  }
+
+  .teacher-workbench-page .workbench-score-drawer {
+    gap: 10px;
+  }
+
+  .teacher-workbench-page .template-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .settings-class-grid,
+  .settings-mode-grid,
+  .settings-rule-grid,
+  .settings-score-rules,
+  .shop-grid-panel,
+  .lottery-prize-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .leaderboard-page .leaderboard-list li button {
+    grid-template-columns: 52px 48px minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .leaderboard-page .leaderboard-level,
+  .leaderboard-page .leaderboard-xp {
+    justify-self: start;
   }
 }

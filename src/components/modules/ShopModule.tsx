@@ -63,11 +63,11 @@ export function ShopModule({
             奖励兑换
           </span>
           <h1 id="shop-title">积分商店</h1>
-          <p>展示静态奖品卡并判断当前孩子 XP 是否足够。当前版本只做演示选择，不真实扣减 XP。</p>
+          <p>选择孩子查看奖励门槛。本轮只确认资格，不扣减 XP。</p>
         </div>
         <button type="button" className="reward-home-button" onClick={() => onFocusChild(activeChild.id)}>
           <Home size={18} />
-          聚焦成长岛
+          回到成长岛
         </button>
       </div>
 
@@ -100,7 +100,7 @@ export function ShopModule({
             {lastIntent ? (
               <>
                 {lastIntent.affordable ? <Check size={22} /> : <Lock size={22} />}
-                <strong>{lastIntent.affordable ? "演示兑换已选择" : "XP 暂时不足"}</strong>
+                <strong>{lastIntent.affordable ? "已选择奖励" : "XP 暂时不足"}</strong>
                 <p>
                   {lastIntent.childName} · {lastIntent.reward.name} · 需要 {lastIntent.reward.cost} XP
                 </p>
@@ -129,7 +129,7 @@ export function ShopModule({
                 <em>{reward.stockLabel}</em>
                 <button type="button" onClick={() => chooseReward(reward)}>
                   {affordable ? <Check size={18} /> : <Lock size={18} />}
-                  {affordable ? "演示兑换" : "查看门槛"}
+                  {affordable ? "选择奖励" : "查看门槛"}
                 </button>
               </article>
             );

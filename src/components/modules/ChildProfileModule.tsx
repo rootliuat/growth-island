@@ -87,7 +87,7 @@ export function ChildProfileModule({
         </div>
         <button type="button" className="profile-home-button" onClick={() => onFocusChild(selectedChild.id)}>
           <Home size={18} />
-          聚焦
+          回岛
         </button>
       </div>
 
