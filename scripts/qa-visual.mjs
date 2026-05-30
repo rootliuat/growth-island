@@ -164,7 +164,7 @@ async function inspectTeacherCards(page) {
 }
 
 async function exerciseRollCall(page) {
-  const startButton = page.getByRole("button", { name: /开始(?:点名)?/ }).first();
+  const startButton = page.getByRole("button", { name: /抽一名|开始(?:点名)?/ }).first();
   await startButton.click();
   await page.waitForTimeout(1250);
   return page.evaluate(() => {
@@ -173,8 +173,8 @@ async function exerciseRollCall(page) {
       hasTitle: text.includes("随机点名"),
       hasDrawnStatus: text.includes("已抽出孩子") || text.includes("本轮点名"),
       hasAvatar: Boolean(document.querySelector(".roll-call-avatar img, .roll-call-fallback")),
-      hasFocusAction: text.includes("聚焦"),
-      hasRecordAction: text.includes("记录 +10"),
+      hasFocusAction: text.includes("回岛") || text.includes("回到成长岛"),
+      hasRecordAction: text.includes("记录 +10") || /给\s*\S+\s*\+10/.test(text),
     };
   });
 }
@@ -325,7 +325,7 @@ async function exerciseVoiceFlow(page, confirmedScreenshot, suggestionScreenshot
   });
   await page.screenshot({ path: confirmedScreenshot, fullPage: false });
 
-  await page.getByRole("button", { name: /聚焦成长岛/ }).click();
+  await page.getByRole("button", { name: /回到成长岛|回岛/ }).click();
   await page.waitForSelector(".home-module");
   await page.waitForTimeout(1200);
   await waitForPixiIdle(page);
@@ -609,7 +609,7 @@ async function exerciseShopFlow(page, shopScreenshot, insufficientScreenshot, ho
   await page.selectOption("#shop-child", "child-10");
   await page.waitForTimeout(150);
   await page.locator(".shop-reward-card.available button").first().click();
-  await page.waitForFunction(() => (document.querySelector(".shop-intent-card")?.textContent ?? "").includes("演示兑换已选择"));
+  await page.waitForFunction(() => (document.querySelector(".shop-intent-card")?.textContent ?? "").includes("已选择奖励"));
   const availableText = await page.locator(".shop-intent-card").innerText();
   const balanceText = await page.locator(".shop-balance-card").innerText();
   const ledgerCountAfter = await page.evaluate(() => (window.__growthIslandLedger ?? []).length);
@@ -624,7 +624,7 @@ async function exerciseShopFlow(page, shopScreenshot, insufficientScreenshot, ho
 
   return {
     hasInsufficientState: insufficientText.includes("XP 暂时不足"),
-    hasAvailableState: availableText.includes("演示兑换已选择"),
+    hasAvailableState: availableText.includes("已选择奖励"),
     hasBalance: balanceText.includes("当前 XP"),
     ledgerUnchanged: ledgerCountBefore === ledgerCountAfter,
     homeFocused: homeText.includes("可可"),

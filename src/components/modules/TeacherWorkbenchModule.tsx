@@ -150,7 +150,7 @@ export function TeacherWorkbenchModule({
       <div className="workbench-header">
         <button type="button" className="workbench-home-button" onClick={() => onFocusChild(selectedChild.id)}>
           <Home size={18} />
-          聚焦
+          回岛
         </button>
       </div>
 
@@ -168,7 +168,7 @@ export function TeacherWorkbenchModule({
                       <em>Lv.{child.level}</em>
                       <button type="button" className="student-card-focus" onClick={() => onFocusChild(child.id)}>
                         <Home size={13} />
-                        聚焦
+                        回岛
                       </button>
                     </div>
                   </div>
@@ -306,7 +306,7 @@ export function TeacherWorkbenchModule({
             <div className="workbench-ai-actions">
               <button type="button" className="workbench-secondary-action" disabled>
                 <Mic size={18} />
-                录音占位
+                语音稍后
               </button>
               <button type="button" className="workbench-primary-action" onClick={submitAnalysis} disabled={!canAnalyze}>
                 <WandSparkles size={18} />

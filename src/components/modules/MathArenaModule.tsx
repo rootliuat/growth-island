@@ -120,7 +120,7 @@ export function MathArenaModule({
         </div>
         <button type="button" className="math-arena-home-button" onClick={() => onFocusChild(winner?.id ?? player.id)}>
           <Home size={18} />
-          聚焦成长岛
+          回到成长岛
         </button>
       </div>
 
@@ -195,7 +195,7 @@ export function MathArenaModule({
               onClick={() => winner && onFocusChild(winner.id)}
             >
               <Sparkles size={18} />
-              {winner ? `聚焦 ${winner.name}` : "等待胜者"}
+              {winner ? `回岛查看 ${winner.name}` : "等待胜者"}
             </button>
           </div>
 

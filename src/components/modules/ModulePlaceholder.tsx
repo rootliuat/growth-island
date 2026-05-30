@@ -1,4 +1,4 @@
-import { ArrowRight, BadgeCheck, Home, ListChecks, Sparkles } from "lucide-react";
+import { BadgeCheck, Home, ListChecks } from "lucide-react";
 import type { ChildWithProgress } from "../../types";
 import type { ModuleConfig } from "./moduleConfig";
 
@@ -23,13 +23,9 @@ export function ModulePlaceholder({ module, selectedChild, pendingReviewCount, o
           <h1 id={`${module.id}-title`}>{module.label}</h1>
           <p>{module.description}</p>
           <div className="module-actions">
-            <button type="button" className="module-primary-action" onClick={onReturnHome}>
-              {module.primaryActionLabel}
-              <ArrowRight size={18} />
-            </button>
             <button type="button" className="module-secondary-action" onClick={onReturnHome}>
               <Home size={18} />
-              {module.secondaryActionLabel}
+              回到成长岛
             </button>
           </div>
         </div>
@@ -40,32 +36,20 @@ export function ModulePlaceholder({ module, selectedChild, pendingReviewCount, o
           <p>
             {selectedChild.name} · Lv.{selectedChild.level} · {selectedChild.xp} XP
           </p>
-          <em>返回首页后会聚焦到这位孩子的精灵家园</em>
+          <em>回到成长岛查看这位孩子的精灵家园</em>
         </aside>
-      </div>
-
-      <div className="module-card-grid">
-        {module.featureCards.map((card) => (
-          <article className="module-feature-card" key={card.title}>
-            <span>
-              <Sparkles size={17} />
-            </span>
-            <strong>{card.title}</strong>
-            <p>{card.description}</p>
-          </article>
-        ))}
       </div>
 
       <div className="module-lower-grid">
         <section className="module-panel">
           <div className="module-panel-title">
             <ListChecks size={19} />
-            <strong>后续将支持</strong>
+            <strong>当前状态</strong>
           </div>
           <ul>
-            {module.futureItems.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
+            <li>接入成长岛导航</li>
+            <li>读取当前班级数据</li>
+            <li>保留当前孩子</li>
           </ul>
         </section>
 
@@ -90,7 +74,7 @@ export function ModulePlaceholder({ module, selectedChild, pendingReviewCount, o
             </div>
           </dl>
           <button type="button" onClick={onReturnHome}>
-            聚焦成长岛
+            回到成长岛
           </button>
         </section>
       </div>

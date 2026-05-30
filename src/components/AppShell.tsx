@@ -15,7 +15,7 @@ const syncLabels = {
   connecting: "连接中",
   online: "已同步",
   saving: "保存中",
-  offline: "离线演示",
+  offline: "离线模式",
 };
 
 const navGroups = [
@@ -68,6 +68,7 @@ export function AppShell({
                     type="button"
                     className={activeModule === id ? "active" : undefined}
                     aria-current={activeModule === id ? "page" : undefined}
+                    aria-label={label}
                     onClick={() => onModuleChange(id)}
                   >
                     <Icon size={19} />

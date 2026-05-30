@@ -25,7 +25,7 @@ export function LeaderboardModule({
         </div>
         <button type="button" className="leaderboard-home-button" onClick={() => onFocusChild(selectedChild.id)}>
           <Home size={18} />
-          聚焦
+          回岛
         </button>
       </div>
 

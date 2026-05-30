@@ -109,19 +109,18 @@ export function VoiceRecordModule({
         <div>
           <span className="module-eyebrow">
             <Mic size={18} />
-            AI 德育识别
+            AI 建议
           </span>
-          <h1 id="voice-record-title">语音记录</h1>
-          <p>文本版课堂记录台，老师确认后再把德育建议写入成长记录。</p>
+          <h1 id="voice-record-title">文本记录</h1>
         </div>
         <button type="button" className="voice-home-button" onClick={() => onFocusChild(selectedChild.id)}>
           <Home size={18} />
-          聚焦成长岛
+          回到成长岛
         </button>
       </div>
 
       <div className="voice-record-layout">
-        <section className="voice-record-workbench" aria-label="语音记录工作台">
+        <section className="voice-record-workbench" aria-label="文本记录工作台">
           <div className="voice-child-card">
             <div className="voice-child-avatar">
               {currentAsset?.url ? <img src={currentAsset.url} alt={`${selectedChild.petName} 精灵`} /> : selectedChild.name.slice(0, 1)}
@@ -180,9 +179,9 @@ export function VoiceRecordModule({
           </label>
 
           <div className="voice-actions">
-            <button type="button" className="voice-secondary-action" disabled>
+            <button type="button" className="voice-secondary-action" disabled aria-label="语音稍后接入">
               <Mic size={18} />
-              录音占位
+              语音稍后
             </button>
             <button type="button" className="voice-primary-action" onClick={submitAnalysis} disabled={!canSubmit}>
               <WandSparkles size={19} />
@@ -260,14 +259,14 @@ export function VoiceRecordModule({
         </aside>
       </div>
 
-      <section className="voice-history-panel" aria-label="最近语音记录">
+      <section className="voice-history-panel" aria-label="最近文本记录">
         <div className="voice-subtitle">
           <BadgeCheck size={17} />
-          <strong>最近语音记录</strong>
+          <strong>最近文本记录</strong>
           <span>{selectedVoiceRecords.length}</span>
         </div>
         {selectedVoiceRecords.length === 0 ? (
-          <p className="voice-muted">当前孩子还没有语音记录入账</p>
+          <p className="voice-muted">当前孩子还没有文本记录入账</p>
         ) : (
           <div className="voice-history-list">
             {selectedVoiceRecords.map((record) => (

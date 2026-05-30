@@ -78,7 +78,7 @@ export function DataManagementModule({
         </div>
         <button type="button" className="data-home-button" onClick={() => onFocusChild(selectedChild.id)}>
           <Home size={18} />
-          聚焦成长岛
+          回到成长岛
         </button>
       </div>
 
