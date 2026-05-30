@@ -50,7 +50,7 @@ export function evaluateMoralText(text: string): MoralEvaluationResult {
   const magnitude = strong ? 30 : medium ? 20 : 10;
   const xpDelta = (isDeduct ? -magnitude : magnitude) as MoralEvaluationResult["xpDelta"];
   const confidence = Math.min(0.96, 0.68 + matched.hits * 0.12 + (medium ? 0.07 : 0) + (strong ? 0.07 : 0));
-  const status = isDeduct ? (confidence >= 0.9 ? "auto_posted" : "pending_review") : confidence >= 0.8 ? "auto_posted" : "pending_review";
+  const status = "pending_review";
 
   return {
     intent: isDeduct ? "deduct" : "reward",
@@ -62,7 +62,6 @@ export function evaluateMoralText(text: string): MoralEvaluationResult {
       ? "谢谢你愿意说出来，我们一起把这件事做得更好。"
       : "这是一条很棒的成长记录，精灵收到了新的能量。",
     reasonForTeacher: `${matched.category}；命中 ${matched.hits} 个关键词；建议 ${xpDelta > 0 ? "+" : ""}${xpDelta} XP。`,
-    riskFlags: status === "pending_review" ? ["low_confidence"] : [],
+    riskFlags: isDeduct ? ["teacher_required_for_negative"] : ["teacher_confirmation_required"],
   };
 }
-

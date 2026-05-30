@@ -27,6 +27,10 @@ export class WorldScene {
   readonly labels: LabelLayer;
   private data?: WorldMapData;
   private lastLedgerId?: string;
+  private animationElapsed = 0;
+  private lastZoom = Number.NaN;
+  private readonly animationStepMs = 1000 / 30;
+  private readonly staticCacheTimers: number[] = [];
 
   constructor(
     private readonly camera: CameraController,
@@ -47,6 +51,9 @@ export class WorldScene {
     this.labels = new LabelLayer(this.layers.get("labels"));
     this.camera.viewport.addChild(this.layers.root);
     this.root.addChild(this.camera.viewport);
+    [1800, 3600].forEach((delay) => {
+      this.staticCacheTimers.push(window.setTimeout(() => this.cacheStaticMapLayers(), delay));
+    });
   }
 
   updateData(data: WorldMapData) {
@@ -58,9 +65,7 @@ export class WorldScene {
     this.labels.update(data);
     const selected = data.spirits.find((spirit) => spirit.id === data.selectedChildId);
     this.effects.setSelectedGuide(undefined, selected?.accent);
-    this.homes.updateZoom(this.camera.zoom);
-    this.spirits.updateZoom(this.camera.zoom);
-    this.labels.updateZoom(this.camera.zoom, data.selectedChildId);
+    this.updateZoomState(true);
 
     if (previousSelected && data.selectedChildId !== previousSelected) {
       if (selected) this.focusSpirit(selected);
@@ -88,14 +93,20 @@ export class WorldScene {
   }
 
   update(ticker: Ticker) {
-    this.ocean.update(ticker);
-    this.regions.update(ticker, this.camera.zoom);
-    this.effects.update(ticker);
-    this.homes.updateFrame(ticker.deltaMS);
-    this.homes.updateZoom(this.camera.zoom);
-    this.spirits.updateFrame(ticker);
-    this.spirits.updateZoom(this.camera.zoom);
-    if (this.data) this.labels.updateZoom(this.camera.zoom, this.data.selectedChildId);
+    this.updateZoomState();
+    this.animationElapsed += ticker.deltaMS;
+    if (this.animationElapsed < this.animationStepMs) return;
+
+    const frame = {
+      deltaMS: this.animationElapsed,
+      deltaTime: this.animationElapsed / (1000 / 60),
+    } as Ticker;
+    this.animationElapsed = 0;
+
+    this.regions.update(frame, this.camera.zoom);
+    this.effects.update(frame);
+    this.homes.updateFrame(frame.deltaMS);
+    this.spirits.updateFrame(frame);
   }
 
   focusFullIsland() {
@@ -137,7 +148,29 @@ export class WorldScene {
     this.camera.focus({ x, y, zoom: region?.id === "growth-plaza" ? 1.05 : zoom });
   };
 
+  private updateZoomState(force = false) {
+    const zoom = this.camera.zoom;
+    if (!force && Math.abs(zoom - this.lastZoom) < 0.002) return;
+    this.lastZoom = zoom;
+    this.homes.updateZoom(zoom);
+    this.spirits.updateZoom(zoom);
+    if (this.data) this.labels.updateZoom(zoom, this.data.selectedChildId);
+  }
+
+  private cacheStaticMapLayers() {
+    (["ocean", "island", "paths"] as const).forEach((name) => {
+      const layer = this.layers.get(name);
+      if (layer.destroyed || layer.children.length === 0) return;
+      if (layer.isCachedAsTexture) {
+        layer.updateCacheTexture();
+        return;
+      }
+      layer.cacheAsTexture({ resolution: 1, antialias: false });
+    });
+  }
+
   destroy() {
+    this.staticCacheTimers.forEach((timer) => window.clearTimeout(timer));
     this.layers.destroy();
     this.root.destroy({ children: true });
   }

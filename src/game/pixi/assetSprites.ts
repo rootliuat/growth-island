@@ -53,6 +53,7 @@ export function addAssetSprite(layer: Container, options: AssetSpriteOptions) {
         }
         root.addChild(sprite);
         options.onLoaded?.(sprite);
+        window.dispatchEvent(new CustomEvent("growth-island-asset-loaded"));
       })
       .catch(() => {
         root.visible = false;

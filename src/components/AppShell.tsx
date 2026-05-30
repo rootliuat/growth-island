@@ -18,6 +18,12 @@ const syncLabels = {
   offline: "离线演示",
 };
 
+const navGroups = [
+  { id: "primary", label: "三主屏" },
+  { id: "activity", label: "课堂活动" },
+  { id: "admin", label: "配置" },
+] as const;
+
 export function AppShell({
   activeModule,
   childrenCount,
@@ -26,8 +32,10 @@ export function AppShell({
   onModuleChange,
   children,
 }: AppShellProps) {
+  const isHome = activeModule === "home";
+
   return (
-    <div className="product-shell">
+    <div className={isHome ? "product-shell home-screen-shell" : "product-shell"}>
       <aside className="product-sidebar" aria-label="成长岛系统导航">
         <div className="sidebar-brand">
           <div className="sidebar-brand-mark">
@@ -49,23 +57,30 @@ export function AppShell({
         </div>
 
         <nav className="module-nav" aria-label="成长岛模块">
-          {moduleConfigs.map(({ id, label, Icon }) => (
-            <button
-              key={id}
-              type="button"
-              className={activeModule === id ? "active" : undefined}
-              aria-current={activeModule === id ? "page" : undefined}
-              onClick={() => onModuleChange(id)}
-            >
-              <Icon size={19} />
-              <span>{label}</span>
-            </button>
+          {navGroups.map((group) => (
+            <section className="module-nav-group" key={group.id} aria-label={group.label}>
+              <strong>{group.label}</strong>
+              {moduleConfigs
+                .filter((module) => module.navGroup === group.id)
+                .map(({ id, label, Icon }) => (
+                  <button
+                    key={id}
+                    type="button"
+                    className={activeModule === id ? "active" : undefined}
+                    aria-current={activeModule === id ? "page" : undefined}
+                    onClick={() => onModuleChange(id)}
+                  >
+                    <Icon size={19} />
+                    <span>{label}</span>
+                  </button>
+                ))}
+            </section>
           ))}
         </nav>
 
         <button className="sidebar-collapse-hint" type="button" aria-label="窄屏时收起为图标栏">
           <ChevronLeft size={17} />
-          <span>大屏工作台</span>
+          <span>三屏工作台</span>
         </button>
       </aside>
 

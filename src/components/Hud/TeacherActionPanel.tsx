@@ -22,7 +22,7 @@ export function TeacherActionPanel({ child, teacherMode, onUpdateChild }: Teache
             <Pencil size={18} />
             入住通行证
           </span>
-          <span>{currentSlot.id} 号家园</span>
+          <span>{child.name}</span>
         </summary>
         <div className="teacher-pass">
           <div className="pass-token">

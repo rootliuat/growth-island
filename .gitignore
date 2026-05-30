@@ -21,6 +21,8 @@ current-frontend-preview.png
 growth-island-*-preview.png
 growth-island-*.png
 roll-call-mvp.png
+qa-artifacts/
+public/assets/map/v4-webp/
 
 # Local asset-generation workbench outputs. Keep production-ready map PNGs in
 # public/assets/map/v4 tracked separately.

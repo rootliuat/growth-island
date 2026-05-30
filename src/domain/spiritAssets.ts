@@ -1,22 +1,5 @@
 import type { SpiritDefinition, SpiritState } from "../types";
 
-type SpiritAssetLoaderMap = Record<string, () => Promise<string>>;
-
-const imageModules = import.meta.glob("../../assets/generated/spirits/*/*.png", {
-  query: "?url",
-  import: "default",
-}) as SpiritAssetLoaderMap;
-
-const assetUrls = new Map<string, string>();
-const assetLoaders = new Map<string, () => Promise<string>>();
-const pendingAssetLoads = new Map<string, Promise<string | undefined>>();
-
-Object.entries(imageModules).forEach(([path, loader]) => {
-  const match = path.match(/\/spirits\/(\d{2})-[^/]+\/(egg-[1-4]|lv[2-8])\.png$/);
-  if (!match) return;
-  assetLoaders.set(`${match[1]}:${match[2]}`, loader);
-});
-
 const stateFallbacks: Record<SpiritState, SpiritState[]> = {
   "egg-1": ["egg-1", "egg-4"],
   "egg-2": ["egg-2", "egg-1", "egg-4"],
@@ -38,43 +21,21 @@ export interface SpiritAsset {
 }
 
 export function getSpiritAsset(spirit: SpiritDefinition, state: SpiritState): SpiritAsset | undefined {
-  for (const candidate of stateFallbacks[state]) {
-    const key = `${spirit.id}:${candidate}`;
-    const url = assetUrls.get(key);
-    if (url) {
-      return {
-        key: `spirit-${key}`,
-        resolvedState: candidate,
-        url,
-      };
-    }
-  }
+  return getSpiritThumbnailAsset(spirit, state);
+}
 
-  return undefined;
+export function getSpiritThumbnailAsset(spirit: SpiritDefinition, state: SpiritState): SpiritAsset {
+  const candidate = stateFallbacks[state][0];
+  const key = `${spirit.id}:${candidate}`;
+  return {
+    key: `spirit-thumb-${key}`,
+    resolvedState: candidate,
+    url: `/assets/spirits/thumbs/${spirit.id}/${candidate}.webp`,
+  };
 }
 
 export async function loadSpiritAsset(spirit: SpiritDefinition, state: SpiritState) {
-  for (const candidate of stateFallbacks[state]) {
-    const key = `${spirit.id}:${candidate}`;
-    if (assetUrls.has(key)) return false;
-    const loader = assetLoaders.get(key);
-    if (!loader) continue;
-
-    if (!pendingAssetLoads.has(key)) {
-      pendingAssetLoads.set(
-        key,
-        loader()
-          .then((url) => {
-            assetUrls.set(key, url);
-            return url;
-          })
-          .catch(() => undefined),
-      );
-    }
-
-    const url = await pendingAssetLoads.get(key);
-    return !!url;
-  }
-
+  void spirit;
+  void state;
   return false;
 }

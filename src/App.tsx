@@ -2,13 +2,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "./components/AppShell";
 import { DialogueModal } from "./components/DialogueModal";
 import { GameTopBar } from "./components/Hud/GameTopBar";
-import { GrowthLogPanel } from "./components/Hud/GrowthLogPanel";
-import { HudPanelTabs, type HudPanel } from "./components/Hud/HudPanelTabs";
 import { SpiritDetailPanel } from "./components/Hud/SpiritDetailPanel";
 import { SpiritDock } from "./components/Hud/SpiritDock";
-import { TeacherActionPanel } from "./components/Hud/TeacherActionPanel";
 import { MathPkModal } from "./components/MathPkModal";
 import { ModulePlaceholder } from "./components/modules/ModulePlaceholder";
+import { ChildProfileModule } from "./components/modules/ChildProfileModule";
 import { DataManagementModule } from "./components/modules/DataManagementModule";
 import { LeaderboardModule } from "./components/modules/LeaderboardModule";
 import { LotteryModule } from "./components/modules/LotteryModule";
@@ -16,6 +14,7 @@ import { MathArenaModule } from "./components/modules/MathArenaModule";
 import { RollCallModule } from "./components/modules/RollCallModule";
 import { SettingsModule } from "./components/modules/SettingsModule";
 import { ShopModule } from "./components/modules/ShopModule";
+import { TeacherWorkbenchModule } from "./components/modules/TeacherWorkbenchModule";
 import { VoiceRecordModule } from "./components/modules/VoiceRecordModule";
 import { moduleConfigById, type AppModuleId } from "./components/modules/moduleConfig";
 import { WorldMapContainer } from "./components/WorldMap/WorldMapContainer";
@@ -23,7 +22,7 @@ import type { PixiWorldMapHandle } from "./components/WorldMap/PixiWorldMap";
 import { initialChildren } from "./data/classroom";
 import { spirits } from "./data/spirits";
 import { evaluateMoralText } from "./domain/moralAgent";
-import { enrichChildren, makeLedgerRecord } from "./domain/progression";
+import { enrichChildren, makeLedgerRecord, normalizeLedgerRecord } from "./domain/progression";
 import { getSpiritAsset, loadSpiritAsset } from "./domain/spiritAssets";
 import {
   approveMoralReview,
@@ -39,9 +38,11 @@ import type {
   ChildWithProgress,
   ClassroomSnapshot,
   LedgerRecord,
+  LedgerRecordInput,
   MoralEvaluationResult,
   MoralReviewItem,
   SpiritDefinition,
+  VirtueCategory,
 } from "./types";
 
 type SyncStatus = "connecting" | "online" | "saving" | "offline";
@@ -50,6 +51,15 @@ const backgroundSpiritBatchSize = 2;
 const backgroundSpiritBatchDelayMs = 1100;
 const backgroundSpiritInitialDelayMs = 1400;
 const backgroundSpiritPreloadLimit = 12;
+const activeModuleStorageKey = "growth-island-active-module";
+
+function getInitialActiveModule(): AppModuleId {
+  if (typeof window === "undefined") return "home";
+  const fromQuery = new URLSearchParams(window.location.search).get("module");
+  const fromStorage = window.localStorage.getItem(activeModuleStorageKey);
+  const candidate = fromQuery || fromStorage;
+  return candidate && moduleConfigById.has(candidate as AppModuleId) ? (candidate as AppModuleId) : "home";
+}
 
 function spiritAssetKey(child: ChildWithProgress) {
   return `${child.spiritId}:${child.state}`;
@@ -66,7 +76,7 @@ function getBackgroundSpiritPriority(child: ChildWithProgress, selectedChild: Ch
 const seededLedger: LedgerRecord[] = initialChildren.slice(0, 16).flatMap((child, index) => {
   const base = [30, 70, 110, 160, 260, 470, 720, 1010, 1450, 1910][index % 10];
   return [
-    {
+    normalizeLedgerRecord({
       id: `seed-${child.id}`,
       childId: child.id,
       operatorChildId: child.id,
@@ -75,24 +85,44 @@ const seededLedger: LedgerRecord[] = initialChildren.slice(0, 16).flatMap((child
       category: "积极阳光",
       reason: "演示数据：已有成长 XP",
       createdAt: new Date(Date.now() - index * 3600_000).toISOString(),
-    },
+    } as LedgerRecord),
   ];
 });
+
+const seededMoralReviews: MoralReviewItem[] = [
+  {
+    id: "seed-review-child-06",
+    childId: "child-06",
+    operatorChildId: "child-06",
+    transcript: "我今天主动帮同学收玩具",
+    result: {
+      intent: "reward",
+      category: "积极阳光",
+      xpDelta: 20,
+      confidence: 0.82,
+      status: "pending_review",
+      reasonForChild: "你主动帮助同学，是很温暖的成长表现。",
+      reasonForTeacher: "建议记录为积极阳光 +20，等待老师复核确认。",
+      riskFlags: [],
+    },
+    status: "pending_review",
+    createdAt: new Date(Date.now() - 18 * 60_000).toISOString(),
+  },
+];
 
 export function App() {
   const worldMapRef = useRef<PixiWorldMapHandle | null>(null);
   const [children, setChildren] = useState<ChildProfile[]>(initialChildren);
   const [ledger, setLedger] = useState<LedgerRecord[]>(seededLedger);
-  const [moralReviews, setMoralReviews] = useState<MoralReviewItem[]>([]);
+  const [moralReviews, setMoralReviews] = useState<MoralReviewItem[]>(seededMoralReviews);
   const [selectedChildId, setSelectedChildId] = useState(initialChildren[0].id);
   const [teacherMode, setTeacherMode] = useState(true);
-  const [activeModule, setActiveModule] = useState<AppModuleId>("home");
+  const [activeModule, setActiveModule] = useState<AppModuleId>(() => getInitialActiveModule());
   const [rollCallCurrentId, setRollCallCurrentId] = useState<string | undefined>();
   const [rollCallCalledIds, setRollCallCalledIds] = useState<string[]>([]);
   const [rollCallExcludeCalled, setRollCallExcludeCalled] = useState(true);
   const [dialogueOpen, setDialogueOpen] = useState(false);
   const [pkPair, setPkPair] = useState<{ playerId: string; opponentId: string } | null>(null);
-  const [hudPanel, setHudPanel] = useState<HudPanel>("spirit");
   const [lastEvaluation, setLastEvaluation] = useState<MoralEvaluationResult | undefined>();
   const [syncStatus, setSyncStatus] = useState<SyncStatus>("connecting");
   const [assetVersion, setAssetVersion] = useState(0);
@@ -111,6 +141,10 @@ export function App() {
         .filter((record) => !record.undone)
         .sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
     [ledger],
+  );
+  const bigScreenRecentRecords = useMemo(
+    () => allRecentRecords.filter((record) => record.delta > 0),
+    [allRecentRecords],
   );
   const recentRecords = useMemo(
     () => allRecentRecords.filter((record) => record.childId === selectedChild.id),
@@ -135,7 +169,7 @@ export function App() {
 
   const applySnapshot = (snapshot: ClassroomSnapshot) => {
     setChildren(snapshot.children);
-    setLedger(snapshot.ledger);
+    setLedger(snapshot.ledger.map(normalizeLedgerRecord));
     setMoralReviews(snapshot.moralReviews ?? []);
     setSyncStatus("online");
   };
@@ -158,6 +192,13 @@ export function App() {
   useEffect(() => {
     let cancelled = false;
     const timers: number[] = [];
+    if (activeModule !== "home") {
+      return () => {
+        cancelled = true;
+        timers.forEach((timer) => window.clearTimeout(timer));
+      };
+    }
+
     const assetTargets = new Map<string, { child: ChildWithProgress; spirit: SpiritDefinition }>();
 
     childrenWithProgress.forEach((child) => {
@@ -206,11 +247,24 @@ export function App() {
       cancelled = true;
       timers.forEach((timer) => window.clearTimeout(timer));
     };
-  }, [childrenWithProgress, selectedChild, spiritsById]);
+  }, [activeModule, childrenWithProgress, selectedChild, spiritsById]);
 
   useEffect(() => {
-    if (!teacherMode && hudPanel === "home") setHudPanel("spirit");
-  }, [hudPanel, teacherMode]);
+    window.localStorage.setItem(activeModuleStorageKey, activeModule);
+  }, [activeModule]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (!params.has("qa")) return;
+    const qaWindow = window as unknown as {
+      __growthIslandLedger?: LedgerRecord[];
+      __growthIslandReviews?: MoralReviewItem[];
+      __growthIslandSelectedChildId?: string;
+    };
+    qaWindow.__growthIslandLedger = ledger;
+    qaWindow.__growthIslandReviews = moralReviews;
+    qaWindow.__growthIslandSelectedChildId = selectedChild.id;
+  }, [ledger, moralReviews, selectedChild.id]);
 
   useEffect(() => {
     const existingIds = new Set(children.map((child) => child.id));
@@ -222,7 +276,7 @@ export function App() {
     setRollCallCurrentId((current) => (current && existingIds.has(current) ? current : undefined));
   }, [children]);
 
-  const commitLedger = (input: Omit<LedgerRecord, "id" | "createdAt">) => {
+  const commitLedger = async (input: LedgerRecordInput) => {
     if (syncStatus === "offline") {
       const record = makeLedgerRecord(input);
       setLedger((current) => [record, ...current]);
@@ -230,13 +284,14 @@ export function App() {
     }
 
     setSyncStatus("saving");
-    createLedgerRecord(input)
-      .then(applySnapshot)
-      .catch(() => {
-        setSyncStatus("offline");
-        const record = makeLedgerRecord(input);
-        setLedger((current) => [record, ...current]);
-      });
+    try {
+      const snapshot = await createLedgerRecord(input);
+      applySnapshot(snapshot);
+    } catch {
+      setSyncStatus("offline");
+      const record = makeLedgerRecord(input);
+      setLedger((current) => [record, ...current]);
+    }
   };
 
   const addLedger = (
@@ -246,9 +301,10 @@ export function App() {
     childId = selectedChild.id,
     category: LedgerRecord["category"] = delta >= 0 ? "积极阳光" : "尊矩守法",
   ) => {
-    commitLedger({
+    void commitLedger({
       childId,
       operatorChildId: selectedChild.id,
+      operatorRole: "teacher",
       delta,
       source,
       category,
@@ -258,9 +314,10 @@ export function App() {
 
   const recordMathPkWin = (winner: ChildWithProgress) => {
     setSelectedChildId(winner.id);
-    commitLedger({
+    void commitLedger({
       childId: winner.id,
       operatorChildId: winner.id,
+      operatorRole: "system",
       delta: 30,
       source: "math-pk",
       category: "积极阳光",
@@ -282,6 +339,7 @@ export function App() {
     const undo = makeLedgerRecord({
       childId: target.childId,
       operatorChildId: selectedChild.id,
+      operatorRole: "teacher",
       delta: -target.delta,
       source: "undo",
       category: target.category,
@@ -316,20 +374,10 @@ export function App() {
       operatorChildId: selectedChild.id,
       transcript: text,
       result,
-      status: result.status === "auto_posted" ? "auto_posted" : "pending_review",
+      status: "pending_review",
       createdAt: new Date().toISOString(),
     };
     setMoralReviews((current) => [localReview, ...current]);
-    if (result.status === "auto_posted" && result.xpDelta !== 0) {
-      commitLedger({
-        childId: selectedChild.id,
-        operatorChildId: selectedChild.id,
-        delta: result.xpDelta,
-        source: "dialogue-agent",
-        category: result.category,
-        reason: `对话：${text}`,
-      });
-    }
     return result;
   };
 
@@ -345,7 +393,36 @@ export function App() {
 
   const approveReview = (reviewId: string) => {
     if (syncStatus === "offline") {
-      setMoralReviews((current) => current.map((review) => (review.id === reviewId ? { ...review, status: "approved" } : review)));
+      const review = moralReviews.find((item) => item.id === reviewId);
+      const record =
+        review && review.result.xpDelta !== 0
+          ? makeLedgerRecord({
+              childId: review.childId,
+              operatorChildId: selectedChild.id,
+              operatorRole: "teacher",
+              delta: review.result.xpDelta,
+              source: "dialogue-agent",
+              category: review.result.category,
+              reason: `复核通过：${review.transcript}`,
+              aiSuggested: true,
+              reviewStatus: "approved",
+              reviewId: review.id,
+            })
+          : undefined;
+      if (record) setLedger((ledgerRecords) => [record, ...ledgerRecords]);
+      setMoralReviews((current) =>
+        current.map((item) =>
+          item.id === reviewId
+            ? {
+                ...item,
+                status: "approved",
+                reviewedAt: new Date().toISOString(),
+                reviewedByChildId: selectedChild.id,
+                ledgerRecordId: record?.id ?? item.ledgerRecordId,
+              }
+            : item,
+        ),
+      );
       return;
     }
 
@@ -355,7 +432,19 @@ export function App() {
 
   const rejectReview = (reviewId: string) => {
     if (syncStatus === "offline") {
-      setMoralReviews((current) => current.map((review) => (review.id === reviewId ? { ...review, status: "rejected" } : review)));
+      setMoralReviews((current) =>
+        current.map((review) =>
+          review.id === reviewId
+            ? {
+                ...review,
+                status: "rejected",
+                reviewedAt: new Date().toISOString(),
+                reviewedByChildId: selectedChild.id,
+                rejectionReason: "老师复核后驳回",
+              }
+            : review,
+        ),
+      );
       return;
     }
 
@@ -366,7 +455,18 @@ export function App() {
   const focusChildOnHome = (childId = selectedChild.id) => {
     setSelectedChildId(childId);
     setActiveModule("home");
-    window.setTimeout(() => worldMapRef.current?.focusSelected(), 160);
+    let attempts = 0;
+    const focusWhenReady = () => {
+      attempts += 1;
+      worldMapRef.current?.focusSelected();
+      if (attempts < 12) window.setTimeout(focusWhenReady, 100);
+    };
+    window.setTimeout(focusWhenReady, 120);
+  };
+
+  const openChildProfile = (childId = selectedChild.id) => {
+    setSelectedChildId(childId);
+    setActiveModule("child-profile");
   };
 
   const drawRollCallChild = (eligibleChildIds?: string[]) => {
@@ -396,14 +496,38 @@ export function App() {
 
   const quickRecordRollCallChild = (childId: string) => {
     setSelectedChildId(childId);
-    commitLedger({
+    void commitLedger({
       childId,
       operatorChildId: childId,
+      operatorRole: "teacher",
       delta: 10,
       source: "manual",
       category: "积极阳光",
       reason: "随机点名：课堂积极回应 +10",
     });
+  };
+
+  const recordTeacherWorkbench = async (
+    childIds: string[],
+    delta: number,
+    reason: string,
+    category: VirtueCategory,
+  ) => {
+    const targetIds = [...new Set(childIds)].filter((childId) => children.some((child) => child.id === childId));
+    if (targetIds.length === 0) return;
+
+    setSelectedChildId(targetIds[0]);
+    for (const childId of targetIds) {
+      await commitLedger({
+        childId,
+        operatorChildId: selectedChild.id,
+        operatorRole: "teacher",
+        delta,
+        source: "manual",
+        category,
+        reason,
+      });
+    }
   };
 
   const openVoiceRecordFromRollCall = (childId: string) => {
@@ -422,13 +546,16 @@ export function App() {
     setSelectedChildId(childId);
     setLastEvaluation(result);
     if (result.xpDelta === 0) return;
-    commitLedger({
+    void commitLedger({
       childId,
       operatorChildId: childId,
+      operatorRole: "teacher",
       delta: result.xpDelta,
       source: "dialogue-agent",
       category: result.category,
       reason: `语音记录：${transcript}`,
+      aiSuggested: true,
+      reviewStatus: "approved",
     });
   };
 
@@ -451,8 +578,6 @@ export function App() {
       {activeModule === "home" ? (
         <section className="home-module app-shell" aria-label="北海成长岛首页">
           <GameTopBar
-            teacherMode={teacherMode}
-            onToggleTeacherMode={() => setTeacherMode((current) => !current)}
             childrenCount={children.length}
             syncStatus={syncStatus}
             onZoomIn={() => worldMapRef.current?.zoomIn()}
@@ -467,45 +592,19 @@ export function App() {
               childrenWithProgress={childrenWithProgress}
               spiritsById={spiritsById}
               selectedChildId={selectedChild.id}
-              recentLedger={allRecentRecords}
+              recentLedger={bigScreenRecentRecords}
               assetVersion={assetVersion}
               onSelectChild={setSelectedChildId}
-              onOpenDialogue={() => setDialogueOpen(true)}
-              onOpenPk={() => setPkPair({ playerId: selectedChild.id, opponentId: opponent.id })}
             />
 
             <aside className="hud-rail">
-              <HudPanelTabs
-                activePanel={hudPanel}
-                pendingReviewCount={pendingReviews.length}
-                teacherMode={teacherMode}
-                onChange={setHudPanel}
+              <SpiritDetailPanel
+                child={selectedChild}
+                spirit={selectedSpirit}
+                spiritAssetUrl={selectedSpiritAsset?.url}
+                recentRecords={recentRecords.filter((record) => record.delta > 0)}
+                onOpenProfile={openChildProfile}
               />
-              {hudPanel === "spirit" && (
-                <SpiritDetailPanel
-                  child={selectedChild}
-                  spirit={selectedSpirit}
-                  spiritAssetUrl={selectedSpiritAsset?.url}
-                  teacherMode={teacherMode}
-                  lastEvaluation={lastEvaluation}
-                  onAdjustXp={addLedger}
-                  onUndoLast={undoLast}
-                  onOpenDialogue={() => setDialogueOpen(true)}
-                  onOpenPk={() => setPkPair({ playerId: selectedChild.id, opponentId: opponent.id })}
-                />
-              )}
-              {hudPanel === "growth" && (
-                <GrowthLogPanel
-                  recentRecords={recentRecords}
-                  pendingReviews={pendingReviews}
-                  childrenWithProgress={childrenWithProgress}
-                  onApprove={approveReview}
-                  onReject={rejectReview}
-                />
-              )}
-              {hudPanel === "home" && (
-                <TeacherActionPanel child={selectedChild} teacherMode={teacherMode} onUpdateChild={updateSelectedChild} />
-              )}
             </aside>
           </section>
 
@@ -530,6 +629,26 @@ export function App() {
           onQuickRecord={quickRecordRollCallChild}
           onOpenVoiceRecord={openVoiceRecordFromRollCall}
           onFocusChild={focusChildOnHome}
+        />
+      ) : activeModule === "teacher-workbench" ? (
+        <TeacherWorkbenchModule
+          childrenWithProgress={childrenWithProgress}
+          spiritsById={spiritsById}
+          selectedChild={selectedChild}
+          pendingReviews={pendingReviews}
+          recentRecords={allRecentRecords}
+          onSelectChild={setSelectedChildId}
+          onQuickRecord={(childIds, delta, reason, category) => {
+            void recordTeacherWorkbench(childIds, delta, reason, category);
+          }}
+          onAnalyze={analyzeVoiceRecord}
+          onConfirm={confirmVoiceRecord}
+          onRejectSuggestion={rejectVoiceSuggestion}
+          onApproveReview={approveReview}
+          onRejectReview={rejectReview}
+          onUndoLast={undoLast}
+          onFocusChild={focusChildOnHome}
+          onOpenProfile={openChildProfile}
         />
       ) : activeModule === "voice-record" ? (
         <VoiceRecordModule
@@ -579,7 +698,16 @@ export function App() {
           onSelectChild={setSelectedChildId}
           onFocusChild={focusChildOnHome}
         />
-      ) : activeModule === "data" ? (
+      ) : activeModule === "child-profile" ? (
+        <ChildProfileModule
+          childrenWithProgress={childrenWithProgress}
+          spiritsById={spiritsById}
+          selectedChild={selectedChild}
+          recentRecords={allRecentRecords}
+          onSelectChild={setSelectedChildId}
+          onFocusChild={focusChildOnHome}
+        />
+      ) : activeModule === "data-management" ? (
         <DataManagementModule
           childrenWithProgress={childrenWithProgress}
           spiritsById={spiritsById}

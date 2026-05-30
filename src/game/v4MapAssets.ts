@@ -15,10 +15,10 @@ import {
   rawPlacementsByLayer,
 } from "./mapPlacementConfig";
 
-const base = "/assets/map/v4";
+const base = "/assets/map/v4-runtime";
 
 function asset(batch: string, fileName: string) {
-  return encodeURI(`${base}/${batch}/${fileName}`);
+  return encodeURI(`${base}/${batch}/${fileName.replace(/\.png$/i, ".webp")}`);
 }
 
 export const v4MapAssets = {

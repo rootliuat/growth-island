@@ -21,6 +21,8 @@ export type SpiritState =
   | "lv8";
 
 export type LedgerSource = "manual" | "dialogue-agent" | "math-pk" | "undo";
+export type LedgerOperatorRole = "teacher" | "child" | "system";
+export type LedgerReviewStatus = "not_required" | "pending_review" | "approved" | "rejected";
 
 export interface SpiritDefinition {
   id: string;
@@ -51,14 +53,21 @@ export interface LedgerRecord {
   id: string;
   childId: string;
   operatorChildId: string;
+  operatorRole: LedgerOperatorRole;
   delta: number;
   source: LedgerSource;
   category?: VirtueCategory;
   reason: string;
+  aiSuggested: boolean;
+  reviewStatus: LedgerReviewStatus;
+  reviewId?: string;
   createdAt: string;
   undone?: boolean;
   undoOf?: string;
 }
+
+export type LedgerRecordInput = Omit<LedgerRecord, "id" | "createdAt" | "operatorRole" | "aiSuggested" | "reviewStatus"> &
+  Partial<Pick<LedgerRecord, "operatorRole" | "aiSuggested" | "reviewStatus">>;
 
 export interface ClassroomSnapshot {
   children: ChildProfile[];

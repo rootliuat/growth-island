@@ -471,11 +471,12 @@ export class HomeLayer {
     const plaqueGroup = new Container();
     const plaqueText = new Text({
       text: `Lv.${home.level}`,
-      style: { fontFamily: "Georgia, Microsoft YaHei", fontSize: 15, fontWeight: "700", fill: 0x664325 },
+      resolution: 2,
+      style: { fontFamily: "Georgia, Microsoft YaHei", fontSize: 18, fontWeight: "900", fill: 0x664325 },
     });
     plaqueText.anchor.set(0.5);
-    plaqueText.y = 86;
-    const plaqueBg = new Graphics().roundRect(-28, 72, 56, 26, 12).fill(0xffe7a8).stroke({
+    plaqueText.y = 87;
+    const plaqueBg = new Graphics().roundRect(-34, 72, 68, 30, 14).fill(0xffe7a8).stroke({
       width: 2,
       color: palette.sandInk,
       alpha: 0.28,
@@ -487,9 +488,10 @@ export class HomeLayer {
   private drawHomePrompt(home: WorldHome) {
     const prompt = new Container();
     prompt.y = -104;
-    const idNumber = home.id.replace(/\D/g, "").padStart(2, "0");
+    const labelName = home.childName;
     const text = new Text({
-      text: `家园 ${idNumber}`,
+      text: labelName,
+      resolution: 2,
       style: { fontFamily: "Microsoft YaHei, PingFang SC", fontSize: 13, fontWeight: "800", fill: palette.textMain },
     });
     text.anchor.set(0.5);
@@ -514,6 +516,7 @@ export class HomeLayer {
     const labelName = home.petName.replace(/的小伙伴$/, "").replace(/的小精灵$/, "");
     const text = new Text({
       text: `${labelName}的小屋`,
+      resolution: 2,
       style: { fontFamily: "Microsoft YaHei, PingFang SC", fontSize: 14, fontWeight: "900", fill: palette.textMain },
     });
     text.anchor.set(0.5);

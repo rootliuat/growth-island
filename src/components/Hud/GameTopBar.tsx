@@ -1,9 +1,7 @@
-import { Cloud, CloudOff, Home, LoaderCircle, MapPinned, Shield, Users } from "lucide-react";
+import { Cloud, CloudOff, LoaderCircle, MapPinned, Sparkles, Users } from "lucide-react";
 import { ZoomControls } from "./ZoomControls";
 
 interface GameTopBarProps {
-  teacherMode: boolean;
-  onToggleTeacherMode: () => void;
   childrenCount: number;
   syncStatus: "connecting" | "online" | "saving" | "offline";
   onZoomIn: () => void;
@@ -13,8 +11,6 @@ interface GameTopBarProps {
 }
 
 export function GameTopBar({
-  teacherMode,
-  onToggleTeacherMode,
   childrenCount,
   syncStatus,
   onZoomIn,
@@ -59,10 +55,10 @@ export function GameTopBar({
           {syncMeta.icon}
           {syncMeta.label}
         </div>
-        <button className={teacherMode ? "teacher-toggle active" : "teacher-toggle"} onClick={onToggleTeacherMode}>
-          {teacherMode ? <Shield size={18} /> : <Home size={18} />}
-          {teacherMode ? "老师模式" : "幼儿模式"}
-        </button>
+        <div className="game-pill screen-mode-pill">
+          <Sparkles size={18} />
+          大屏展示
+        </div>
       </div>
     </header>
   );

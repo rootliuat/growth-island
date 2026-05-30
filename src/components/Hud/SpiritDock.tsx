@@ -42,8 +42,34 @@ export function SpiritDock({ childrenWithProgress, spiritsById, selectedChildId,
     activeCard?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
   }, [collapsed, filtered, selectedChildId]);
 
+  const selectedSpirit = selectedChild ? spiritsById.get(selectedChild.spiritId) : undefined;
+  const selectedAsset = selectedSpirit ? getSpiritAsset(selectedSpirit, selectedChild.state) : undefined;
+
+  if (collapsed) {
+    return (
+      <section className="spirit-dock collapsed">
+        <button
+          type="button"
+          className="dock-selected-summary"
+          style={{ "--dock-accent": selectedSpirit?.accent ?? "#6ebf8b" } as CSSProperties}
+          onClick={() => onSelectChild(selectedChild.id)}
+        >
+          <span className="dock-avatar">
+            {selectedAsset?.url ? <img src={selectedAsset.url} alt="" /> : selectedChild.name.slice(0, 1)}
+          </span>
+          <strong>{selectedChild.name}</strong>
+          <em>Lv.{selectedChild.level}</em>
+        </button>
+        <button className="dock-collapse" type="button" onClick={() => setCollapsed(false)}>
+          <ChevronUp size={16} />
+          展开
+        </button>
+      </section>
+    );
+  }
+
   return (
-    <section className={collapsed ? "spirit-dock collapsed" : "spirit-dock"}>
+    <section className="spirit-dock">
       <div className="dock-tools">
         <div className="dock-tools-head">
           <strong>

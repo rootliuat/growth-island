@@ -13,12 +13,16 @@ export class PixiWorld {
   private resizeObserver?: ResizeObserver;
   private host?: HTMLDivElement;
   private lastData?: WorldMapData;
+  private idleTimer?: number;
   private disposed = false;
   private viewMode: "overview" | "focused" | "manual" = "overview";
   private readonly tick = (ticker: Ticker) => {
     this.camera?.update(ticker);
     this.scene?.update(ticker);
   };
+  private readonly wakeFromInteraction = () => this.wake(1800);
+  private readonly wakeFromWheel = () => this.wake(260);
+  private readonly wakeFromAssetLoad = () => this.wake(900);
 
   constructor(private readonly callbacks: WorldMapCallbacks) {}
 
@@ -31,11 +35,15 @@ export class PixiWorld {
     await app.init({
       width: host.clientWidth || 1280,
       height: host.clientHeight || 720,
-      backgroundAlpha: 0,
-      antialias: true,
-      resolution: Math.min(window.devicePixelRatio || 1, 2),
+      backgroundAlpha: 1,
+      backgroundColor: 0xd9f4ef,
+      antialias: false,
+      preference: "webgl",
+      powerPreference: "high-performance",
+      resolution: 1,
       autoDensity: true,
     });
+    app.ticker.maxFPS = 60;
     if (this.disposed || this.host !== host) {
       const canvas = app.canvas;
       app.destroy({ removeView: true }, { children: true, texture: false, textureSource: false });
@@ -43,6 +51,7 @@ export class PixiWorld {
       return;
     }
     app.canvas.className = "pixi-world-canvas";
+    app.canvas.dataset.renderState = "active";
     host.appendChild(app.canvas);
 
     this.app = app;
@@ -50,6 +59,7 @@ export class PixiWorld {
     this.scene = new WorldScene(this.camera, this.callbacks);
     app.stage.addChild(this.scene.root);
     app.ticker.add(this.tick);
+    this.wake(3600);
     this.resize(host.clientWidth || WORLD_WIDTH, host.clientHeight || WORLD_HEIGHT);
     this.viewMode = "overview";
     this.scene.focusFullIsland();
@@ -60,37 +70,54 @@ export class PixiWorld {
     });
     this.resizeObserver.observe(host);
     this.interactions.add(() => this.resizeObserver?.disconnect());
+    app.canvas.addEventListener("pointerdown", this.wakeFromInteraction);
+    app.canvas.addEventListener("pointermove", this.wakeFromInteraction);
+    app.canvas.addEventListener("wheel", this.wakeFromWheel, { passive: true });
+    window.addEventListener("growth-island-asset-loaded", this.wakeFromAssetLoad);
+    this.interactions.add(() => {
+      app.canvas.removeEventListener("pointerdown", this.wakeFromInteraction);
+      app.canvas.removeEventListener("pointermove", this.wakeFromInteraction);
+      app.canvas.removeEventListener("wheel", this.wakeFromWheel);
+      window.removeEventListener("growth-island-asset-loaded", this.wakeFromAssetLoad);
+    });
     if (this.lastData) this.scene.updateData(this.lastData);
   }
 
   update(data: WorldMapData) {
+    const hasLedgerChange = !!data.lastLedger && data.lastLedger.id !== this.lastData?.lastLedger?.id;
     this.lastData = data;
     this.scene?.updateData(data);
+    this.wake(hasLedgerChange ? 5200 : 1200);
   }
 
   focusFullIsland() {
     this.viewMode = "overview";
     this.scene?.focusFullIsland();
+    this.wake(1400);
   }
 
   focusSelected() {
     this.viewMode = "focused";
     this.scene?.focusSelected();
+    this.wake(1400);
   }
 
   focusChild(childId: string) {
     this.viewMode = "focused";
     this.scene?.focusChild(childId);
+    this.wake(1400);
   }
 
   focusRegion(regionId: RegionId) {
     this.viewMode = "focused";
     this.scene?.focusRegion(regionId);
+    this.wake(1400);
   }
 
   zoomBy(delta: number) {
     this.viewMode = "manual";
     this.camera?.zoomBy(delta);
+    this.wake(1400);
   }
 
   private resize(width: number, height: number) {
@@ -102,10 +129,29 @@ export class PixiWorld {
     if (this.viewMode === "overview") {
       this.scene?.focusFullIsland();
     }
+    this.wake(1200);
+  }
+
+  private wake(durationMs: number) {
+    if (!this.app || this.disposed) return;
+    window.clearTimeout(this.idleTimer);
+    const wasIdle = !this.app.ticker.started;
+    this.app.canvas.dataset.renderState = "active";
+    if (!this.app.ticker.started) this.app.ticker.start();
+    if (wasIdle) this.app.render();
+    this.idleTimer = window.setTimeout(() => this.sleep(), durationMs);
+  }
+
+  private sleep() {
+    if (!this.app || this.disposed) return;
+    this.app.render();
+    this.app.canvas.dataset.renderState = "idle";
+    this.app.ticker.stop();
   }
 
   destroy() {
     this.disposed = true;
+    window.clearTimeout(this.idleTimer);
     this.interactions.destroy();
     this.app?.ticker.remove(this.tick);
     this.scene?.destroy();

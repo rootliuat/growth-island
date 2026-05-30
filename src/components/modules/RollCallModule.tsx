@@ -64,7 +64,7 @@ export function RollCallModule({
   const [levelFilter, setLevelFilter] = useState<LevelFilterId>("all");
   const [isRolling, setIsRolling] = useState(false);
   const [rollingChildId, setRollingChildId] = useState<string | undefined>();
-  const [actionStatus, setActionStatus] = useState("抽中后可直接记录成长行为，也可以转到语音记录补充说明。");
+  const [actionStatus, setActionStatus] = useState("");
   const [copyStatus, setCopyStatus] = useState("");
   const rollingIntervalRef = useRef<number | undefined>(undefined);
   const rollingTimeoutRef = useRef<number | undefined>(undefined);
@@ -113,7 +113,7 @@ export function RollCallModule({
     let index = Math.floor(Math.random() * animationPool.length);
     clearRollingTimers();
     setIsRolling(true);
-    setActionStatus("点名滚动中...");
+    setActionStatus("抽取中");
     setCopyStatus("");
     setRollingChildId(animationPool[index]?.id);
 
@@ -127,28 +127,28 @@ export function RollCallModule({
       setIsRolling(false);
       setRollingChildId(undefined);
       onDraw(filteredChildren.map((child) => child.id));
-      setActionStatus("已抽出孩子，可以记录成长行为或回到成长岛。");
+      setActionStatus("已抽中");
     }, 900);
   };
 
   const handleQuickRecord = () => {
     if (!hasDrawnChild || isRolling) return;
     onQuickRecord(currentChild.id);
-    setActionStatus(`${currentChild.name} 已记录 +10 课堂积极回应。`);
+    setActionStatus(`${currentChild.name} +10`);
   };
 
   const handleCopyRound = async () => {
     if (calledChildren.length === 0) {
-      setCopyStatus("本轮还没有点名结果。");
+      setCopyStatus("未开始");
       return;
     }
 
     const text = formatRoundText(calledChildren);
     try {
       await navigator.clipboard.writeText(text);
-      setCopyStatus(`已复制 ${calledChildren.length} 条本轮点名结果。`);
+      setCopyStatus(`${calledChildren.length} 条已复制`);
     } catch {
-      setCopyStatus("复制入口已触发，正式环境可接导出文件。");
+      setCopyStatus("复制失败");
     }
   };
 
@@ -161,11 +161,10 @@ export function RollCallModule({
             课堂活动
           </span>
           <h1 id="roll-call-title">随机点名</h1>
-          <p>从当前班级里抽取孩子，抽中后可以直接回到成长岛，聚焦到他的精灵家园。</p>
         </div>
         <button type="button" className="roll-call-home-button" onClick={() => onFocusChild(currentChild.id)}>
           <Home size={18} />
-          聚焦成长岛
+          聚焦
         </button>
       </div>
 
@@ -186,16 +185,14 @@ export function RollCallModule({
               )}
             </div>
             <div className="roll-call-nameplate">
-              <span>{displayChild.name}</span>
-              <strong>{displayChild.petName}</strong>
-              <em>{childSummary(displayChild)}</em>
+              <strong>{displayChild.name}</strong>
             </div>
           </div>
 
           <div className="roll-call-actions">
             <button type="button" className="roll-call-primary" onClick={handleDraw} disabled={isPoolEmpty || isRolling}>
               <Search size={21} />
-              {isRolling ? "正在抽取" : isPoolEmpty ? "当前筛选已点完" : "开始点名"}
+              {isRolling ? "抽取中" : isPoolEmpty ? "已点完" : "开始"}
             </button>
             <button type="button" className="roll-call-secondary" onClick={onReset}>
               <RotateCcw size={19} />
@@ -206,11 +203,11 @@ export function RollCallModule({
           <div className="roll-call-record-actions" aria-label="抽中后记录成长行为">
             <button type="button" onClick={handleQuickRecord} disabled={!hasDrawnChild || isRolling}>
               <PlusCircle size={19} />
-              记录 +10 课堂回应
+              记录 +10
             </button>
             <button type="button" onClick={() => onOpenVoiceRecord(currentChild.id)} disabled={!hasDrawnChild || isRolling}>
               <Mic size={19} />
-              转到语音记录
+              语音记录
             </button>
           </div>
           <p className="roll-call-action-status">{actionStatus}</p>
@@ -227,7 +224,7 @@ export function RollCallModule({
           </label>
 
           {isPoolEmpty && (
-            <p className="roll-call-hint">当前筛选范围内已没有可抽取孩子，可以切换筛选或重置点名池。</p>
+            <p className="roll-call-hint">已点完</p>
           )}
         </section>
 
@@ -291,7 +288,7 @@ export function RollCallModule({
             <div className="roll-call-list-title">
               <div>
                 <strong>本轮名单</strong>
-                <span>{excludeCalled ? `当前筛选未点 ${uncalledCount}` : "允许重复"}</span>
+                <span>{excludeCalled ? `未点 ${uncalledCount}` : "可重复"}</span>
               </div>
               <button type="button" className="roll-call-copy-button" onClick={handleCopyRound}>
                 <Copy size={17} />
@@ -303,7 +300,7 @@ export function RollCallModule({
             {calledChildren.length === 0 ? (
               <div className="roll-call-empty">
                 <Sparkles size={22} />
-                <p>还没有点名记录。点击“开始点名”抽取第一位孩子。</p>
+                <p>未开始</p>
               </div>
             ) : (
               <ol className="roll-call-list">
@@ -320,9 +317,7 @@ export function RollCallModule({
                         </span>
                         <span className="roll-call-row-copy">
                           <strong>{child.name}</strong>
-                          <em>
-                            {child.petName} · {childSummary(child)}
-                          </em>
+                          <em>{childSummary(child)}</em>
                         </span>
                       </button>
                     </li>

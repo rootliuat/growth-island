@@ -1,4 +1,4 @@
-import type { ChildProfile, ClassroomSnapshot, LedgerRecord, MoralAgentResponse } from "../types";
+import type { ChildProfile, ClassroomSnapshot, LedgerRecordInput, MoralAgentResponse } from "../types";
 
 function getDefaultApiBaseUrl() {
   if (typeof window === "undefined") return "http://localhost:5174";
@@ -36,7 +36,7 @@ export function patchChildProfile(childId: string, patch: Partial<ChildProfile>)
   });
 }
 
-export function createLedgerRecord(input: Omit<LedgerRecord, "id" | "createdAt">) {
+export function createLedgerRecord(input: LedgerRecordInput) {
   return requestSnapshot("/api/ledger", {
     method: "POST",
     body: JSON.stringify(input),

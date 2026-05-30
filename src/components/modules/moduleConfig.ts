@@ -1,6 +1,7 @@
 import {
   BarChart3,
   ClipboardList,
+  Database,
   Gift,
   Home,
   Mic,
@@ -13,13 +14,15 @@ import {
 
 export type AppModuleId =
   | "home"
-  | "roll-call"
+  | "teacher-workbench"
+  | "child-profile"
   | "voice-record"
+  | "roll-call"
   | "math-arena"
   | "lottery"
   | "shop"
   | "leaderboard"
-  | "data"
+  | "data-management"
   | "settings";
 
 export interface FeatureCardConfig {
@@ -30,6 +33,7 @@ export interface FeatureCardConfig {
 export interface ModuleConfig {
   id: AppModuleId;
   label: string;
+  navGroup: "primary" | "activity" | "admin";
   eyebrow: string;
   description: string;
   primaryActionLabel: string;
@@ -43,19 +47,72 @@ export interface ModuleConfig {
 export const moduleConfigs: ModuleConfig[] = [
   {
     id: "home",
-    label: "首页",
-    eyebrow: "北海成长岛",
-    description: "全班精灵家园、XP 成长、老师操作和班级活动的主工作台。",
+    label: "成长岛大屏",
+    navGroup: "primary",
+    eyebrow: "孩子可见",
+    description: "全班精灵家园、升级反馈和班级活动结果的展示大屏。",
     primaryActionLabel: "返回全岛",
     secondaryActionLabel: "聚焦当前精灵",
     featureCards: [],
     futureItems: [],
-    homeLinkDescription: "首页是所有成长行为和模块结果汇聚的位置。",
+    homeLinkDescription: "所有成长行为的结果会回到大屏，以精灵、家园和光效演出来。",
     Icon: Home,
+  },
+  {
+    id: "teacher-workbench",
+    label: "课堂记录台",
+    navGroup: "primary",
+    eyebrow: "老师快操作",
+    description: "像点名器一样快速完成选孩子、记行为、加减 XP、批量记录和 AI 建议确认。",
+    primaryActionLabel: "开始记录",
+    secondaryActionLabel: "查看待复核",
+    featureCards: [
+      { title: "5 秒记录", description: "选择孩子、套用行为模板或输入文本，确认后立即写入成长流水。" },
+      { title: "批量入账", description: "可勾选多个孩子，一次记录同一条课堂行为。" },
+      { title: "AI 只建议", description: "AI 给出德育维度和 XP 建议，老师确认后才进入流水账。" },
+    ],
+    futureItems: ["真实语音 ASR", "更多行为模板", "课堂活动批量结算", "待复核筛选"],
+    homeLinkDescription: "确认后的记录会同步成长岛大屏，触发精灵 XP 和成长反馈。",
+    Icon: Mic,
+  },
+  {
+    id: "child-profile",
+    label: "成长档案",
+    navGroup: "primary",
+    eyebrow: "成长沉淀",
+    description: "按孩子查看成长故事线、德育维度、代表行为和精灵等级变化。",
+    primaryActionLabel: "查看档案",
+    secondaryActionLabel: "聚焦成长岛",
+    featureCards: [
+      { title: "成长故事线", description: "按时间串起老师确认过的成长记录，突出代表性事件。" },
+      { title: "德育画像", description: "按七大德育维度汇总孩子的成长证据。" },
+      { title: "精灵变化", description: "把 XP、等级、形态和家园变化作为可展示的成长结果。" },
+    ],
+    futureItems: ["家长分享页", "月度成长报告", "档案导出", "维度趋势图"],
+    homeLinkDescription: "从档案可回到成长岛，定位该孩子的精灵和家园。",
+    Icon: ClipboardList,
+  },
+  {
+    id: "voice-record",
+    label: "语音记录",
+    navGroup: "activity",
+    eyebrow: "文本版识别",
+    description: "选择孩子，输入课堂表现文本，生成德育维度和 XP 建议，老师确认后入账。",
+    primaryActionLabel: "开始记录",
+    secondaryActionLabel: "查看建议",
+    featureCards: [
+      { title: "文本先行", description: "第一版不接真实录音，用文本模拟语音记录流程。" },
+      { title: "老师确认", description: "AI 只生成建议，确认后才写入成长流水。" },
+      { title: "同步成长岛", description: "确认后 XP 和最近成长会同步到首页大屏。" },
+    ],
+    futureItems: ["真实 ASR", "音频上传", "14 天音频管理", "批量语音整理"],
+    homeLinkDescription: "确认后的德育记录会同步成长岛，并聚焦对应孩子。",
+    Icon: Mic,
   },
   {
     id: "roll-call",
     label: "随机点名",
+    navGroup: "activity",
     eyebrow: "课堂活动",
     description: "从当前班级中随机抽取孩子，并可同步聚焦成长岛里的精灵家园。",
     primaryActionLabel: "开始点名",
@@ -70,24 +127,9 @@ export const moduleConfigs: ModuleConfig[] = [
     Icon: Sparkles,
   },
   {
-    id: "voice-record",
-    label: "语音记录",
-    eyebrow: "AI 德育识别",
-    description: "孩子或老师描述一件成长行为，系统给出德育分类和 XP 建议，老师确认后入库。",
-    primaryActionLabel: "提交分析",
-    secondaryActionLabel: "查看待复核",
-    featureCards: [
-      { title: "文本/语音入口", description: "第一阶段先保留文本输入和语音按钮占位，后续接入真实 ASR。" },
-      { title: "AI 判断结果", description: "展示建议德育维度、建议 XP、判断理由和置信度。" },
-      { title: "老师复核", description: "老师确认、调整或驳回后，才进入成长记录和首页 XP 同步。" },
-    ],
-    futureItems: ["浏览器录音", "云端 ASR", "音频 14 天复核", "常用表现模板", "按德育维度筛选"],
-    homeLinkDescription: "确认后的记录会同步首页精灵 XP、成长记录和地图反馈。",
-    Icon: Mic,
-  },
-  {
     id: "math-arena",
     label: "数学竞技场",
+    navGroup: "activity",
     eyebrow: "数学魔法 PK",
     description: "两个孩子进行 20 以内加减法 1v1 PK，胜者获得成长 XP。",
     primaryActionLabel: "选择对战孩子",
@@ -104,6 +146,7 @@ export const moduleConfigs: ModuleConfig[] = [
   {
     id: "lottery",
     label: "积分抽奖",
+    navGroup: "activity",
     eyebrow: "班级激励",
     description: "把成长激励转化为抽奖体验。第一阶段只展示，不消耗 XP。",
     primaryActionLabel: "开始抽奖",
@@ -120,6 +163,7 @@ export const moduleConfigs: ModuleConfig[] = [
   {
     id: "shop",
     label: "积分商店",
+    navGroup: "activity",
     eyebrow: "奖励兑换",
     description: "班级奖励兑换台。第一阶段展示兑换结构，不做真实扣减。",
     primaryActionLabel: "查看可兑换",
@@ -136,6 +180,7 @@ export const moduleConfigs: ModuleConfig[] = [
   {
     id: "leaderboard",
     label: "排行榜",
+    navGroup: "activity",
     eyebrow: "成长展示",
     description: "用游戏化榜单展示周榜、月榜和总榜，降低传统排名压力。",
     primaryActionLabel: "查看总榜",
@@ -150,24 +195,26 @@ export const moduleConfigs: ModuleConfig[] = [
     Icon: BarChart3,
   },
   {
-    id: "data",
+    id: "data-management",
     label: "数据管理",
+    navGroup: "admin",
     eyebrow: "老师工作台",
-    description: "查看幼儿名单、成长流水、待复核记录和同步状态。",
-    primaryActionLabel: "查看成长流水",
-    secondaryActionLabel: "导出占位",
+    description: "查看孩子列表、成长流水和待复核记录，帮助评审看到系统的数据沉淀。",
+    primaryActionLabel: "查看流水",
+    secondaryActionLabel: "处理复核",
     featureCards: [
-      { title: "幼儿名单", description: "展示班级孩子、精灵、等级和当前 XP。" },
-      { title: "成长流水", description: "集中查看加分、扣分、PK、对话识别等记录。" },
-      { title: "复核记录", description: "聚合 AI 待复核项，方便老师统一处理。" },
+      { title: "孩子列表", description: "按孩子、精灵、等级和 XP 搜索定位。" },
+      { title: "成长流水", description: "统一读取 XP ledger，不重复存储记录。" },
+      { title: "待复核", description: "AI 建议保持待确认状态，老师通过后才入账。" },
     ],
-    futureItems: ["真实导出", "批量导入", "复核记录详情", "数据同步诊断"],
-    homeLinkDescription: "从数据管理选择孩子或记录后，可回首页定位精灵。",
-    Icon: ClipboardList,
+    futureItems: ["真实导出", "批量筛选", "复核分派", "家长沟通记录"],
+    homeLinkDescription: "从数据管理可回到成长岛，聚焦当前孩子。",
+    Icon: Database,
   },
   {
     id: "settings",
     label: "系统设置",
+    navGroup: "admin",
     eyebrow: "班级配置",
     description: "维护班级、成长规则、显示模式和奖励入口。第一阶段只做静态配置页。",
     primaryActionLabel: "保存设置",

@@ -12,6 +12,35 @@ const port = Number(process.env.PORT || 5174);
 
 const virtueCategories = ["家国情怀", "意志坚韧", "积极阳光", "勇毅有力", "激浊扬清", "开拓创新", "尊矩守法"];
 const ledgerSources = new Set(["manual", "dialogue-agent", "math-pk", "undo"]);
+const operatorRoles = new Set(["teacher", "child", "system"]);
+const reviewStatuses = new Set(["not_required", "pending_review", "approved", "rejected"]);
+const ledgerSourceDefaults = {
+  manual: { operatorRole: "teacher", aiSuggested: false, reviewStatus: "not_required" },
+  "dialogue-agent": { operatorRole: "teacher", aiSuggested: true, reviewStatus: "approved" },
+  "math-pk": { operatorRole: "system", aiSuggested: false, reviewStatus: "not_required" },
+  undo: { operatorRole: "teacher", aiSuggested: false, reviewStatus: "not_required" },
+};
+
+function createDemoPendingReview(createdAt = new Date().toISOString()) {
+  return {
+    id: "seed-review-child-06",
+    childId: "child-06",
+    operatorChildId: "child-06",
+    transcript: "我今天主动帮同学收玩具",
+    result: {
+      intent: "reward",
+      category: "积极阳光",
+      xpDelta: 20,
+      confidence: 0.82,
+      status: "pending_review",
+      reasonForChild: "你主动帮助同学，是很温暖的成长表现。",
+      reasonForTeacher: "建议记录为积极阳光 +20，等待老师复核确认。",
+      riskFlags: [],
+    },
+    status: "pending_review",
+    createdAt,
+  };
+}
 
 function createDefaultDatabase() {
   const names = [
@@ -33,10 +62,13 @@ function createDefaultDatabase() {
     id: `seed-${child.id}`,
     childId: child.id,
     operatorChildId: child.id,
+    operatorRole: "teacher",
     delta: baseXp[index % baseXp.length],
     source: "manual",
     category: "积极阳光",
     reason: "演示数据：已有成长 XP",
+    aiSuggested: false,
+    reviewStatus: "not_required",
     createdAt: new Date(seedStartAt - index * 3600_000).toISOString(),
   }));
 
@@ -45,16 +77,25 @@ function createDefaultDatabase() {
     updatedAt: new Date().toISOString(),
     children,
     ledger,
-    moralReviews: [],
+    moralReviews: [createDemoPendingReview(new Date(seedStartAt + 12 * 60_000).toISOString())],
   };
 }
 
 async function readDatabase() {
   try {
     const db = JSON.parse(await readFile(dbPath, "utf8"));
+    let changed = false;
     db.children ??= [];
-    db.ledger ??= [];
-    db.moralReviews ??= [];
+    db.ledger = (db.ledger ?? []).map(normalizeLedgerRecord);
+    if (!Array.isArray(db.moralReviews)) {
+      db.moralReviews = [];
+      changed = true;
+    }
+    if (db.moralReviews.length === 0) {
+      db.moralReviews = [createDemoPendingReview()];
+      changed = true;
+    }
+    if (changed) await writeDatabase(db);
     return db;
   } catch (error) {
     if (error?.code !== "ENOENT") throw error;
@@ -137,6 +178,26 @@ function validateSource(source) {
   return typeof source === "string" && ledgerSources.has(source);
 }
 
+function normalizeOperatorRole(source, role) {
+  return operatorRoles.has(role) ? role : ledgerSourceDefaults[source]?.operatorRole ?? "teacher";
+}
+
+function normalizeReviewStatus(source, status) {
+  return reviewStatuses.has(status) ? status : ledgerSourceDefaults[source]?.reviewStatus ?? "not_required";
+}
+
+function normalizeLedgerRecord(record) {
+  const source = validateSource(record.source) ? record.source : "manual";
+  const defaults = ledgerSourceDefaults[source];
+  return {
+    ...record,
+    source,
+    operatorRole: normalizeOperatorRole(source, record.operatorRole),
+    aiSuggested: typeof record.aiSuggested === "boolean" ? record.aiSuggested : defaults.aiSuggested,
+    reviewStatus: normalizeReviewStatus(source, record.reviewStatus),
+  };
+}
+
 function createLedgerEntry(db, input) {
   let delta = Number(input.delta);
   if (delta < 0) delta = Math.max(delta, -getXp(input.childId, db.ledger));
@@ -146,10 +207,15 @@ function createLedgerEntry(db, input) {
     id: randomUUID(),
     childId: input.childId,
     operatorChildId: input.operatorChildId,
+    operatorRole: normalizeOperatorRole(input.source, input.operatorRole),
     delta,
     source: input.source,
     category: input.category,
     reason: String(input.reason || "成长记录").slice(0, 160),
+    aiSuggested:
+      typeof input.aiSuggested === "boolean" ? input.aiSuggested : ledgerSourceDefaults[input.source]?.aiSuggested ?? false,
+    reviewStatus: normalizeReviewStatus(input.source, input.reviewStatus),
+    reviewId: typeof input.reviewId === "string" ? input.reviewId : undefined,
     createdAt: new Date().toISOString(),
   };
   db.ledger.unshift(record);
@@ -203,10 +269,14 @@ async function handleCreateLedger(request, response) {
   createLedgerEntry(db, {
     childId: child.id,
     operatorChildId: operator.id,
+    operatorRole: body.operatorRole,
     delta,
     source: body.source,
     category: body.category,
     reason: String(body.reason || "成长记录").slice(0, 160),
+    aiSuggested: body.aiSuggested,
+    reviewStatus: body.reviewStatus,
+    reviewId: body.reviewId,
   });
   await writeDatabase(db);
   return sendJson(response, 201, snapshot(db));
@@ -226,10 +296,13 @@ async function handleUndoLedger(request, response) {
     id: randomUUID(),
     childId: target.childId,
     operatorChildId: operator.id,
+    operatorRole: "teacher",
     delta: -target.delta,
     source: "undo",
     category: target.category,
     reason: `撤销：${target.reason}`,
+    aiSuggested: false,
+    reviewStatus: "not_required",
     createdAt: new Date().toISOString(),
     undoOf: target.id,
   });
@@ -253,21 +326,9 @@ async function handleMoralEvaluate(request, response) {
     operatorChildId: operator.id,
     transcript,
     result,
-    status: result.status === "auto_posted" ? "auto_posted" : "pending_review",
+    status: "pending_review",
     createdAt: new Date().toISOString(),
   };
-
-  if (result.status === "auto_posted" && result.xpDelta !== 0) {
-    const record = createLedgerEntry(db, {
-      childId: child.id,
-      operatorChildId: operator.id,
-      delta: result.xpDelta,
-      source: "dialogue-agent",
-      category: result.category,
-      reason: `对话：${transcript}`,
-    });
-    if (record) reviewItem.ledgerRecordId = record.id;
-  }
 
   db.moralReviews.unshift(reviewItem);
   await writeDatabase(db);
@@ -294,10 +355,14 @@ async function handleApproveMoralReview(request, response, reviewId) {
     const record = createLedgerEntry(db, {
       childId: review.childId,
       operatorChildId: operator.id,
+      operatorRole: "teacher",
       delta: review.result.xpDelta,
       source: "dialogue-agent",
       category: review.result.category,
       reason: `复核通过：${review.transcript}`,
+      aiSuggested: true,
+      reviewStatus: "approved",
+      reviewId: review.id,
     });
     if (record) review.ledgerRecordId = record.id;
   }

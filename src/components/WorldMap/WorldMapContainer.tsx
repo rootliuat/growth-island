@@ -60,6 +60,7 @@ export const WorldMapContainer = forwardRef<PixiWorldMapHandle, WorldMapContaine
   );
   const deltaText = selectedRecord ? `${selectedRecord.delta > 0 ? "+" : ""}${selectedRecord.delta} XP` : "待成长";
   const activityText = selectedRecord ? selectedRecord.reason.slice(0, 16) : "今天还没有新的成长记录";
+  const hasCompanionActions = Boolean(props.onOpenDialogue || props.onOpenPk);
 
   useImperativeHandle(ref, () => ({
     focusFullIsland: () => {
@@ -89,7 +90,7 @@ export const WorldMapContainer = forwardRef<PixiWorldMapHandle, WorldMapContaine
         <div className="map-focus-plaque" style={{ "--focus-accent": selectedSpirit?.accent ?? "#59B97C" } as CSSProperties}>
           <span className="focus-home-badge">
             <Home size={17} />
-            {selectedChild.slotId}号家园
+            {selectedChild.name}
           </span>
           <div className="focus-copy">
             <strong>{selectedChild.petName}</strong>
@@ -129,7 +130,7 @@ export const WorldMapContainer = forwardRef<PixiWorldMapHandle, WorldMapContaine
           })}
         </div>
       </nav>
-      {selectedChild && (
+      {selectedChild && hasCompanionActions && (
         <div className="map-companion-actions" style={{ "--focus-accent": selectedSpirit?.accent ?? "#59B97C" } as CSSProperties}>
           <span className="companion-action-kicker">
             <Sparkles size={15} />

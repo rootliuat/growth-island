@@ -1,4 +1,4 @@
-import type { ChildProfile, ChildWithProgress, LedgerRecord, SpiritState } from "../types";
+import type { ChildProfile, ChildWithProgress, LedgerRecord, LedgerRecordInput, LedgerSource, SpiritState } from "../types";
 
 export const levelThresholds = [
   { level: 1, minXp: 0, state: "egg-1" as SpiritState },
@@ -75,9 +75,38 @@ export function xpProgressPercent(xp: number) {
   return Math.round(((xp - currentMin) / (info.nextXp - currentMin)) * 100);
 }
 
-export function makeLedgerRecord(input: Omit<LedgerRecord, "id" | "createdAt">): LedgerRecord {
+const ledgerSourceDefaults: Record<
+  LedgerSource,
+  Pick<LedgerRecord, "operatorRole" | "aiSuggested" | "reviewStatus">
+> = {
+  manual: { operatorRole: "teacher", aiSuggested: false, reviewStatus: "not_required" },
+  "dialogue-agent": { operatorRole: "teacher", aiSuggested: true, reviewStatus: "approved" },
+  "math-pk": { operatorRole: "system", aiSuggested: false, reviewStatus: "not_required" },
+  undo: { operatorRole: "teacher", aiSuggested: false, reviewStatus: "not_required" },
+};
+
+export function normalizeLedgerInput(input: LedgerRecordInput): Omit<LedgerRecord, "id" | "createdAt"> {
+  const defaults = ledgerSourceDefaults[input.source];
   return {
     ...input,
+    operatorRole: input.operatorRole ?? defaults.operatorRole,
+    aiSuggested: input.aiSuggested ?? defaults.aiSuggested,
+    reviewStatus: input.reviewStatus ?? defaults.reviewStatus,
+  };
+}
+
+export function normalizeLedgerRecord(record: LedgerRecord): LedgerRecord {
+  const { id, createdAt, ...input } = record;
+  return {
+    ...normalizeLedgerInput(input),
+    id,
+    createdAt,
+  };
+}
+
+export function makeLedgerRecord(input: LedgerRecordInput): LedgerRecord {
+  return {
+    ...normalizeLedgerInput(input),
     id: crypto.randomUUID(),
     createdAt: new Date().toISOString(),
   };

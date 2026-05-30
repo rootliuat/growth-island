@@ -9,7 +9,7 @@ import { addAssetSprite } from "./assetSprites";
 export class LabelLayer {
   private readonly regionLabels: Container[] = [];
   private readonly spiritLabels = new Map<string, Container>();
-  private readonly spiritMeta = new Map<string, { rank: number; level: number }>();
+  private readonly spiritMeta = new Map<string, { rank: number; level: number; hasActivity: boolean; x: number; y: number }>();
 
   constructor(private readonly layer: Container) {
     regions.forEach((region) => {
@@ -24,9 +24,10 @@ export class LabelLayer {
       });
       const text = new Text({
         text: region.name,
+        resolution: 3,
         style: {
           fontFamily: "Microsoft YaHei, PingFang SC",
-          fontSize: region.name.length > 6 ? 20 : 22,
+          fontSize: region.name.length > 6 ? 24 : 27,
           fontWeight: "900",
           fill: palette.textMain,
         },
@@ -57,12 +58,19 @@ export class LabelLayer {
       node.x = spirit.spritePosition.x + assetScaleRules.label.selectedNameOffset.x;
       node.y = spirit.spritePosition.y + assetScaleRules.label.selectedNameOffset.y;
       node.visible = spirit.id === data.selectedChildId;
-      this.spiritMeta.set(spirit.id, { rank: spirit.child.rank, level: spirit.child.level });
+      this.spiritMeta.set(spirit.id, {
+        rank: spirit.child.rank,
+        level: spirit.child.level,
+        hasActivity: Boolean(spirit.lastActivity),
+        x: spirit.spritePosition.x,
+        y: spirit.spritePosition.y,
+      });
       this.updateSpiritLabel(node, spirit);
     });
   }
 
   updateZoom(zoom: number, selectedChildId: string) {
+    const selectedMeta = this.spiritMeta.get(selectedChildId);
     this.regionLabels.forEach((label) => {
       label.visible = zoom < 1.2;
       label.alpha = zoom < 0.72 ? 1 : 0.76;
@@ -70,10 +78,16 @@ export class LabelLayer {
     });
     this.spiritLabels.forEach((label, childId) => {
       const selected = childId === selectedChildId;
-      label.visible = selected && zoom >= 0.86;
-      label.scale.set(zoom >= 1.42 ? 0.74 : 0.68);
+      const meta = this.spiritMeta.get(childId);
+      const nearSelected =
+        selectedMeta && meta
+          ? Math.abs(meta.x - selectedMeta.x) < 360 && Math.abs(meta.y - selectedMeta.y) < 280
+          : false;
+      label.visible = selected || (zoom >= 1.36 && nearSelected);
+      label.alpha = selected ? 1 : 0.72;
+      label.scale.set(selected ? (zoom >= 1.42 ? 0.94 : 0.86) : 0.72);
       const bubble = label.getChildByLabel("activity-bubble");
-      if (bubble) bubble.visible = selected && zoom >= 1.55;
+      if (bubble) bubble.visible = selected && Boolean(meta?.hasActivity) && zoom >= 1.48;
     });
   }
 
@@ -83,7 +97,8 @@ export class LabelLayer {
     bg.label = "name-bg";
     const text = new Text({
       text: "",
-      style: { fontFamily: "Microsoft YaHei, PingFang SC", fontSize: 12, fontWeight: "900", fill: palette.textMain },
+      resolution: 3,
+      style: { fontFamily: "Microsoft YaHei, PingFang SC", fontSize: 18, fontWeight: "900", fill: palette.textMain },
     });
     text.label = "name";
     text.anchor.set(0.5);
@@ -97,13 +112,15 @@ export class LabelLayer {
     tokenBg.label = "bubble-token-bg";
     const tokenText = new Text({
       text: "",
-      style: { fontFamily: "Georgia, Microsoft YaHei, PingFang SC", fontSize: 10, fontWeight: "900", fill: 0xfff9df },
+      resolution: 3,
+      style: { fontFamily: "Georgia, Microsoft YaHei, PingFang SC", fontSize: 16, fontWeight: "900", fill: 0xfff9df },
     });
     tokenText.label = "bubble-token";
     tokenText.anchor.set(0.5);
     const bubbleText = new Text({
       text: "",
-      style: { fontFamily: "Microsoft YaHei, PingFang SC", fontSize: 10, fontWeight: "800", fill: palette.textSubtle },
+      resolution: 3,
+      style: { fontFamily: "Microsoft YaHei, PingFang SC", fontSize: 14, fontWeight: "800", fill: palette.textSubtle },
     });
     bubbleText.label = "bubble-text";
     bubbleText.anchor.set(0.5);
@@ -209,10 +226,10 @@ export class LabelLayer {
     const bubble = node.getChildByLabel("activity-bubble") as Container | undefined;
     if (text) text.text = spirit.child.name;
     if (bg) {
-      const width = Math.max(60, Math.min(102, (text?.width ?? 50) + 24));
+      const width = Math.max(68, Math.min(118, (text?.width ?? 56) + 28));
       bg.clear();
-      bg.ellipse(0, 14, width * 0.36, 7).fill({ color: palette.inkShadow, alpha: 0.1 });
-      bg.roundRect(-width / 2, -14, width, 27, 13).fill(0xfff6d7).stroke({
+      bg.ellipse(0, 15, width * 0.36, 7).fill({ color: palette.inkShadow, alpha: 0.1 });
+      bg.roundRect(-width / 2, -16, width, 31, 15).fill(0xfff6d7).stroke({
         width: 2,
         color: spirit.accent,
         alpha: 0.32,
@@ -224,29 +241,30 @@ export class LabelLayer {
     const bubbleBg = bubble?.getChildByLabel("bubble-bg") as Graphics | undefined;
     const tokenBg = bubble?.getChildByLabel("bubble-token-bg") as Graphics | undefined;
     const tokenText = bubble?.getChildByLabel("bubble-token") as Text | undefined;
-    if (bubbleText && bubbleBg && tokenBg && tokenText) {
-      const note = spirit.lastActivity ? this.cleanActivity(spirit.lastActivity) : "今天也在成长";
+    if (bubble && bubbleText && bubbleBg && tokenBg && tokenText) {
+      bubble.visible = Boolean(spirit.lastActivity);
+      const note = spirit.lastActivity ? this.cleanActivity(spirit.lastActivity) : "";
       const delta = spirit.lastActivityDelta ?? 0;
       const positive = delta >= 0;
       bubbleText.text = note;
-      tokenText.text = delta === 0 ? "XP" : delta > 0 ? `+${delta}` : `${delta}`;
-      const tokenWidth = Math.max(36, tokenText.width + 14);
-      const width = Math.max(96, Math.min(136, bubbleText.width + tokenWidth + 20));
+      tokenText.text = delta === 0 ? "记录" : delta > 0 ? `+${delta}` : `${delta}`;
+      const tokenWidth = Math.max(42, tokenText.width + 16);
+      const width = Math.max(112, Math.min(160, bubbleText.width + tokenWidth + 24));
       const tokenX = -width / 2 + tokenWidth / 2 + 10;
       bubbleBg.clear();
-      bubbleBg.ellipse(0, 17, width * 0.34, 7).fill({ color: palette.inkShadow, alpha: 0.1 });
-      bubbleBg.roundRect(-width / 2, -14, width, 28, 13).fill(0xf4f1e6).stroke({
+      bubbleBg.ellipse(0, 18, width * 0.34, 7).fill({ color: palette.inkShadow, alpha: 0.1 });
+      bubbleBg.roundRect(-width / 2, -16, width, 32, 15).fill(0xf4f1e6).stroke({
         width: 2,
         color: spirit.accent,
         alpha: 0.22,
       });
-      bubbleBg.poly([-9, -15, 0, -24, 9, -15]).fill(0xf4f1e6).stroke({
+      bubbleBg.poly([-10, -17, 0, -27, 10, -17]).fill(0xf4f1e6).stroke({
         width: 2,
         color: spirit.accent,
         alpha: 0.12,
       });
       tokenBg.clear();
-      tokenBg.roundRect(tokenX - tokenWidth / 2, -10, tokenWidth, 20, 10)
+      tokenBg.roundRect(tokenX - tokenWidth / 2, -11, tokenWidth, 22, 11)
         .fill(positive ? palette.positive : palette.negative)
         .stroke({ width: 2, color: 0xfff6d7, alpha: 0.8 });
       tokenBg.circle(tokenX + tokenWidth / 2 - 8, -2, 3).fill({ color: 0xffffff, alpha: 0.48 });
