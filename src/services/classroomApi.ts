@@ -1,4 +1,11 @@
-import type { ChildProfile, ClassroomSnapshot, LedgerRecordInput, MoralAgentResponse } from "../types";
+import type {
+  ChildProfile,
+  ClassroomSnapshot,
+  LedgerRecordInput,
+  MoralAgentResponse,
+  SpeechRecognitionResponse,
+  SpeechSynthesisResponse,
+} from "../types";
 
 function getDefaultApiBaseUrl() {
   if (typeof window === "undefined") return "http://localhost:5174";
@@ -69,6 +76,20 @@ async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
 
 export function evaluateMoralRecord(input: { childId: string; operatorChildId: string; transcript: string }) {
   return requestJson<MoralAgentResponse>("/api/agent/moral-evaluate", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export function speakForChild(input: { childId: string; text: string }) {
+  return requestJson<SpeechSynthesisResponse>("/api/speech/speak", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export function transcribeSpeech(input: { audioBase64: string; voiceFormat?: string }) {
+  return requestJson<SpeechRecognitionResponse>("/api/speech/transcribe", {
     method: "POST",
     body: JSON.stringify(input),
   });

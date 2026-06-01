@@ -163,7 +163,6 @@ export function TeacherWorkbenchModule({
               return (
                 <article key={child.id} className={child.id === selectedChild.id ? "workbench-student-card active" : "workbench-student-card"}>
                   <div className="student-card-topline">
-                    <span>{child.rank <= 3 ? "精灵星" : `#${child.rank}`}</span>
                     <div className="student-card-top-actions">
                       <em>Lv.{child.level}</em>
                       <button type="button" className="student-card-focus" onClick={() => onFocusChild(child.id)}>

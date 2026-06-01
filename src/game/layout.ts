@@ -16,6 +16,10 @@ function moodFor(child: ChildWithProgress, lastRecord?: LedgerRecord): SpiritMoo
   return "normal";
 }
 
+function isMapActivityRecord(record: LedgerRecord) {
+  return !record.undone && record.source !== "undo" && !record.reason.startsWith("演示数据");
+}
+
 export function buildWorldMapData({
   childrenWithProgress,
   spiritsById,
@@ -27,7 +31,7 @@ export function buildWorldMapData({
   selectedChildId: string;
   recentLedger: LedgerRecord[];
 }): WorldMapData {
-  const lastLedger = recentLedger.find((record) => !record.undone && record.source !== "undo");
+  const lastLedger = recentLedger.find(isMapActivityRecord);
   const homes: WorldHome[] = [];
   const spirits: WorldSpirit[] = childrenWithProgress.map((child, index) => {
     const slot = getHomeSlot(index);
@@ -42,7 +46,7 @@ export function buildWorldMapData({
     };
     const accent = toColor(spirit.accent);
     const homeLevel = Math.max(1, Math.min(5, Math.ceil(child.level / 2)));
-    const childLastRecord = recentLedger.find((record) => record.childId === child.id && !record.undone);
+    const childLastRecord = recentLedger.find((record) => record.childId === child.id && isMapActivityRecord(record));
     const doorPosition = {
       x: slot.position.x + slot.doorOffset.x,
       y: slot.position.y + slot.doorOffset.y,

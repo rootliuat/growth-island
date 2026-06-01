@@ -263,14 +263,14 @@ function FighterSelectCard({
   return (
     <article className="math-fighter-card">
       <div className="math-fighter-avatar">
-        {asset?.url ? <img src={asset.url} alt={`${child.petName} 精灵`} /> : <span>{child.name.slice(0, 1)}</span>}
+        {asset?.url ? <img src={asset.url} alt={`${child.name} 精灵`} /> : <span>{child.name.slice(0, 1)}</span>}
       </div>
       <div className="math-fighter-copy">
         <label htmlFor={selectId}>{label}</label>
         <select id={selectId} name={selectId} value={child.id} onChange={(event) => onChange(event.target.value)}>
           {childrenWithProgress.map((option) => (
             <option key={option.id} value={option.id}>
-              {option.name} · {option.petName}
+              {option.name}
             </option>
           ))}
         </select>

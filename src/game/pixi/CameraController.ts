@@ -33,7 +33,6 @@ export class CameraController {
     this.viewport
       .drag({ mouseButtons: "left" })
       .pinch()
-      .wheel({ smooth: 3 })
       .decelerate({ friction: 0.92 })
       .clamp({ direction: "all", underflow: "center" })
       .clampZoom({ minScale: cameraConfig.minZoom, maxScale: cameraConfig.maxZoom });

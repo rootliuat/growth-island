@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
-import { BadgeCheck, BookOpenText, History, Home, Search, Sparkles, Star, Trophy } from "lucide-react";
+import { BadgeCheck, BookOpenText, History, Home, Search, Sparkles, Star, Trophy, Volume2 } from "lucide-react";
 import { getSpiritStageLabel } from "../../domain/progression";
 import { getSpiritAsset } from "../../domain/spiritAssets";
+import { getChildSpiritVoiceType, getSpiritVoiceOption, spiritVoiceOptions } from "../../domain/spiritVoice";
 import { virtueCategories } from "../../data/spirits";
-import type { ChildWithProgress, LedgerRecord, SpiritDefinition } from "../../types";
+import type { ChildProfile, ChildWithProgress, LedgerRecord, SpiritDefinition } from "../../types";
 
 interface ChildProfileModuleProps {
   childrenWithProgress: ChildWithProgress[];
@@ -12,6 +13,7 @@ interface ChildProfileModuleProps {
   recentRecords: LedgerRecord[];
   onSelectChild: (childId: string) => void;
   onFocusChild: (childId: string) => void;
+  onUpdateChild: (patch: Partial<ChildProfile>) => void;
 }
 
 const sourceLabels: Record<LedgerRecord["source"], string> = {
@@ -47,6 +49,7 @@ export function ChildProfileModule({
   recentRecords,
   onSelectChild,
   onFocusChild,
+  onUpdateChild,
 }: ChildProfileModuleProps) {
   const [query, setQuery] = useState("");
   const selectedSpirit = spiritsById.get(selectedChild.spiritId);
@@ -74,6 +77,8 @@ export function ChildProfileModule({
   const strongestDimension = [...dimensionStats].sort((a, b) => b.xp - a.xp || b.count - a.count)[0];
   const latestMilestone = positiveRecords[0];
   const stageLabel = getSpiritStageLabel(selectedChild.state);
+  const selectedVoiceType = getChildSpiritVoiceType(selectedChild);
+  const selectedVoice = getSpiritVoiceOption(selectedVoiceType) ?? spiritVoiceOptions[0];
 
   return (
     <section className="module-page profile-page" aria-labelledby="profile-title">
@@ -136,6 +141,19 @@ export function ChildProfileModule({
                 <strong>{selectedChild.xp} XP</strong>
                 <strong>全班 #{selectedChild.rank}</strong>
               </div>
+              <label className="profile-voice-select">
+                <span>
+                  <Volume2 size={16} />
+                  精灵声音
+                </span>
+                <select value={selectedVoiceType} onChange={(event) => onUpdateChild({ voiceType: Number(event.target.value) })}>
+                  {spiritVoiceOptions.map((voice) => (
+                    <option key={voice.voiceType} value={voice.voiceType}>
+                      {voice.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
             </div>
           </div>
 
@@ -216,6 +234,10 @@ export function ChildProfileModule({
               <div>
                 <dt>精灵形态</dt>
                 <dd>{stageLabel}</dd>
+              </div>
+              <div>
+                <dt>精灵声音</dt>
+                <dd>{selectedVoice.label}</dd>
               </div>
               <div>
                 <dt>成长记录</dt>

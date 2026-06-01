@@ -46,6 +46,7 @@ export interface ChildProfile {
   name: string;
   spiritId: string;
   petName: string;
+  voiceType?: number;
   slotId: number;
 }
 
@@ -115,4 +116,26 @@ export interface MoralAgentResponse {
   result: MoralEvaluationResult;
   reviewItem: MoralReviewItem;
   snapshot: ClassroomSnapshot;
+  provider?: "deepseek" | "rules";
+  model?: string;
+}
+
+export interface SpeechSynthesisResponse {
+  provider: "tencent";
+  childId: string;
+  voiceType: number;
+  voiceLabel?: string;
+  codec: "mp3";
+  sampleRate: number;
+  audioBase64: string;
+}
+
+export interface SpeechRecognitionResponse {
+  provider: "tencent";
+  text: string;
+  voiceFormat: string;
+  engineModel: string;
+  audioDuration?: number;
+  wordSize?: number;
+  requestId?: string;
 }

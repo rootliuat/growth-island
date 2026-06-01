@@ -42,7 +42,7 @@ function getChildRegion(child: ChildWithProgress) {
 
 function formatRoundText(children: ChildWithProgress[]) {
   return children
-    .map((child, index) => `${index + 1}. ${child.name} · ${child.petName} · ${childSummary(child)}`)
+    .map((child, index) => `${index + 1}. ${child.name} · ${childSummary(child)}`)
     .join("\n");
 }
 

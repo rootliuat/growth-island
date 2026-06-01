@@ -75,14 +75,14 @@ export function ShopModule({
         <aside className="shop-balance-panel" aria-label="孩子积分余额">
           <div className="reward-child-card">
             <div className="reward-child-avatar">
-              {activeAsset?.url ? <img src={activeAsset.url} alt={`${activeChild.petName} 精灵`} /> : activeChild.name.slice(0, 1)}
+              {activeAsset?.url ? <img src={activeAsset.url} alt={`${activeChild.name} 精灵`} /> : activeChild.name.slice(0, 1)}
             </div>
             <div>
               <label htmlFor="shop-child">兑换孩子</label>
               <select id="shop-child" name="shopChild" value={activeChild.id} onChange={(event) => chooseChild(event.target.value)}>
                 {childrenWithProgress.map((child) => (
                   <option key={child.id} value={child.id}>
-                    {child.name} · {child.petName}
+                    {child.name}
                   </option>
                 ))}
               </select>

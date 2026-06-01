@@ -276,9 +276,17 @@ export class LabelLayer {
   }
 
   private cleanActivity(reason: string) {
+    const cleaned = reason
+      .replace(/^演示数据[:：]?\s*/, "")
+      .replace(/^课堂记录[:：]?\s*/, "")
+      .replace(/^对话[:：]?\s*/, "")
+      .replace(/^语音记录[:：]?\s*/, "")
+      .trim();
     if (reason.includes("撤销")) return "撤销记录";
-    if (reason.includes("减分") || reason.includes("扣分")) return "调整记录";
-    if (reason.includes("加分")) return "成长记录";
-    return reason.replace(/^演示数据[:：]?\s*/, "").slice(0, 8);
+    if (cleaned.includes("减分") || cleaned.includes("扣分")) return "行为提醒";
+    if (cleaned.includes("自助成长")) return "自助记录";
+    if (cleaned.includes("已有成长")) return "成长记录";
+    if (cleaned.includes("快速加分")) return "课堂记录";
+    return cleaned.replace(/\s*[+＋-]\d+\s*XP?$/i, "").slice(0, 8);
   }
 }

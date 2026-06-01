@@ -35,6 +35,10 @@ function formatShortTime(value: string) {
   return `${month}/${day} ${hour}:${minute}`;
 }
 
+function formatRecordReason(reason: string) {
+  return reason.replace(/^演示数据：已有成长 XP$/, "成长记录").replace(/^已有成长 XP$/, "成长记录");
+}
+
 export function DataManagementModule({
   childrenWithProgress,
   spiritsById,
@@ -113,11 +117,13 @@ export function DataManagementModule({
               return (
                 <button key={child.id} type="button" className={child.id === selectedChild.id ? "active" : undefined} onClick={() => onFocusChild(child.id)}>
                   <span className="data-child-avatar">
-                    {asset?.url ? <img src={asset.url} alt={`${child.petName} 精灵`} /> : child.name.slice(0, 1)}
+                    {asset?.url ? <img src={asset.url} alt={`${child.name} 精灵`} /> : child.name.slice(0, 1)}
                   </span>
                   <span className="data-child-copy">
                     <strong>{child.name}</strong>
-                    <em>{child.petName}</em>
+                    <em>
+                      Lv.{child.level} · #{child.rank}
+                    </em>
                   </span>
                   <span className="data-child-rank">#{child.rank}</span>
                   <span className="data-child-xp">{child.xp} XP</span>
@@ -143,7 +149,7 @@ export function DataManagementModule({
                     <span>{record.delta > 0 ? `+${record.delta}` : record.delta}</span>
                     <div>
                       <strong>{child?.name ?? "未知孩子"}</strong>
-                      <p>{record.reason}</p>
+                      <p>{formatRecordReason(record.reason)}</p>
                       <em>
                         {sourceLabels[record.source]} · {formatShortTime(record.createdAt)}
                       </em>

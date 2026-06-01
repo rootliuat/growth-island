@@ -7358,7 +7358,7 @@ button {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, #4f9a72, #d99d32);
+  background: var(--apple-accent, #17231f);
 }
 
 .voice-result-card p,
@@ -7767,7 +7767,7 @@ button {
   min-height: 0;
   overflow: auto;
   padding: 2px 8px 8px 2px;
-  scroll-snap-type: y proximity;
+  scroll-snap-type: none;
   scrollbar-width: thin;
   scrollbar-color: rgba(79, 154, 114, 0.58) transparent;
 }
@@ -7785,7 +7785,7 @@ button {
   border: 2px solid rgba(214, 208, 190, 0.82);
   border-radius: 16px;
   background: #fff7d8;
-  scroll-snap-align: start;
+  scroll-snap-align: none;
   box-shadow: inset 0 -4px 0 rgba(123, 76, 46, 0.08);
 }
 
@@ -7803,7 +7803,7 @@ button {
 }
 
 .student-card-topline {
-  justify-content: space-between;
+  justify-content: flex-end;
   color: #7b8065;
   font-size: 10px;
   font-weight: 950;
@@ -7869,7 +7869,7 @@ button {
   position: relative;
   overflow: hidden;
   border-radius: 0;
-  background: radial-gradient(ellipse at 50% 82%, rgba(240, 211, 140, 0.38), rgba(255, 247, 216, 0) 68%);
+  background: #f8f7f1;
   color: #315e49;
   font-size: 34px;
   font-weight: 950;
@@ -7877,15 +7877,15 @@ button {
 
 .student-card-avatar img {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
+  inset: 5px;
+  width: calc(100% - 10px);
+  height: calc(100% - 10px);
   max-width: 100%;
   max-height: 100%;
   display: block;
   object-fit: contain;
   object-position: center center;
-  filter: drop-shadow(0 12px 12px rgba(47, 71, 63, 0.16));
+  filter: none;
 }
 
 .student-card-meta,
@@ -7899,6 +7899,7 @@ button {
 
 .student-card-meta {
   display: inline-flex;
+  flex-wrap: nowrap;
   align-items: baseline;
   justify-content: center;
   gap: 8px;
@@ -7912,12 +7913,15 @@ button {
 }
 
 .student-card-meta strong {
+  flex: 0 1 auto;
+  min-width: 0;
   color: #2f473f;
   font-size: 18px;
   line-height: 1.08;
 }
 
 .student-card-xp {
+  flex: 0 0 auto;
   margin-top: 0;
   color: #315e49;
   font-size: 15px;
@@ -8364,6 +8368,34 @@ button {
   gap: 9px;
 }
 
+.profile-voice-select {
+  display: grid;
+  grid-template-columns: auto minmax(130px, 180px);
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.profile-voice-select span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #315e49;
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.profile-voice-select select {
+  min-height: 38px;
+  padding: 0 12px;
+  border: 2px solid rgba(214, 208, 190, 0.84);
+  border-radius: 14px;
+  color: #315e49;
+  background: #fffdf1;
+  font: inherit;
+  font-weight: 950;
+}
+
 .workbench-result-card {
   display: grid;
   gap: 10px;
@@ -8543,7 +8575,7 @@ button {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, #4f9a72, #d99d32);
+  background: var(--apple-accent, #17231f);
 }
 
 .profile-milestone-card article > span {
@@ -9058,12 +9090,12 @@ button {
 
 .product-shell {
   color: var(--apple-text);
-  background: linear-gradient(180deg, #f8faf5 0%, #eef5e9 100%);
+  background: var(--apple-page);
 }
 
 .product-sidebar {
   border-right: 1px solid rgba(246, 247, 238, 0.16);
-  background: linear-gradient(180deg, #194f49 0%, #153f3b 100%);
+  background: #ffffff;
   box-shadow: none;
 }
 
@@ -9096,9 +9128,7 @@ button {
   gap: 14px;
   padding: 20px 22px;
   color: var(--apple-text);
-  background:
-    radial-gradient(circle at 22% 0%, rgba(255, 255, 255, 0.9), transparent 30%),
-    var(--apple-page);
+  background: var(--apple-page);
 }
 
 .teacher-workbench-page,
@@ -9196,7 +9226,7 @@ button {
 .data-review-actions button:first-child {
   color: #ffffff;
   border: 1px solid rgba(26, 112, 77, 0.18);
-  background: linear-gradient(180deg, #2f9a70 0%, var(--apple-accent) 100%);
+  background: var(--apple-accent);
 }
 
 .workbench-secondary-action,
@@ -9322,7 +9352,7 @@ button {
 .profile-roster-list button > span,
 .data-child-avatar {
   border: 1px solid rgba(235, 203, 122, 0.52);
-  background: radial-gradient(circle at 50% 68%, rgba(249, 231, 176, 0.46), rgba(255, 255, 255, 0.72) 58%);
+  background: #f8f7f1;
   box-shadow: none;
 }
 
@@ -9380,17 +9410,17 @@ button {
 /* Minimal Beihai pass: lighter shell, fewer instructional labels. */
 :root {
   --apple-page: #f3f7f0;
-  --apple-surface: rgba(255, 249, 236, 0.94);
-  --apple-surface-solid: #fffaf0;
-  --apple-muted: #f1e6c9;
-  --apple-border: rgba(126, 104, 54, 0.16);
-  --apple-border-strong: rgba(126, 104, 54, 0.26);
-  --apple-text: #174c5a;
-  --apple-text-soft: #6c786f;
-  --apple-accent: #2d8c85;
-  --apple-accent-soft: #e0f2ea;
-  --apple-shadow: 0 20px 48px rgba(23, 76, 90, 0.08);
-  --apple-shadow-soft: 0 10px 28px rgba(23, 76, 90, 0.055);
+  --apple-surface: rgba(255, 255, 255, 0.94);
+  --apple-surface-solid: #ffffff;
+  --apple-muted: #efeee8;
+  --apple-border: rgba(26, 31, 29, 0.12);
+  --apple-border-strong: rgba(26, 31, 29, 0.22);
+  --apple-text: #18231f;
+  --apple-text-soft: #68716c;
+  --apple-accent: #17231f;
+  --apple-accent-soft: #eef2ee;
+  --apple-shadow: 0 20px 48px rgba(20, 28, 25, 0.08);
+  --apple-shadow-soft: 0 10px 26px rgba(20, 28, 25, 0.055);
 }
 
 .product-shell {
@@ -9456,8 +9486,8 @@ button {
 .sidebar-sync {
   margin-top: 0;
   padding: 5px 9px;
-  color: var(--apple-accent);
-  border: 1px solid rgba(49, 125, 104, 0.16);
+  color: var(--apple-text);
+  border: 1px solid var(--apple-border);
   background: var(--apple-accent-soft);
   font-size: 11px;
 }
@@ -9487,18 +9517,16 @@ button {
 }
 
 .module-nav button.active {
-  color: var(--apple-text);
-  border-color: var(--apple-border);
-  background: #ffffff;
-  box-shadow: var(--apple-shadow-soft);
+  color: #ffffff;
+  border-color: transparent;
+  background: var(--apple-accent);
+  box-shadow: none;
 }
 
 .module-page {
   gap: 16px;
   padding: 24px 26px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(247, 248, 245, 0) 220px),
-    var(--apple-page);
+  background: var(--apple-page);
 }
 
 .workbench-stat-row {
@@ -9565,7 +9593,7 @@ button {
   width: min(92%, 190px);
   border: 0;
   border-radius: 22px;
-  background: radial-gradient(ellipse at 50% 80%, rgba(49, 125, 104, 0.1), rgba(255, 255, 255, 0) 68%);
+  background: #f8f7f1;
 }
 
 .student-card-meta {
@@ -9640,7 +9668,7 @@ button {
 .roll-call-avatar {
   border-width: 1px;
   border-radius: 34%;
-  background: radial-gradient(circle at 50% 68%, rgba(250, 235, 190, 0.36), rgba(255, 255, 255, 0.78) 62%);
+  background: #f8f7f1;
 }
 
 .roll-call-nameplate {
@@ -9704,10 +9732,9 @@ button {
   background: #ffffff;
 }
 
-/* Premium card lift: selected and hovered children stand forward without extra copy. */
+/* Scroll-safe card states: clear selection without expensive lift or image filters. */
 .workbench-class-grid {
-  perspective: 1200px;
-  perspective-origin: 50% 24%;
+  perspective: none;
   padding: 8px 12px 14px 8px;
 }
 
@@ -9715,14 +9742,12 @@ button {
   position: relative;
   isolation: isolate;
   overflow: visible;
-  transform: translate3d(0, 0, 0) rotateX(0deg);
+  transform: none;
   transform-origin: 50% 85%;
-  transform-style: preserve-3d;
+  transform-style: flat;
   transition:
-    transform 180ms ease,
     border-color 180ms ease,
-    background 180ms ease,
-    box-shadow 180ms ease;
+    background 180ms ease;
 }
 
 .workbench-student-card::before {
@@ -9730,9 +9755,7 @@ button {
   inset: 0;
   z-index: -1;
   border-radius: inherit;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0.52)),
-    radial-gradient(circle at 50% 8%, rgba(255, 255, 255, 0.8), transparent 42%);
+  background: #ffffff;
   content: "";
   opacity: 0;
   transition: opacity 180ms ease;
@@ -9742,11 +9765,9 @@ button {
   z-index: 8;
   border-color: rgba(49, 125, 104, 0.24);
   background: #ffffff;
-  will-change: transform;
-  box-shadow:
-    0 22px 44px rgba(23, 39, 34, 0.16),
-    0 4px 12px rgba(23, 39, 34, 0.06);
-  transform: translate3d(0, -10px, 28px) rotateX(3deg) scale(1.018);
+  will-change: auto;
+  box-shadow: none;
+  transform: none;
 }
 
 .workbench-student-card:hover::before,
@@ -9758,25 +9779,23 @@ button {
   z-index: 6;
   border-color: rgba(49, 125, 104, 0.38);
   background: #ffffff;
-  will-change: transform;
-  box-shadow:
-    0 18px 38px rgba(23, 39, 34, 0.13),
-    0 0 0 3px rgba(49, 125, 104, 0.08);
-  transform: translate3d(0, -6px, 20px) rotateX(2deg);
+  will-change: auto;
+  box-shadow: none;
+  transform: none;
 }
 
 .workbench-student-card.active:hover {
-  transform: translate3d(0, -12px, 36px) rotateX(3.5deg) scale(1.022);
+  transform: none;
 }
 
 .workbench-student-card .student-card-topline,
 .workbench-student-card .student-card-main,
 .workbench-student-card .student-card-actions {
-  transform: translateZ(18px);
+  transform: none;
 }
 
 .workbench-student-card .student-card-avatar {
-  transform: translateZ(28px);
+  transform: none;
   transition: transform 180ms ease, filter 180ms ease;
 }
 
@@ -9785,12 +9804,12 @@ button {
 }
 
 .workbench-student-card:hover .student-card-avatar {
-  transform: translateZ(44px);
+  transform: none;
 }
 
 .workbench-student-card:hover .student-card-avatar img {
-  filter: drop-shadow(0 18px 18px rgba(23, 39, 34, 0.2));
-  transform: translateY(-6px) scale(1.06);
+  filter: none;
+  transform: none;
 }
 
 /* Red-box cleanup: keep only the operating surface and the real ranked list. */
@@ -9854,7 +9873,7 @@ button {
 }
 
 .leaderboard-page .leaderboard-list li button {
-  grid-template-columns: 76px 64px minmax(0, 1fr) 120px 150px;
+  grid-template-columns: 64px 56px minmax(0, 1fr) 72px 104px;
   min-height: 72px;
   padding: 11px 14px;
   border-radius: 16px;
@@ -9869,13 +9888,13 @@ button {
 
 .leaderboard-page .leaderboard-row-avatar {
   display: grid;
-  width: 54px;
-  height: 54px;
+  width: 50px;
+  height: 50px;
   place-items: center;
   overflow: hidden;
   border: 1px solid rgba(49, 125, 104, 0.13);
   border-radius: 16px;
-  background: radial-gradient(circle at 50% 72%, rgba(235, 203, 122, 0.26), rgba(255, 255, 255, 0.92) 64%);
+  background: #f8f7f1;
   color: var(--apple-accent);
   font-size: 22px;
   font-weight: 900;
@@ -9885,7 +9904,7 @@ button {
   width: 94%;
   height: 94%;
   object-fit: contain;
-  filter: drop-shadow(0 6px 7px rgba(23, 39, 34, 0.12));
+  filter: none;
 }
 
 .leaderboard-page .leaderboard-child-name strong {
@@ -9912,8 +9931,7 @@ button {
   transform-style: flat;
   transition:
     border-color 140ms ease,
-    background 140ms ease,
-    box-shadow 140ms ease;
+    background 140ms ease;
   will-change: auto;
 }
 
@@ -9924,9 +9942,9 @@ button {
 .workbench-student-card.active {
   transform: none;
   will-change: auto;
-  box-shadow:
-    0 0 0 3px rgba(49, 125, 104, 0.08),
-    0 10px 24px rgba(23, 39, 34, 0.055);
+  outline: 2px solid rgba(49, 125, 104, 0.48);
+  outline-offset: -4px;
+  box-shadow: none;
 }
 
 .workbench-student-card.active:hover {
@@ -9943,6 +9961,7 @@ button {
 .workbench-student-card:hover .student-card-avatar,
 .workbench-student-card:hover .student-card-avatar img {
   transform: none;
+  filter: none;
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -9950,12 +9969,12 @@ button {
     z-index: 3;
     border-color: rgba(49, 125, 104, 0.3);
     background: #ffffff;
-    box-shadow: 0 12px 26px rgba(23, 39, 34, 0.08);
-    transform: translateY(-3px);
+    box-shadow: none;
+    transform: none;
   }
 
   .workbench-student-card:hover .student-card-avatar img {
-    filter: drop-shadow(0 12px 12px rgba(47, 71, 63, 0.16));
+    filter: none;
   }
 }
 
@@ -10152,8 +10171,8 @@ button {
 .home-screen-shell .module-nav button.active {
   color: #ffffff;
   border-color: transparent;
-  background: #2f8f75;
-  box-shadow: 0 8px 18px rgba(31, 74, 66, 0.18);
+  background: var(--apple-accent);
+  box-shadow: none;
 }
 
 .home-screen-shell .sidebar-collapse-hint {
@@ -10166,52 +10185,41 @@ button {
 }
 
 .home-screen-shell .home-module.app-shell {
-  grid-template-rows: 50px minmax(0, 1fr) 58px;
+  position: relative;
+  grid-template-rows: minmax(0, 1fr) 58px;
   gap: 8px;
   padding: 8px;
   background: #eef3ea;
 }
 
 .home-screen-shell .game-topbar {
-  grid-template-columns: minmax(0, 1fr) auto;
-  min-height: 50px;
-  padding: 6px 10px;
-  border: 1px solid rgba(31, 74, 66, 0.12);
-  border-radius: 18px;
-  background: #ffffff;
-  box-shadow: 0 12px 30px rgba(24, 47, 41, 0.08);
-}
-
-.home-screen-shell .game-brand {
-  min-width: 0;
-}
-
-.home-screen-shell .game-brand-mark {
-  width: 36px;
-  height: 36px;
-  border-width: 1px;
-  border-radius: 12px;
-  font-size: 22px;
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 9;
+  display: block;
+  width: auto;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   box-shadow: none;
 }
 
-.home-screen-shell .game-brand h1 {
-  overflow: hidden;
-  font-size: 20px;
-  line-height: 1;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
+.home-screen-shell .game-brand,
 .home-screen-shell .game-brand p,
 .home-screen-shell .game-status-pills {
   display: none;
 }
 
 .home-screen-shell .zoom-controls {
-  padding: 3px;
-  border-width: 1px;
-  box-shadow: none;
+  gap: 5px;
+  padding: 4px;
+  border: 1px solid rgba(31, 74, 66, 0.12);
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 12px 28px rgba(24, 47, 41, 0.12);
+  backdrop-filter: blur(10px);
 }
 
 .home-screen-shell .zoom-controls button {
@@ -10220,11 +10228,15 @@ button {
 }
 
 .home-screen-shell .product-workspace .game-layout {
-  grid-template-columns: minmax(0, 1fr) clamp(252px, 16vw, 300px);
-  gap: 8px;
+  position: relative;
+  display: block;
+  min-height: 0;
+  height: 100%;
 }
 
 .home-screen-shell .world-map-shell {
+  width: 100%;
+  height: 100%;
   border: 0;
   border-radius: 24px;
   box-shadow: 0 16px 38px rgba(24, 47, 41, 0.12);
@@ -10235,21 +10247,379 @@ button {
   display: none;
 }
 
+.home-screen-shell .map-focus-plaque {
+  display: none;
+}
+
+.sr-only {
+  position: absolute;
+  overflow: hidden;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  border: 0;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+.moral-speak-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  display: grid;
+  place-items: end center;
+  padding: 0 24px 34px;
+  pointer-events: none;
+}
+
+.moral-speak-overlay.ready {
+  place-items: center;
+}
+
+.moral-mic-button {
+  position: relative;
+  display: grid;
+  width: 104px;
+  height: 104px;
+  place-items: center;
+  border: 2px solid rgba(24, 35, 31, 0.16);
+  border-radius: 50%;
+  color: #18231f;
+  background: #fffaf0;
+  box-shadow:
+    0 12px 28px rgba(20, 28, 25, 0.14),
+    inset 0 -4px 0 rgba(24, 35, 31, 0.07);
+  pointer-events: auto;
+  transition: transform 0.18s ease, filter 0.18s ease;
+}
+
+.moral-mic-button::before,
+.moral-mic-button::after {
+  position: absolute;
+  inset: -15px;
+  border: 1px solid rgba(24, 35, 31, 0.1);
+  border-radius: inherit;
+  content: "";
+  animation: moralPulseRing 1.8s ease-out infinite;
+}
+
+.moral-mic-button::after {
+  inset: -28px;
+  animation-delay: 0.32s;
+}
+
+.moral-mic-button:hover {
+  transform: translateY(-3px) scale(1.03);
+  filter: brightness(1.04);
+}
+
+.moral-wave-state,
+.moral-shell-state,
+.spirit-speech-bubble {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 76px;
+  padding: 0 26px;
+  border: 2px solid rgba(24, 35, 31, 0.14);
+  border-radius: 999px;
+  color: #18231f;
+  background: #fffaf0;
+  box-shadow:
+    0 10px 24px rgba(20, 28, 25, 0.12),
+    inset 0 -4px 0 rgba(24, 35, 31, 0.06);
+}
+
+.moral-wave-state,
+.moral-shell-state {
+  min-width: 132px;
+  border-color: rgba(24, 35, 31, 0.14);
+  cursor: pointer;
+  pointer-events: auto;
+  transition: transform 0.18s ease, filter 0.18s ease;
+}
+
+.moral-wave-state:hover,
+.moral-shell-state:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.04);
+}
+
+.moral-wave-state:focus-visible,
+.moral-shell-state:focus-visible {
+  outline: 3px solid rgba(255, 255, 255, 0.82);
+  outline-offset: 4px;
+}
+
+.moral-wave-state span,
+.moral-shell-state span {
+  width: 8px;
+  height: 30px;
+  border-radius: 999px;
+  background: #18231f;
+  animation: moralWave 0.72s ease-in-out infinite;
+}
+
+.moral-wave-state span:nth-of-type(2),
+.moral-shell-state span:nth-of-type(2) {
+  animation-delay: 0.12s;
+}
+
+.moral-wave-state span:nth-of-type(3),
+.moral-shell-state span:nth-of-type(3) {
+  animation-delay: 0.24s;
+}
+
+.moral-shell-state svg {
+  animation: moralShellSpin 1.2s linear infinite;
+}
+
+.spirit-speech-bubble {
+  position: relative;
+  min-height: 70px;
+  padding: 0 28px;
+  color: #174c5a;
+  font-size: clamp(24px, 2.8vw, 42px);
+  font-weight: 950;
+  letter-spacing: 0;
+  background: #fff8ea;
+  box-shadow:
+    0 18px 42px rgba(19, 51, 45, 0.22),
+    inset 0 -6px 0 rgba(246, 179, 82, 0.22);
+}
+
+.spirit-speech-bubble::after {
+  position: absolute;
+  bottom: -13px;
+  left: 50%;
+  width: 28px;
+  height: 28px;
+  border-right: 3px solid rgba(255, 247, 216, 0.92);
+  border-bottom: 3px solid rgba(255, 247, 216, 0.92);
+  background: #fff8ea;
+  content: "";
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.spirit-speech-bubble.success {
+  color: #fffdf4;
+  background: #17231f;
+}
+
+.spirit-speech-bubble.success::after {
+  background: #17231f;
+}
+
+.moral-retry-button {
+  position: absolute;
+  right: 24px;
+  bottom: 30px;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 2px solid rgba(255, 247, 216, 0.9);
+  border-radius: 999px;
+  color: #174c5a;
+  font-size: 15px;
+  font-weight: 900;
+  background: #fff8ea;
+  pointer-events: auto;
+}
+
+.teacher-review-corner-card {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  z-index: 10;
+  display: grid;
+  width: min(318px, calc(100% - 36px));
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid rgba(23, 76, 90, 0.16);
+  border-radius: 22px;
+  color: #174c5a;
+  background: rgba(255, 248, 234, 0.94);
+  box-shadow: 0 20px 48px rgba(19, 51, 45, 0.2);
+  pointer-events: auto;
+  backdrop-filter: blur(10px);
+}
+
+.teacher-review-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.teacher-review-main strong {
+  overflow: hidden;
+  font-size: 18px;
+  line-height: 1.1;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.energy-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  color: #fffdf4;
+  font-size: 18px;
+  font-weight: 950;
+  background: var(--moral-accent, #f0ae3f);
+  box-shadow: inset 0 -5px 0 rgba(29, 75, 67, 0.16);
+}
+
+.teacher-review-actions {
+  display: grid;
+  grid-template-columns: 1fr 72px 72px;
+  gap: 8px;
+}
+
+.teacher-review-actions button,
+.review-edit-popover summary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 42px;
+  border: 0;
+  border-radius: 15px;
+  color: #fffdf4;
+  font-size: 14px;
+  font-weight: 950;
+  background: var(--apple-accent);
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.teacher-review-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.teacher-review-actions .defer,
+.review-edit-popover summary {
+  color: #174c5a;
+  background: #fffdf4;
+  box-shadow: inset 0 -4px 0 rgba(214, 177, 106, 0.2), 0 0 0 1px rgba(23, 76, 90, 0.12);
+}
+
+.review-edit-popover {
+  position: relative;
+}
+
+.review-edit-popover summary {
+  list-style: none;
+}
+
+.review-edit-popover summary::-webkit-details-marker {
+  display: none;
+}
+
+.review-edit-popover > div {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  display: grid;
+  width: 150px;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid rgba(23, 76, 90, 0.12);
+  border-radius: 16px;
+  background: #fff8ea;
+  box-shadow: 0 14px 30px rgba(19, 51, 45, 0.18);
+}
+
+.review-edit-popover > div button {
+  min-height: 36px;
+  color: #174c5a;
+  background: #fffdf4;
+}
+
+.review-transcript {
+  padding-top: 6px;
+  border-top: 1px solid rgba(23, 76, 90, 0.12);
+}
+
+.review-transcript summary {
+  width: max-content;
+  color: rgba(23, 76, 90, 0.64);
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.review-transcript p {
+  margin: 6px 0 0;
+  color: #174c5a;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.review-transcript span {
+  display: inline-block;
+  margin-top: 6px;
+  color: rgba(23, 76, 90, 0.58);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+@keyframes moralPulseRing {
+  0% {
+    opacity: 0.75;
+    transform: scale(0.82);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.22);
+  }
+}
+
+@keyframes moralWave {
+  0%,
+  100% {
+    height: 18px;
+  }
+  50% {
+    height: 44px;
+  }
+}
+
+@keyframes moralShellSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .home-screen-shell .hud-rail {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  z-index: 8;
+  width: min(250px, calc(100% - 28px));
+  max-height: calc(100% - 92px);
   overflow: hidden;
   padding: 0;
+  pointer-events: auto;
 }
 
 .spirit-card-compact {
   display: grid;
-  height: 100%;
+  height: auto;
   align-content: start;
-  gap: 10px;
-  padding: 14px;
+  gap: 8px;
+  padding: 10px;
   border: 1px solid rgba(31, 74, 66, 0.12);
-  border-radius: 24px;
-  background: #ffffff;
-  box-shadow: 0 16px 38px rgba(24, 47, 41, 0.1);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 16px 38px rgba(24, 47, 41, 0.12);
+  backdrop-filter: blur(10px);
 }
 
 .spirit-card-compact::before {
@@ -10257,22 +10627,22 @@ button {
 }
 
 .spirit-card-compact .spirit-portrait {
-  height: 216px;
+  height: 118px;
   margin: 0;
 }
 
 .spirit-card-compact .portrait-ring {
-  width: 214px;
-  height: 152px;
+  width: 142px;
+  height: 98px;
   border-width: 1px;
   background: #fffaf0;
-  box-shadow: 0 18px 34px rgba(37, 60, 54, 0.12);
+  box-shadow: 0 10px 22px rgba(37, 60, 54, 0.1);
 }
 
 .spirit-card-compact .spirit-portrait img {
-  max-width: 210px;
-  max-height: 202px;
-  filter: drop-shadow(0 18px 18px rgba(41, 48, 37, 0.16));
+  max-width: 136px;
+  max-height: 126px;
+  filter: drop-shadow(0 10px 10px rgba(41, 48, 37, 0.14));
 }
 
 .spirit-card-compact .spirit-nameplate {
@@ -10284,69 +10654,53 @@ button {
 .spirit-card-compact .spirit-nameplate h2 {
   margin: 0;
   color: #14342e;
-  font-size: clamp(30px, 2vw, 38px);
+  font-size: 24px;
   line-height: 1;
 }
 
 .spirit-card-compact .spirit-nameplate p {
   margin: 0;
   color: #66736f;
-  font-size: 16px;
+  font-size: 13px;
   font-weight: 900;
 }
 
-.spirit-card-compact .spirit-profile-button {
-  min-height: 32px;
-  padding: 0 12px;
+.spirit-card-compact .spirit-recent-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-self: center;
+  max-width: 100%;
+  min-width: 0;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 1px solid rgba(47, 143, 117, 0.16);
   border-radius: 999px;
-  color: #2f8f75;
-  background: rgba(47, 143, 117, 0.1);
-  font-size: 13px;
-}
-
-.spirit-card-compact .xp-gem {
-  margin-top: 2px;
-  padding: 11px 12px;
-  border: 1px solid rgba(31, 74, 66, 0.12);
-  border-radius: 18px;
-  background: #f8faf7;
-  box-shadow: none;
-}
-
-.spirit-card-compact .xp-track {
-  height: 10px;
-  border: 0;
-  background: #dfe5db;
-}
-
-.spirit-card-compact .big-screen-story-card {
-  gap: 8px;
-  margin-top: 0;
-  padding: 10px;
-  border: 1px solid rgba(31, 74, 66, 0.1);
-  border-radius: 18px;
-  background: #fbfaf5;
-}
-
-.spirit-card-compact .big-screen-story-head span {
   color: #14342e;
-  font-size: 15px;
+  background: rgba(255, 250, 230, 0.88);
+  font-size: 12px;
+  font-weight: 900;
 }
 
-.spirit-card-compact .big-screen-records {
-  gap: 7px;
+.spirit-card-compact .spirit-recent-chip span {
+  flex: 0 0 auto;
+  color: #2f8f75;
 }
 
-.spirit-card-compact .big-screen-records article {
-  padding: 8px;
-  border: 1px solid rgba(31, 74, 66, 0.08);
-  background: #ffffff;
+.spirit-card-compact .spirit-recent-chip strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.spirit-card-compact .big-screen-records article > span {
-  width: 38px;
-  min-height: 32px;
-  border-radius: 11px;
+.spirit-card-compact .spirit-recent-chip.muted span {
+  color: #b86464;
+}
+
+.spirit-card-compact .spirit-profile-button,
+.spirit-card-compact .xp-gem,
+.spirit-card-compact .big-screen-story-card {
+  display: none;
 }
 
 .home-screen-shell .spirit-dock.collapsed {
@@ -10415,7 +10769,7 @@ button {
   min-height: 38px;
   padding: 0 13px;
   border-radius: 999px;
-  background: #2f8f75;
+  background: var(--apple-accent);
   box-shadow: none;
 }
 
@@ -10430,6 +10784,59 @@ button {
 
   .home-screen-shell .hud-rail {
     display: none;
+  }
+
+  .moral-mic-button {
+    width: 88px;
+    height: 88px;
+  }
+
+  .moral-speak-overlay {
+    padding: 0 14px 24px;
+  }
+
+  .moral-speak-overlay.pendingReview {
+    place-items: start center;
+    padding-top: 18px;
+  }
+
+  .teacher-review-corner-card {
+    top: auto;
+    right: 12px;
+    bottom: 12px;
+    left: 12px;
+    width: auto;
+  }
+
+  .teacher-review-actions {
+    grid-template-columns: 1fr 68px 68px;
+  }
+
+  .review-edit-popover > div {
+    top: auto;
+    bottom: calc(100% + 8px);
+  }
+
+  .spirit-speech-bubble {
+    max-width: calc(100vw - 108px);
+    min-height: 62px;
+    font-size: 26px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .moral-mic-button::before,
+  .moral-mic-button::after,
+  .moral-wave-state span,
+  .moral-shell-state span,
+  .moral-shell-state svg {
+    animation: none;
+  }
+
+  .moral-mic-button,
+  .teacher-review-actions button,
+  .review-edit-popover summary {
+    transition: none;
   }
 }
 
@@ -10531,6 +10938,22 @@ button {
 
 /* P0 narrow-screen guard: keep the app usable instead of squeezing desktop columns. */
 @media (max-width: 720px) {
+  .workbench-profile-button,
+  .spirit-profile-button,
+  .manual-score-grid button,
+  .voice-review-actions button,
+  .home-screen-shell .spirit-dock.collapsed .dock-collapse {
+    min-height: 44px;
+  }
+
+  .profile-voice-select {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .profile-voice-select select {
+    width: 100%;
+  }
+
   .product-shell,
   .home-screen-shell {
     grid-template-columns: 64px minmax(0, 1fr);
@@ -10572,13 +10995,14 @@ button {
   }
 
   .home-screen-shell .home-module.app-shell {
-    grid-template-rows: 52px minmax(0, 1fr) 76px;
+    grid-template-rows: minmax(0, 1fr) 76px;
   }
 
   .home-screen-shell .game-topbar {
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 6px;
-    padding: 4px 6px;
+    top: 12px;
+    right: 12px;
+    display: block;
+    padding: 0;
   }
 
   .home-screen-shell .game-brand {

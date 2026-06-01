@@ -21,7 +21,6 @@ export class PixiWorld {
     this.scene?.update(ticker);
   };
   private readonly wakeFromInteraction = () => this.wake(1800);
-  private readonly wakeFromWheel = () => this.wake(260);
   private readonly wakeFromAssetLoad = () => this.wake(900);
 
   constructor(private readonly callbacks: WorldMapCallbacks) {}
@@ -72,12 +71,10 @@ export class PixiWorld {
     this.interactions.add(() => this.resizeObserver?.disconnect());
     app.canvas.addEventListener("pointerdown", this.wakeFromInteraction);
     app.canvas.addEventListener("pointermove", this.wakeFromInteraction);
-    app.canvas.addEventListener("wheel", this.wakeFromWheel, { passive: true });
     window.addEventListener("growth-island-asset-loaded", this.wakeFromAssetLoad);
     this.interactions.add(() => {
       app.canvas.removeEventListener("pointerdown", this.wakeFromInteraction);
       app.canvas.removeEventListener("pointermove", this.wakeFromInteraction);
-      app.canvas.removeEventListener("wheel", this.wakeFromWheel);
       window.removeEventListener("growth-island-asset-loaded", this.wakeFromAssetLoad);
     });
     if (this.lastData) this.scene.updateData(this.lastData);

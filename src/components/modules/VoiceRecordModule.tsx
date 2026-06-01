@@ -123,13 +123,13 @@ export function VoiceRecordModule({
         <section className="voice-record-workbench" aria-label="文本记录工作台">
           <div className="voice-child-card">
             <div className="voice-child-avatar">
-              {currentAsset?.url ? <img src={currentAsset.url} alt={`${selectedChild.petName} 精灵`} /> : selectedChild.name.slice(0, 1)}
+              {currentAsset?.url ? <img src={currentAsset.url} alt={`${selectedChild.name} 精灵`} /> : selectedChild.name.slice(0, 1)}
             </div>
             <div>
               <span>当前记录对象</span>
               <strong>{selectedChild.name}</strong>
               <em>
-                {selectedChild.petName} · Lv.{selectedChild.level} · {selectedChild.xp} XP
+                Lv.{selectedChild.level} · {selectedChild.xp} XP
               </em>
             </div>
           </div>
@@ -151,7 +151,7 @@ export function VoiceRecordModule({
             >
               {childrenWithProgress.map((child) => (
                 <option key={child.id} value={child.id}>
-                  {child.name} · {child.petName} · Lv.{child.level}
+                  {child.name} · Lv.{child.level}
                 </option>
               ))}
             </select>

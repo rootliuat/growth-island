@@ -19,11 +19,13 @@ import { VoiceRecordModule } from "./components/modules/VoiceRecordModule";
 import { moduleConfigById, type AppModuleId } from "./components/modules/moduleConfig";
 import { WorldMapContainer } from "./components/WorldMap/WorldMapContainer";
 import type { PixiWorldMapHandle } from "./components/WorldMap/PixiWorldMap";
+import type { MoralSpeakViewState } from "./components/Hud/MoralSpeakOverlay";
 import { initialChildren } from "./data/classroom";
 import { spirits } from "./data/spirits";
 import { evaluateMoralText } from "./domain/moralAgent";
 import { enrichChildren, makeLedgerRecord, normalizeLedgerRecord } from "./domain/progression";
 import { getSpiritAsset, loadSpiritAsset } from "./domain/spiritAssets";
+import { getChildEnergyLabel } from "./domain/virtueEnergy";
 import {
   approveMoralReview,
   createLedgerRecord,
@@ -110,12 +112,32 @@ const seededMoralReviews: MoralReviewItem[] = [
   },
 ];
 
+const moralSpeakSamples = [
+  { transcript: "我今天主动帮同学收玩具", summary: "帮助同伴" },
+  { transcript: "我排队的时候能安静等待", summary: "安静等待" },
+  { transcript: "我想到新的办法搭积木桥", summary: "想到办法" },
+  { transcript: "我把玩具整理归位了", summary: "整理玩具" },
+  { transcript: "我今天勇敢尝试了新的游戏", summary: "勇敢尝试" },
+];
+
+function getMoralSpeakSample(child: ChildWithProgress) {
+  return moralSpeakSamples[child.slotId % moralSpeakSamples.length];
+}
+
+function getMoralSpeakSummary(result: MoralEvaluationResult, fallback: string) {
+  if (result.xpDelta === 0 || !result.category) return "请老师帮忙";
+  return fallback || `${getChildEnergyLabel(result.category)}能量`;
+}
+
 export function App() {
   const worldMapRef = useRef<PixiWorldMapHandle | null>(null);
+  const moralSpeakTimersRef = useRef<number[]>([]);
+  const moralSpeakApprovingRef = useRef(false);
   const [children, setChildren] = useState<ChildProfile[]>(initialChildren);
   const [ledger, setLedger] = useState<LedgerRecord[]>(seededLedger);
   const [moralReviews, setMoralReviews] = useState<MoralReviewItem[]>(seededMoralReviews);
   const [selectedChildId, setSelectedChildId] = useState(initialChildren[0].id);
+  const [moralSpeak, setMoralSpeak] = useState<MoralSpeakViewState>({ stage: "idle" });
   const [teacherMode, setTeacherMode] = useState(true);
   const [activeModule, setActiveModule] = useState<AppModuleId>(() => getInitialActiveModule());
   const [rollCallCurrentId, setRollCallCurrentId] = useState<string | undefined>();
@@ -159,12 +181,33 @@ export function App() {
   const pendingReviews = moralReviews.filter((review) => review.status === "pending_review");
   const activeModuleConfig = moduleConfigById.get(activeModule) ?? moduleConfigById.get("home")!;
 
+  const clearMoralSpeakTimers = () => {
+    moralSpeakTimersRef.current.forEach((timer) => window.clearTimeout(timer));
+    moralSpeakTimersRef.current = [];
+  };
+
+  const scheduleMoralSpeakTimer = (callback: () => void, delay: number) => {
+    const timer = window.setTimeout(callback, delay);
+    moralSpeakTimersRef.current.push(timer);
+  };
+
+  const prepareMoralSpeakForChild = (childId: string) => {
+    clearMoralSpeakTimers();
+    moralSpeakApprovingRef.current = false;
+    setMoralSpeak({ stage: "ready", childId });
+  };
+
   const selectChildFromDock = (childId: string) => {
     if (childId === selectedChild.id) {
       worldMapRef.current?.focusSelected();
       return;
     }
     setSelectedChildId(childId);
+  };
+
+  const selectChildFromMap = (childId: string) => {
+    setSelectedChildId(childId);
+    prepareMoralSpeakForChild(childId);
   };
 
   const applySnapshot = (snapshot: ClassroomSnapshot) => {
@@ -254,17 +297,48 @@ export function App() {
   }, [activeModule]);
 
   useEffect(() => {
+    if (activeModule === "home") return;
+    clearMoralSpeakTimers();
+    moralSpeakApprovingRef.current = false;
+    setMoralSpeak({ stage: "idle" });
+  }, [activeModule]);
+
+  useEffect(() => {
+    return () => clearMoralSpeakTimers();
+  }, []);
+
+  useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (!params.has("qa")) return;
+    if (!params.has("qa") || !import.meta.env.DEV) return;
     const qaWindow = window as unknown as {
       __growthIslandLedger?: LedgerRecord[];
       __growthIslandReviews?: MoralReviewItem[];
       __growthIslandSelectedChildId?: string;
+      __growthIslandMoralSpeakStage?: MoralSpeakViewState["stage"];
+      __growthIslandMoralSpeak?: MoralSpeakViewState;
+      __growthIslandStartMoralReviewForQa?: (input: {
+        childId?: string;
+        transcript: string;
+        summary?: string;
+      }) => boolean;
     };
     qaWindow.__growthIslandLedger = ledger;
     qaWindow.__growthIslandReviews = moralReviews;
     qaWindow.__growthIslandSelectedChildId = selectedChild.id;
-  }, [ledger, moralReviews, selectedChild.id]);
+    qaWindow.__growthIslandMoralSpeakStage = moralSpeak.stage;
+    qaWindow.__growthIslandMoralSpeak = moralSpeak;
+    qaWindow.__growthIslandStartMoralReviewForQa = (input) => {
+      const child =
+        childrenWithProgress.find((item) => item.id === input.childId) ??
+        childrenWithProgress.find((item) => item.id === selectedChild.id) ??
+        selectedChild;
+      clearMoralSpeakTimers();
+      moralSpeakApprovingRef.current = false;
+      setSelectedChildId(child.id);
+      finishSimulatedMoralRecognition(child, input.transcript, input.summary ?? input.transcript.slice(0, 8));
+      return true;
+    };
+  }, [childrenWithProgress, ledger, moralReviews, moralSpeak, selectedChild]);
 
   useEffect(() => {
     const existingIds = new Set(children.map((child) => child.id));
@@ -381,6 +455,125 @@ export function App() {
     return result;
   };
 
+  const finishSimulatedMoralRecognition = (child: ChildWithProgress, transcript: string, summary: string) => {
+    const result = evaluateMoralText(transcript);
+    setLastEvaluation(result);
+    const review: MoralReviewItem = {
+      id: crypto.randomUUID(),
+      childId: child.id,
+      operatorChildId: child.id,
+      transcript,
+      result,
+      status: "pending_review",
+      createdAt: new Date().toISOString(),
+    };
+    setMoralReviews((current) => [review, ...current]);
+    setMoralSpeak({
+      stage: "pendingReview",
+      childId: child.id,
+      transcript,
+      summary: getMoralSpeakSummary(result, summary),
+      result,
+      reviewId: review.id,
+    });
+  };
+
+  const startMoralSpeak = () => {
+    clearMoralSpeakTimers();
+    moralSpeakApprovingRef.current = false;
+    const child = childrenWithProgress.find((item) => item.id === moralSpeak.childId) ?? selectedChild;
+    const sample = getMoralSpeakSample(child);
+    setSelectedChildId(child.id);
+    setMoralSpeak({ stage: "listening", childId: child.id, transcript: sample.transcript, summary: sample.summary });
+    scheduleMoralSpeakTimer(() => {
+      setMoralSpeak({ stage: "recognizing", childId: child.id, transcript: sample.transcript, summary: sample.summary });
+    }, 1300);
+    scheduleMoralSpeakTimer(() => {
+      finishSimulatedMoralRecognition(child, sample.transcript, sample.summary);
+    }, 2400);
+  };
+
+  const retryMoralSpeak = () => {
+    const childId = moralSpeak.childId ?? selectedChild.id;
+    moralSpeakApprovingRef.current = false;
+    setSelectedChildId(childId);
+    setMoralSpeak({ stage: "ready", childId });
+  };
+
+  const approveMoralSpeak = () => {
+    if (
+      !moralSpeak.result ||
+      !moralSpeak.childId ||
+      moralSpeak.result.intent !== "reward" ||
+      moralSpeak.result.xpDelta <= 0 ||
+      moralSpeak.result.confidence < 0.6
+    ) {
+      return;
+    }
+    if (moralSpeakApprovingRef.current) return;
+    moralSpeakApprovingRef.current = true;
+    clearMoralSpeakTimers();
+    const result = moralSpeak.result;
+    const transcript = moralSpeak.transcript ?? "孩子自助成长记录";
+    const reviewId = moralSpeak.reviewId;
+
+    void commitLedger({
+      childId: moralSpeak.childId,
+      operatorChildId: selectedChild.id,
+      operatorRole: "teacher",
+      delta: result.xpDelta,
+      source: "dialogue-agent",
+      category: result.category,
+      reason: `自助成长：${transcript}`,
+      aiSuggested: true,
+      reviewStatus: "approved",
+      reviewId,
+    });
+
+    if (reviewId) {
+      setMoralReviews((current) =>
+        current.map((review) =>
+          review.id === reviewId
+            ? {
+                ...review,
+                result,
+                status: "approved",
+                reviewedAt: new Date().toISOString(),
+                reviewedByChildId: selectedChild.id,
+              }
+            : review,
+        ),
+      );
+    }
+
+    setMoralSpeak((current) => ({ ...current, stage: "success", result }));
+    scheduleMoralSpeakTimer(() => {
+      moralSpeakApprovingRef.current = false;
+      setMoralSpeak({ stage: "idle" });
+      worldMapRef.current?.focusFullIsland();
+    }, 2400);
+  };
+
+  const adjustMoralSpeak = (delta: 10 | 20 | 30) => {
+    setMoralSpeak((current) => {
+      if (!current.result) return current;
+      const result = { ...current.result, xpDelta: delta, intent: "reward" as const, status: "pending_review" as const };
+      if (current.reviewId) {
+        setMoralReviews((reviews) =>
+          reviews.map((review) => (review.id === current.reviewId ? { ...review, result } : review)),
+        );
+      }
+      return { ...current, result, adjusted: true };
+    });
+  };
+
+  const deferMoralSpeak = () => {
+    clearMoralSpeakTimers();
+    moralSpeakApprovingRef.current = false;
+    setMoralSpeak({ stage: "idle" });
+    worldMapRef.current?.focusFullIsland();
+  };
+
   const updateSelectedChild = (patch: Partial<ChildProfile>) => {
     setChildren((current) => current.map((child) => (child.id === selectedChild.id ? { ...child, ...patch } : child)));
     if (syncStatus === "offline") return;
@@ -452,8 +645,12 @@ export function App() {
     rejectMoralReview(reviewId, selectedChild.id).then(applySnapshot).catch(() => setSyncStatus("offline"));
   };
 
-  const focusChildOnHome = (childId = selectedChild.id) => {
+  const focusChildOnHome = (childId = selectedChild.id, options?: { prepareMoralSpeak?: boolean }) => {
     setSelectedChildId(childId);
+    if (options?.prepareMoralSpeak) {
+      moralSpeakApprovingRef.current = false;
+      setMoralSpeak({ stage: "ready", childId });
+    }
     setActiveModule("home");
     let attempts = 0;
     const focusWhenReady = () => {
@@ -594,7 +791,13 @@ export function App() {
               selectedChildId={selectedChild.id}
               recentLedger={bigScreenRecentRecords}
               assetVersion={assetVersion}
-              onSelectChild={setSelectedChildId}
+              onSelectChild={selectChildFromMap}
+              moralSpeak={moralSpeak}
+              onStartMoralSpeak={startMoralSpeak}
+              onRetryMoralSpeak={retryMoralSpeak}
+              onApproveMoralSpeak={approveMoralSpeak}
+              onAdjustMoralSpeak={adjustMoralSpeak}
+              onDeferMoralSpeak={deferMoralSpeak}
             />
 
             <aside className="hud-rail">
@@ -628,7 +831,7 @@ export function App() {
           onToggleExcludeCalled={() => setRollCallExcludeCalled((current) => !current)}
           onQuickRecord={quickRecordRollCallChild}
           onOpenVoiceRecord={openVoiceRecordFromRollCall}
-          onFocusChild={focusChildOnHome}
+          onFocusChild={(childId) => focusChildOnHome(childId, { prepareMoralSpeak: true })}
         />
       ) : activeModule === "teacher-workbench" ? (
         <TeacherWorkbenchModule
@@ -706,6 +909,7 @@ export function App() {
           recentRecords={allRecentRecords}
           onSelectChild={setSelectedChildId}
           onFocusChild={focusChildOnHome}
+          onUpdateChild={updateSelectedChild}
         />
       ) : activeModule === "data-management" ? (
         <DataManagementModule

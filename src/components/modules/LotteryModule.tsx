@@ -77,14 +77,14 @@ export function LotteryModule({
         <section className="lottery-stage" aria-label="抽奖操作台">
           <div className="reward-child-card">
             <div className="reward-child-avatar">
-              {activeAsset?.url ? <img src={activeAsset.url} alt={`${activeChild.petName} 精灵`} /> : activeChild.name.slice(0, 1)}
+              {activeAsset?.url ? <img src={activeAsset.url} alt={`${activeChild.name} 精灵`} /> : activeChild.name.slice(0, 1)}
             </div>
             <div>
               <label htmlFor="lottery-child">抽奖孩子</label>
               <select id="lottery-child" name="lotteryChild" value={activeChild.id} onChange={(event) => chooseChild(event.target.value)}>
                 {childrenWithProgress.map((child) => (
                   <option key={child.id} value={child.id}>
-                    {child.name} · {child.petName}
+                    {child.name}
                   </option>
                 ))}
               </select>

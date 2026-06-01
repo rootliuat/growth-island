@@ -13,6 +13,8 @@ import {
   TreePine,
   type LucideIcon,
 } from "lucide-react";
+import { MoralSpeakOverlay, type MoralSpeakViewState } from "../Hud/MoralSpeakOverlay";
+import { TeacherMoralReviewCard } from "../Hud/TeacherMoralReviewCard";
 import type { PixiWorldMapHandle } from "./PixiWorldMap";
 import { regions } from "../../game/regionConfig";
 import type { RegionId } from "../../game/types";
@@ -27,6 +29,12 @@ interface WorldMapContainerProps {
   onSelectChild: (childId: string) => void;
   onOpenDialogue?: () => void;
   onOpenPk?: () => void;
+  moralSpeak?: MoralSpeakViewState;
+  onStartMoralSpeak?: () => void;
+  onRetryMoralSpeak?: () => void;
+  onApproveMoralSpeak?: () => void;
+  onAdjustMoralSpeak?: (delta: 10 | 20 | 30) => void;
+  onDeferMoralSpeak?: () => void;
 }
 
 const PixiWorldMap = lazy(() => import("./PixiWorldMap").then((module) => ({ default: module.PixiWorldMap })));
@@ -45,6 +53,23 @@ function toCssHex(color: number) {
   return `#${color.toString(16).padStart(6, "0")}`;
 }
 
+function getMapActivityLabel(reason: string) {
+  const cleaned = reason
+    .replace(/^演示数据[:：]?\s*/, "")
+    .replace(/^课堂记录[:：]?\s*/, "")
+    .replace(/^对话[:：]?\s*/, "")
+    .replace(/^语音记录[:：]?\s*/, "")
+    .trim();
+  if (cleaned.includes("已有成长")) return "成长记录";
+  if (cleaned.includes("快速加分")) return "课堂记录";
+  if (cleaned.includes("快速扣分") || cleaned.includes("减分") || cleaned.includes("扣分")) return "行为提醒";
+  return cleaned.replace(/\s*[+＋-]\d+\s*XP?$/i, "").slice(0, 12);
+}
+
+function isMapActivityRecord(record: LedgerRecord) {
+  return !record.undone && record.source !== "undo" && !record.reason.startsWith("演示数据");
+}
+
 export const WorldMapContainer = forwardRef<PixiWorldMapHandle, WorldMapContainerProps>(function WorldMapContainer(
   props,
   ref,
@@ -54,12 +79,17 @@ export const WorldMapContainer = forwardRef<PixiWorldMapHandle, WorldMapContaine
   const selectedChild =
     props.childrenWithProgress.find((child) => child.id === props.selectedChildId) ?? props.childrenWithProgress[0];
   const selectedSpirit = selectedChild ? props.spiritsById.get(selectedChild.spiritId) : undefined;
+  const moralSpeak = props.moralSpeak ?? { stage: "idle" as const };
+  const moralSpeakChild = moralSpeak.childId
+    ? props.childrenWithProgress.find((child) => child.id === moralSpeak.childId) ?? selectedChild
+    : selectedChild;
+  const moralSpeakSpirit = moralSpeakChild ? props.spiritsById.get(moralSpeakChild.spiritId) : selectedSpirit;
   const selectedRecord = useMemo(
-    () => props.recentLedger.find((record) => record.childId === props.selectedChildId && !record.undone),
+    () => props.recentLedger.find((record) => record.childId === props.selectedChildId && isMapActivityRecord(record)),
     [props.recentLedger, props.selectedChildId],
   );
-  const deltaText = selectedRecord ? `${selectedRecord.delta > 0 ? "+" : ""}${selectedRecord.delta} XP` : "待成长";
-  const activityText = selectedRecord ? selectedRecord.reason.slice(0, 16) : "今天还没有新的成长记录";
+  const deltaText = selectedRecord ? `${selectedRecord.delta > 0 ? "+" : ""}${selectedRecord.delta} XP` : "";
+  const activityText = selectedRecord ? getMapActivityLabel(selectedRecord.reason) : "";
   const hasCompanionActions = Boolean(props.onOpenDialogue || props.onOpenPk);
 
   useImperativeHandle(ref, () => ({
@@ -85,7 +115,7 @@ export const WorldMapContainer = forwardRef<PixiWorldMapHandle, WorldMapContaine
   };
 
   return (
-    <section className="world-map-shell">
+    <section className={`world-map-shell moral-stage-${moralSpeak.stage}`}>
       {selectedChild && (
         <div className="map-focus-plaque" style={{ "--focus-accent": selectedSpirit?.accent ?? "#59B97C" } as CSSProperties}>
           <span className="focus-home-badge">
@@ -98,11 +128,13 @@ export const WorldMapContainer = forwardRef<PixiWorldMapHandle, WorldMapContaine
               Lv.{selectedChild.level} · {selectedChild.xp} XP · {selectedSpirit?.name ?? "精灵伙伴"}
             </p>
           </div>
-          <span className={selectedRecord && selectedRecord.delta < 0 ? "focus-delta negative" : "focus-delta"}>
-            <Sparkles size={15} />
-            {deltaText}
-          </span>
-          <em>{activityText}</em>
+          {selectedRecord && (
+            <span className={selectedRecord.delta < 0 ? "focus-delta negative" : "focus-delta"}>
+              <Sparkles size={15} />
+              {deltaText}
+            </span>
+          )}
+          {activityText && <em>{activityText}</em>}
         </div>
       )}
       <nav className="map-travel-board" aria-label="成长岛区域旅行">
@@ -162,6 +194,24 @@ export const WorldMapContainer = forwardRef<PixiWorldMapHandle, WorldMapContaine
       >
         <PixiWorldMap ref={pixiMapRef} {...props} />
       </Suspense>
+      <MoralSpeakOverlay
+        child={moralSpeakChild}
+        spirit={moralSpeakSpirit}
+        state={moralSpeak}
+        onStart={props.onStartMoralSpeak ?? (() => undefined)}
+        onRetry={props.onRetryMoralSpeak ?? (() => undefined)}
+        onClose={props.onDeferMoralSpeak ?? (() => undefined)}
+      />
+      {moralSpeak.stage === "pendingReview" ? (
+        <TeacherMoralReviewCard
+          child={moralSpeakChild}
+          transcript={moralSpeak.transcript}
+          result={moralSpeak.result}
+          onApprove={props.onApproveMoralSpeak ?? (() => undefined)}
+          onAdjust={props.onAdjustMoralSpeak ?? (() => undefined)}
+          onDefer={props.onDeferMoralSpeak ?? (() => undefined)}
+        />
+      ) : null}
     </section>
   );
 });

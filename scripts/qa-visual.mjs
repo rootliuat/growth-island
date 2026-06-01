@@ -9,10 +9,13 @@ const oneMb = 1024 * 1024;
 const viewports = [
   { name: "whiteboard", width: 1850, height: 1150 },
   { name: "compact", width: 1600, height: 900 },
+  { name: "mobile", width: 390, height: 844 },
 ];
 
 const checks = [
   { name: "home", module: "home", viewports: ["whiteboard"], kind: "home" },
+  { name: "moral-speak-flow", module: "home", viewports: ["whiteboard"], kind: "moral-speak-flow", offline: true },
+  { name: "moral-review-safety", module: "home", viewports: ["whiteboard"], kind: "moral-review-safety", offline: true },
   { name: "teacher-workbench", module: "teacher-workbench", viewports: ["whiteboard", "compact"], kind: "teacher" },
   { name: "teacher-flow", module: "teacher-workbench", viewports: ["whiteboard"], kind: "teacher-flow", offline: true },
   { name: "voice-record", module: "voice-record", viewports: ["whiteboard"], kind: "voice-flow", offline: true },
@@ -24,6 +27,26 @@ const checks = [
   { name: "shop", module: "shop", viewports: ["whiteboard"], kind: "shop-flow" },
   { name: "data-management", module: "data-management", viewports: ["whiteboard"], kind: "data-flow", offline: true },
   { name: "settings", module: "settings", viewports: ["whiteboard"], kind: "module", selector: ".settings-page" },
+  { name: "mobile-home", module: "home", viewports: ["mobile"], kind: "module", selector: ".home-module" },
+  {
+    name: "mobile-teacher-workbench",
+    module: "teacher-workbench",
+    viewports: ["mobile"],
+    kind: "module",
+    selector: ".teacher-workbench-page",
+  },
+  { name: "mobile-roll-call", module: "roll-call", viewports: ["mobile"], kind: "module", selector: ".roll-call-page" },
+  {
+    name: "mobile-voice-record",
+    module: "voice-record",
+    viewports: ["mobile"],
+    kind: "module",
+    selector: ".voice-record-page",
+  },
+  { name: "mobile-math-arena", module: "math-arena", viewports: ["mobile"], kind: "module", selector: ".math-arena-page" },
+  { name: "mobile-shop", module: "shop", viewports: ["mobile"], kind: "module", selector: ".shop-page" },
+  { name: "mobile-data-management", module: "data-management", viewports: ["mobile"], kind: "module", selector: ".data-page" },
+  { name: "mobile-settings", module: "settings", viewports: ["mobile"], kind: "module", selector: ".settings-page" },
 ];
 
 function ensureCleanDir(dir) {
@@ -105,6 +128,71 @@ async function inspectPixiRenderState(page) {
   });
 }
 
+async function inspectHomeBigScreen(page) {
+  return page.evaluate(() => {
+    const rect = (selector) => {
+      const element = document.querySelector(selector);
+      if (!element) return undefined;
+      const r = element.getBoundingClientRect();
+      return {
+        x: Math.round(r.x),
+        y: Math.round(r.y),
+        width: Math.round(r.width),
+        height: Math.round(r.height),
+        right: Math.round(r.right),
+        bottom: Math.round(r.bottom),
+      };
+    };
+    const root = document.querySelector(".home-module");
+    const workspace = document.querySelector(".product-workspace");
+    const map = document.querySelector(".world-map-shell");
+    const rootText = root?.innerText ?? "";
+    const workspaceRect = workspace?.getBoundingClientRect();
+    const mapRect = map?.getBoundingClientRect();
+    const mapShare =
+      workspaceRect && mapRect
+        ? Number(((mapRect.width * mapRect.height) / (workspaceRect.width * workspaceRect.height)).toFixed(3))
+        : 0;
+    const largeHeadings = [...(root?.querySelectorAll("h1, h2") ?? [])]
+      .map((heading) => ({
+        text: heading.textContent?.trim() ?? "",
+        fontSize: Number.parseFloat(getComputedStyle(heading).fontSize),
+        visible: heading.getClientRects().length > 0,
+      }))
+      .filter((heading) => heading.visible && heading.fontSize > 28);
+    const noisyCopy = [
+      "北海成长岛首页",
+      "最近成长",
+      "升级会",
+      "距离 Lv",
+      "当前伙伴",
+      "大屏成长反馈",
+      "今天也在成长",
+      "已成长",
+      "家园 0",
+      "家园 1",
+      "家园 2",
+      "家园 3",
+      "家园 4",
+    ].filter((text) => rootText.includes(text));
+
+    return {
+      root: rect(".home-module"),
+      workspace: rect(".product-workspace"),
+      map: rect(".world-map-shell"),
+      topbar: rect(".game-topbar"),
+      hud: rect(".hud-rail"),
+      dock: rect(".spirit-dock"),
+      mapShare,
+      textLength: rootText.replace(/\s+/g, "").length,
+      hasSelectedChild: Boolean(rootText.match(/可可|佳佳|安安|帆帆|石石/)),
+      largeHeadings,
+      noisyCopy,
+      horizontalOverflow: document.body.scrollWidth > document.documentElement.clientWidth,
+    };
+  });
+}
+
 async function measureHomeWheel(page) {
   const stage = page.locator(".pixi-world-canvas").first();
   const box = await stage.boundingBox({ timeout: 7000 }).catch(() => undefined);
@@ -163,20 +251,292 @@ async function inspectTeacherCards(page) {
   });
 }
 
-async function exerciseRollCall(page) {
+async function exerciseRollCall(page, rollCallScreenshot, homeScreenshot) {
   const startButton = page.getByRole("button", { name: /抽一名|开始(?:点名)?/ }).first();
   await startButton.click();
   await page.waitForTimeout(1250);
-  return page.evaluate(() => {
+  const drawn = await page.evaluate(() => {
     const text = document.body.innerText;
+    const selectedChildId = window.__growthIslandSelectedChildId;
+    const name = document.querySelector(".roll-call-nameplate strong")?.textContent?.trim() ?? "";
     return {
       hasTitle: text.includes("随机点名"),
       hasDrawnStatus: text.includes("已抽出孩子") || text.includes("本轮点名"),
       hasAvatar: Boolean(document.querySelector(".roll-call-avatar img, .roll-call-fallback")),
       hasFocusAction: text.includes("回岛") || text.includes("回到成长岛"),
       hasRecordAction: text.includes("记录 +10") || /给\s*\S+\s*\+10/.test(text),
+      selectedChildId,
+      name,
     };
   });
+  await page.screenshot({ path: rollCallScreenshot, fullPage: false });
+  await page.getByRole("button", { name: /回岛/ }).click();
+  await page.waitForSelector(".home-module", { timeout: 5000 });
+  await page.waitForSelector(".moral-mic-button", { timeout: 5000 });
+  await waitForPixiIdle(page);
+  await page.screenshot({ path: homeScreenshot, fullPage: false });
+  const home = await page.evaluate(({ expectedChildId, expectedName }) => {
+    const text = document.body.innerText;
+    return {
+      selectedChildId: window.__growthIslandSelectedChildId,
+      stage: window.__growthIslandMoralSpeakStage,
+      hasMicButton: Boolean(document.querySelector(".moral-mic-button")),
+      hasSelectedName: Boolean(expectedName) && text.includes(expectedName),
+      childIdMatches: window.__growthIslandSelectedChildId === expectedChildId,
+    };
+  }, { expectedChildId: drawn.selectedChildId, expectedName: drawn.name });
+
+  return {
+    ...drawn,
+    homeFocused: home.childIdMatches && home.hasSelectedName,
+    readyForSelfService: home.stage === "ready" && home.hasMicButton,
+    home,
+  };
+}
+
+async function selectDockChildByIndex(page, index) {
+  if ((await page.locator(".dock-spirit").count()) === 0) {
+    await page.locator(".dock-collapse").click();
+    await page.waitForSelector(".dock-spirit");
+  }
+  const childButton = page.locator(".dock-spirit").nth(index);
+  await childButton.click();
+  await page.waitForTimeout(900);
+  await page.getByRole("button", { name: "定位当前精灵" }).click();
+  await page.waitForTimeout(900);
+  return page.evaluate(() => window.__growthIslandSelectedChildId);
+}
+
+async function openMoralSpeakFromMap(page) {
+  await page.waitForSelector(".pixi-world-canvas");
+  const before = await page.evaluate(() => ({
+    selectedChildId: window.__growthIslandSelectedChildId,
+    stage: window.__growthIslandMoralSpeakStage,
+  }));
+  const box = await page.locator(".pixi-world-canvas").boundingBox({ timeout: 7000 });
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+  await page.waitForSelector(".moral-mic-button", { timeout: 5000 });
+  const after = await page.evaluate(() => ({
+    selectedChildId: window.__growthIslandSelectedChildId,
+    stage: window.__growthIslandMoralSpeakStage,
+  }));
+  return { before, after, openedFromMap: before.stage === "idle" && after.stage === "ready" };
+}
+
+async function exerciseSingleMoralSpeak(page, screenshots = {}) {
+  const mapEntry = await openMoralSpeakFromMap(page);
+  if (screenshots.ready) await page.screenshot({ path: screenshots.ready, fullPage: false });
+  const readyDetails = await page.evaluate(() => {
+    const selectedChildId = window.__growthIslandSelectedChildId;
+    const selfServiceRecordCount = (window.__growthIslandLedger ?? []).filter(
+      (record) => record.childId === selectedChildId && record.reason?.startsWith("自助成长："),
+    ).length;
+    return { selectedChildId, stage: window.__growthIslandMoralSpeakStage, selfServiceRecordCount };
+  });
+
+  await page.locator(".moral-mic-button").click();
+  await page.waitForSelector(".teacher-review-corner-card", { timeout: 7000 });
+  if (screenshots.pending) await page.screenshot({ path: screenshots.pending, fullPage: false });
+  const pendingDetails = await page.evaluate(() => {
+    const selectedChildId = window.__growthIslandSelectedChildId;
+    const selfServiceRecordCount = (window.__growthIslandLedger ?? []).filter(
+      (record) => record.childId === selectedChildId && record.reason?.startsWith("自助成长："),
+    ).length;
+    return {
+      selectedChildId,
+      stage: window.__growthIslandMoralSpeakStage,
+      selfServiceRecordCount,
+      teacherCardText: document.querySelector(".teacher-review-corner-card")?.textContent ?? "",
+      childBubbleText: document.querySelector(".spirit-speech-bubble")?.textContent ?? "",
+    };
+  });
+
+  await page.locator(".teacher-review-corner-card .approve").evaluate((button) => {
+    button.click();
+    button.click();
+  });
+  await page.waitForSelector(".spirit-speech-bubble.success", { timeout: 4000 });
+  if (screenshots.success) await page.screenshot({ path: screenshots.success, fullPage: false });
+  const successDetails = await page.evaluate(() => ({
+    stage: window.__growthIslandMoralSpeakStage,
+    successBubble: document.querySelector(".spirit-speech-bubble.success")?.textContent?.trim() ?? "",
+    hasTeacherCard: Boolean(document.querySelector(".teacher-review-corner-card")),
+  }));
+
+  await page.waitForFunction(() => window.__growthIslandMoralSpeakStage === "idle", null, { timeout: 4200 });
+  const finalDetails = await page.evaluate(({ initialSelfServiceCount }) => {
+    const selectedChildId = window.__growthIslandSelectedChildId;
+    const selfServiceRecords = (window.__growthIslandLedger ?? []).filter(
+      (record) => record.childId === selectedChildId && record.reason?.startsWith("自助成长："),
+    );
+    const record = selfServiceRecords[0];
+    return {
+      stage: window.__growthIslandMoralSpeakStage,
+      selectedChildId,
+      selfServiceRecordCount: selfServiceRecords.length,
+      singleLedgerWrite: selfServiceRecords.length === initialSelfServiceCount + 1,
+      ledgerContract: record
+        ? {
+            childIdMatches: record.childId === selectedChildId,
+            delta: record.delta,
+            source: record.source,
+            category: record.category,
+            hasOperator: Boolean(record.operatorChildId),
+            operatorRole: record.operatorRole,
+            aiSuggested: record.aiSuggested,
+            reviewStatus: record.reviewStatus,
+            reason: record.reason,
+          }
+        : undefined,
+    };
+  }, { initialSelfServiceCount: readyDetails.selfServiceRecordCount });
+
+  return { mapEntry, ready: readyDetails, pending: pendingDetails, success: successDetails, final: finalDetails };
+}
+
+async function exerciseMoralSpeakFlow(page, readyScreenshot, pendingScreenshot, successScreenshot) {
+  await page.waitForSelector(".pixi-world-canvas");
+  const childIndexes = [0, 4, 8];
+  const children = [];
+
+  for (const [index, childIndex] of childIndexes.entries()) {
+    await selectDockChildByIndex(page, childIndex);
+    const details = await exerciseSingleMoralSpeak(
+      page,
+      index === 0 ? { ready: readyScreenshot, pending: pendingScreenshot, success: successScreenshot } : {},
+    );
+    children.push(details);
+  }
+
+  const completedChildIds = children.map((child) => child.final.selectedChildId);
+  return {
+    children,
+    completedChildCount: children.length,
+    uniqueChildCount: new Set(completedChildIds).size,
+    mapEntryCount: children.filter((child) => child.mapEntry.openedFromMap).length,
+    ready: children[0]?.ready,
+    pending: children[0]?.pending,
+    success: children[0]?.success,
+    final: children[0]?.final,
+  };
+}
+
+async function startQaMoralReview(page, input) {
+  await page.waitForFunction(() => typeof window.__growthIslandStartMoralReviewForQa === "function", null, {
+    timeout: 5000,
+  });
+  const before = await page.evaluate(({ transcript, childId }) => {
+    const records = window.__growthIslandLedger ?? [];
+    return {
+      ledgerCount: records.length,
+      matchingSelfServiceCount: records.filter(
+        (record) => record.childId === childId && record.reason === `自助成长：${transcript}`,
+      ).length,
+    };
+  }, input);
+  const started = await page.evaluate((payload) => window.__growthIslandStartMoralReviewForQa(payload), input);
+  await page.waitForSelector(".teacher-review-corner-card", { timeout: 5000 });
+  await page.waitForFunction(() => window.__growthIslandMoralSpeakStage === "pendingReview", null, { timeout: 5000 });
+  return { before, started };
+}
+
+async function inspectMoralReviewCard(page, transcript, childId) {
+  return page.evaluate(({ transcript, childId }) => {
+    const approve = document.querySelector(".teacher-review-corner-card .approve");
+    const speak = window.__growthIslandMoralSpeak ?? {};
+    const records = window.__growthIslandLedger ?? [];
+    const matchingRecords = records.filter(
+      (record) => record.childId === childId && record.reason === `自助成长：${transcript}`,
+    );
+    return {
+      stage: window.__growthIslandMoralSpeakStage,
+      childId: window.__growthIslandSelectedChildId,
+      result: speak.result
+        ? {
+            intent: speak.result.intent,
+            delta: speak.result.xpDelta,
+            confidence: speak.result.confidence,
+            status: speak.result.status,
+            category: speak.result.category,
+          }
+        : undefined,
+      approveDisabled: approve instanceof HTMLButtonElement ? approve.disabled : true,
+      cardText: document.querySelector(".teacher-review-corner-card")?.textContent ?? "",
+      matchingSelfServiceCount: matchingRecords.length,
+      hasNegativeLedger: matchingRecords.some((record) => record.delta < 0),
+      hasPositiveLedger: matchingRecords.some(
+        (record) =>
+          record.delta > 0 &&
+          record.source === "dialogue-agent" &&
+          record.aiSuggested === true &&
+          record.reviewStatus === "approved",
+      ),
+    };
+  }, { transcript, childId });
+}
+
+async function exerciseMoralReviewSafety(page, pendingScreenshot, adjustedScreenshot) {
+  await page.waitForSelector(".pixi-world-canvas");
+
+  const lowConfidence = {
+    childId: "child-07",
+    transcript: "嗯嗯",
+    summary: "嗯嗯",
+  };
+  const lowStart = await startQaMoralReview(page, lowConfidence);
+  await page.screenshot({ path: pendingScreenshot, fullPage: false });
+  const lowPending = await inspectMoralReviewCard(page, lowConfidence.transcript, lowConfidence.childId);
+  await page.locator(".teacher-review-corner-card .approve").evaluate((button) => button.click());
+  await page.waitForTimeout(250);
+  const lowAfterApproveAttempt = await inspectMoralReviewCard(page, lowConfidence.transcript, lowConfidence.childId);
+  await page.locator(".teacher-review-corner-card .defer").click();
+  await page.waitForFunction(() => window.__growthIslandMoralSpeakStage === "idle", null, { timeout: 3500 });
+  const lowAfterDefer = await inspectMoralReviewCard(page, lowConfidence.transcript, lowConfidence.childId);
+
+  const negative = {
+    childId: "child-06",
+    transcript: "我今天推了同学",
+    summary: "推了同学",
+  };
+  const negativeStart = await startQaMoralReview(page, negative);
+  const negativePending = await inspectMoralReviewCard(page, negative.transcript, negative.childId);
+  await page.locator(".teacher-review-corner-card .approve").evaluate((button) => button.click());
+  await page.waitForTimeout(250);
+  const negativeAfterApproveAttempt = await inspectMoralReviewCard(page, negative.transcript, negative.childId);
+  await page.locator(".review-edit-popover summary").click();
+  await page.locator(".review-edit-popover button").first().click();
+  await page.waitForFunction(() => {
+    const approve = document.querySelector(".teacher-review-corner-card .approve");
+    return approve instanceof HTMLButtonElement && !approve.disabled;
+  });
+  await page.screenshot({ path: adjustedScreenshot, fullPage: false });
+  const negativeAfterAdjust = await inspectMoralReviewCard(page, negative.transcript, negative.childId);
+  await page.locator(".teacher-review-corner-card .approve").click();
+  await page.waitForSelector(".spirit-speech-bubble.success", { timeout: 4000 });
+  await page.waitForFunction(() => window.__growthIslandMoralSpeakStage === "idle", null, { timeout: 4200 });
+  const negativeFinal = await inspectMoralReviewCard(page, negative.transcript, negative.childId);
+
+  return {
+    lowConfidence: {
+      start: lowStart,
+      pending: lowPending,
+      afterApproveAttempt: lowAfterApproveAttempt,
+      afterDefer: lowAfterDefer,
+      ledgerUnchanged:
+        lowStart.before.matchingSelfServiceCount === lowAfterApproveAttempt.matchingSelfServiceCount &&
+        lowStart.before.matchingSelfServiceCount === lowAfterDefer.matchingSelfServiceCount,
+    },
+    negative: {
+      start: negativeStart,
+      pending: negativePending,
+      afterApproveAttempt: negativeAfterApproveAttempt,
+      afterAdjust: negativeAfterAdjust,
+      final: negativeFinal,
+      noDirectLedger:
+        negativeStart.before.matchingSelfServiceCount === negativeAfterApproveAttempt.matchingSelfServiceCount,
+      noNegativeLedger: !negativeFinal.hasNegativeLedger,
+    },
+  };
 }
 
 async function exerciseTeacherFlow(page, scoreScreenshot, homeScreenshot) {
@@ -188,7 +548,7 @@ async function exerciseTeacherFlow(page, scoreScreenshot, homeScreenshot) {
   const selectedBefore = await page.locator(".workbench-selected-child.compact").innerText();
   const name = selectedBefore.match(/当前孩子\s*([^\n]+)/)?.[1]?.trim() ?? extractSelectedChildName(selectedBefore);
   const xpBefore = Number(selectedBefore.match(/(\d+)\s*XP/)?.[1] ?? Number.NaN);
-  await page.locator(".batch-score-grid button").first().click();
+  await page.locator(".workbench-student-card.active .student-card-actions button").first().click();
   await page.waitForFunction(
     ({ expectedXp }) => document.querySelector(".workbench-selected-child.compact")?.textContent?.includes(`${expectedXp} XP`),
     { expectedXp: xpBefore + 10 },
@@ -273,7 +633,11 @@ async function exerciseTeacherFlow(page, scoreScreenshot, homeScreenshot) {
     quickLedgerContract,
     aiLedgerContract,
     homeFocused: Boolean(name) && homeText.includes(name) && homeText.includes(`${xpAfter} XP`),
-    homeHasRecord: homeText.includes("课堂记录：快速加分 +10"),
+    homeHasRecord:
+      homeText.includes("成长记录") ||
+      homeText.includes("+10") ||
+      homeText.includes("成长能量") ||
+      homeText.includes(`+${aiDelta}`),
     homeScreenshot,
   };
 }
@@ -343,7 +707,7 @@ async function exerciseVoiceFlow(page, confirmedScreenshot, suggestionScreenshot
     noAiLedgerBeforeConfirm: beforeConfirmAiRecordCount === 0,
     ledgerContract,
     homeFocused: Boolean(name) && homeText.includes(name) && homeText.includes(`${xpAfter} XP`),
-    homeHasRecord: homeText.includes("语音记录："),
+    homeHasRecord: homeText.includes("成长能量") || homeText.includes(`+${aiDelta}`),
     suggestionScreenshot,
     homeScreenshot,
   };
@@ -478,7 +842,7 @@ async function exerciseProfileFlow(page, workbenchProfileScreenshot, homeProfile
   const selectedBefore = await page.locator(".workbench-selected-child.compact").innerText();
   const name = selectedBefore.match(/当前孩子\s*([^\n]+)/)?.[1]?.trim() ?? extractSelectedChildName(selectedBefore);
   const xpBefore = Number(selectedBefore.match(/(\d+)\s*XP/)?.[1] ?? Number.NaN);
-  await page.locator(".batch-score-grid button").first().click();
+  await page.locator(".workbench-student-card.active .student-card-actions button").first().click();
   await page.waitForFunction(
     ({ expectedXp }) => document.querySelector(".workbench-selected-child.compact")?.textContent?.includes(`${expectedXp} XP`),
     { expectedXp: xpBefore + 10 },
@@ -495,7 +859,7 @@ async function exerciseProfileFlow(page, workbenchProfileScreenshot, homeProfile
   await page.waitForTimeout(1200);
   await waitForPixiIdle(page);
   const homeText = await page.locator(".hud-rail").innerText();
-  await page.locator(".spirit-profile-button").click();
+  await page.getByRole("button", { name: "成长档案" }).click();
   await page.waitForSelector(".profile-page");
   const fromHome = await inspectCurrentProfile(page, xpBefore + 10);
   await page.screenshot({ path: homeProfileScreenshot, fullPage: false });
@@ -712,7 +1076,27 @@ async function inspectPage(browser, check, viewport) {
   await page.waitForTimeout(600);
   if (check.kind === "home") await waitForPixiIdle(page);
   const screenshot = path.join(outputDir, `${check.name}-${viewport.name}.png`);
-  const actionDetails = check.kind === "roll-call" ? await exerciseRollCall(page) : undefined;
+  const actionDetails =
+    check.kind === "roll-call"
+      ? await exerciseRollCall(page, screenshot, path.join(outputDir, `${check.name}-home-focus-${viewport.name}.png`))
+      : undefined;
+  const moralFlowDetails =
+    check.kind === "moral-speak-flow"
+      ? await exerciseMoralSpeakFlow(
+          page,
+          path.join(outputDir, `${check.name}-ready-${viewport.name}.png`),
+          path.join(outputDir, `${check.name}-pending-${viewport.name}.png`),
+          screenshot,
+        )
+      : undefined;
+  const moralReviewSafetyDetails =
+    check.kind === "moral-review-safety"
+      ? await exerciseMoralReviewSafety(
+          page,
+          screenshot,
+          path.join(outputDir, `${check.name}-adjusted-${viewport.name}.png`),
+        )
+      : undefined;
   const teacherFlowDetails =
     check.kind === "teacher-flow"
       ? await exerciseTeacherFlow(page, screenshot, path.join(outputDir, `${check.name}-home-focus-${viewport.name}.png`))
@@ -756,6 +1140,9 @@ async function inspectPage(browser, check, viewport) {
   if (
     check.kind !== "teacher-flow" &&
     check.kind !== "voice-flow" &&
+    check.kind !== "moral-speak-flow" &&
+    check.kind !== "moral-review-safety" &&
+    check.kind !== "roll-call" &&
     check.kind !== "math-flow" &&
     check.kind !== "profile-flow" &&
     check.kind !== "leaderboard-flow" &&
@@ -766,13 +1153,29 @@ async function inspectPage(browser, check, viewport) {
     await page.screenshot({ path: screenshot, fullPage: false });
   }
 
-  const common = await page.evaluate(() => ({
-    bodyOverflowX: document.body.scrollWidth > document.documentElement.clientWidth,
-    bodyOverflowY: document.body.scrollHeight > document.documentElement.clientHeight,
-    imageCount: document.images.length,
-    failedImageCount: [...document.images].filter((img) => !img.complete || img.naturalWidth === 0).length,
-    viewport: { width: innerWidth, height: innerHeight },
-  }));
+  const common = await page.evaluate(() => {
+    const imageStates = [...document.images].map((img) => {
+      const rect = img.getBoundingClientRect();
+      const visible = rect.bottom > 0 && rect.top < innerHeight && rect.right > 0 && rect.left < innerWidth;
+      const ready = img.complete && img.naturalWidth > 0;
+      const loadedBroken = img.complete && img.naturalWidth === 0;
+      return { visible, ready, loadedBroken };
+    });
+    const visibleText = document.body.innerText || "";
+    const forbiddenVisibleCopy = ["的小伙伴", "今天也在成长", "家园 0", "家园 1", "家园 2", "家园 3", "家园 4"].filter((copy) =>
+      visibleText.includes(copy),
+    );
+
+    return {
+      bodyOverflowX: document.body.scrollWidth > document.documentElement.clientWidth,
+      bodyOverflowY: document.body.scrollHeight > document.documentElement.clientHeight,
+      imageCount: document.images.length,
+      failedImageCount: imageStates.filter((image) => image.loadedBroken || (image.visible && !image.ready)).length,
+      deferredImageCount: imageStates.filter((image) => !image.visible && !image.ready && !image.loadedBroken).length,
+      forbiddenVisibleCopy,
+      viewport: { width: innerWidth, height: innerHeight },
+    };
+  });
 
   const resourceSummary = summarizeResources(resources);
   const pngBytes = resourceSummary.png?.bytes ?? 0;
@@ -786,6 +1189,7 @@ async function inspectPage(browser, check, viewport) {
   if (failedRequests.length) issues.push(`${failedRequests.length} failed request(s)`);
   if (common.failedImageCount) issues.push(`${common.failedImageCount} failed image(s)`);
   if (common.bodyOverflowX) issues.push("horizontal body overflow");
+  if (common.forbiddenVisibleCopy.length) issues.push(`forbidden visible copy: ${common.forbiddenVisibleCopy.join(", ")}`);
 
   let details = {};
   if (check.kind === "teacher") {
@@ -834,6 +1238,97 @@ async function inspectPage(browser, check, viewport) {
     }
     if (!teacherFlowDetails?.homeFocused) issues.push("teacher flow home focus did not sync selected child");
     if (!teacherFlowDetails?.homeHasRecord) issues.push("teacher flow home recent record missing");
+  }
+
+  if (check.kind === "moral-speak-flow") {
+    details = { flow: moralFlowDetails };
+    if (moralFlowDetails?.completedChildCount !== 3) issues.push("moral speak did not complete 3 children");
+    if (moralFlowDetails?.uniqueChildCount !== 3) issues.push("moral speak did not cover 3 unique children");
+    if (moralFlowDetails?.mapEntryCount !== 3) issues.push("moral speak was not opened from map for all children");
+    if (moralFlowDetails?.ready?.stage !== "ready") issues.push("moral speak did not enter ready stage");
+    if (moralFlowDetails?.pending?.stage !== "pendingReview") issues.push("moral speak did not enter teacher review");
+    if (
+      moralFlowDetails?.pending?.selfServiceRecordCount !== moralFlowDetails?.ready?.selfServiceRecordCount
+    ) {
+      issues.push("moral speak entered ledger before teacher confirmation");
+    }
+    if (!moralFlowDetails?.pending?.teacherCardText.includes("通过")) issues.push("moral speak teacher card missing");
+    if (!moralFlowDetails?.pending?.childBubbleText || moralFlowDetails.pending.childBubbleText.length > 12) {
+      issues.push("moral speak child bubble missing or too long");
+    }
+    if (moralFlowDetails?.success?.stage !== "success") issues.push("moral speak success stage missing");
+    if (!moralFlowDetails?.success?.successBubble || moralFlowDetails.success.successBubble.includes("自助成长")) {
+      issues.push("moral speak success bubble is missing or too verbose");
+    }
+    if (moralFlowDetails?.success?.hasTeacherCard) issues.push("moral speak teacher card did not close on success");
+    if (moralFlowDetails?.final?.stage !== "idle") issues.push("moral speak did not return to idle");
+    if (!moralFlowDetails?.final?.singleLedgerWrite) issues.push("moral speak duplicate or missing ledger write");
+    const ledger = moralFlowDetails?.final?.ledgerContract;
+    if (
+      !ledger ||
+      !ledger.childIdMatches ||
+      ledger.delta === 0 ||
+      ledger.source !== "dialogue-agent" ||
+      !ledger.category ||
+      !ledger.hasOperator ||
+      ledger.operatorRole !== "teacher" ||
+      ledger.aiSuggested !== true ||
+      ledger.reviewStatus !== "approved" ||
+      !ledger.reason.startsWith("自助成长：")
+    ) {
+      issues.push("moral speak ledger contract fields missing");
+    }
+
+    for (const [index, childFlow] of (moralFlowDetails?.children ?? []).entries()) {
+      if (childFlow.ready?.stage !== "ready") issues.push(`moral speak child ${index + 1} ready stage missing`);
+      if (childFlow.pending?.stage !== "pendingReview") issues.push(`moral speak child ${index + 1} review stage missing`);
+      if (childFlow.pending?.selfServiceRecordCount !== childFlow.ready?.selfServiceRecordCount) {
+        issues.push(`moral speak child ${index + 1} entered ledger before confirmation`);
+      }
+      if (childFlow.success?.stage !== "success") issues.push(`moral speak child ${index + 1} success stage missing`);
+      if (childFlow.success?.hasTeacherCard) issues.push(`moral speak child ${index + 1} teacher card stayed open`);
+      if (childFlow.final?.stage !== "idle") issues.push(`moral speak child ${index + 1} did not return idle`);
+      if (!childFlow.final?.singleLedgerWrite) issues.push(`moral speak child ${index + 1} ledger write count mismatch`);
+      const childLedger = childFlow.final?.ledgerContract;
+      if (
+        !childLedger ||
+        !childLedger.childIdMatches ||
+        childLedger.delta === 0 ||
+        childLedger.source !== "dialogue-agent" ||
+        !childLedger.category ||
+        !childLedger.hasOperator ||
+        childLedger.operatorRole !== "teacher" ||
+        childLedger.aiSuggested !== true ||
+        childLedger.reviewStatus !== "approved" ||
+        !childLedger.reason.startsWith("自助成长：")
+      ) {
+        issues.push(`moral speak child ${index + 1} ledger contract fields missing`);
+      }
+    }
+  }
+
+  if (check.kind === "moral-review-safety") {
+    details = { flow: moralReviewSafetyDetails };
+    const low = moralReviewSafetyDetails?.lowConfidence;
+    if (!low?.start?.started) issues.push("low-confidence review did not start through QA hook");
+    if (low?.pending?.stage !== "pendingReview") issues.push("low-confidence review did not enter pending stage");
+    if (low?.pending?.result?.delta !== 0) issues.push("low-confidence review should not suggest XP");
+    if (!low?.pending?.approveDisabled) issues.push("low-confidence review approve button should be disabled");
+    if (!low?.ledgerUnchanged) issues.push("low-confidence review entered ledger without teacher decision");
+    if (low?.afterDefer?.stage !== "idle") issues.push("low-confidence review did not return idle after defer");
+
+    const negative = moralReviewSafetyDetails?.negative;
+    if (!negative?.start?.started) issues.push("negative review did not start through QA hook");
+    if (negative?.pending?.stage !== "pendingReview") issues.push("negative review did not enter pending stage");
+    if (negative?.pending?.result?.delta >= 0) issues.push("negative review should be detected as a negative suggestion");
+    if (!negative?.pending?.approveDisabled) issues.push("negative review approve button should be disabled before adjustment");
+    if (!negative?.noDirectLedger) issues.push("negative review entered ledger before adjustment");
+    if (!negative?.afterAdjust?.result?.delta || negative.afterAdjust.result.delta <= 0) {
+      issues.push("negative review adjustment did not set a positive teacher decision");
+    }
+    if (negative?.afterAdjust?.approveDisabled) issues.push("adjusted review approve button stayed disabled");
+    if (!negative?.final?.hasPositiveLedger) issues.push("adjusted review did not create an approved positive ledger record");
+    if (!negative?.noNegativeLedger) issues.push("negative AI suggestion created a negative ledger record");
   }
 
   if (check.kind === "voice-flow") {
@@ -916,7 +1411,13 @@ async function inspectPage(browser, check, viewport) {
     const fps = await measureFrameRate(page, ".world-map-stage");
     const wheelFps = await measureHomeWheel(page);
     const renderState = await inspectPixiRenderState(page);
-    details = { fps, wheelFps, renderState };
+    const bigScreen = await inspectHomeBigScreen(page);
+    details = { fps, wheelFps, renderState, bigScreen };
+    if (!bigScreen.hasSelectedChild) issues.push("home selected child is not visible");
+    if (bigScreen.mapShare < 0.75) issues.push(`home map does not dominate workspace: ${bigScreen.mapShare}`);
+    if (bigScreen.largeHeadings.length) issues.push("home contains oversized heading(s)");
+    if (bigScreen.noisyCopy.length) issues.push(`home contains noisy explanatory copy: ${bigScreen.noisyCopy.join(", ")}`);
+    if (bigScreen.horizontalOverflow) issues.push("home horizontal overflow");
     if (pngBytes > 40 * oneMb) warnings.push(`home requested ${(pngBytes / oneMb).toFixed(1)} MB of PNG assets`);
     if (pngCount > 35) warnings.push(`home requested ${pngCount} PNG asset(s)`);
     if (fps.fps < 30) warnings.push(`home frame sample is low: ${fps.fps} FPS`);
@@ -970,6 +1471,8 @@ async function inspectPage(browser, check, viewport) {
     if (!actionDetails?.hasAvatar) issues.push("roll call selected child avatar missing");
     if (!actionDetails?.hasFocusAction) issues.push("roll call focus action missing");
     if (!actionDetails?.hasRecordAction) issues.push("roll call quick record action missing");
+    if (!actionDetails?.homeFocused) issues.push("roll call did not focus drawn child on home");
+    if (!actionDetails?.readyForSelfService) issues.push("roll call did not open self-service ready state on home");
   }
 
   if (check.kind === "module") {
