@@ -10,9 +10,9 @@ import {
 import type { ChildProfile, LedgerRecord } from "../../src/types";
 
 const children: ChildProfile[] = [
-  { id: "child-a", name: "安安", spiritId: "01", petName: "安安的小伙伴", slotId: 1 },
-  { id: "child-b", name: "贝贝", spiritId: "02", petName: "贝贝的小伙伴", slotId: 2 },
-  { id: "child-c", name: "晨晨", spiritId: "03", petName: "晨晨的小伙伴", slotId: 3 },
+  { id: "child-a", name: "安安", spiritId: "01", petName: "安安的小伙伴", voiceType: 101016, slotId: 1 },
+  { id: "child-b", name: "贝贝", spiritId: "02", petName: "贝贝的小伙伴", voiceType: 101015, slotId: 2 },
+  { id: "child-c", name: "晨晨", spiritId: "03", petName: "晨晨的小伙伴", voiceType: 502007, slotId: 3 },
 ];
 
 function record(partial: Partial<LedgerRecord> & Pick<LedgerRecord, "childId" | "delta">): LedgerRecord {
@@ -91,7 +91,13 @@ describe("progression domain", () => {
 
     expect(normalized).toMatchObject({ operatorRole: "teacher", aiSuggested: true, reviewStatus: "approved" });
 
-    const created = makeLedgerRecord({ childId: "child-a", operatorChildId: "child-a", delta: 30, source: "math-pk", reason: "数学 PK" });
+    const created = makeLedgerRecord({
+      childId: "child-a",
+      operatorChildId: "child-a",
+      delta: 30,
+      source: "math-pk",
+      reason: "数学 PK",
+    });
     expect(created.id).toEqual(expect.any(String));
     expect(created.createdAt).toEqual(expect.any(String));
     expect(created).toMatchObject({ operatorRole: "system", aiSuggested: false, reviewStatus: "not_required" });

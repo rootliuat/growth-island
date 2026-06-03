@@ -53,7 +53,7 @@ export const shopRewards: ShopReward[] = [
     name: "成长星贴",
     cost: 60,
     category: "即时奖励",
-    stockLabel: "库存占位",
+    stockLabel: "可兑换",
     description: "贴在个人成长页上的小星星。",
   },
   {
@@ -69,7 +69,7 @@ export const shopRewards: ShopReward[] = [
     name: "手工材料包",
     cost: 300,
     category: "创作材料",
-    stockLabel: "库存占位",
+    stockLabel: "可兑换",
     description: "领取一份额外手工材料包。",
   },
   {
@@ -93,7 +93,7 @@ export const shopRewards: ShopReward[] = [
     name: "成长守护称号",
     cost: 2100,
     category: "长期荣誉",
-    stockLabel: "高阶占位",
+    stockLabel: "高阶奖励",
     description: "高 XP 孩子的长期荣誉称号。",
   },
 ];

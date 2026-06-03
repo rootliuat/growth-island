@@ -15,7 +15,7 @@ interface MathArenaModuleProps {
 }
 
 function childSummary(child: ChildWithProgress) {
-  return `Lv.${child.level} · ${child.xp} XP · #${child.rank}`;
+  return `${child.petName} · 精灵能量`;
 }
 
 function getNextOpponent(children: ChildWithProgress[], playerId: string) {
@@ -110,59 +110,78 @@ export function MathArenaModule({
   return (
     <section className="module-page math-arena-page" aria-labelledby="math-arena-title">
       <div className="math-arena-header">
-        <div>
+        <div className="math-arena-title-pack">
           <span className="module-eyebrow">
             <Swords size={18} />
-            数学魔法 PK
+            数学魔法
           </span>
-          <h1 id="math-arena-title">数学竞技场</h1>
-          <p>选择两名孩子进行 20 以内加减法对战。答对造成 20 伤害，胜者 +30 XP 并写入成长记录。</p>
+          <h1 id="math-arena-title">数学闯关岛</h1>
+          <span className="math-arena-round-chip">{winner ? `${winner.name} 点亮` : battleStarted ? "闯关中" : "待开始"}</span>
         </div>
         <button type="button" className="math-arena-home-button" onClick={() => onFocusChild(winner?.id ?? player.id)}>
           <Home size={18} />
-          回到成长岛
+          回岛
         </button>
       </div>
 
       <div className="math-arena-layout">
-        <section className="math-arena-stage" aria-label="数学对战区">
+        <section className="math-arena-stage" aria-label="数学闯关区">
           <div className="math-arena-setup">
-            <FighterSelectCard
-              label="左侧出战"
-              selectId="math-arena-player"
-              child={player}
-              childrenWithProgress={childrenWithProgress}
-              spiritsById={spiritsById}
-              onChange={choosePlayer}
-            />
-            <FighterSelectCard
-              label="右侧出战"
-              selectId="math-arena-opponent"
-              child={opponent ?? player}
-              childrenWithProgress={opponentOptions}
-              spiritsById={spiritsById}
-              onChange={chooseOpponent}
-            />
+            <div className="math-arena-fighter-lane" aria-label="闯关伙伴">
+              <FighterSelectCard
+                label="左侧答题"
+                selectId="math-arena-player"
+                child={player}
+                childrenWithProgress={childrenWithProgress}
+                spiritsById={spiritsById}
+                onChange={choosePlayer}
+              />
+              <span className="math-arena-vs-token" aria-hidden="true">
+                一起
+              </span>
+              <FighterSelectCard
+                label="右侧答题"
+                selectId="math-arena-opponent"
+                child={opponent ?? player}
+                childrenWithProgress={opponentOptions}
+                spiritsById={spiritsById}
+                onChange={chooseOpponent}
+              />
+            </div>
             <div className="math-arena-command-panel">
               <button type="button" className="math-arena-primary" onClick={startBattle} disabled={!canStart}>
                 <Play size={19} />
-                {battleStarted ? "重新开始" : "开始对战"}
+                {battleStarted ? "重新开始" : "开始闯关"}
               </button>
               <button type="button" className="math-arena-secondary" onClick={resetBattle}>
                 <RotateCcw size={18} />
-                重置战局
+                重新准备
               </button>
             </div>
           </div>
 
-          <div className="math-arena-battle-shell">
+          <div className={`math-arena-battle-shell ${battleStarted ? "is-live" : "is-idle"} ${winner ? "has-winner" : ""}`}>
+            <div className="math-arena-stage-strip" aria-label="闯关状态">
+              <span>贝壳赛道</span>
+              <strong>{winner ? `${winner.name} 闯关完成` : battleStarted ? "答题进行中" : "选择小伙伴开始"}</strong>
+              <em>{winner ? "数学能量点亮" : "每题一束光"}</em>
+            </div>
+            {winner && (
+              <div className="math-arena-victory-badge" role="status" aria-live="polite">
+                <Trophy size={18} />
+                {winner.name} 点亮数学能量
+              </div>
+            )}
             {battleStarted && opponent ? (
               <MathPkBattle key={battleKey} player={player} opponent={opponent} spiritsById={spiritsById} onWin={handleWin} />
             ) : (
               <div className="math-arena-empty">
                 <Swords size={34} />
-                <strong>等待开战</strong>
-                <p>先确认左右两位孩子，再开始 1v1 数学魔法 PK。</p>
+                <strong>等待开始</strong>
+                <div className="math-arena-empty-chips" aria-label="闯关准备">
+                  <span>两位伙伴</span>
+                  <span>轮流答题</span>
+                </div>
               </div>
             )}
           </div>
@@ -172,7 +191,7 @@ export function MathArenaModule({
           <div className="math-arena-scoreboard">
             <div className="math-arena-side-title">
               <Trophy size={19} />
-              <strong>本场状态</strong>
+              <strong>奖杯看板</strong>
             </div>
             <dl>
               <div>
@@ -180,12 +199,12 @@ export function MathArenaModule({
                 <dd>20 内加减</dd>
               </div>
               <div>
-                <dt>伤害</dt>
-                <dd>20 HP</dd>
+                <dt>光点</dt>
+                <dd>每题一束光</dd>
               </div>
               <div>
-                <dt>奖励</dt>
-                <dd>+30 XP</dd>
+                <dt>能量</dt>
+                <dd>数学光点</dd>
               </div>
             </dl>
             <button
@@ -202,30 +221,30 @@ export function MathArenaModule({
           <div className="math-arena-rules">
             <div className="math-arena-side-title">
               <Shield size={19} />
-              <strong>课堂规则</strong>
+              <strong>赛场规则</strong>
             </div>
             <ul>
-              <li>双方初始 HP 100。</li>
-              <li>答对后攻击，对方减少 20 HP。</li>
-              <li>答错不扣分，回合交给对方。</li>
-              <li>HP 归零的一方失败，胜者写入成长记录。</li>
+              <li>两位伙伴轮流答题。</li>
+              <li>答对点亮一束光。</li>
+              <li>答错不扣能量，换对方继续。</li>
+              <li>完成闯关后，胜者点亮数学能量。</li>
             </ul>
           </div>
 
           <div className="math-arena-history">
             <div className="math-arena-side-title">
               <Swords size={19} />
-              <strong>最近 PK</strong>
+              <strong>最近闯关</strong>
             </div>
             {recentMathRecords.length === 0 ? (
-              <p className="math-arena-muted">还没有数学 PK 记录。</p>
+              <p className="math-arena-muted">还没有数学闯关。</p>
             ) : (
               <ol>
                 {recentMathRecords.map((record) => {
                   const child = childById.get(record.childId);
                   return (
                     <li key={record.id}>
-                      <span>+{record.delta}</span>
+                      <span>点亮</span>
                       <div>
                         <strong>{child?.name ?? "未知孩子"}</strong>
                         <em>{formatLogTime(record.createdAt)}</em>
@@ -263,14 +282,14 @@ function FighterSelectCard({
   return (
     <article className="math-fighter-card">
       <div className="math-fighter-avatar">
-        {asset?.url ? <img src={asset.url} alt={`${child.petName} 精灵`} /> : <span>{child.name.slice(0, 1)}</span>}
+        {asset?.url ? <img src={asset.url} alt={`${child.name} 精灵`} /> : <span>{child.name.slice(0, 1)}</span>}
       </div>
       <div className="math-fighter-copy">
         <label htmlFor={selectId}>{label}</label>
         <select id={selectId} name={selectId} value={child.id} onChange={(event) => onChange(event.target.value)}>
           {childrenWithProgress.map((option) => (
             <option key={option.id} value={option.id}>
-              {option.name} · {option.petName}
+              {option.name}
             </option>
           ))}
         </select>

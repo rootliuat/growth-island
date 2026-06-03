@@ -16,6 +16,10 @@ import { PathLayer } from "./PathLayer";
 import { RegionLayer } from "./RegionLayer";
 import { SpiritLayer } from "./SpiritLayer";
 
+function isSelfServiceEnergyReason(reason?: string) {
+  return Boolean(reason?.startsWith("自助成长："));
+}
+
 export class WorldScene {
   readonly root = new Container();
   readonly layers = new LayerManager();
@@ -63,8 +67,13 @@ export class WorldScene {
     this.homes.update(data);
     this.spirits.update(data);
     this.labels.update(data);
+    this.regions.setEnergy(data.regionEnergy);
     const selected = data.spirits.find((spirit) => spirit.id === data.selectedChildId);
-    this.effects.setSelectedGuide(undefined, selected?.accent);
+    const selectedSelfServiceEnergy = isSelfServiceEnergyReason(selected?.lastActivity) && (selected?.lastActivityDelta ?? 0) > 0;
+    this.effects.setSelectedGuide(
+      selected?.lastActivityDelta && selected.lastActivityDelta > 0 && !selectedSelfServiceEnergy ? selected.spritePosition : undefined,
+      selected?.accent,
+    );
     this.updateZoomState(true);
 
     if (previousSelected && data.selectedChildId !== previousSelected) {
@@ -83,7 +92,9 @@ export class WorldScene {
         const previousTarget = previousData.spirits.find((spirit) => spirit.id === target.id);
         const changedStage = !!previousTarget && (previousTarget.child.level !== target.child.level || previousTarget.child.state !== target.child.state);
         const upgraded = !!previousTarget && target.child.xp >= previousTarget.child.xp;
-        this.effects.emitXp(target.spritePosition, data.lastLedger.delta);
+        if (!isSelfServiceEnergyReason(data.lastLedger.reason)) {
+          this.effects.emitXp(target.spritePosition, data.lastLedger.delta);
+        }
         if (changedStage) this.spirits.evolve(target.id, upgraded);
         else this.spirits.bounce(target.id);
         this.homes.pulse(target.id);

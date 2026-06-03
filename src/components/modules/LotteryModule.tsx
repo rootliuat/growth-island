@@ -1,41 +1,38 @@
 import { useEffect, useState } from "react";
-import { Gift, Home, RotateCcw, Sparkles, Trophy } from "lucide-react";
+import { Gift, Home, RotateCcw, Shell, Sparkles, Trophy } from "lucide-react";
 import { lotteryPrizes, type LotteryPrize } from "../../data/rewards";
 import { getSpiritAsset } from "../../domain/spiritAssets";
-import type { ChildWithProgress, SpiritDefinition } from "../../types";
+import type { ChildWithProgress, LotteryDrawRecord, SpiritDefinition } from "../../types";
 
 interface LotteryModuleProps {
   childrenWithProgress: ChildWithProgress[];
   spiritsById: Map<string, SpiritDefinition>;
   selectedChild: ChildWithProgress;
+  drawRecords: LotteryDrawRecord[];
   onSelectChild: (childId: string) => void;
+  onDrawPrize: (childId: string, prize: LotteryPrize) => LotteryDrawRecord | undefined;
   onFocusChild: (childId: string) => void;
 }
 
-interface DrawHistoryItem {
-  id: string;
-  childName: string;
-  prizeName: string;
-  rarity: LotteryPrize["rarity"];
-}
-
 function childSummary(child: ChildWithProgress) {
-  return `Lv.${child.level} · ${child.xp} XP · #${child.rank}`;
+  return `${child.petName} · 精灵能量`;
 }
 
 export function LotteryModule({
   childrenWithProgress,
   spiritsById,
   selectedChild,
+  drawRecords,
   onSelectChild,
+  onDrawPrize,
   onFocusChild,
 }: LotteryModuleProps) {
   const [selectedChildId, setSelectedChildId] = useState(selectedChild.id);
   const [latestPrize, setLatestPrize] = useState<LotteryPrize | undefined>();
-  const [drawHistory, setDrawHistory] = useState<DrawHistoryItem[]>([]);
   const activeChild = childrenWithProgress.find((child) => child.id === selectedChildId) ?? selectedChild;
   const activeSpirit = spiritsById.get(activeChild.spiritId);
   const activeAsset = activeSpirit ? getSpiritAsset(activeSpirit, activeChild.state) : undefined;
+  const activeDraws = drawRecords.filter((record) => record.childId === activeChild.id).slice(0, 6);
 
   useEffect(() => {
     if (childrenWithProgress.some((child) => child.id === selectedChildId)) return;
@@ -44,16 +41,14 @@ export function LotteryModule({
 
   const chooseChild = (childId: string) => {
     setSelectedChildId(childId);
+    setLatestPrize(undefined);
     onSelectChild(childId);
   };
 
   const drawPrize = () => {
     const prize = lotteryPrizes[Math.floor(Math.random() * lotteryPrizes.length)];
+    onDrawPrize(activeChild.id, prize);
     setLatestPrize(prize);
-    setDrawHistory((current) => [
-      { id: `${Date.now()}-${prize.id}`, childName: activeChild.name, prizeName: prize.name, rarity: prize.rarity },
-      ...current,
-    ]);
   };
 
   return (
@@ -61,30 +56,33 @@ export function LotteryModule({
       <div className="reward-header">
         <div>
           <span className="module-eyebrow">
-            <Gift size={18} />
-            班级激励
+            <Shell size={18} aria-hidden="true" />
+            贝池任务
           </span>
-          <h1 id="lottery-title">积分抽奖</h1>
-          <p>选择孩子抽取班级奖励。本轮不消耗 XP，不写入成长流水。</p>
+          <h1 id="lottery-title">幸运贝池</h1>
         </div>
         <button type="button" className="reward-home-button" onClick={() => onFocusChild(activeChild.id)}>
-          <Home size={18} />
-          回到成长岛
+          <Home size={18} aria-hidden="true" />
+          回岛看{activeChild.name}
         </button>
       </div>
 
       <div className="reward-layout">
-        <section className="lottery-stage" aria-label="抽奖操作台">
+        <section className="lottery-stage" aria-label="幸运贝池">
           <div className="reward-child-card">
             <div className="reward-child-avatar">
-              {activeAsset?.url ? <img src={activeAsset.url} alt={`${activeChild.petName} 精灵`} /> : activeChild.name.slice(0, 1)}
+              {activeAsset?.url ? (
+                <img src={activeAsset.url} alt={`${activeChild.name} 精灵`} width="94" height="94" />
+              ) : (
+                activeChild.name.slice(0, 1)
+              )}
             </div>
             <div>
-              <label htmlFor="lottery-child">抽奖孩子</label>
+              <label htmlFor="lottery-child">本轮孩子</label>
               <select id="lottery-child" name="lotteryChild" value={activeChild.id} onChange={(event) => chooseChild(event.target.value)}>
                 {childrenWithProgress.map((child) => (
                   <option key={child.id} value={child.id}>
-                    {child.name} · {child.petName}
+                    {child.name}
                   </option>
                 ))}
               </select>
@@ -92,49 +90,54 @@ export function LotteryModule({
             </div>
           </div>
 
-          <div className="lottery-result-card">
+          <div className="lottery-result-card" role="status" aria-live="polite">
             <div className="lottery-result-orb">
-              <Gift size={48} />
+              <Gift size={46} aria-hidden="true" />
             </div>
             {latestPrize ? (
               <>
-                <span>{latestPrize.rarity}</span>
+                <div className="lottery-result-meta">
+                  <span>{latestPrize.rarity}</span>
+                  <em>{activeChild.name} 抽到</em>
+                </div>
                 <strong>{latestPrize.name}</strong>
                 <p>{latestPrize.description}</p>
               </>
             ) : (
               <>
-                <span>等待抽奖</span>
-                <strong>班级奖池</strong>
-                <p>点击开始抽奖后展示结果。此处不会扣减孩子 XP。</p>
+                <div className="lottery-result-meta">
+                  <span>待抽贝签</span>
+                  <em>{activeChild.name}</em>
+                </div>
+                <strong>贝池待开启</strong>
+                <p>抽到后会留下贝签足迹。</p>
               </>
             )}
           </div>
 
           <div className="reward-actions">
             <button type="button" className="reward-primary" onClick={drawPrize}>
-              <Sparkles size={20} />
-              开始抽奖
+              <Sparkles size={20} aria-hidden="true" />
+              抽贝签
             </button>
             <button type="button" className="reward-secondary" onClick={() => setLatestPrize(undefined)}>
-              <RotateCcw size={19} />
-              清空结果
+              <RotateCcw size={19} aria-hidden="true" />
+              收起结果
             </button>
           </div>
         </section>
 
-        <aside className="reward-side" aria-label="抽奖奖池和记录">
+        <aside className="reward-side" aria-label="贝池奖励和贝签足迹">
           <section className="reward-panel">
             <div className="reward-panel-title">
-              <Trophy size={19} />
-              <strong>班级奖池</strong>
+              <Trophy size={19} aria-hidden="true" />
+              <strong>贝池奖励</strong>
             </div>
             <div className="lottery-prize-grid">
               {lotteryPrizes.map((prize) => (
                 <article key={prize.id}>
                   <span>{prize.rarity}</span>
                   <strong>{prize.name}</strong>
-                  <p>{prize.description}</p>
                 </article>
               ))}
             </div>
@@ -142,14 +145,14 @@ export function LotteryModule({
 
           <section className="reward-panel lottery-history-panel">
             <div className="reward-panel-title">
-              <Gift size={19} />
-              <strong>本轮结果</strong>
+              <Gift size={19} aria-hidden="true" />
+              <strong>贝签足迹</strong>
             </div>
-            {drawHistory.length === 0 ? (
-              <p className="reward-muted">本轮还没有抽奖结果。</p>
+            {activeDraws.length === 0 ? (
+              <p className="reward-muted">还没有贝签足迹。</p>
             ) : (
               <ol className="lottery-history-list">
-                {drawHistory.slice(0, 6).map((item) => (
+                {activeDraws.map((item) => (
                   <li key={item.id}>
                     <span>{item.rarity}</span>
                     <strong>{item.childName}</strong>

@@ -1,4 +1,4 @@
-import type { ChildWithProgress, LedgerRecord, SpiritDefinition } from "../types";
+import type { ChildWithProgress, LedgerRecord, SpiritDefinition, VirtueCategory } from "../types";
 
 export type RegionId =
   | "growth-plaza"
@@ -72,10 +72,22 @@ export interface WorldSpirit {
   lastActivityDelta?: number;
 }
 
+export interface VirtueRegionEnergy {
+  regionId: RegionId;
+  category: VirtueCategory;
+  label: string;
+  displayText: string;
+  color: number;
+  totalDelta: number;
+  count: number;
+  current: boolean;
+}
+
 export interface WorldMapData {
   spirits: WorldSpirit[];
   homes: WorldHome[];
   selectedChildId: string;
+  regionEnergy: VirtueRegionEnergy[];
   lastLedger?: LedgerRecord;
 }
 

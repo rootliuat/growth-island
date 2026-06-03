@@ -1,4 +1,11 @@
-import type { ChildProfile, ClassroomSnapshot, LedgerRecordInput, MoralAgentResponse } from "../types";
+import type {
+  ChildProfile,
+  ClassroomSnapshot,
+  LedgerRecordInput,
+  MoralAgentResponse,
+  SpeechRecognitionResponse,
+  SpeechSynthesisResponse,
+} from "../types";
 
 function getDefaultApiBaseUrl() {
   if (typeof window === "undefined") return "http://localhost:5174";
@@ -7,6 +14,20 @@ function getDefaultApiBaseUrl() {
 }
 
 const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? getDefaultApiBaseUrl()).replace(/\/$/, "");
+
+export class ClassroomApiError extends Error {
+  status: number;
+
+  constructor(status: number, message: string) {
+    super(message || `API request failed: ${status}`);
+    this.name = "ClassroomApiError";
+    this.status = status;
+  }
+}
+
+export function isClassroomApiError(error: unknown): error is ClassroomApiError {
+  return error instanceof ClassroomApiError;
+}
 
 async function requestSnapshot(path: string, init?: RequestInit): Promise<ClassroomSnapshot> {
   const response = await fetch(`${apiBaseUrl}${path}`, {
@@ -19,7 +40,7 @@ async function requestSnapshot(path: string, init?: RequestInit): Promise<Classr
 
   if (!response.ok) {
     const message = await response.text();
-    throw new Error(message || `API request failed: ${response.status}`);
+    throw new ClassroomApiError(response.status, message || `API request failed: ${response.status}`);
   }
 
   return response.json() as Promise<ClassroomSnapshot>;
@@ -69,6 +90,20 @@ async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
 
 export function evaluateMoralRecord(input: { childId: string; operatorChildId: string; transcript: string }) {
   return requestJson<MoralAgentResponse>("/api/agent/moral-evaluate", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export function speakForChild(input: { childId: string; text: string }) {
+  return requestJson<SpeechSynthesisResponse>("/api/speech/speak", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export function transcribeSpeech(input: { audioBase64: string; voiceFormat?: string }) {
+  return requestJson<SpeechRecognitionResponse>("/api/speech/transcribe", {
     method: "POST",
     body: JSON.stringify(input),
   });

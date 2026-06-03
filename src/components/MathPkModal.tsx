@@ -28,8 +28,8 @@ export function MathPkModal({ player, opponent, spiritsById, onClose, onWin }: M
             <Swords size={28} />
           </div>
           <div>
-            <h2>数学魔法竞技场</h2>
-            <p>20 以内算术 · 答对攻击 · 胜者 +30 XP</p>
+            <h2>数学魔法赛</h2>
+            <p>20 以内算术 · 答对点亮 · 完成后获得数学能量</p>
           </div>
           <div className="turn-banner">
             <Sparkles size={16} />

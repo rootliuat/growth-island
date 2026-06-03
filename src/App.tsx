@@ -11,6 +11,7 @@ import { DataManagementModule } from "./components/modules/DataManagementModule"
 import { LeaderboardModule } from "./components/modules/LeaderboardModule";
 import { LotteryModule } from "./components/modules/LotteryModule";
 import { MathArenaModule } from "./components/modules/MathArenaModule";
+import { OrganizationModule } from "./components/modules/OrganizationModule";
 import { RollCallModule } from "./components/modules/RollCallModule";
 import { SettingsModule } from "./components/modules/SettingsModule";
 import { ShopModule } from "./components/modules/ShopModule";
@@ -19,39 +20,145 @@ import { VoiceRecordModule } from "./components/modules/VoiceRecordModule";
 import { moduleConfigById, type AppModuleId } from "./components/modules/moduleConfig";
 import { WorldMapContainer } from "./components/WorldMap/WorldMapContainer";
 import type { PixiWorldMapHandle } from "./components/WorldMap/PixiWorldMap";
+import type { MoralSpeakViewState } from "./components/Hud/MoralSpeakOverlay";
 import { initialChildren } from "./data/classroom";
+import { organizationConfig } from "./data/organization";
+import type { LotteryPrize, ShopReward } from "./data/rewards";
 import { spirits } from "./data/spirits";
+import {
+  compareClassroomBackups,
+  createClassroomBackup,
+  createClearedClassroomBackup,
+  normalizeOrganizationState,
+  normalizeClassroomBackup,
+  parseClassroomBackupJson,
+  serializeClassroomBackup,
+  summarizeClassroomBackup,
+} from "./domain/classroomBackup";
 import { evaluateMoralText } from "./domain/moralAgent";
+import { createGrowthTaskLedgerInput, publishCurriculumTrack, updateParentReportReview as updateOrganizationParentReportReview } from "./domain/organization";
 import { enrichChildren, makeLedgerRecord, normalizeLedgerRecord } from "./domain/progression";
 import { getSpiritAsset, loadSpiritAsset } from "./domain/spiritAssets";
+import { canApproveMoralGrowth, getChildEnergyLabel } from "./domain/virtueEnergy";
 import {
   approveMoralReview,
   createLedgerRecord,
   evaluateMoralRecord,
   fetchClassroomSnapshot,
+  isClassroomApiError,
   patchChildProfile,
   rejectMoralReview,
+  transcribeSpeech,
   undoLedgerRecord,
 } from "./services/classroomApi";
 import type {
   ChildProfile,
+  ClassroomBackupImportPreview,
+  ClassroomBackupSnapshot,
+  ClassroomBackupSummary,
+  ClassroomDataClearSummary,
   ChildWithProgress,
   ClassroomSnapshot,
   LedgerRecord,
   LedgerRecordInput,
+  LotteryDrawRecord,
   MoralEvaluationResult,
   MoralReviewItem,
+  OrganizationState,
+  ParentReportReviewStatus,
+  SettingsChangeRecord,
+  ShopRedemption,
   SpiritDefinition,
   VirtueCategory,
 } from "./types";
 
 type SyncStatus = "connecting" | "online" | "saving" | "offline";
+type GrowthFeedbackKind = "xp" | "energy" | "draw" | "redeem" | "focus" | "status";
+type GrowthFeedbackTone = "positive" | "watch" | "neutral";
+
+interface GrowthFeedback {
+  id: number;
+  kind: GrowthFeedbackKind;
+  tone: GrowthFeedbackTone;
+  title: string;
+  detail?: string;
+  delta?: number;
+  childName?: string;
+}
 
 const backgroundSpiritBatchSize = 2;
 const backgroundSpiritBatchDelayMs = 1100;
 const backgroundSpiritInitialDelayMs = 1400;
 const backgroundSpiritPreloadLimit = 12;
 const activeModuleStorageKey = "growth-island-active-module";
+const classroomBackupStorageKey = "growth-island-classroom-backup";
+const teacherModeStorageKey = "growth-island-teacher-mode";
+const settingsChangesStorageKey = "growth-island-settings-changes";
+const shopRedemptionsStorageKey = "growth-island-shop-redemptions";
+const lotteryDrawsStorageKey = "growth-island-lottery-draws";
+const organizationStateStorageKey = "growth-island-organization-state";
+
+const emptyOrganizationState: OrganizationState = {
+  activeCurriculumByClassroomId: {},
+  parentReportReviewsByChildId: {},
+};
+
+function getShortFeedbackReason(reason: string) {
+  const cleaned = reason
+    .replace(/^课堂记录：/, "")
+    .replace(/^抽取台：/, "")
+    .replace(/^随机点名：/, "")
+    .replace(/^数学魔法 PK 胜利 \+30$/, "数学魔法闯关")
+    .replace(/^语音记录：/, "贝壳记录：")
+    .replace(/^复核通过：/, "复核通过：")
+    .trim();
+  if (cleaned.includes("快速加分") || cleaned.includes("课堂积极回应")) return "课堂成长点亮";
+  if (cleaned.includes("扣分") || cleaned.includes("减分")) return "老师提醒";
+  return cleaned.replace(/\s*[+＋-]\d+\s*XP?$/i, "").slice(0, 34);
+}
+
+function GrowthFeedbackOverlay({ feedback }: { feedback?: GrowthFeedback }) {
+  if (!feedback) return null;
+  const stageLabel =
+    feedback.kind === "focus"
+      ? "回岛"
+      : feedback.kind === "redeem"
+        ? "小铺"
+        : feedback.kind === "draw"
+          ? "抽取"
+          : feedback.kind === "energy"
+            ? "能量"
+            : feedback.kind === "xp"
+              ? "能量"
+              : "成长";
+  const childInitial = feedback.childName?.slice(0, 1) ?? stageLabel.slice(0, 1);
+
+  return (
+    <div
+      key={feedback.id}
+      className={`growth-feedback-overlay ${feedback.tone}`}
+      data-kind={feedback.kind}
+      data-delta={feedback.delta ?? ""}
+      data-child={feedback.childName ?? ""}
+      aria-live="polite"
+      role="status"
+    >
+      {typeof feedback.delta === "number" ? (
+        <span className="growth-feedback-float" aria-hidden="true">
+          {feedback.delta > 0 ? "光点到账" : "老师提醒"}
+        </span>
+      ) : null}
+      <div className="growth-feedback-card">
+        <span className="growth-feedback-sigil" aria-hidden="true">{childInitial}</span>
+        <div className="growth-feedback-copy">
+          <span>{stageLabel}</span>
+          <strong>{feedback.title}</strong>
+          {feedback.detail ? <em>{feedback.detail}</em> : null}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function getInitialActiveModule(): AppModuleId {
   if (typeof window === "undefined") return "home";
@@ -59,6 +166,78 @@ function getInitialActiveModule(): AppModuleId {
   const fromStorage = window.localStorage.getItem(activeModuleStorageKey);
   const candidate = fromQuery || fromStorage;
   return candidate && moduleConfigById.has(candidate as AppModuleId) ? (candidate as AppModuleId) : "home";
+}
+
+function getInitialClassroomBackup(): ClassroomBackupSnapshot | null {
+  if (typeof window === "undefined") return null;
+  const stored = window.localStorage.getItem(classroomBackupStorageKey);
+  if (!stored) return null;
+  try {
+    return parseClassroomBackupJson(stored);
+  } catch {
+    return null;
+  }
+}
+
+function saveClassroomBackupToStorage(snapshot: ClassroomBackupSnapshot) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(classroomBackupStorageKey, serializeClassroomBackup(snapshot));
+}
+
+function saveOrganizationStateToStorage(state: OrganizationState) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(organizationStateStorageKey, JSON.stringify(state));
+}
+
+function getInitialTeacherMode() {
+  if (typeof window === "undefined") return true;
+  const stored = window.localStorage.getItem(teacherModeStorageKey);
+  return stored === null ? true : stored === "true";
+}
+
+function getInitialSettingsChanges(): SettingsChangeRecord[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(settingsChangesStorageKey) ?? "[]") as SettingsChangeRecord[];
+    return Array.isArray(parsed)
+      ? parsed.filter((item) => item && typeof item.id === "string" && typeof item.key === "string").slice(0, 50)
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function getInitialShopRedemptions(): ShopRedemption[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(shopRedemptionsStorageKey) ?? "[]") as ShopRedemption[];
+    return Array.isArray(parsed)
+      ? parsed.filter((item) => item && typeof item.id === "string" && typeof item.childId === "string").slice(0, 50)
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function getInitialLotteryDraws(): LotteryDrawRecord[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(lotteryDrawsStorageKey) ?? "[]") as LotteryDrawRecord[];
+    return Array.isArray(parsed)
+      ? parsed.filter((item) => item && typeof item.id === "string" && typeof item.childId === "string").slice(0, 50)
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function getInitialOrganizationState(): OrganizationState {
+  if (typeof window === "undefined") return emptyOrganizationState;
+  try {
+    return normalizeOrganizationState(JSON.parse(window.localStorage.getItem(organizationStateStorageKey) ?? "{}"));
+  } catch {
+    return emptyOrganizationState;
+  }
 }
 
 function spiritAssetKey(child: ChildWithProgress) {
@@ -110,22 +289,77 @@ const seededMoralReviews: MoralReviewItem[] = [
   },
 ];
 
+function getMoralSpeakSummary(result: MoralEvaluationResult, fallback: string) {
+  if (!canApproveMoralGrowth(result)) return "请老师帮忙";
+  return fallback || `${getChildEnergyLabel(result.category)}能量`;
+}
+
+function getMoralRecorderSettings() {
+  if (typeof MediaRecorder === "undefined") return undefined;
+  const candidates = [
+    { mimeType: "audio/webm;codecs=opus", voiceFormat: "webm" },
+    { mimeType: "audio/webm", voiceFormat: "webm" },
+    { mimeType: "audio/mp4", voiceFormat: "m4a" },
+    { mimeType: "audio/mpeg", voiceFormat: "mp3" },
+  ];
+  return candidates.find((candidate) => MediaRecorder.isTypeSupported(candidate.mimeType)) ?? { mimeType: "", voiceFormat: "webm" };
+}
+
+function blobToBase64(blob: Blob) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = String(reader.result || "");
+      resolve(result.includes(",") ? result.slice(result.indexOf(",") + 1) : result);
+    };
+    reader.onerror = () => reject(reader.error ?? new Error("Audio read failed"));
+    reader.readAsDataURL(blob);
+  });
+}
+
+function downloadJson(filename: string, json: string) {
+  const blob = new Blob([json], { type: "application/json;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  window.setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
 export function App() {
   const worldMapRef = useRef<PixiWorldMapHandle | null>(null);
-  const [children, setChildren] = useState<ChildProfile[]>(initialChildren);
-  const [ledger, setLedger] = useState<LedgerRecord[]>(seededLedger);
-  const [moralReviews, setMoralReviews] = useState<MoralReviewItem[]>(seededMoralReviews);
-  const [selectedChildId, setSelectedChildId] = useState(initialChildren[0].id);
-  const [teacherMode, setTeacherMode] = useState(true);
+  const moralSpeakTimersRef = useRef<number[]>([]);
+  const moralRecorderRef = useRef<MediaRecorder | null>(null);
+  const moralRecordingStreamRef = useRef<MediaStream | null>(null);
+  const moralRecordingChildRef = useRef<ChildWithProgress | null>(null);
+  const moralRecordingFormatRef = useRef("webm");
+  const moralRecordingCancelledRef = useRef(false);
+  const moralSpeakApprovingRef = useRef(false);
+  const growthFeedbackTimerRef = useRef<number | undefined>(undefined);
+  const homeFocusTimerRefs = useRef<number[]>([]);
+  const growthTaskInFlightRef = useRef(new Set<string>());
+  const initialClassroomBackup = useMemo(() => getInitialClassroomBackup(), []);
+  const [children, setChildren] = useState<ChildProfile[]>(() => initialClassroomBackup?.children ?? initialChildren);
+  const [ledger, setLedger] = useState<LedgerRecord[]>(() => initialClassroomBackup?.ledger ?? seededLedger);
+  const [moralReviews, setMoralReviews] = useState<MoralReviewItem[]>(() => initialClassroomBackup?.moralReviews ?? seededMoralReviews);
+  const [selectedChildId, setSelectedChildId] = useState(initialClassroomBackup?.children[0]?.id ?? initialChildren[0].id);
+  const [moralSpeak, setMoralSpeak] = useState<MoralSpeakViewState>({ stage: "idle" });
+  const [teacherMode, setTeacherMode] = useState(() => initialClassroomBackup?.settings.teacherMode ?? getInitialTeacherMode());
+  const [settingsChanges, setSettingsChanges] = useState<SettingsChangeRecord[]>(() => initialClassroomBackup?.settings.settingsChanges ?? getInitialSettingsChanges());
   const [activeModule, setActiveModule] = useState<AppModuleId>(() => getInitialActiveModule());
   const [rollCallCurrentId, setRollCallCurrentId] = useState<string | undefined>();
   const [rollCallCalledIds, setRollCallCalledIds] = useState<string[]>([]);
   const [rollCallExcludeCalled, setRollCallExcludeCalled] = useState(true);
+  const [lotteryDraws, setLotteryDraws] = useState<LotteryDrawRecord[]>(() => initialClassroomBackup?.lotteryDraws ?? getInitialLotteryDraws());
+  const [shopRedemptions, setShopRedemptions] = useState<ShopRedemption[]>(() => initialClassroomBackup?.shopRedemptions ?? getInitialShopRedemptions());
+  const [organizationState, setOrganizationState] = useState<OrganizationState>(() => initialClassroomBackup?.organization ?? getInitialOrganizationState());
   const [dialogueOpen, setDialogueOpen] = useState(false);
   const [pkPair, setPkPair] = useState<{ playerId: string; opponentId: string } | null>(null);
   const [lastEvaluation, setLastEvaluation] = useState<MoralEvaluationResult | undefined>();
-  const [syncStatus, setSyncStatus] = useState<SyncStatus>("connecting");
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>(() => (initialClassroomBackup ? "offline" : "connecting"));
   const [assetVersion, setAssetVersion] = useState(0);
+  const [growthFeedback, setGrowthFeedback] = useState<GrowthFeedback | undefined>();
 
   const spiritsById = useMemo(() => new Map(spirits.map((spirit) => [spirit.id, spirit])), []);
   const childrenWithProgress = useMemo(() => enrichChildren(children, ledger), [children, ledger]);
@@ -159,12 +393,115 @@ export function App() {
   const pendingReviews = moralReviews.filter((review) => review.status === "pending_review");
   const activeModuleConfig = moduleConfigById.get(activeModule) ?? moduleConfigById.get("home")!;
 
+  const showGrowthFeedback = (feedback: Omit<GrowthFeedback, "id">) => {
+    if (growthFeedbackTimerRef.current) window.clearTimeout(growthFeedbackTimerRef.current);
+    setGrowthFeedback({ ...feedback, id: Date.now() });
+    growthFeedbackTimerRef.current = window.setTimeout(() => {
+      setGrowthFeedback(undefined);
+      growthFeedbackTimerRef.current = undefined;
+    }, 2600);
+  };
+
+  const clearHomeFocusTimers = () => {
+    homeFocusTimerRefs.current.forEach((timer) => window.clearTimeout(timer));
+    homeFocusTimerRefs.current = [];
+  };
+
+  const scheduleHomeFocusTimer = (callback: () => void, delay: number) => {
+    const timer = window.setTimeout(() => {
+      homeFocusTimerRefs.current = homeFocusTimerRefs.current.filter((item) => item !== timer);
+      callback();
+    }, delay);
+    homeFocusTimerRefs.current.push(timer);
+  };
+
+  const clearMoralSpeakTimers = () => {
+    moralSpeakTimersRef.current.forEach((timer) => window.clearTimeout(timer));
+    moralSpeakTimersRef.current = [];
+  };
+
+  const stopMoralRecordingTracks = () => {
+    moralRecordingStreamRef.current?.getTracks().forEach((track) => track.stop());
+    moralRecordingStreamRef.current = null;
+  };
+
+  const stopMoralSpeakRecording = (cancel = false) => {
+    clearMoralSpeakTimers();
+    if (cancel) moralRecordingCancelledRef.current = true;
+    const recorder = moralRecorderRef.current;
+    if (recorder && recorder.state !== "inactive") {
+      recorder.stop();
+      return;
+    }
+    stopMoralRecordingTracks();
+  };
+
+  const scheduleMoralSpeakTimer = (callback: () => void, delay: number) => {
+    const timer = window.setTimeout(callback, delay);
+    moralSpeakTimersRef.current.push(timer);
+  };
+
+  const getNextSelfServiceChild = (childId: string) => {
+    if (childrenWithProgress.length === 0) return undefined;
+    const currentIndex = childrenWithProgress.findIndex((child) => child.id === childId);
+    const nextIndex = currentIndex >= 0 ? (currentIndex + 1) % childrenWithProgress.length : 0;
+    return {
+      child: childrenWithProgress[nextIndex],
+      queueIndex: nextIndex + 1,
+      queueTotal: childrenWithProgress.length,
+    };
+  };
+
+  const prepareMoralSpeakForChild = (childId: string) => {
+    clearMoralSpeakTimers();
+    stopMoralSpeakRecording(true);
+    moralSpeakApprovingRef.current = false;
+    setMoralSpeak({ stage: "ready", childId });
+  };
+
   const selectChildFromDock = (childId: string) => {
     if (childId === selectedChild.id) {
       worldMapRef.current?.focusSelected();
+      prepareMoralSpeakForChild(childId);
+      showGrowthFeedback({
+        kind: "focus",
+        tone: "neutral",
+        title: `${selectedChild.name} 准备领能量`,
+        detail: "点麦克风说成长",
+        childName: selectedChild.name,
+      });
       return;
     }
+    const child = childrenWithProgress.find((item) => item.id === childId);
     setSelectedChildId(childId);
+    prepareMoralSpeakForChild(childId);
+    if (child) {
+      showGrowthFeedback({
+        kind: "focus",
+        tone: "neutral",
+        title: `${child.name} 准备领能量`,
+        detail: `点麦克风说成长`,
+        childName: child.name,
+      });
+    }
+  };
+
+  const selectChildFromMap = (childId: string) => {
+    const child = childrenWithProgress.find((item) => item.id === childId);
+    const latestEnergyRecord = allRecentRecords.find((record) => record.childId === childId && record.delta > 0 && record.category);
+    setSelectedChildId(childId);
+    prepareMoralSpeakForChild(childId);
+    if (child) {
+      showGrowthFeedback({
+        kind: "status",
+        tone: "neutral",
+        title: `${child.name} 准备记录`,
+        detail: latestEnergyRecord?.category
+          ? `${getChildEnergyLabel(latestEnergyRecord.category)}能量已点亮`
+          : "点麦克风说成长",
+        childName: child.name,
+      });
+    }
   };
 
   const applySnapshot = (snapshot: ClassroomSnapshot) => {
@@ -174,7 +511,82 @@ export function App() {
     setSyncStatus("online");
   };
 
+  const createCurrentClassroomBackup = () =>
+    createClassroomBackup({
+      children,
+      ledger,
+      moralReviews,
+      shopRedemptions,
+      lotteryDraws,
+      teacherMode,
+      settingsChanges,
+      organization: organizationState,
+    });
+
+  const restoreClassroomBackup = (input: ClassroomBackupSnapshot) => {
+    const backup = normalizeClassroomBackup(input);
+    saveClassroomBackupToStorage(backup);
+    saveOrganizationStateToStorage(backup.organization);
+    setChildren(backup.children);
+    setLedger(backup.ledger.map(normalizeLedgerRecord));
+    setMoralReviews(backup.moralReviews);
+    setShopRedemptions(backup.shopRedemptions.slice(0, 50));
+    setLotteryDraws(backup.lotteryDraws.slice(0, 50));
+    setTeacherMode(backup.settings.teacherMode);
+    setSettingsChanges(backup.settings.settingsChanges.slice(0, 50));
+    setOrganizationState(backup.organization);
+    setSelectedChildId((current) => (backup.children.some((child) => child.id === current) ? current : backup.children[0]?.id ?? initialChildren[0].id));
+    setSyncStatus("offline");
+    return summarizeClassroomBackup(backup);
+  };
+
+  const exportClassroomBackup = () => {
+    const backup = createCurrentClassroomBackup();
+    saveClassroomBackupToStorage(backup);
+    downloadJson(`beihai-growth-island-backup-${backup.exportedAt.slice(0, 10)}.json`, serializeClassroomBackup(backup));
+    return summarizeClassroomBackup(backup);
+  };
+
+  const previewClassroomBackupFile = async (file: File): Promise<ClassroomBackupImportPreview> => {
+    const backup = parseClassroomBackupJson(await file.text());
+    const current = createCurrentClassroomBackup();
+    return {
+      snapshot: backup,
+      comparison: compareClassroomBackups(current, backup),
+    };
+  };
+
+  const confirmClassroomBackupImport = (backup: ClassroomBackupSnapshot) => restoreClassroomBackup(backup);
+
+  const clearLocalDemoData = (): ClassroomDataClearSummary => {
+    const clearedAt = new Date().toISOString();
+    const summary: ClassroomDataClearSummary = {
+      childCount: children.length,
+      clearedLedgerCount: ledger.length,
+      clearedReviewCount: moralReviews.length,
+      clearedShopRedemptionCount: shopRedemptions.length,
+      clearedLotteryDrawCount: lotteryDraws.length,
+      clearedSettingsChangeCount: settingsChanges.length,
+      clearedActiveCurriculumCount: Object.keys(organizationState.activeCurriculumByClassroomId).length,
+      clearedParentReportReviewCount: Object.keys(organizationState.parentReportReviewsByChildId).length,
+      exportedAt: clearedAt,
+    };
+    const clearedBackup = createClearedClassroomBackup({ children, teacherMode }, clearedAt);
+    saveClassroomBackupToStorage(clearedBackup);
+    saveOrganizationStateToStorage(clearedBackup.organization);
+    setLedger([]);
+    setMoralReviews([]);
+    setShopRedemptions([]);
+    setLotteryDraws([]);
+    setSettingsChanges([]);
+    setOrganizationState(clearedBackup.organization);
+    setSelectedChildId((current) => (children.some((child) => child.id === current) ? current : children[0]?.id ?? initialChildren[0].id));
+    setSyncStatus("offline");
+    return summary;
+  };
+
   useEffect(() => {
+    if (initialClassroomBackup) return;
     let cancelled = false;
     fetchClassroomSnapshot()
       .then((snapshot) => {
@@ -187,7 +599,7 @@ export function App() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [initialClassroomBackup]);
 
   useEffect(() => {
     let cancelled = false;
@@ -254,17 +666,122 @@ export function App() {
   }, [activeModule]);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (!params.has("qa")) return;
-    const qaWindow = window as unknown as {
-      __growthIslandLedger?: LedgerRecord[];
-      __growthIslandReviews?: MoralReviewItem[];
-      __growthIslandSelectedChildId?: string;
+    window.localStorage.setItem(teacherModeStorageKey, String(teacherMode));
+  }, [teacherMode]);
+
+  useEffect(() => {
+    window.localStorage.setItem(settingsChangesStorageKey, JSON.stringify(settingsChanges.slice(0, 50)));
+  }, [settingsChanges]);
+
+  useEffect(() => {
+    window.localStorage.setItem(shopRedemptionsStorageKey, JSON.stringify(shopRedemptions.slice(0, 50)));
+  }, [shopRedemptions]);
+
+  useEffect(() => {
+    window.localStorage.setItem(lotteryDrawsStorageKey, JSON.stringify(lotteryDraws.slice(0, 50)));
+  }, [lotteryDraws]);
+
+  useEffect(() => {
+    saveOrganizationStateToStorage(organizationState);
+  }, [organizationState]);
+
+  useEffect(() => {
+    if (syncStatus === "connecting") return;
+    saveClassroomBackupToStorage(
+      createClassroomBackup({
+        children,
+        ledger,
+        moralReviews,
+        shopRedemptions,
+        lotteryDraws,
+        teacherMode,
+        settingsChanges,
+        organization: organizationState,
+      }),
+    );
+  }, [children, ledger, lotteryDraws, moralReviews, organizationState, settingsChanges, shopRedemptions, syncStatus, teacherMode]);
+
+  useEffect(() => {
+    if (activeModule === "home") return;
+    clearMoralSpeakTimers();
+    stopMoralSpeakRecording(true);
+    moralSpeakApprovingRef.current = false;
+    setMoralSpeak({ stage: "idle" });
+  }, [activeModule]);
+
+  useEffect(() => {
+    return () => {
+      clearMoralSpeakTimers();
+      clearHomeFocusTimers();
+      stopMoralSpeakRecording(true);
+      if (growthFeedbackTimerRef.current) window.clearTimeout(growthFeedbackTimerRef.current);
     };
+  }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (!params.has("qa") || !import.meta.env.DEV) return;
+    const qaWindow = window as unknown as {
+      __growthIslandClearDemoDataForQa?: () => ClassroomDataClearSummary;
+      __growthIslandCreateBackupForQa?: () => ClassroomBackupSnapshot;
+      __growthIslandLedger?: LedgerRecord[];
+      __growthIslandLocalBackup?: ClassroomBackupSummary;
+      __growthIslandLotteryDraws?: LotteryDrawRecord[];
+      __growthIslandOrganizationState?: OrganizationState;
+      __growthIslandReviews?: MoralReviewItem[];
+      __growthIslandRestoreBackupForQa?: (backup: ClassroomBackupSnapshot) => ClassroomBackupSummary;
+      __growthIslandSettingsChanges?: SettingsChangeRecord[];
+      __growthIslandShopRedemptions?: ShopRedemption[];
+      __growthIslandSelectedChildId?: string;
+      __growthIslandTeacherMode?: boolean;
+      __growthIslandMoralSpeakStage?: MoralSpeakViewState["stage"];
+      __growthIslandMoralSpeak?: MoralSpeakViewState;
+      __growthIslandFeedback?: GrowthFeedback;
+      __growthIslandMoralAnalysisDelayMs?: number;
+      __growthIslandStartMoralReviewForQa?: (input: {
+        childId?: string;
+        transcript: string;
+        summary?: string;
+      }) => boolean;
+      __growthIslandPrepareMoralSpeakForQa?: (childId?: string) => boolean;
+    };
+    qaWindow.__growthIslandClearDemoDataForQa = clearLocalDemoData;
+    qaWindow.__growthIslandCreateBackupForQa = createCurrentClassroomBackup;
     qaWindow.__growthIslandLedger = ledger;
+    qaWindow.__growthIslandLocalBackup = summarizeClassroomBackup(createCurrentClassroomBackup());
+    qaWindow.__growthIslandLotteryDraws = lotteryDraws;
+    qaWindow.__growthIslandOrganizationState = organizationState;
     qaWindow.__growthIslandReviews = moralReviews;
+    qaWindow.__growthIslandRestoreBackupForQa = restoreClassroomBackup;
+    qaWindow.__growthIslandSettingsChanges = settingsChanges;
+    qaWindow.__growthIslandShopRedemptions = shopRedemptions;
     qaWindow.__growthIslandSelectedChildId = selectedChild.id;
-  }, [ledger, moralReviews, selectedChild.id]);
+    qaWindow.__growthIslandTeacherMode = teacherMode;
+    qaWindow.__growthIslandMoralSpeakStage = moralSpeak.stage;
+    qaWindow.__growthIslandMoralSpeak = moralSpeak;
+    qaWindow.__growthIslandFeedback = growthFeedback;
+    qaWindow.__growthIslandMoralAnalysisDelayMs ??= 0;
+    qaWindow.__growthIslandStartMoralReviewForQa = (input) => {
+      const child =
+        childrenWithProgress.find((item) => item.id === input.childId) ??
+        childrenWithProgress.find((item) => item.id === selectedChild.id) ??
+        selectedChild;
+      clearMoralSpeakTimers();
+      moralSpeakApprovingRef.current = false;
+      setSelectedChildId(child.id);
+      finishQaMoralRecognition(child, input.transcript, input.summary ?? input.transcript.slice(0, 8));
+      return true;
+    };
+    qaWindow.__growthIslandPrepareMoralSpeakForQa = (childId) => {
+      const child =
+        childrenWithProgress.find((item) => item.id === childId) ??
+        childrenWithProgress.find((item) => item.id === selectedChild.id) ??
+        selectedChild;
+      setSelectedChildId(child.id);
+      prepareMoralSpeakForChild(child.id);
+      return true;
+    };
+  }, [childrenWithProgress, growthFeedback, ledger, lotteryDraws, moralReviews, moralSpeak, organizationState, selectedChild, settingsChanges, shopRedemptions, teacherMode]);
 
   useEffect(() => {
     const existingIds = new Set(children.map((child) => child.id));
@@ -277,7 +794,35 @@ export function App() {
   }, [children]);
 
   const commitLedger = async (input: LedgerRecordInput) => {
+    const feedbackChild = childrenWithProgress.find((child) => child.id === input.childId);
+    if (feedbackChild && input.delta !== 0) {
+      const nextXp = Math.max(0, feedbackChild.xp + input.delta);
+      const isSelfServiceEnergy = input.delta > 0 && input.reason.startsWith("自助成长：");
+      if (isSelfServiceEnergy) {
+        showGrowthFeedback({
+          kind: "energy",
+          tone: "positive",
+          title: `${feedbackChild.name} 能量进精灵`,
+          detail: `${getChildEnergyLabel(input.category)}点亮 · 精灵能量 ${nextXp}`,
+          childName: feedbackChild.name,
+        });
+      } else {
+        showGrowthFeedback({
+          kind: "xp",
+          tone: input.delta > 0 ? "positive" : "watch",
+          title: input.delta > 0 ? `${feedbackChild.name} 成长光点到账` : `${feedbackChild.name} 需要老师提醒`,
+          detail: `${getShortFeedbackReason(input.reason)} · 精灵能量变亮`,
+          delta: input.delta,
+          childName: feedbackChild.name,
+        });
+      }
+    }
+
     if (syncStatus === "offline") {
+      const isSafeOfflineDialogueRecord = input.source === "dialogue-agent" && input.delta > 0 && Boolean(input.category);
+      if ((input.source === "dialogue-agent" || input.reviewId) && !isSafeOfflineDialogueRecord) {
+        throw new Error("复核记录需要连接后再入账");
+      }
       const record = makeLedgerRecord(input);
       setLedger((current) => [record, ...current]);
       return;
@@ -287,7 +832,11 @@ export function App() {
     try {
       const snapshot = await createLedgerRecord(input);
       applySnapshot(snapshot);
-    } catch {
+    } catch (error) {
+      if (isClassroomApiError(error) && (input.source === "dialogue-agent" || input.reviewId)) {
+        setSyncStatus("online");
+        throw error;
+      }
       setSyncStatus("offline");
       const record = makeLedgerRecord(input);
       setLedger((current) => [record, ...current]);
@@ -325,9 +874,20 @@ export function App() {
     });
   };
 
-  const undoLast = () => {
-    const target = recentRecords.find((record) => !record.undoOf);
+  const undoLast = (recordId?: string) => {
+    const target = recordId
+      ? allRecentRecords.find((record) => record.id === recordId && !record.undoOf)
+      : recentRecords.find((record) => !record.undoOf);
     if (!target) return;
+    const targetChild = childrenWithProgress.find((child) => child.id === target.childId) ?? selectedChild;
+    showGrowthFeedback({
+      kind: "xp",
+      tone: target.delta > 0 ? "watch" : "positive",
+      title: `撤销 ${targetChild.name} 的成长光点`,
+      detail: "老师已处理",
+      delta: -target.delta,
+      childName: targetChild.name,
+    });
     if (syncStatus !== "offline") {
       setSyncStatus("saving");
       undoLedgerRecord(target.id, selectedChild.id)
@@ -381,8 +941,290 @@ export function App() {
     return result;
   };
 
+  const finishMoralSpeakWithTranscript = async (child: ChildWithProgress, transcript: string, summary?: string) => {
+    const cleanTranscript = transcript.trim();
+    if (!cleanTranscript) {
+      setMoralSpeak({ stage: "error", childId: child.id, error: "没听清，可以再说一次" });
+      return;
+    }
+
+    if (syncStatus !== "offline") {
+      setSyncStatus("saving");
+      try {
+        const response = await evaluateMoralRecord({
+          childId: child.id,
+          operatorChildId: child.id,
+          transcript: cleanTranscript,
+        });
+        setLastEvaluation(response.result);
+        applySnapshot(response.snapshot);
+        setSelectedChildId(child.id);
+        setMoralSpeak({
+          stage: "pendingReview",
+          childId: child.id,
+          transcript: cleanTranscript,
+          summary: getMoralSpeakSummary(response.result, summary ?? cleanTranscript.slice(0, 8)),
+          result: response.result,
+          reviewId: response.reviewItem.id,
+        });
+        return;
+      } catch {
+        setSyncStatus("offline");
+      }
+    }
+
+    const result = evaluateMoralText(cleanTranscript);
+    setLastEvaluation(result);
+    const review: MoralReviewItem = {
+      id: crypto.randomUUID(),
+      childId: child.id,
+      operatorChildId: child.id,
+      transcript: cleanTranscript,
+      result,
+      status: "pending_review",
+      createdAt: new Date().toISOString(),
+    };
+    setMoralReviews((current) => [review, ...current]);
+    setMoralSpeak({
+      stage: "pendingReview",
+      childId: child.id,
+      transcript: cleanTranscript,
+      summary: getMoralSpeakSummary(result, summary ?? cleanTranscript.slice(0, 8)),
+      result,
+      reviewId: review.id,
+    });
+  };
+
+  const processRecordedMoralAudio = async (child: ChildWithProgress, blob: Blob, voiceFormat: string) => {
+    setMoralSpeak({ stage: "recognizing", childId: child.id });
+    try {
+      const audioBase64 = await blobToBase64(blob);
+      const response = await transcribeSpeech({ audioBase64, voiceFormat });
+      await finishMoralSpeakWithTranscript(child, response.text);
+    } catch {
+      setMoralSpeak({ stage: "error", childId: child.id, error: "没听清，可以再说一次" });
+    }
+  };
+
+  const finishQaMoralRecognition = (child: ChildWithProgress, transcript: string, summary: string) => {
+    const result = evaluateMoralText(transcript);
+    setLastEvaluation(result);
+    const review: MoralReviewItem = {
+      id: crypto.randomUUID(),
+      childId: child.id,
+      operatorChildId: child.id,
+      transcript,
+      result,
+      status: "pending_review",
+      createdAt: new Date().toISOString(),
+    };
+    setMoralReviews((current) => [review, ...current]);
+    setMoralSpeak({
+      stage: "pendingReview",
+      childId: child.id,
+      transcript,
+      summary: getMoralSpeakSummary(result, summary),
+      result,
+      reviewId: review.id,
+    });
+  };
+
+  const startMoralSpeak = async () => {
+    clearMoralSpeakTimers();
+    moralSpeakApprovingRef.current = false;
+    const child = childrenWithProgress.find((item) => item.id === moralSpeak.childId) ?? selectedChild;
+    setSelectedChildId(child.id);
+
+    const settings = getMoralRecorderSettings();
+    if (!settings || !navigator.mediaDevices?.getUserMedia) {
+      setMoralSpeak({ stage: "error", childId: child.id, error: "这台设备还不能录音" });
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const chunks: BlobPart[] = [];
+      const recorder = new MediaRecorder(stream, settings.mimeType ? { mimeType: settings.mimeType } : undefined);
+      moralRecordingCancelledRef.current = false;
+      moralRecorderRef.current = recorder;
+      moralRecordingStreamRef.current = stream;
+      moralRecordingChildRef.current = child;
+      moralRecordingFormatRef.current = settings.voiceFormat;
+
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) chunks.push(event.data);
+      };
+      recorder.onerror = () => {
+        stopMoralRecordingTracks();
+        setMoralSpeak({ stage: "error", childId: child.id, error: "录音中断，请再说一次" });
+      };
+      recorder.onstop = () => {
+        stopMoralRecordingTracks();
+        moralRecorderRef.current = null;
+        if (moralRecordingCancelledRef.current) {
+          moralRecordingCancelledRef.current = false;
+          return;
+        }
+        const recordedChild = moralRecordingChildRef.current ?? child;
+        const blob = new Blob(chunks, { type: recorder.mimeType || settings.mimeType || "audio/webm" });
+        if (blob.size === 0) {
+          setMoralSpeak({ stage: "error", childId: recordedChild.id, error: "没听清，可以再说一次" });
+          return;
+        }
+        void processRecordedMoralAudio(recordedChild, blob, moralRecordingFormatRef.current);
+      };
+
+      setMoralSpeak({ stage: "listening", childId: child.id });
+      recorder.start();
+      scheduleMoralSpeakTimer(stopMoralSpeakRecording, 5500);
+    } catch {
+      stopMoralRecordingTracks();
+      setMoralSpeak({ stage: "error", childId: child.id, error: "请允许麦克风后再试" });
+    }
+  };
+
+  const retryMoralSpeak = () => {
+    const childId = moralSpeak.childId ?? selectedChild.id;
+    stopMoralSpeakRecording(true);
+    moralSpeakApprovingRef.current = false;
+    setSelectedChildId(childId);
+    setMoralSpeak({ stage: "ready", childId });
+  };
+
+  const approveMoralSpeak = async () => {
+    if (
+      !moralSpeak.result ||
+      !moralSpeak.childId ||
+      !canApproveMoralGrowth(moralSpeak.result)
+    ) {
+      return;
+    }
+    if (moralSpeakApprovingRef.current) return;
+    moralSpeakApprovingRef.current = true;
+    clearMoralSpeakTimers();
+    const result = moralSpeak.result;
+    const transcript = moralSpeak.transcript ?? "孩子自助成长记录";
+    const reviewId = moralSpeak.reviewId;
+    const completedChild = childrenWithProgress.find((child) => child.id === moralSpeak.childId) ?? selectedChild;
+    const nextTurn = getNextSelfServiceChild(moralSpeak.childId);
+    const nextChild = nextTurn?.child;
+
+    try {
+      await commitLedger({
+        childId: moralSpeak.childId,
+        operatorChildId: selectedChild.id,
+        operatorRole: "teacher",
+        delta: result.xpDelta,
+        source: "dialogue-agent",
+        category: result.category,
+        reason: `自助成长：${transcript}`,
+        aiSuggested: true,
+        reviewStatus: "approved",
+        reviewId,
+        teacherAdjustedReview: moralSpeak.adjusted === true,
+      });
+    } catch {
+      moralSpeakApprovingRef.current = false;
+      setMoralSpeak((current) => ({
+        ...current,
+        stage: "error",
+        error: "请老师稍后再确认",
+      }));
+      return;
+    }
+
+    if (reviewId) {
+      setMoralReviews((current) =>
+        current.map((review) =>
+          review.id === reviewId
+            ? {
+                ...review,
+                result,
+                status: "approved",
+                reviewedAt: new Date().toISOString(),
+                reviewedByChildId: selectedChild.id,
+              }
+            : review,
+        ),
+      );
+    }
+
+    setMoralSpeak((current) => ({
+      ...current,
+      stage: "success",
+      result,
+      previousChildName: completedChild.name,
+      nextChildId: nextChild?.id,
+      nextChildName: nextChild?.name,
+      queueIndex: nextTurn?.queueIndex,
+      queueTotal: nextTurn?.queueTotal,
+    }));
+    scheduleMoralSpeakTimer(() => {
+      moralSpeakApprovingRef.current = false;
+      if (nextTurn && nextChild) {
+        setSelectedChildId(nextChild.id);
+        setMoralSpeak({
+          stage: "ready",
+          childId: nextChild.id,
+          previousChildName: completedChild.name,
+          nextChildId: nextChild.id,
+          nextChildName: nextChild.name,
+          queueAutoReady: true,
+          queueIndex: nextTurn.queueIndex,
+          queueTotal: nextTurn.queueTotal,
+        });
+        showGrowthFeedback({
+          kind: "focus",
+          tone: "neutral",
+          title: `下一位 ${nextChild.name}`,
+          detail: "说成长",
+          childName: nextChild.name,
+        });
+      } else {
+        setMoralSpeak({ stage: "idle" });
+      }
+      worldMapRef.current?.focusFullIsland();
+      scheduleMoralSpeakTimer(() => worldMapRef.current?.focusFullIsland(), 140);
+    }, 2400);
+  };
+
+  const adjustMoralSpeak = (delta: 10 | 20 | 30) => {
+    setMoralSpeak((current) => {
+      if (!current.result) return current;
+      const result = {
+        ...current.result,
+        category: current.result.category ?? "积极阳光",
+        confidence: Math.max(current.result.confidence, 0.6),
+        xpDelta: delta,
+        intent: "reward" as const,
+        status: "pending_review" as const,
+      };
+      if (current.reviewId) {
+        setMoralReviews((reviews) =>
+          reviews.map((review) => (review.id === current.reviewId ? { ...review, result } : review)),
+        );
+      }
+      return { ...current, result, adjusted: true };
+    });
+  };
+
+  const deferMoralSpeak = () => {
+    clearMoralSpeakTimers();
+    stopMoralSpeakRecording(true);
+    moralSpeakApprovingRef.current = false;
+    setMoralSpeak({ stage: "idle" });
+    worldMapRef.current?.focusFullIsland();
+  };
+
   const updateSelectedChild = (patch: Partial<ChildProfile>) => {
     setChildren((current) => current.map((child) => (child.id === selectedChild.id ? { ...child, ...patch } : child)));
+    showGrowthFeedback({
+      kind: "status",
+      tone: "neutral",
+      title: `${selectedChild.name} 小屋已更新`,
+      detail: selectedChild.petName,
+      childName: selectedChild.name,
+    });
     if (syncStatus === "offline") return;
 
     setSyncStatus("saving");
@@ -392,10 +1234,36 @@ export function App() {
   };
 
   const approveReview = (reviewId: string) => {
+    const reviewForFeedback = moralReviews.find((item) => item.id === reviewId);
+    if (reviewForFeedback && !canApproveMoralGrowth(reviewForFeedback.result)) {
+      const childName = childrenWithProgress.find((child) => child.id === reviewForFeedback.childId)?.name;
+      showGrowthFeedback({
+        kind: "status",
+        tone: "watch",
+        title: "请老师先处理",
+        detail: childName ? `${childName} 先改成成长记录` : "先改成成长记录",
+      });
+      return;
+    }
+    const feedbackChild = reviewForFeedback
+      ? childrenWithProgress.find((child) => child.id === reviewForFeedback.childId)
+      : undefined;
+    if (reviewForFeedback && feedbackChild && canApproveMoralGrowth(reviewForFeedback.result)) {
+      const delta = reviewForFeedback.result.xpDelta;
+      showGrowthFeedback({
+        kind: "xp",
+        tone: delta > 0 ? "positive" : "watch",
+        title: `${feedbackChild.name} 能量进精灵`,
+        detail: `${getChildEnergyLabel(reviewForFeedback.result.category)}点亮`,
+        delta,
+        childName: feedbackChild.name,
+      });
+    }
+
     if (syncStatus === "offline") {
       const review = moralReviews.find((item) => item.id === reviewId);
       const record =
-        review && review.result.xpDelta !== 0
+        review && canApproveMoralGrowth(review.result)
           ? makeLedgerRecord({
               childId: review.childId,
               operatorChildId: selectedChild.id,
@@ -431,6 +1299,13 @@ export function App() {
   };
 
   const rejectReview = (reviewId: string) => {
+    const review = moralReviews.find((item) => item.id === reviewId);
+    showGrowthFeedback({
+      kind: "status",
+      tone: "watch",
+      title: "复核已驳回",
+      detail: review ? childrenWithProgress.find((child) => child.id === review.childId)?.name : undefined,
+    });
     if (syncStatus === "offline") {
       setMoralReviews((current) =>
         current.map((review) =>
@@ -452,21 +1327,42 @@ export function App() {
     rejectMoralReview(reviewId, selectedChild.id).then(applySnapshot).catch(() => setSyncStatus("offline"));
   };
 
-  const focusChildOnHome = (childId = selectedChild.id) => {
+  const focusChildOnHome = (childId = selectedChild.id, options?: { prepareMoralSpeak?: boolean }) => {
+    const child = childrenWithProgress.find((item) => item.id === childId) ?? selectedChild;
     setSelectedChildId(childId);
+    if (options?.prepareMoralSpeak) {
+      moralSpeakApprovingRef.current = false;
+      setMoralSpeak({ stage: "ready", childId });
+    }
     setActiveModule("home");
+    showGrowthFeedback({
+      kind: "focus",
+      tone: "neutral",
+      title: `回岛定位 ${child.name}`,
+      detail: "回岛看精灵能量",
+      childName: child.name,
+    });
+    clearHomeFocusTimers();
     let attempts = 0;
     const focusWhenReady = () => {
       attempts += 1;
       worldMapRef.current?.focusSelected();
-      if (attempts < 12) window.setTimeout(focusWhenReady, 100);
+      if (attempts < 12) scheduleHomeFocusTimer(focusWhenReady, 100);
     };
-    window.setTimeout(focusWhenReady, 120);
+    scheduleHomeFocusTimer(focusWhenReady, 120);
   };
 
   const openChildProfile = (childId = selectedChild.id) => {
+    const child = childrenWithProgress.find((item) => item.id === childId) ?? selectedChild;
     setSelectedChildId(childId);
     setActiveModule("child-profile");
+    showGrowthFeedback({
+      kind: "status",
+      tone: "neutral",
+      title: `进入 ${child.name} 的小屋`,
+      detail: "查看精灵能量",
+      childName: child.name,
+    });
   };
 
   const drawRollCallChild = (eligibleChildIds?: string[]) => {
@@ -487,11 +1383,24 @@ export function App() {
     setRollCallCalledIds((current) =>
       rollCallExcludeCalled && current.includes(nextChild.id) ? current : [nextChild.id, ...current],
     );
+    showGrowthFeedback({
+      kind: "draw",
+      tone: "positive",
+      title: `抽中 ${nextChild.name}`,
+      detail: "贝签已亮起",
+      childName: nextChild.name,
+    });
   };
 
   const resetRollCall = () => {
     setRollCallCurrentId(undefined);
     setRollCallCalledIds([]);
+    showGrowthFeedback({
+      kind: "status",
+      tone: "neutral",
+      title: "抽取台已换一轮",
+      detail: `${childrenWithProgress.length} 名幼儿`,
+    });
   };
 
   const quickRecordRollCallChild = (childId: string) => {
@@ -503,7 +1412,7 @@ export function App() {
       delta: 10,
       source: "manual",
       category: "积极阳光",
-      reason: "随机点名：课堂积极回应 +10",
+      reason: "抽取台：课堂积极回应 +10",
     });
   };
 
@@ -530,6 +1439,58 @@ export function App() {
     }
   };
 
+  const completeGrowthTask = (childId: string, taskId: string) => {
+    const input = createGrowthTaskLedgerInput(organizationConfig, taskId, childId, selectedChild.id);
+    if (!input) return;
+    const taskKey = `${childId}:${taskId}`;
+    const alreadyRecorded = ledger.some((record) => record.childId === childId && record.reason === input.reason && !record.undone);
+    if (alreadyRecorded || growthTaskInFlightRef.current.has(taskKey)) return;
+    growthTaskInFlightRef.current.add(taskKey);
+    setSelectedChildId(childId);
+    void commitLedger(input).finally(() => {
+      growthTaskInFlightRef.current.delete(taskKey);
+    });
+  };
+
+  const publishOrganizationCurriculumTrack = (classroomId: string, trackId: string) => {
+    const activeCurriculumByClassroomId = publishCurriculumTrack(
+      organizationConfig,
+      classroomId,
+      trackId,
+      organizationState.activeCurriculumByClassroomId,
+    );
+    if (!activeCurriculumByClassroomId) return false;
+    setOrganizationState((current) => ({ ...current, activeCurriculumByClassroomId }));
+    showGrowthFeedback({
+      kind: "status",
+      tone: "positive",
+      title: "课程已发布",
+      detail: "成长任务已同步",
+    });
+    return true;
+  };
+
+  const updateParentReportReview = (childId: string, status: ParentReportReviewStatus, note?: string) => {
+    const nextState = updateOrganizationParentReportReview(
+      organizationConfig,
+      organizationState,
+      childId,
+      status,
+      new Date().toISOString(),
+      "园所码头",
+      note,
+    );
+    if (!nextState) return false;
+    setOrganizationState(nextState);
+    showGrowthFeedback({
+      kind: "status",
+      tone: status === "approved" ? "positive" : "neutral",
+      title: status === "approved" ? "报告已通过" : status === "revision_requested" ? "报告已退回" : "报告已提交",
+      detail: childrenWithProgress.find((child) => child.id === childId)?.name,
+    });
+    return true;
+  };
+
   const openVoiceRecordFromRollCall = (childId: string) => {
     setSelectedChildId(childId);
     setActiveModule("voice-record");
@@ -537,6 +1498,9 @@ export function App() {
 
   const analyzeVoiceRecord = async (childId: string, transcript: string) => {
     setSelectedChildId(childId);
+    const qaWindow = window as unknown as { __growthIslandMoralAnalysisDelayMs?: number };
+    const analysisDelayMs = import.meta.env.DEV ? Math.max(0, qaWindow.__growthIslandMoralAnalysisDelayMs ?? 0) : 0;
+    if (analysisDelayMs > 0) await new Promise((resolve) => window.setTimeout(resolve, analysisDelayMs));
     const result = evaluateMoralText(transcript);
     setLastEvaluation(result);
     return result;
@@ -545,7 +1509,15 @@ export function App() {
   const confirmVoiceRecord = (childId: string, transcript: string, result: MoralEvaluationResult) => {
     setSelectedChildId(childId);
     setLastEvaluation(result);
-    if (result.xpDelta === 0) return;
+    if (!canApproveMoralGrowth(result)) {
+      showGrowthFeedback({
+        kind: "status",
+        tone: "watch",
+        title: "请老师先处理",
+        detail: "先改成成长记录",
+      });
+      return;
+    }
     void commitLedger({
       childId,
       operatorChildId: childId,
@@ -561,10 +1533,112 @@ export function App() {
 
   const rejectVoiceSuggestion = (result: MoralEvaluationResult) => {
     setLastEvaluation({ ...result, status: "rejected" });
+    showGrowthFeedback({
+      kind: "status",
+      tone: "watch",
+      title: "贝壳建议已退回",
+      detail: result.category,
+    });
+  };
+
+  const recordLotteryDraw = (childId: string, prize: LotteryPrize) => {
+    const child = childrenWithProgress.find((item) => item.id === childId);
+    if (!child) return undefined;
+    setSelectedChildId(child.id);
+    const draw: LotteryDrawRecord = {
+      id: crypto.randomUUID(),
+      childId: child.id,
+      childName: child.name,
+      prizeId: prize.id,
+      prizeName: prize.name,
+      rarity: prize.rarity,
+      description: prize.description,
+      status: "drawn",
+      createdAt: new Date().toISOString(),
+    };
+    setLotteryDraws((current) => [draw, ...current].slice(0, 50));
+    showGrowthFeedback({
+      kind: "draw",
+      tone: "positive",
+      title: `${child.name} 抽中 ${prize.name}`,
+      detail: prize.rarity,
+      childName: child.name,
+    });
+    return draw;
+  };
+
+  const redeemShopReward = (childId: string, reward: ShopReward) => {
+    const child = childrenWithProgress.find((item) => item.id === childId);
+    if (!child || child.xp < reward.cost) return;
+    setSelectedChildId(child.id);
+    const redemption: ShopRedemption = {
+      id: crypto.randomUUID(),
+      childId: child.id,
+      rewardId: reward.id,
+      rewardName: reward.name,
+      rewardCategory: reward.category,
+      cost: reward.cost,
+      status: "requested",
+      createdAt: new Date().toISOString(),
+    };
+    setShopRedemptions((current) => [redemption, ...current].slice(0, 50));
+    showGrowthFeedback({
+      kind: "redeem",
+      tone: "positive",
+      title: `${child.name} 已选 ${reward.name}`,
+      detail: `${reward.cost} 能量 · 待老师发放`,
+      childName: child.name,
+    });
+  };
+
+  const addSettingsChange = (record: Omit<SettingsChangeRecord, "id" | "createdAt">) => {
+    const change: SettingsChangeRecord = {
+      id: crypto.randomUUID(),
+      createdAt: new Date().toISOString(),
+      ...record,
+    };
+    setSettingsChanges((current) => [change, ...current].slice(0, 50));
+    return change;
+  };
+
+  const toggleTeacherModeSetting = () => {
+    const next = !teacherMode;
+    setTeacherMode(next);
+    addSettingsChange({
+      key: "teacher-mode",
+      label: "教师掌舵",
+      value: next ? "掌舵中" : "未掌舵",
+    });
+  };
+
+  const saveCurrentSettings = () => {
+    addSettingsChange({
+      key: "settings-save",
+      label: "保存舵盘",
+      value: teacherMode ? "教师掌舵中" : "学生浏览中",
+    });
+    showGrowthFeedback({
+      kind: "status",
+      tone: "neutral",
+      title: "舵盘已保存",
+      detail: teacherMode ? "教师掌舵中" : "学生浏览中",
+    });
   };
 
   const returnToHome = () => {
     focusChildOnHome();
+  };
+
+  const openSceneFromHome = (moduleId: "roll-call" | "math-arena" | "shop" | "leaderboard") => {
+    const module = moduleConfigById.get(moduleId);
+    setActiveModule(moduleId);
+    showGrowthFeedback({
+      kind: "status",
+      tone: "neutral",
+      title: module ? `进入 ${module.sceneLabel}` : "进入场景",
+      detail: `${selectedChild.name} · 准备点亮`,
+      childName: selectedChild.name,
+    });
   };
 
   return (
@@ -574,6 +1648,7 @@ export function App() {
       selectedChildName={selectedChild.name}
       syncStatus={syncStatus}
       onModuleChange={setActiveModule}
+      onSelfServiceChild={() => focusChildOnHome(selectedChild.id, { prepareMoralSpeak: true })}
     >
       {activeModule === "home" ? (
         <section className="home-module app-shell" aria-label="北海成长岛首页">
@@ -594,7 +1669,16 @@ export function App() {
               selectedChildId={selectedChild.id}
               recentLedger={bigScreenRecentRecords}
               assetVersion={assetVersion}
-              onSelectChild={setSelectedChildId}
+              onSelectChild={selectChildFromMap}
+              moralSpeak={moralSpeak}
+              onOpenModule={openSceneFromHome}
+              onPrepareMoralSpeak={(childId) => focusChildOnHome(childId, { prepareMoralSpeak: true })}
+              onStartMoralSpeak={startMoralSpeak}
+              onStopMoralSpeak={stopMoralSpeakRecording}
+              onRetryMoralSpeak={retryMoralSpeak}
+              onApproveMoralSpeak={approveMoralSpeak}
+              onAdjustMoralSpeak={adjustMoralSpeak}
+              onDeferMoralSpeak={deferMoralSpeak}
             />
 
             <aside className="hud-rail">
@@ -604,6 +1688,7 @@ export function App() {
                 spiritAssetUrl={selectedSpiritAsset?.url}
                 recentRecords={recentRecords.filter((record) => record.delta > 0)}
                 onOpenProfile={openChildProfile}
+                onStartSelfService={(childId) => focusChildOnHome(childId, { prepareMoralSpeak: true })}
               />
             </aside>
           </section>
@@ -612,6 +1697,7 @@ export function App() {
             childrenWithProgress={childrenWithProgress}
             spiritsById={spiritsById}
             selectedChildId={selectedChild.id}
+            nextTurnChildId={moralSpeak.stage === "ready" && moralSpeak.queueAutoReady ? moralSpeak.childId : undefined}
             onSelectChild={selectChildFromDock}
           />
         </section>
@@ -628,7 +1714,7 @@ export function App() {
           onToggleExcludeCalled={() => setRollCallExcludeCalled((current) => !current)}
           onQuickRecord={quickRecordRollCallChild}
           onOpenVoiceRecord={openVoiceRecordFromRollCall}
-          onFocusChild={focusChildOnHome}
+          onFocusChild={(childId) => focusChildOnHome(childId, { prepareMoralSpeak: true })}
         />
       ) : activeModule === "teacher-workbench" ? (
         <TeacherWorkbenchModule
@@ -687,7 +1773,9 @@ export function App() {
           childrenWithProgress={childrenWithProgress}
           spiritsById={spiritsById}
           selectedChild={selectedChild}
+          drawRecords={lotteryDraws}
           onSelectChild={setSelectedChildId}
+          onDrawPrize={recordLotteryDraw}
           onFocusChild={focusChildOnHome}
         />
       ) : activeModule === "shop" ? (
@@ -695,8 +1783,10 @@ export function App() {
           childrenWithProgress={childrenWithProgress}
           spiritsById={spiritsById}
           selectedChild={selectedChild}
+          redemptions={shopRedemptions}
           onSelectChild={setSelectedChildId}
           onFocusChild={focusChildOnHome}
+          onRedeemReward={redeemShopReward}
         />
       ) : activeModule === "child-profile" ? (
         <ChildProfileModule
@@ -706,6 +1796,7 @@ export function App() {
           recentRecords={allRecentRecords}
           onSelectChild={setSelectedChildId}
           onFocusChild={focusChildOnHome}
+          onUpdateChild={updateSelectedChild}
         />
       ) : activeModule === "data-management" ? (
         <DataManagementModule
@@ -717,13 +1808,32 @@ export function App() {
           onFocusChild={focusChildOnHome}
           onApproveReview={approveReview}
           onRejectReview={rejectReview}
+          onExportBackup={exportClassroomBackup}
+          onPreviewImportBackup={previewClassroomBackupFile}
+          onConfirmImportBackup={confirmClassroomBackupImport}
+          onClearDemoData={clearLocalDemoData}
+        />
+      ) : activeModule === "organization" ? (
+        <OrganizationModule
+          childrenWithProgress={childrenWithProgress}
+          ledger={allRecentRecords}
+          moralReviews={moralReviews}
+          selectedChild={selectedChild}
+          activeCurriculumByClassroomId={organizationState.activeCurriculumByClassroomId}
+          parentReportReviewsByChildId={organizationState.parentReportReviewsByChildId}
+          onFocusChild={focusChildOnHome}
+          onCompleteGrowthTask={completeGrowthTask}
+          onPublishCurriculumTrack={publishOrganizationCurriculumTrack}
+          onUpdateParentReportReview={updateParentReportReview}
         />
       ) : activeModule === "settings" ? (
         <SettingsModule
           childrenCount={children.length}
           teacherMode={teacherMode}
           syncStatus={syncStatus}
-          onToggleTeacherMode={() => setTeacherMode((current) => !current)}
+          settingsChanges={settingsChanges}
+          onToggleTeacherMode={toggleTeacherModeSetting}
+          onSaveSettings={saveCurrentSettings}
           onReturnHome={returnToHome}
         />
       ) : (
@@ -749,6 +1859,8 @@ export function App() {
           onWin={recordMathPkWin}
         />
       )}
+
+      <GrowthFeedbackOverlay feedback={growthFeedback} />
     </AppShell>
   );
 }

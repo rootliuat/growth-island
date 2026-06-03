@@ -188,16 +188,16 @@ export class SpiritLayer {
     });
 
     const levelBadge = new Container();
-    levelBadge.x = -47;
-    levelBadge.y = -60;
+    levelBadge.x = -50;
+    levelBadge.y = -63;
     const badgeBg = new Graphics()
-      .roundRect(-24, -13, 48, 26, 13)
+      .roundRect(-32, -17, 64, 34, 17)
       .fill(0xffe7a8)
       .stroke({ width: 2.5, color: spirit.accent, alpha: 0.58 });
     const badgeText = new Text({
       text: `Lv.${spirit.child.level}`,
-      resolution: 2,
-      style: { fontFamily: "Georgia, Microsoft YaHei", fontSize: 12, fontWeight: "900", fill: 0x573a25 },
+      resolution: 3,
+      style: { fontFamily: "Georgia, Microsoft YaHei", fontSize: 17, fontWeight: "900", fill: 0x573a25 },
     });
     badgeText.label = "level-text";
     badgeText.anchor.set(0.5);

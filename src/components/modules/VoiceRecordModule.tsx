@@ -13,6 +13,7 @@ import {
   X,
 } from "lucide-react";
 import { getSpiritAsset } from "../../domain/spiritAssets";
+import { canApproveMoralGrowth, getTeacherHelpText } from "../../domain/virtueEnergy";
 import type { ChildWithProgress, LedgerRecord, MoralEvaluationResult, MoralReviewItem, SpiritDefinition } from "../../types";
 
 interface VoiceRecordModuleProps {
@@ -75,7 +76,8 @@ export function VoiceRecordModule({
   );
   const childNames = useMemo(() => new Map(childrenWithProgress.map((child) => [child.id, child.name])), [childrenWithProgress]);
   const canSubmit = transcript.trim().length > 0 && analysisState !== "analyzing";
-  const canConfirm = Boolean(result) && analysisState === "ready";
+  const canHandleResult = Boolean(result) && analysisState === "ready";
+  const canConfirm = canHandleResult && canApproveMoralGrowth(result);
 
   const updateTranscript = (value: string) => {
     setTranscript(value);
@@ -93,6 +95,7 @@ export function VoiceRecordModule({
 
   const confirmResult = () => {
     if (!result) return;
+    if (!canApproveMoralGrowth(result)) return;
     onConfirm(selectedChild.id, transcript.trim(), result);
     setAnalysisState("confirmed");
   };
@@ -108,36 +111,36 @@ export function VoiceRecordModule({
       <div className="voice-record-header">
         <div>
           <span className="module-eyebrow">
-            <Mic size={18} />
-            AI 建议
+            <Mic size={18} aria-hidden="true" />
+            记录贝壳
           </span>
-          <h1 id="voice-record-title">文本记录</h1>
+          <h1 id="voice-record-title">贝壳记录台</h1>
         </div>
         <button type="button" className="voice-home-button" onClick={() => onFocusChild(selectedChild.id)}>
-          <Home size={18} />
-          回到成长岛
+          <Home size={18} aria-hidden="true" />
+          回成长岛
         </button>
       </div>
 
       <div className="voice-record-layout">
-        <section className="voice-record-workbench" aria-label="文本记录工作台">
+        <section className="voice-record-workbench" aria-label="贝壳记录台">
           <div className="voice-child-card">
             <div className="voice-child-avatar">
-              {currentAsset?.url ? <img src={currentAsset.url} alt={`${selectedChild.petName} 精灵`} /> : selectedChild.name.slice(0, 1)}
+              {currentAsset?.url ? <img src={currentAsset.url} alt={`${selectedChild.name} 精灵`} /> : selectedChild.name.slice(0, 1)}
             </div>
             <div>
-              <span>当前记录对象</span>
+              <span>当前伙伴</span>
               <strong>{selectedChild.name}</strong>
               <em>
-                {selectedChild.petName} · Lv.{selectedChild.level} · {selectedChild.xp} XP
+                Lv.{selectedChild.level} · {selectedChild.xp} XP
               </em>
             </div>
           </div>
 
           <label className="voice-field">
             <span>
-              <UserRound size={16} />
-              选择孩子
+              <UserRound size={16} aria-hidden="true" />
+              选择伙伴
             </span>
             <select
               id="voice-record-child"
@@ -151,7 +154,7 @@ export function VoiceRecordModule({
             >
               {childrenWithProgress.map((child) => (
                 <option key={child.id} value={child.id}>
-                  {child.name} · {child.petName} · Lv.{child.level}
+                  {child.name} · Lv.{child.level}
                 </option>
               ))}
             </select>
@@ -167,8 +170,8 @@ export function VoiceRecordModule({
 
           <label className="voice-field voice-transcript-field">
             <span>
-              <ScrollText size={16} />
-              表现文本
+              <ScrollText size={16} aria-hidden="true" />
+              观察内容
             </span>
             <textarea
               id="voice-record-transcript"
@@ -179,29 +182,29 @@ export function VoiceRecordModule({
           </label>
 
           <div className="voice-actions">
-            <button type="button" className="voice-secondary-action" disabled aria-label="语音稍后接入">
-              <Mic size={18} />
-              语音稍后
+            <button type="button" className="voice-secondary-action" disabled aria-label="语音记录暂未开启">
+              <Mic size={18} aria-hidden="true" />
+              语音未开
             </button>
             <button type="button" className="voice-primary-action" onClick={submitAnalysis} disabled={!canSubmit}>
-              <WandSparkles size={19} />
-              {analysisState === "analyzing" ? "分析中" : "提交分析"}
+              <WandSparkles size={19} aria-hidden="true" />
+              {analysisState === "analyzing" ? "生成中" : "生成建议"}
             </button>
           </div>
         </section>
 
-        <aside className="voice-result-panel" aria-label="AI 判断结果">
+        <aside className="voice-result-panel" aria-label="贝壳判断">
           <div className="voice-panel-title">
-            <Sparkles size={19} />
-            <strong>AI 判断结果</strong>
-            <span>{analysisState === "confirmed" ? "已确认" : analysisState === "rejected" ? "已驳回" : result ? "待确认" : "等待分析"}</span>
+            <Sparkles size={19} aria-hidden="true" />
+            <strong>贝壳判断</strong>
+            <span>{analysisState === "confirmed" ? "已入账" : analysisState === "rejected" ? "已退回" : result ? "待老师确认" : "等待记录"}</span>
           </div>
 
           {result ? (
             <div className="voice-result-card">
               <div className="voice-score-row">
                 <span>{result.category ?? "待老师选择"}</span>
-                <strong>{formatDelta(result.xpDelta)} XP</strong>
+                <strong>{canApproveMoralGrowth(result) ? `${formatDelta(result.xpDelta)} XP` : getTeacherHelpText(result)}</strong>
               </div>
               <div className="voice-confidence">
                 <span style={{ width: `${Math.round(result.confidence * 100)}%` }} />
@@ -210,63 +213,66 @@ export function VoiceRecordModule({
               <em>{result.reasonForChild}</em>
               <div className="voice-result-actions">
                 <button type="button" onClick={confirmResult} disabled={!canConfirm}>
-                  <Check size={17} />
-                  确认入账
+                  <Check size={17} aria-hidden="true" />
+                  {canConfirm ? "记入成长" : "先处理"}
                 </button>
-                <button type="button" onClick={rejectResult} disabled={!canConfirm}>
-                  <X size={17} />
-                  驳回建议
+                <button type="button" onClick={rejectResult} disabled={!canHandleResult}>
+                  <X size={17} aria-hidden="true" />
+                  不采用
                 </button>
               </div>
             </div>
           ) : (
             <div className="voice-empty-result">
-              <ShieldCheck size={24} />
-              <p>选择孩子并提交文本后，会在这里出现德育维度、建议 XP 和判断理由。</p>
+              <ShieldCheck size={24} aria-hidden="true" />
+              <strong>等待记录</strong>
             </div>
           )}
 
-          <section className="voice-review-list" aria-label="待复核记录">
+          <section className="voice-review-list" aria-label="待老师看记录">
             <div className="voice-subtitle">
-              <ClipboardCheck size={17} />
-              <strong>待复核</strong>
+              <ClipboardCheck size={17} aria-hidden="true" />
+              <strong>待老师看</strong>
               <span>{pendingReviews.length}</span>
             </div>
             {pendingReviews.length === 0 ? (
-              <p className="voice-muted">没有待复核记录</p>
+              <p className="voice-muted">暂无待看记录</p>
             ) : (
-              pendingReviews.slice(0, 3).map((review) => (
-                <article className="voice-review-row" key={review.id}>
-                  <div>
-                    <strong>{childNames.get(review.childId) ?? "幼儿"}</strong>
-                    <span>
-                      {review.result.category ?? "未分类"} · {formatDelta(review.result.xpDelta)} XP
-                    </span>
-                  </div>
-                  <p>{review.transcript || review.result.reasonForTeacher}</p>
-                  <div className="voice-review-actions">
-                    <button type="button" onClick={() => onApproveReview(review.id)}>
-                      通过
-                    </button>
-                    <button type="button" onClick={() => onRejectReview(review.id)}>
-                      驳回
-                    </button>
-                  </div>
-                </article>
-              ))
+              pendingReviews.slice(0, 3).map((review) => {
+                const canRecord = canApproveMoralGrowth(review.result);
+                return (
+                  <article className="voice-review-row" key={review.id}>
+                    <div>
+                      <strong>{childNames.get(review.childId) ?? "幼儿"}</strong>
+                      <span>
+                        {canRecord ? `${review.result.category ?? "未分类"} · ${formatDelta(review.result.xpDelta)} XP` : getTeacherHelpText(review.result)}
+                      </span>
+                    </div>
+                    <p>{review.transcript || review.result.reasonForTeacher}</p>
+                    <div className="voice-review-actions">
+                      <button type="button" disabled={!canRecord} onClick={() => onApproveReview(review.id)}>
+                        {canRecord ? "记入" : "先处理"}
+                      </button>
+                      <button type="button" onClick={() => onRejectReview(review.id)}>
+                        不采用
+                      </button>
+                    </div>
+                  </article>
+                );
+              })
             )}
           </section>
         </aside>
       </div>
 
-      <section className="voice-history-panel" aria-label="最近文本记录">
+      <section className="voice-history-panel" aria-label="最近入账">
         <div className="voice-subtitle">
-          <BadgeCheck size={17} />
-          <strong>最近文本记录</strong>
+          <BadgeCheck size={17} aria-hidden="true" />
+          <strong>最近入账</strong>
           <span>{selectedVoiceRecords.length}</span>
         </div>
         {selectedVoiceRecords.length === 0 ? (
-          <p className="voice-muted">当前孩子还没有文本记录入账</p>
+          <p className="voice-muted">这个伙伴还没有入账记录</p>
         ) : (
           <div className="voice-history-list">
             {selectedVoiceRecords.map((record) => (
@@ -275,7 +281,7 @@ export function VoiceRecordModule({
                 <div>
                   <strong>{record.reason}</strong>
                   <em>
-                    {record.category ?? "德育记录"} · {formatRecordTime(record.createdAt)}
+                    {record.category ?? "成长记录"} · {formatRecordTime(record.createdAt)}
                   </em>
                 </div>
               </article>

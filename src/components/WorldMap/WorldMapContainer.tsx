@@ -6,17 +6,30 @@ import {
   Landmark,
   Leaf,
   MessageCircle,
+  Mic,
   Shell,
+  ShoppingBag,
   Sparkles,
   Sun,
   Swords,
   TreePine,
+  Trophy,
   type LucideIcon,
 } from "lucide-react";
+import { MoralSpeakOverlay, type MoralSpeakViewState } from "../Hud/MoralSpeakOverlay";
+import { TeacherMoralReviewCard } from "../Hud/TeacherMoralReviewCard";
 import type { PixiWorldMapHandle } from "./PixiWorldMap";
+import { virtueCategories } from "../../data/spirits";
+import {
+  canApproveMoralGrowth,
+  getChildEnergyColor,
+  getChildEnergyLabel,
+  getChildEnergyResultText,
+} from "../../domain/virtueEnergy";
 import { regions } from "../../game/regionConfig";
 import type { RegionId } from "../../game/types";
-import type { ChildWithProgress, LedgerRecord, SpiritDefinition } from "../../types";
+import { virtueRegionMap } from "../../game/virtueRegions";
+import type { ChildWithProgress, LedgerRecord, SpiritDefinition, VirtueCategory } from "../../types";
 
 interface WorldMapContainerProps {
   childrenWithProgress: ChildWithProgress[];
@@ -25,8 +38,17 @@ interface WorldMapContainerProps {
   recentLedger: LedgerRecord[];
   assetVersion: number;
   onSelectChild: (childId: string) => void;
+  onOpenModule?: (moduleId: "roll-call" | "math-arena" | "shop" | "leaderboard") => void;
+  onPrepareMoralSpeak?: (childId: string) => void;
   onOpenDialogue?: () => void;
   onOpenPk?: () => void;
+  moralSpeak?: MoralSpeakViewState;
+  onStartMoralSpeak?: () => void;
+  onStopMoralSpeak?: () => void;
+  onRetryMoralSpeak?: () => void;
+  onApproveMoralSpeak?: () => void;
+  onAdjustMoralSpeak?: (delta: 10 | 20 | 30) => void;
+  onDeferMoralSpeak?: () => void;
 }
 
 const PixiWorldMap = lazy(() => import("./PixiWorldMap").then((module) => ({ default: module.PixiWorldMap })));
@@ -41,8 +63,46 @@ const travelMeta: Record<RegionId, { shortName: string; Icon: LucideIcon }> = {
   "old-street": { shortName: "老街", Icon: Landmark },
 };
 
+const sceneGateEntries: Array<{
+  moduleId: "roll-call" | "math-arena" | "shop" | "leaderboard";
+  label: string;
+  reward: string;
+  hint: string;
+  status: string;
+  accent: string;
+  Icon: LucideIcon;
+}> = [
+  { moduleId: "roll-call", label: "抽取台", reward: "贝签光", hint: "贝签", status: "开始", accent: "#f6b352", Icon: Sparkles },
+  { moduleId: "math-arena", label: "魔法赛", reward: "魔法光", hint: "闯关", status: "挑战", accent: "#ff7a59", Icon: Swords },
+  { moduleId: "shop", label: "海岛小铺", reward: "兑换", hint: "小票", status: "可换", accent: "#2d9fb2", Icon: ShoppingBag },
+  { moduleId: "leaderboard", label: "荣誉广场", reward: "荣誉光", hint: "广场", status: "看看", accent: "#3b7d53", Icon: Trophy },
+];
+
 function toCssHex(color: number) {
   return `#${color.toString(16).padStart(6, "0")}`;
+}
+
+function getMapActivityLabel(reason: string) {
+  const cleaned = reason
+    .replace(/^演示数据[:：]?\s*/, "")
+    .replace(/^课堂记录[:：]?\s*/, "")
+    .replace(/^对话[:：]?\s*/, "")
+    .replace(/^语音记录[:：]?\s*/, "")
+    .trim();
+  if (cleaned.includes("已有成长")) return "已有成长";
+  if (cleaned.includes("自助成长")) return "能量到账";
+  if (cleaned.includes("快速加分") || cleaned.includes("课堂积极回应")) return "成长点亮";
+  if (cleaned.includes("数学魔法")) return "数学光点";
+  if (cleaned.includes("快速扣分") || cleaned.includes("减分") || cleaned.includes("扣分")) return "老师提醒";
+  return cleaned.replace(/\s*[+＋-]\d+\s*XP?$/i, "").slice(0, 12);
+}
+
+function isMapActivityRecord(record: LedgerRecord) {
+  return !record.undone && record.source !== "undo" && !record.reason.startsWith("演示数据");
+}
+
+function isSelfServiceEnergyRecord(record?: LedgerRecord) {
+  return Boolean(record?.delta && record.delta > 0 && record.reason.startsWith("自助成长："));
 }
 
 export const WorldMapContainer = forwardRef<PixiWorldMapHandle, WorldMapContainerProps>(function WorldMapContainer(
@@ -54,13 +114,62 @@ export const WorldMapContainer = forwardRef<PixiWorldMapHandle, WorldMapContaine
   const selectedChild =
     props.childrenWithProgress.find((child) => child.id === props.selectedChildId) ?? props.childrenWithProgress[0];
   const selectedSpirit = selectedChild ? props.spiritsById.get(selectedChild.spiritId) : undefined;
+  const moralSpeak = props.moralSpeak ?? { stage: "idle" as const };
+  const moralSpeakChild = moralSpeak.childId
+    ? props.childrenWithProgress.find((child) => child.id === moralSpeak.childId) ?? selectedChild
+    : selectedChild;
+  const moralSpeakSpirit = moralSpeakChild ? props.spiritsById.get(moralSpeakChild.spiritId) : selectedSpirit;
   const selectedRecord = useMemo(
-    () => props.recentLedger.find((record) => record.childId === props.selectedChildId && !record.undone),
+    () => props.recentLedger.find((record) => record.childId === props.selectedChildId && isMapActivityRecord(record)),
     [props.recentLedger, props.selectedChildId],
   );
-  const deltaText = selectedRecord ? `${selectedRecord.delta > 0 ? "+" : ""}${selectedRecord.delta} XP` : "待成长";
-  const activityText = selectedRecord ? selectedRecord.reason.slice(0, 16) : "今天还没有新的成长记录";
-  const hasCompanionActions = Boolean(props.onOpenDialogue || props.onOpenPk);
+  const selectedEnergyCategories = useMemo(
+    () =>
+      new Set(
+        props.recentLedger
+          .filter((record) => record.childId === props.selectedChildId && record.delta > 0 && record.category && isMapActivityRecord(record))
+          .map((record) => record.category as VirtueCategory),
+      ),
+    [props.recentLedger, props.selectedChildId],
+  );
+  const selectedRecordIsSelfService = isSelfServiceEnergyRecord(selectedRecord);
+  const deltaText = selectedRecord
+    ? selectedRecordIsSelfService
+      ? "能量进精灵"
+      : selectedRecord.delta > 0
+        ? "光点到账"
+        : "老师提醒"
+    : "";
+  const activityText = selectedRecord ? getMapActivityLabel(selectedRecord.reason) : "";
+  const hasCompanionActions = Boolean(props.onPrepareMoralSpeak || props.onOpenDialogue || props.onOpenPk);
+  const safeMoralResult = canApproveMoralGrowth(moralSpeak.result) ? moralSpeak.result : undefined;
+  const hasMoralResult = Boolean(moralSpeak.result);
+  const currentEnergyCategory = hasMoralResult ? safeMoralResult?.category : selectedRecord?.category;
+  const currentEnergyColor = getChildEnergyColor(currentEnergyCategory);
+  const currentEnergyLabel = getChildEnergyLabel(currentEnergyCategory);
+  const currentEnergyValue = moralSpeak.result
+    ? moralSpeak.stage === "success" && safeMoralResult
+      ? `${currentEnergyLabel}点亮`
+      : getChildEnergyResultText(moralSpeak.result)
+    : selectedRecord?.category
+      ? selectedRecordIsSelfService
+        ? `${getChildEnergyLabel(selectedRecord.category)}能量`
+        : `${getChildEnergyLabel(selectedRecord.category)}能量`
+      : "等待点亮";
+  const currentEnergyState =
+    moralSpeak.stage === "pendingReview"
+      ? safeMoralResult
+        ? "待点亮"
+        : "需帮助"
+      : moralSpeak.stage === "success"
+        ? "能量进精灵"
+        : moralSpeak.stage === "error"
+          ? "需帮助"
+          : selectedRecord
+            ? selectedRecordIsSelfService
+              ? "刚点亮"
+              : "成长点亮"
+            : "能量地图";
 
   useImperativeHandle(ref, () => ({
     focusFullIsland: () => {
@@ -85,7 +194,7 @@ export const WorldMapContainer = forwardRef<PixiWorldMapHandle, WorldMapContaine
   };
 
   return (
-    <section className="world-map-shell">
+    <section className={`world-map-shell moral-stage-${moralSpeak.stage}`}>
       {selectedChild && (
         <div className="map-focus-plaque" style={{ "--focus-accent": selectedSpirit?.accent ?? "#59B97C" } as CSSProperties}>
           <span className="focus-home-badge">
@@ -95,14 +204,16 @@ export const WorldMapContainer = forwardRef<PixiWorldMapHandle, WorldMapContaine
           <div className="focus-copy">
             <strong>{selectedChild.petName}</strong>
             <p>
-              Lv.{selectedChild.level} · {selectedChild.xp} XP · {selectedSpirit?.name ?? "精灵伙伴"}
+              精灵能量 · 能量槽变亮 · {selectedSpirit?.name ?? "精灵伙伴"}
             </p>
           </div>
-          <span className={selectedRecord && selectedRecord.delta < 0 ? "focus-delta negative" : "focus-delta"}>
-            <Sparkles size={15} />
-            {deltaText}
-          </span>
-          <em>{activityText}</em>
+          {selectedRecord && (
+            <span className={selectedRecord.delta < 0 ? "focus-delta negative" : "focus-delta"}>
+              <Sparkles size={15} />
+              {deltaText}
+            </span>
+          )}
+          {activityText && <em>{activityText}</em>}
         </div>
       )}
       <nav className="map-travel-board" aria-label="成长岛区域旅行">
@@ -130,22 +241,103 @@ export const WorldMapContainer = forwardRef<PixiWorldMapHandle, WorldMapContaine
           })}
         </div>
       </nav>
+      {props.onOpenModule && (
+        <nav className="map-scene-gate" aria-label="成长岛场景入口">
+          <strong>
+            <Sparkles size={15} />
+            支线场景
+          </strong>
+          <div>
+            {sceneGateEntries.map(({ moduleId, label, reward, hint, status, accent, Icon }, index) => (
+              <button
+                key={moduleId}
+                type="button"
+                className={`scene-hotspot ${moduleId === "math-arena" ? "is-live" : ""}`}
+                style={{ "--scene-accent": accent, "--scene-index": index } as CSSProperties}
+                data-scene-hotspot={moduleId}
+                data-scene-status={status}
+                onClick={() => props.onOpenModule?.(moduleId)}
+              >
+                <i aria-hidden="true" />
+                <b aria-hidden="true">{index + 1}</b>
+                <Icon size={17} />
+                <span>{label}</span>
+                <em>{reward}</em>
+                <small>{hint}</small>
+                <strong>{status}</strong>
+              </button>
+            ))}
+          </div>
+        </nav>
+      )}
+      <section
+        className={`map-energy-constellation moral-${moralSpeak.stage}`}
+        aria-label="德育能量地图"
+        style={{ "--energy-current": currentEnergyColor } as CSSProperties}
+      >
+        <div className="energy-constellation-head">
+          <span>
+            <Sparkles size={15} />
+            {currentEnergyState}
+          </span>
+          <strong>{currentEnergyValue}</strong>
+        </div>
+        <div className="energy-slot-row">
+          {virtueCategories.map((category) => {
+            const regionId = virtueRegionMap[category];
+            const active = selectedEnergyCategories.has(category);
+            const current = currentEnergyCategory === category;
+            return (
+              <button
+                key={category}
+                type="button"
+                className={`energy-card ${active ? "active" : ""} ${current ? "current" : ""}`.trim()}
+                style={{ "--energy-color": getChildEnergyColor(category) } as CSSProperties}
+                aria-label={`${getChildEnergyLabel(category)}能量，前往${travelMeta[regionId].shortName}`}
+                title={`${getChildEnergyLabel(category)} · ${travelMeta[regionId].shortName}`}
+                data-energy-state={current ? "current" : active ? "lit" : "idle"}
+                data-energy-arrival={current && moralSpeak.stage === "success" ? "arriving" : undefined}
+                onClick={() => focusTravelRegion(regionId)}
+              >
+                <i />
+                <span>{getChildEnergyLabel(category)}</span>
+                <em>{current ? (moralSpeak.stage === "success" ? "进精灵" : selectedRecordIsSelfService ? "刚点亮" : "当前") : active ? "已点亮" : "待点亮"}</em>
+                <b>{travelMeta[regionId].shortName}</b>
+              </button>
+            );
+          })}
+        </div>
+      </section>
       {selectedChild && hasCompanionActions && (
         <div className="map-companion-actions" style={{ "--focus-accent": selectedSpirit?.accent ?? "#59B97C" } as CSSProperties}>
           <span className="companion-action-kicker">
             <Sparkles size={15} />
-            家门口互动
+            自助领取
           </span>
           <strong>{selectedChild.petName}</strong>
           <div>
-            <button type="button" disabled={!props.onOpenDialogue} onClick={props.onOpenDialogue}>
-              <MessageCircle size={18} />
-              对话
-            </button>
-            <button type="button" disabled={!props.onOpenPk} onClick={props.onOpenPk}>
-              <Swords size={18} />
-              PK
-            </button>
+            {props.onPrepareMoralSpeak ? (
+              <button
+                type="button"
+                className="map-self-service-action"
+                onClick={() => props.onPrepareMoralSpeak?.(selectedChild.id)}
+              >
+                <Mic size={18} />
+                说成长
+              </button>
+            ) : null}
+            {props.onOpenDialogue ? (
+              <button type="button" onClick={props.onOpenDialogue}>
+                <MessageCircle size={18} />
+                对话
+              </button>
+            ) : null}
+            {props.onOpenPk ? (
+              <button type="button" onClick={props.onOpenPk}>
+                <Swords size={18} />
+                魔法赛
+              </button>
+            ) : null}
             <button type="button" onClick={() => pixiMapRef.current?.focusSelected()}>
               <Crosshair size={18} />
               家园
@@ -162,6 +354,25 @@ export const WorldMapContainer = forwardRef<PixiWorldMapHandle, WorldMapContaine
       >
         <PixiWorldMap ref={pixiMapRef} {...props} />
       </Suspense>
+      <MoralSpeakOverlay
+        child={moralSpeakChild}
+        spirit={moralSpeakSpirit}
+        state={moralSpeak}
+        onStart={props.onStartMoralSpeak ?? (() => undefined)}
+        onStop={props.onStopMoralSpeak ?? (() => undefined)}
+        onRetry={props.onRetryMoralSpeak ?? (() => undefined)}
+        onClose={props.onDeferMoralSpeak ?? (() => undefined)}
+      />
+      {moralSpeak.stage === "pendingReview" ? (
+        <TeacherMoralReviewCard
+          child={moralSpeakChild}
+          transcript={moralSpeak.transcript}
+          result={moralSpeak.result}
+          onApprove={props.onApproveMoralSpeak ?? (() => undefined)}
+          onAdjust={props.onAdjustMoralSpeak ?? (() => undefined)}
+          onDefer={props.onDeferMoralSpeak ?? (() => undefined)}
+        />
+      ) : null}
     </section>
   );
 });

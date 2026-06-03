@@ -8,12 +8,13 @@ interface SpiritDockProps {
   childrenWithProgress: ChildWithProgress[];
   spiritsById: Map<string, SpiritDefinition>;
   selectedChildId: string;
+  nextTurnChildId?: string;
   onSelectChild: (childId: string) => void;
 }
 
 const regionFilters = ["全部", "红树林", "贝壳湾", "珍珠湾", "小镇", "老街", "竞技场"];
 
-export function SpiritDock({ childrenWithProgress, spiritsById, selectedChildId, onSelectChild }: SpiritDockProps) {
+export function SpiritDock({ childrenWithProgress, spiritsById, selectedChildId, nextTurnChildId, onSelectChild }: SpiritDockProps) {
   const dockScrollRef = useRef<HTMLDivElement | null>(null);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("全部");
@@ -44,23 +45,26 @@ export function SpiritDock({ childrenWithProgress, spiritsById, selectedChildId,
 
   const selectedSpirit = selectedChild ? spiritsById.get(selectedChild.spiritId) : undefined;
   const selectedAsset = selectedSpirit ? getSpiritAsset(selectedSpirit, selectedChild.state) : undefined;
+  const selectedIsNextTurn = selectedChild?.id === nextTurnChildId;
 
   if (collapsed) {
     return (
-      <section className="spirit-dock collapsed">
+      <section className={selectedIsNextTurn ? "spirit-dock collapsed next-ready" : "spirit-dock collapsed"}>
         <button
           type="button"
-          className="dock-selected-summary"
+          className={selectedIsNextTurn ? "dock-selected-summary next-ready" : "dock-selected-summary"}
           style={{ "--dock-accent": selectedSpirit?.accent ?? "#6ebf8b" } as CSSProperties}
+          data-next-turn={selectedIsNextTurn ? "true" : undefined}
+          aria-label={`${selectedChild.name}${selectedIsNextTurn ? "，下一位，说成长" : "，领能量"}`}
           onClick={() => onSelectChild(selectedChild.id)}
         >
           <span className="dock-avatar">
             {selectedAsset?.url ? <img src={selectedAsset.url} alt="" /> : selectedChild.name.slice(0, 1)}
           </span>
           <strong>{selectedChild.name}</strong>
-          <em>Lv.{selectedChild.level}</em>
+          <em>{selectedIsNextTurn ? "下一位 · 说成长" : "精灵 · 领能量"}</em>
         </button>
-        <button className="dock-collapse" type="button" onClick={() => setCollapsed(false)}>
+        <button className="dock-collapse" type="button" aria-label="展开精灵队伍" onClick={() => setCollapsed(false)}>
           <ChevronUp size={16} />
           展开
         </button>
@@ -73,10 +77,15 @@ export function SpiritDock({ childrenWithProgress, spiritsById, selectedChildId,
       <div className="dock-tools">
         <div className="dock-tools-head">
           <strong>
-            {collapsed ? `${selectedChild.name} · Lv.${selectedChild.level}` : "精灵队伍"}
+            {collapsed ? `${selectedChild.name} · 领能量` : "精灵队伍"}
             <small>{filtered.length}/{childrenWithProgress.length}</small>
           </strong>
-          <button className="dock-collapse" onClick={() => setCollapsed((current) => !current)}>
+          <button
+            className="dock-collapse"
+            type="button"
+            aria-label={collapsed ? "展开精灵队伍" : "收起精灵队伍"}
+            onClick={() => setCollapsed((current) => !current)}
+          >
             {collapsed ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
             {collapsed ? "展开" : "收起"}
           </button>
@@ -94,7 +103,7 @@ export function SpiritDock({ childrenWithProgress, spiritsById, selectedChildId,
         </div>
         <div className="dock-filters">
           {regionFilters.map((item) => (
-            <button key={item} className={item === filter ? "active" : ""} onClick={() => setFilter(item)}>
+            <button key={item} type="button" className={item === filter ? "active" : ""} onClick={() => setFilter(item)}>
               {item}
             </button>
           ))}
@@ -104,18 +113,21 @@ export function SpiritDock({ childrenWithProgress, spiritsById, selectedChildId,
         {filtered.map((child) => {
           const spirit = spiritsById.get(child.spiritId);
           const asset = spirit ? getSpiritAsset(spirit, child.state) : undefined;
+          const isNextTurn = child.id === nextTurnChildId;
           return (
             <button
               key={child.id}
-              className={child.id === selectedChildId ? "dock-spirit active" : "dock-spirit"}
+              className={`${child.id === selectedChildId ? "dock-spirit active" : "dock-spirit"} ${isNextTurn ? "next-ready" : ""}`.trim()}
               aria-current={child.id === selectedChildId ? "true" : undefined}
+              aria-label={`${child.name}${isNextTurn ? "，下一位，说成长" : "，领能量"}`}
+              data-next-turn={isNextTurn ? "true" : undefined}
               onClick={() => onSelectChild(child.id)}
             >
               <span className="dock-avatar" style={{ "--dock-accent": spirit?.accent ?? "#6ebf8b" } as CSSProperties}>
                 {asset?.url ? <img src={asset.url} alt="" /> : child.name.slice(0, 1)}
               </span>
               <strong>{child.name}</strong>
-              <em>Lv.{child.level}</em>
+              <em>{isNextTurn ? "下一位 · 说成长" : "领能量"}</em>
             </button>
           );
         })}

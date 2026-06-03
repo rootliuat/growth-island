@@ -1,5 +1,6 @@
-import moralRules from "../shared/moral-rules.json" with { type: "json" };
+import { readFileSync } from "node:fs";
 
+const moralRules = JSON.parse(readFileSync(new URL("../shared/moral-rules.json", import.meta.url), "utf8"));
 const { categoryRules, deductKeywords, strongKeywords } = moralRules;
 
 export function evaluateMoralText(text) {

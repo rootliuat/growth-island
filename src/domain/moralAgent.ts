@@ -1,9 +1,13 @@
-import moralRules from "../../shared/moral-rules.json";
 import type { MoralEvaluationResult, VirtueCategory } from "../types";
+import moralRules from "../../shared/moral-rules.json";
 
-const categoryRules = moralRules.categoryRules as Array<{ category: VirtueCategory; keywords: string[] }>;
-const deductKeywords = moralRules.deductKeywords;
-const strongKeywords = moralRules.strongKeywords;
+interface MoralRuleConfig {
+  categoryRules: Array<{ category: VirtueCategory; keywords: string[] }>;
+  deductKeywords: string[];
+  strongKeywords: string[];
+}
+
+const { categoryRules, deductKeywords, strongKeywords } = moralRules as MoralRuleConfig;
 
 export function evaluateMoralText(text: string): MoralEvaluationResult {
   const normalized = text.trim();

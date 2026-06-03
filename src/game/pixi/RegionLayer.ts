@@ -2,15 +2,23 @@ import { Container, Graphics, Text, Ticker } from "pixi.js";
 import { regions } from "../regionConfig";
 import { cameraConfig } from "../cameraConfig";
 import { palette } from "../artDirection";
-import type { MapRegion, RegionId, WorldPoint } from "../types";
+import type { MapRegion, RegionId, VirtueRegionEnergy, WorldPoint } from "../types";
 import { v4RegionAssets, v4RegionAssetWidths } from "../v4MapAssets";
 import { addAssetSprite } from "./assetSprites";
 import { drawOrganicPolygon, flatten } from "./drawing";
 
 interface RegionNode {
   id: RegionId;
+  region: MapRegion;
   highlight: Graphics;
   banner: Container;
+  energyGlow: Graphics;
+  energyBadge: Container;
+  energyBadgeBoard: Graphics;
+  energyBadgeDot: Graphics;
+  energyBadgeText: Text;
+  energy?: VirtueRegionEnergy;
+  energyElapsed: number;
 }
 
 export class RegionLayer {
@@ -51,15 +59,68 @@ export class RegionLayer {
       });
       highlight.visible = false;
 
+      const energyGlow = new Graphics();
+      energyGlow.visible = false;
+
       const banner = this.createRegionBanner(region);
       banner.x = region.center.x;
       banner.y = region.center.y - Math.min(120, region.radiusY * 0.42);
       banner.visible = false;
 
-      root.addChild(hit, highlight);
+      const energyBadgeBoard = new Graphics();
+      const energyBadgeDot = new Graphics();
+      const energyBadgeText = new Text({
+        text: "",
+        style: { fontFamily: "Microsoft YaHei, PingFang SC", fontSize: 15, fontWeight: "900", fill: palette.textMain },
+      });
+      energyBadgeText.anchor.set(0.5);
+      const energyBadge = new Container();
+      energyBadge.x = region.signPosition.x;
+      energyBadge.y = region.signPosition.y + 72;
+      energyBadge.visible = false;
+      energyBadge.addChild(energyBadgeBoard, energyBadgeDot, energyBadgeText);
+
+      root.addChild(energyGlow, hit, highlight);
       this.overlayLayer.addChild(banner);
-      this.nodes.set(region.id, { id: region.id, highlight, banner });
+      this.overlayLayer.addChild(energyBadge);
+      this.nodes.set(region.id, {
+        id: region.id,
+        region,
+        highlight,
+        banner,
+        energyGlow,
+        energyBadge,
+        energyBadgeBoard,
+        energyBadgeDot,
+        energyBadgeText,
+        energyElapsed: 0,
+      });
       this.layer.addChild(root);
+    });
+  }
+
+  setEnergy(items: VirtueRegionEnergy[]) {
+    const byRegion = new Map(items.map((item) => [item.regionId, item]));
+    this.nodes.forEach((node, regionId) => {
+      const energy = byRegion.get(regionId);
+      node.energy = energy;
+      node.energyElapsed = 0;
+      node.energyGlow.clear();
+      node.energyBadgeBoard.clear();
+      node.energyBadgeDot.clear();
+      node.energyBadge.visible = Boolean(energy);
+      node.energyGlow.visible = Boolean(energy);
+      if (!energy) return;
+
+      const glowAlpha = energy.current ? 0.18 : 0.1;
+      const strokeAlpha = energy.current ? 0.72 : 0.42;
+      drawOrganicPolygon(node.energyGlow, node.region.shape, energy.color, energy.color, {
+        fillAlpha: glowAlpha,
+        strokeAlpha,
+        strokeWidth: energy.current ? 13 : 8,
+      });
+      this.drawEnergySparks(node.energyGlow, node.region, energy);
+      this.paintEnergyBadge(node, energy);
     });
   }
 
@@ -79,6 +140,15 @@ export class RegionLayer {
   }
 
   update(ticker: Ticker, zoom: number) {
+    this.nodes.forEach((node) => {
+      if (!node.energy) return;
+      node.energyElapsed += ticker.deltaMS;
+      const currentPulse = node.energy.current ? Math.sin(node.energyElapsed / 260) * 0.1 : Math.sin(node.energyElapsed / 420) * 0.04;
+      node.energyGlow.alpha = node.energy.current ? 0.62 + currentPulse : 0.34 + currentPulse;
+      node.energyBadge.alpha = zoom >= 1.48 && !node.energy.current ? 0.72 : 1;
+      node.energyBadge.scale.set(node.energy.current ? 1 + Math.sin(node.energyElapsed / 300) * 0.03 : 0.96);
+    });
+
     if (!this.activeRegionId) return;
     this.activeElapsed += ticker.deltaMS;
     const node = this.nodes.get(this.activeRegionId);
@@ -88,6 +158,36 @@ export class RegionLayer {
     node.banner.alpha = this.activeElapsed > 2200 || zoom >= 1.38 ? 0 : 1;
     node.banner.visible = node.banner.alpha > 0.02;
     node.banner.scale.set(0.96 + Math.min(this.activeElapsed / 420, 1) * 0.04);
+  }
+
+  private drawEnergySparks(g: Graphics, region: MapRegion, energy: VirtueRegionEnergy) {
+    const count = Math.min(6, energy.count + 2);
+    for (let index = 0; index < count; index += 1) {
+      const angle = (Math.PI * 2 * index) / count + region.center.x * 0.001;
+      const x = region.center.x + Math.cos(angle) * region.radiusX * (0.18 + (index % 3) * 0.07);
+      const y = region.center.y + Math.sin(angle) * region.radiusY * (0.18 + (index % 2) * 0.08);
+      const radius = energy.current ? 7 + (index % 2) * 2 : 5 + (index % 2);
+      g.circle(x, y, radius + 5).fill({ color: 0xffffff, alpha: energy.current ? 0.2 : 0.12 });
+      g.circle(x, y, radius).fill({ color: energy.color, alpha: energy.current ? 0.72 : 0.48 });
+    }
+  }
+
+  private paintEnergyBadge(node: RegionNode, energy: VirtueRegionEnergy) {
+    const width = Math.max(86, energy.displayText.length * 15 + 38);
+    node.energyBadgeBoard.roundRect(-width / 2, -18, width, 36, 18).fill(0xfffbef).stroke({
+      width: energy.current ? 4 : 2.5,
+      color: energy.color,
+      alpha: energy.current ? 0.78 : 0.48,
+    });
+    node.energyBadgeBoard.roundRect(-width / 2 + 5, -12, width - 10, 24, 12).fill({
+      color: energy.color,
+      alpha: energy.current ? 0.12 : 0.07,
+    });
+    node.energyBadgeDot.circle(-width / 2 + 20, 0, energy.current ? 7 : 5.5).fill(energy.color);
+    node.energyBadgeDot.circle(-width / 2 + 20, 0, energy.current ? 13 : 9).stroke({ width: 2, color: 0xffffff, alpha: 0.7 });
+    node.energyBadgeText.text = energy.displayText;
+    node.energyBadgeText.x = 10;
+    node.energyBadgeText.y = 0;
   }
 
   private drawRegionContour(g: Graphics, points: WorldPoint[], accent: number) {

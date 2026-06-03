@@ -491,15 +491,15 @@ export class HomeLayer {
     const labelName = home.childName;
     const text = new Text({
       text: labelName,
-      resolution: 2,
-      style: { fontFamily: "Microsoft YaHei, PingFang SC", fontSize: 13, fontWeight: "800", fill: palette.textMain },
+      resolution: 3,
+      style: { fontFamily: "Microsoft YaHei, PingFang SC", fontSize: 16, fontWeight: "900", fill: palette.textMain },
     });
     text.anchor.set(0.5);
     text.x = 8;
-    const width = Math.max(78, text.width + 34);
+    const width = Math.max(82, text.width + 36);
     const bg = new Graphics();
     bg.ellipse(0, 18, width * 0.34, 7).fill({ color: palette.inkShadow, alpha: 0.12 });
-    bg.roundRect(-width / 2, -14, width, 28, 12).fill(0xfff6d7).stroke({
+    bg.roundRect(-width / 2, -16, width, 32, 14).fill(0xfff6d7).stroke({
       width: 2,
       color: home.accent,
       alpha: 0.42,
@@ -513,11 +513,10 @@ export class HomeLayer {
   private drawSelectedBeacon(home: WorldHome) {
     const beacon = new Container();
     beacon.y = -104;
-    const labelName = home.petName.replace(/的小伙伴$/, "").replace(/的小精灵$/, "");
     const text = new Text({
-      text: `${labelName}的小屋`,
-      resolution: 2,
-      style: { fontFamily: "Microsoft YaHei, PingFang SC", fontSize: 14, fontWeight: "900", fill: palette.textMain },
+      text: home.childName,
+      resolution: 3,
+      style: { fontFamily: "Microsoft YaHei, PingFang SC", fontSize: 18, fontWeight: "900", fill: palette.textMain },
     });
     text.anchor.set(0.5);
     text.x = 12;

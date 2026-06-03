@@ -21,7 +21,6 @@ export class PixiWorld {
     this.scene?.update(ticker);
   };
   private readonly wakeFromInteraction = () => this.wake(1800);
-  private readonly wakeFromWheel = () => this.wake(260);
   private readonly wakeFromAssetLoad = () => this.wake(900);
 
   constructor(private readonly callbacks: WorldMapCallbacks) {}
@@ -72,12 +71,10 @@ export class PixiWorld {
     this.interactions.add(() => this.resizeObserver?.disconnect());
     app.canvas.addEventListener("pointerdown", this.wakeFromInteraction);
     app.canvas.addEventListener("pointermove", this.wakeFromInteraction);
-    app.canvas.addEventListener("wheel", this.wakeFromWheel, { passive: true });
     window.addEventListener("growth-island-asset-loaded", this.wakeFromAssetLoad);
     this.interactions.add(() => {
       app.canvas.removeEventListener("pointerdown", this.wakeFromInteraction);
       app.canvas.removeEventListener("pointermove", this.wakeFromInteraction);
-      app.canvas.removeEventListener("wheel", this.wakeFromWheel);
       window.removeEventListener("growth-island-asset-loaded", this.wakeFromAssetLoad);
     });
     if (this.lastData) this.scene.updateData(this.lastData);
@@ -87,6 +84,22 @@ export class PixiWorld {
     const hasLedgerChange = !!data.lastLedger && data.lastLedger.id !== this.lastData?.lastLedger?.id;
     this.lastData = data;
     this.scene?.updateData(data);
+    if (this.app?.canvas) {
+      const currentEnergy = data.regionEnergy.find((item) => item.current);
+      const selectedSpirit = data.spirits.find((spirit) => spirit.id === data.selectedChildId);
+      const selfServiceEnergy = Boolean(
+        selectedSpirit?.lastActivity?.includes("自助成长") && (selectedSpirit.lastActivityDelta ?? 0) > 0,
+      );
+      this.app.canvas.dataset.energyRegions = data.regionEnergy.map((item) => item.regionId).join(",");
+      this.app.canvas.dataset.energyRegionCount = String(data.regionEnergy.length);
+      this.app.canvas.dataset.currentEnergyRegion = currentEnergy?.regionId ?? "";
+      this.app.canvas.dataset.selectedActivityToken = selfServiceEnergy
+        ? "能量"
+        : selectedSpirit?.lastActivityDelta
+          ? String(selectedSpirit.lastActivityDelta)
+          : "";
+      this.app.canvas.dataset.selectedActivityLabel = selfServiceEnergy ? "进精灵" : selectedSpirit?.lastActivity ?? "";
+    }
     this.wake(hasLedgerChange ? 5200 : 1200);
   }
 

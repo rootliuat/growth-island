@@ -1,4 +1,5 @@
 import type { ChildProfile, IslandSlot, VirtueCategory } from "../types";
+import { getDefaultSpiritVoiceType } from "../domain/spiritVoice";
 import { virtueCategories } from "./spirits";
 
 const names = [
@@ -23,13 +24,19 @@ export const islandSlots: IslandSlot[] = slotCoordinates.map(([x, y], index) => 
   zone: index >= 34 ? "数学竞技场" : index >= 31 ? "中央成长树" : virtueCategories[index % virtueCategories.length],
 }));
 
-export const initialChildren: ChildProfile[] = names.map((name, index) => ({
-  id: `child-${String(index + 1).padStart(2, "0")}`,
-  name,
-  spiritId: String(index + 1).padStart(2, "0"),
-  petName: `${name}的小伙伴`,
-  slotId: index + 1,
-}));
+export const initialChildren: ChildProfile[] = names.map((name, index) => {
+  const child = {
+    id: `child-${String(index + 1).padStart(2, "0")}`,
+    name,
+    spiritId: String(index + 1).padStart(2, "0"),
+  };
+  return {
+    ...child,
+    petName: `${name}的小伙伴`,
+    voiceType: getDefaultSpiritVoiceType(child),
+    slotId: index + 1,
+  };
+});
 
 export const virtueZoneColors: Record<VirtueCategory, string> = {
   家国情怀: "#d95b4f",
@@ -40,4 +47,3 @@ export const virtueZoneColors: Record<VirtueCategory, string> = {
   开拓创新: "#5e77d1",
   尊矩守法: "#6c9a5d",
 };
-

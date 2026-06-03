@@ -1,134 +1,52 @@
-# 成长岛 / Beihai Growth Island
+# 北海成长岛
 
-成长岛是一套面向幼儿园班级的游戏化德育成长系统。它把日常行为记录、XP、精灵成长、随机点名、语音/文本记录、数学 PK、积分活动和成长档案组织成一个“北海成长岛”班级世界。
+北海成长岛是一个面向幼儿园德育成长记录的游戏化原型。当前版本把地图层重构为 PixiJS 2D/2.5D 精灵家园地图，React 负责业务 HUD，保留 XP、等级、加分、扣分、成长记录、AI 复核和数学 PK 的业务流程。
 
-当前项目是 Vite + React + TypeScript 原型，包含本地 JSON API 和 PixiJS 地图渲染。
+## 当前形态
 
-## 快速开始
+- PixiJS 渲染成长岛地图、海水、区域、道路、小屋、精灵、粒子、标签和镜头。
+- `pixi-viewport` 支持拖拽、滚轮缩放、触摸缩放、点击聚焦、返回全岛。
+- 每个幼儿绑定一个精灵家园，精灵和小屋分布在不同社区。
+- React HUD 提供顶部状态、右侧角色卡、底部精灵 Dock、老师操作和成长记录。
+- 加分会触发 XP 光点飞向成长树，扣分有克制反馈。
+
+## 运行
 
 ```bash
 npm install
 npm run dev
 ```
 
-`npm run dev` 会同时启动：
+默认前端运行在 `http://localhost:5173/`，本地 API 运行在 `http://localhost:5174/`。
 
-- 本地 API：`http://localhost:5174`
-- Vite 前端：`http://localhost:5173`
-
-如果只需要单独启动某一部分：
-
-```bash
-npm run api       # 只启动 server/beihai-api.mjs
-npm run dev:vite  # 只启动 Vite
-```
-
-## 常用命令
-
-```bash
-npm run typecheck   # TypeScript 项目检查
-npm run test        # Vitest 单元测试
-npm run test:watch  # Vitest watch 模式
-npm run build       # typecheck + Vite 生产构建
-npm run preview     # 预览生产构建
-npm run qa:visual   # Playwright 视觉/流程 QA
-```
-
-资源生成命令：
-
-```bash
-npm run assets:map-webp
-npm run assets:thumbs
-```
-
-## 项目结构
-
-```text
-src/
-  App.tsx                    # 应用状态、模块路由、XP ledger、地图联动装配层
-  components/                # React UI 组件
-    modules/                 # 课堂记录台、随机点名、语音记录、数学竞技场等模块页
-    Hud/                     # 顶部 HUD、精灵详情、底部精灵队伍等
-    WorldMap/                # React 与 Pixi 地图桥接
-  domain/                    # XP、等级、德育判断等纯业务规则
-  services/                  # 前端本地 API 访问
-  game/                      # PixiJS 地图配置、布局、渲染层
-  data/                      # 前端种子数据
-server/
-  beihai-api.mjs             # 本地 JSON API
-  moral-agent.mjs            # 服务端德育关键词判断
-scripts/
-  dev.mjs                    # 同时启动 API 和 Vite
-  qa-visual.mjs              # Playwright 视觉/流程 QA
-  generate-*.mjs             # 资源生成脚本
-docs/
-  product-spec.md            # 产品需求主文档
-  three-screen-product-structure.md
-  map-png-*.md               # 地图资产说明
-data/
-  beihai-db.json             # 本地 API 默认数据文件
-tests/
-  domain/                    # 纯业务规则单元测试
-public/assets/map/           # 运行时地图资源
-```
-
-## 本地 API 和数据
-
-默认 API 端口是 `5174`。前端默认会连接当前 hostname 的 5174 端口，也可以用环境变量覆盖：
-
-```bash
-VITE_API_BASE_URL=http://localhost:5174 npm run dev:vite
-```
-
-本地 API 默认读写：
-
-```text
-data/beihai-db.json
-```
-
-也可以用环境变量指定数据库路径：
-
-```bash
-BEIHAI_DB_PATH=/tmp/beihai-db.json npm run api
-```
-
-## 产品文档
-
-优先阅读：
-
-- `docs/product-spec.md`：产品定位、核心系统、模块规划
-- `docs/three-screen-product-structure.md`：成长岛大屏、课堂记录台、孩子成长档案三屏结构
-- `docs/map-png-style-guide.md`：地图资产风格
-- `docs/map-png-generation-guide.md`：地图资产生成说明
-
-## 开发约束
-
-- 不要重新初始化项目。
-- 不要运行破坏性 git 命令。
-- 不要清理未跟踪资产。
-- 不要删除或随意改动大型/生成资产目录，尤其是：
-  - `assets/generated/v4`
-  - `cutout-birefnet-dynamic`
-  - `public/assets/map/v4`
-  - `public/assets/map/v4-runtime`
-- 不要无关修改 CSV/JSON 数据文件。
-- 前端 UI 改动后至少运行：
+## 构建
 
 ```bash
 npm run build
 ```
 
-涉及主要流程或布局时，再运行：
+当前生成精灵图资产体积较大，构建会提示 chunk 体积警告，但构建可通过。后续需要把精灵图片改成按需加载和缩略图加载。
+
+## 测试与 QA
 
 ```bash
+npm run typecheck
+npm test
 npm run qa:visual
+npm run qa:p4-providers
 ```
 
-## 测试策略
+`qa:visual` 需要先运行 `npm run dev`。`qa:p4-providers` 需要 Tencent TTS/ASR 和 DeepSeek 凭据；环境变量、mock provider、fallback 行为见 `docs/provider-runtime-guide.md`。
 
-当前第一层测试覆盖纯业务规则：
+## 数据说明
 
-- XP / 等级 / rank / ledger 归一化：`tests/domain/progression.test.ts`
-- 德育关键词判断：`tests/domain/moralAgent.test.ts`
+运行数据在 `data/beihai-db.json`，已被 `.gitignore` 排除，不会提交到仓库。服务端缺少该文件时会按内置初始数据创建本地数据库。
 
-后续新增业务规则时，优先放入 `src/domain/` 并补单元测试。UI 和 Pixi 地图流程使用 `scripts/qa-visual.mjs` 做浏览器 smoke 和视觉检查。
+## 目录重点
+
+- `src/game/`：地图配置、区域、小屋、精灵布局和 PixiJS 场景代码。
+- `src/game/pixi/`：PixiJS 分层、镜头、粒子和交互系统。
+- `src/components/Hud/`：React 游戏 HUD。
+- `src/components/WorldMap/`：React 与 PixiJS 的桥接容器。
+- `assets/generated/`：当前生成的精灵图资产。
+- `.agents/skills/beihai-asset-imagegen/`：项目专用批量生图 skill。

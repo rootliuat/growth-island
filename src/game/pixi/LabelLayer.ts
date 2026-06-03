@@ -245,9 +245,10 @@ export class LabelLayer {
       bubble.visible = Boolean(spirit.lastActivity);
       const note = spirit.lastActivity ? this.cleanActivity(spirit.lastActivity) : "";
       const delta = spirit.lastActivityDelta ?? 0;
+      const selfServiceEnergy = Boolean(spirit.lastActivity?.includes("自助成长") && delta > 0);
       const positive = delta >= 0;
       bubbleText.text = note;
-      tokenText.text = delta === 0 ? "记录" : delta > 0 ? `+${delta}` : `${delta}`;
+      tokenText.text = selfServiceEnergy ? "能量" : delta === 0 ? "记录" : delta > 0 ? `+${delta}` : `${delta}`;
       const tokenWidth = Math.max(42, tokenText.width + 16);
       const width = Math.max(112, Math.min(160, bubbleText.width + tokenWidth + 24));
       const tokenX = -width / 2 + tokenWidth / 2 + 10;
@@ -265,7 +266,7 @@ export class LabelLayer {
       });
       tokenBg.clear();
       tokenBg.roundRect(tokenX - tokenWidth / 2, -11, tokenWidth, 22, 11)
-        .fill(positive ? palette.positive : palette.negative)
+        .fill(selfServiceEnergy ? palette.accent : positive ? palette.positive : palette.negative)
         .stroke({ width: 2, color: 0xfff6d7, alpha: 0.8 });
       tokenBg.circle(tokenX + tokenWidth / 2 - 8, -2, 3).fill({ color: 0xffffff, alpha: 0.48 });
       tokenText.x = tokenX;
@@ -276,9 +277,17 @@ export class LabelLayer {
   }
 
   private cleanActivity(reason: string) {
+    const cleaned = reason
+      .replace(/^演示数据[:：]?\s*/, "")
+      .replace(/^课堂记录[:：]?\s*/, "")
+      .replace(/^对话[:：]?\s*/, "")
+      .replace(/^语音记录[:：]?\s*/, "")
+      .trim();
     if (reason.includes("撤销")) return "撤销记录";
-    if (reason.includes("减分") || reason.includes("扣分")) return "调整记录";
-    if (reason.includes("加分")) return "成长记录";
-    return reason.replace(/^演示数据[:：]?\s*/, "").slice(0, 8);
+    if (cleaned.includes("减分") || cleaned.includes("扣分")) return "行为提醒";
+    if (cleaned.includes("自助成长")) return "进精灵";
+    if (cleaned.includes("已有成长")) return "成长记录";
+    if (cleaned.includes("快速加分")) return "课堂记录";
+    return cleaned.replace(/\s*[+＋-]\d+\s*XP?$/i, "").slice(0, 8);
   }
 }
