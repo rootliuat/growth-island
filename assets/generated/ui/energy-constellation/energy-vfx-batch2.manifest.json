@@ -1,0 +1,273 @@
+{
+  "batch": "energy-vfx-batch2",
+  "date": "2026-06-04",
+  "generator": "built-in image_gen plus local sharp chroma-key removal",
+  "scope": "Small reusable VFX assets for child self-service moral-growth flow; no full constellation background.",
+  "rejectedCandidates": [
+    {
+      "filename": "energy-confirm-burst.png",
+      "sourceOutputPath": "/root/.codex/generated_images/019e83ec-0885-74b1-b411-5e34c9dfe670/ig_001fc42dbfb5520f016a2170818f488195ae4c17f0e5fb7182.png",
+      "reviewStatus": "rejected",
+      "notes": "Too much like a large shell badge; would obscure the child-facing home map feedback."
+    },
+    {
+      "filename": "energy-confirm-burst.png",
+      "sourceOutputPath": "/root/.codex/generated_images/019e83ec-0885-74b1-b411-5e34c9dfe670/ig_001fc42dbfb5520f016a2170f44df88195aef1ee9c9abac0ea.png",
+      "reviewStatus": "rejected",
+      "notes": "Too green and plant-like for a gold/coral confirmation burst."
+    }
+  ],
+  "assets": [
+    {
+      "filename": "energy-confirm-burst.png",
+      "sourceOutputPath": "/root/.codex/generated_images/019e83ec-0885-74b1-b411-5e34c9dfe670/ig_001fc42dbfb5520f016a2173cb8e9c8195a46ff6fb20e78308.png",
+      "keyColor": [
+        255,
+        0,
+        255
+      ],
+      "runtimeSize": 256,
+      "purpose": "Short confirmation burst after teacher approval.",
+      "promptSubject": "abstract gold-and-coral confirmation burst with shell-shaped sparkle arcs, pearl dust, warm sand glints, and tiny coral starlets",
+      "reviewStatus": "accepted",
+      "notes": "Accepted as warm confirmation feedback; keep display short and modest so it does not cover names.",
+      "sourceImagePath": "assets/generated/ui/energy-constellation/source/energy-confirm-burst-source.png",
+      "finalImagePath": "assets/generated/ui/energy-constellation/energy-confirm-burst.png",
+      "runtimeImagePath": "public/assets/ui/energy-constellation/energy-confirm-burst.png",
+      "finalQa": {
+        "width": 1254,
+        "height": 1254,
+        "channels": 4,
+        "hasAlpha": true,
+        "corners": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "alphaMin": 0,
+        "alphaMax": 255,
+        "visibleRatio": 0.1754,
+        "keyBg": [
+          255,
+          0,
+          255
+        ],
+        "keyResidual": 0,
+        "bytes": 692263
+      },
+      "runtimeQa": {
+        "width": 256,
+        "height": 256,
+        "channels": 4,
+        "hasAlpha": true,
+        "corners": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "alphaMin": 0,
+        "alphaMax": 255,
+        "visibleRatio": 0.187,
+        "keyBg": [
+          255,
+          0,
+          255
+        ],
+        "keyResidual": 0,
+        "bytes": 45821
+      }
+    },
+    {
+      "filename": "energy-arrival-orb.png",
+      "sourceOutputPath": "/root/.codex/generated_images/019e83ec-0885-74b1-b411-5e34c9dfe670/ig_001fc42dbfb5520f016a21717797a08195a66f7da77558de03.png",
+      "keyColor": [
+        255,
+        0,
+        255
+      ],
+      "runtimeSize": 128,
+      "purpose": "Small traveling orb from teacher confirmation to spirit, tree, or active energy slot.",
+      "promptSubject": "small glowing pearl energy orb with a tiny seafoam trail head and soft gold core",
+      "reviewStatus": "accepted",
+      "notes": "Readable as a traveling energy bead at 64-128 px.",
+      "sourceImagePath": "assets/generated/ui/energy-constellation/source/energy-arrival-orb-source.png",
+      "finalImagePath": "assets/generated/ui/energy-constellation/energy-arrival-orb.png",
+      "runtimeImagePath": "public/assets/ui/energy-constellation/energy-arrival-orb.png",
+      "finalQa": {
+        "width": 1254,
+        "height": 1254,
+        "channels": 4,
+        "hasAlpha": true,
+        "corners": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "alphaMin": 0,
+        "alphaMax": 255,
+        "visibleRatio": 0.0535,
+        "keyBg": [
+          251,
+          6,
+          242
+        ],
+        "keyResidual": 0,
+        "bytes": 176214
+      },
+      "runtimeQa": {
+        "width": 128,
+        "height": 128,
+        "channels": 4,
+        "hasAlpha": true,
+        "corners": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "alphaMin": 0,
+        "alphaMax": 255,
+        "visibleRatio": 0.0618,
+        "keyBg": [
+          251,
+          6,
+          242
+        ],
+        "keyResidual": 0,
+        "bytes": 4738
+      }
+    },
+    {
+      "filename": "energy-touch-halo.png",
+      "sourceOutputPath": "/root/.codex/generated_images/019e83ec-0885-74b1-b411-5e34c9dfe670/ig_001fc42dbfb5520f016a2171c4fa2c819587b734debe6921e9.png",
+      "keyColor": [
+        255,
+        0,
+        255
+      ],
+      "runtimeSize": 256,
+      "purpose": "Soft current-child touch target or speak-growth mic halo.",
+      "promptSubject": "soft circular shell halo with pale seafoam ring, warm sand highlights, subtle water ripples and shell dots",
+      "reviewStatus": "accepted",
+      "notes": "Open center and soft rim, suitable for overlay behind a spirit or mic.",
+      "sourceImagePath": "assets/generated/ui/energy-constellation/source/energy-touch-halo-source.png",
+      "finalImagePath": "assets/generated/ui/energy-constellation/energy-touch-halo.png",
+      "runtimeImagePath": "public/assets/ui/energy-constellation/energy-touch-halo.png",
+      "finalQa": {
+        "width": 1254,
+        "height": 1254,
+        "channels": 4,
+        "hasAlpha": true,
+        "corners": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "alphaMin": 0,
+        "alphaMax": 255,
+        "visibleRatio": 0.2989,
+        "keyBg": [
+          252,
+          2,
+          249
+        ],
+        "keyResidual": 0,
+        "bytes": 788217
+      },
+      "runtimeQa": {
+        "width": 256,
+        "height": 256,
+        "channels": 4,
+        "hasAlpha": true,
+        "corners": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "alphaMin": 0,
+        "alphaMax": 255,
+        "visibleRatio": 0.3032,
+        "keyBg": [
+          252,
+          2,
+          249
+        ],
+        "keyResidual": 0,
+        "bytes": 53910
+      }
+    },
+    {
+      "filename": "next-child-halo.png",
+      "sourceOutputPath": "/root/.codex/generated_images/019e83ec-0885-74b1-b411-5e34c9dfe670/ig_001fc42dbfb5520f016a217243b6788195a6ad2c8465fa05f0.png",
+      "keyColor": [
+        255,
+        0,
+        255
+      ],
+      "runtimeSize": 256,
+      "purpose": "Next-turn child marker after a successful confirmation.",
+      "promptSubject": "friendly next-turn halo with brighter rim, shell dots and soft gold-teal sparkles",
+      "reviewStatus": "accepted",
+      "notes": "Brighter than touch halo but still calm enough for classroom queue feedback.",
+      "sourceImagePath": "assets/generated/ui/energy-constellation/source/next-child-halo-source.png",
+      "finalImagePath": "assets/generated/ui/energy-constellation/next-child-halo.png",
+      "runtimeImagePath": "public/assets/ui/energy-constellation/next-child-halo.png",
+      "finalQa": {
+        "width": 1254,
+        "height": 1254,
+        "channels": 4,
+        "hasAlpha": true,
+        "corners": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "alphaMin": 0,
+        "alphaMax": 255,
+        "visibleRatio": 0.1759,
+        "keyBg": [
+          251,
+          8,
+          249
+        ],
+        "keyResidual": 0,
+        "bytes": 630223
+      },
+      "runtimeQa": {
+        "width": 256,
+        "height": 256,
+        "channels": 4,
+        "hasAlpha": true,
+        "corners": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "alphaMin": 0,
+        "alphaMax": 255,
+        "visibleRatio": 0.1831,
+        "keyBg": [
+          251,
+          8,
+          249
+        ],
+        "keyResidual": 0,
+        "bytes": 44323
+      }
+    }
+  ],
+  "qaSheetPath": "assets/generated/ui/energy-constellation/energy-vfx-batch2-qa.png",
+  "acceptance": {
+    "allAcceptedAssetsHaveAlpha": true,
+    "allAcceptedCornerAlphaZero": true,
+    "noKeyColorResidueDetected": true,
+    "note": "Residual check is measured against estimated corner key color after high-res and runtime cleanup."
+  }
+}

@@ -389,7 +389,7 @@ async function inspectHomeBigScreen(page) {
       sceneGateText: sceneGate?.textContent?.replace(/\s+/g, "") ?? "",
       hasSelfServiceAction:
         Boolean(document.querySelector(".map-self-service-action, .spirit-self-service-button")) && visibleText.includes("说成长"),
-      hasSelfServiceDock: Boolean(document.querySelector(".shell-child-chip[aria-label*='领能量']")) && shellDockText.includes("领能量"),
+      hasSelfServiceDock: Boolean(document.querySelector(".shell-child-chip[aria-label*='说成长']")) && shellDockText.includes("说成长"),
       teacherWorkbenchDocked: [...document.querySelectorAll(".module-dock-button")].some((button) =>
         teacherToolDockPattern.test(button.getAttribute("aria-label") ?? button.textContent ?? ""),
       ),
@@ -1009,6 +1009,7 @@ async function startQaMoralReview(page, input) {
 async function inspectMoralReviewCard(page, transcript, childId) {
   return page.evaluate(({ transcript, childId }) => {
     const approve = document.querySelector(".teacher-review-corner-card .approve");
+    const adjust = document.querySelector(".teacher-review-corner-card .review-edit-popover summary");
     const speak = window.__growthIslandMoralSpeak ?? {};
     const dockNextTurn = document.querySelector(".spirit-dock .dock-selected-summary.next-ready, .spirit-dock .dock-spirit.next-ready");
     const records = window.__growthIslandLedger ?? [];
@@ -1027,8 +1028,10 @@ async function inspectMoralReviewCard(page, transcript, childId) {
             category: speak.result.category,
           }
         : undefined,
-      approveDisabled: approve instanceof HTMLButtonElement ? approve.disabled : true,
+      hasApproveAction: approve instanceof HTMLButtonElement,
+      approveDisabled: approve instanceof HTMLButtonElement ? approve.disabled : undefined,
       approveText: approve?.textContent?.replace(/\s+/g, "") ?? "",
+      adjustText: adjust?.textContent?.replace(/\s+/g, "") ?? "",
       queueAutoReady: speak.queueAutoReady === true,
       hasNextReadyDock: Boolean(dockNextTurn),
       nextReadyDockText: dockNextTurn?.textContent?.replace(/\s+/g, "") ?? "",
@@ -1185,18 +1188,13 @@ async function exerciseMoralReviewSafety(page, pendingScreenshot, adjustedScreen
     summary: "帮助同伴",
   };
   const longStart = await startQaMoralReview(page, longTranscript);
-  const longReviewDetails = page.locator(".review-transcript summary").first();
-  if ((await longReviewDetails.count()) > 0) {
-    await longReviewDetails.click();
-    await page.waitForTimeout(120);
-  }
   const longTranscriptTouch = await inspectTouchAndOverlap(page);
   const longTranscriptLayout = await page.evaluate(() => {
     const card = document.querySelector(".teacher-review-corner-card");
-    const transcript = document.querySelector(".review-transcript");
+    const transcript = document.querySelector(".teacher-review-transcript-line");
     const rect = card?.getBoundingClientRect();
     return {
-      hasTranscriptDetails: Boolean(transcript),
+      hasTranscriptLine: Boolean(transcript),
       cardRect: rect
         ? {
             x: Math.round(rect.x),
@@ -1227,7 +1225,9 @@ async function exerciseMoralReviewSafety(page, pendingScreenshot, adjustedScreen
     ...(await inspectMoralReviewCard(page, lowConfidence.transcript, lowConfidence.childId)),
     touchGeometry: await inspectTouchAndOverlap(page),
   };
-  await page.locator(".teacher-review-corner-card .approve").evaluate((button) => button.click());
+  if ((await page.locator(".teacher-review-corner-card .approve").count()) > 0) {
+    await page.locator(".teacher-review-corner-card .approve").evaluate((button) => button.click());
+  }
   await page.waitForTimeout(250);
   const lowAfterApproveAttempt = await inspectMoralReviewCard(page, lowConfidence.transcript, lowConfidence.childId);
   await page.locator(".review-edit-popover summary").click();
@@ -1252,7 +1252,9 @@ async function exerciseMoralReviewSafety(page, pendingScreenshot, adjustedScreen
     ...(await inspectMoralReviewCard(page, negative.transcript, negative.childId)),
     touchGeometry: await inspectTouchAndOverlap(page),
   };
-  await page.locator(".teacher-review-corner-card .approve").evaluate((button) => button.click());
+  if ((await page.locator(".teacher-review-corner-card .approve").count()) > 0) {
+    await page.locator(".teacher-review-corner-card .approve").evaluate((button) => button.click());
+  }
   await page.waitForTimeout(250);
   const negativeAfterApproveAttempt = await inspectMoralReviewCard(page, negative.transcript, negative.childId);
   await page.locator(".review-edit-popover summary").click();
@@ -1351,6 +1353,12 @@ async function exerciseTeacherFlow(page, scoreScreenshot, homeScreenshot) {
   await page.evaluate(() => {
     window.__growthIslandMoralAnalysisDelayMs = 650;
   });
+  const aiPanel = page.locator(".workbench-ai-panel").first();
+  if ((await aiPanel.count()) > 0) {
+    const isOpen = await aiPanel.evaluate((node) => node instanceof HTMLDetailsElement && node.open);
+    if (!isOpen) await aiPanel.locator("summary").click();
+    await page.waitForSelector("#teacher-workbench-transcript", { state: "visible", timeout: 4000 });
+  }
   await page.locator("#teacher-workbench-transcript").fill("我今天主动帮同学收玩具");
   await page.getByRole("button", { name: /生成建议/ }).click();
   const staleStartName = name;
@@ -1594,8 +1602,8 @@ async function exerciseTeacherFlow(page, scoreScreenshot, homeScreenshot) {
     harborCopy,
     totalDelta: xpAfter - xpBefore,
     aiDelta,
-    hasQuickRecord: recordText.includes("课堂记录：快速加分 +10"),
-    hasAiRecord: recordText.includes("语音记录："),
+    hasQuickRecord: Boolean(quickLedgerContract),
+    hasAiRecord: Boolean(aiLedgerContract),
     noAiLedgerBeforeConfirm: beforeNegativeAiRecordCount === afterNegativeAiRecordCount,
     positiveAiRecordCreated: afterConfirmAiRecordCount === beforeConfirmAiRecordCount + 1,
     manualNegativeGlobalFeedback,
@@ -1649,6 +1657,11 @@ async function exerciseVoiceFlow(page, confirmedScreenshot, suggestionScreenshot
   );
   const confirmGlobalFeedback = await readGrowthFeedback(page);
   const selectedAfter = await page.locator(".voice-child-card").innerText();
+  const historyPanel = page.locator(".voice-history-panel").first();
+  if ((await historyPanel.count()) > 0) {
+    const isOpen = await historyPanel.evaluate((node) => node instanceof HTMLDetailsElement && node.open);
+    if (!isOpen) await historyPanel.locator("summary").click();
+  }
   const historyText = await page.locator(".voice-history-panel").innerText();
   const xpAfter = Number(selectedAfter.match(/(\d+)\s*XP/)?.[1] ?? Number.NaN);
   const ledgerCountBeforeReject = await page.evaluate(() => (window.__growthIslandLedger ?? []).length);
@@ -1696,7 +1709,6 @@ async function exerciseVoiceFlow(page, confirmedScreenshot, suggestionScreenshot
     hasHistoryRecord: historyText.includes("语音记录："),
     sceneCopyUpdated:
       initialCopy.pageText.includes("贝壳记录台") &&
-      initialCopy.pageText.includes("记录贝壳") &&
       initialCopy.pageText.includes("贝壳判断") &&
       initialCopy.pageText.includes("最近入账") &&
       ["AI 建议", "AI 判断结果", "文本记录", "文本记录工作台", "提交分析", "最近文本记录", "后台", "管理"].every(
@@ -2621,19 +2633,20 @@ async function exerciseOrganizationFlow(page, organizationScreenshot, homeScreen
     const summaryText = document.querySelector(".organization-summary")?.textContent ?? "";
     const classButtons = [...document.querySelectorAll(".organization-class-list button")].map((button) => button.textContent ?? "");
     return {
-      hasTitle: text.includes("班级码头") && text.includes("园所码头"),
+      hasTitle: text.includes("班级码头") && text.includes("北海幼儿园"),
       hasSummary:
         summaryText.includes("北海幼儿园") &&
         summaryText.includes("泊位") &&
         summaryText.includes("船员") &&
-        summaryText.includes("待巡检") &&
-        summaryText.includes("航线 / 任务"),
+        summaryText.includes("任务") &&
+        summaryText.includes("航线"),
       hasOperatingCopy:
         text.includes("班级泊位") &&
         text.includes("船员协作") &&
-        text.includes("报告巡检台") &&
+        text.includes("孩子任务对象") &&
         text.includes("课程航线") &&
         text.includes("今日任务板"),
+      noReportCopy: !/报告|家书|巡检|审批|审核|导出|盖章|退回/.test(text),
       noBackendCopy:
         !text.includes("园所后台") &&
         !text.includes("后台") &&
@@ -2642,7 +2655,7 @@ async function exerciseOrganizationFlow(page, organizationScreenshot, homeScreen
         !text.includes("配置"),
       classroomCount: classButtons.length,
       classButtons,
-      reportButtonCount: document.querySelectorAll(".organization-report-list button").length,
+      childButtonCount: document.querySelectorAll(".organization-report-list button").length,
       teacherCardCount: document.querySelectorAll(".organization-teacher-list article").length,
       taskCount: document.querySelectorAll(".organization-task-list article").length,
       trackCount: document.querySelectorAll(".organization-track-list article").length,
@@ -2658,7 +2671,7 @@ async function exerciseOrganizationFlow(page, organizationScreenshot, homeScreen
     const reportText = document.querySelector(".organization-report-panel")?.textContent ?? "";
     const curriculumText = document.querySelector(".organization-curriculum-panel")?.textContent ?? "";
     const taskText = document.querySelector(".organization-task-panel")?.textContent ?? "";
-    const reportButtons = document.querySelectorAll(".organization-report-list button");
+    const childButtons = document.querySelectorAll(".organization-report-list button");
     const activeClassChildCount = Number(activeText.match(/(\d+)\s*名/)?.[1] ?? 0);
     return {
       activeText,
@@ -2670,79 +2683,40 @@ async function exerciseOrganizationFlow(page, organizationScreenshot, homeScreen
         activeText.includes("中二班") &&
         classroomText.includes("中二班") &&
         classroomText.includes("成长贝壳") &&
-        classroomText.includes("待巡检"),
+        classroomText.includes("当前任务"),
       hasTeachers: classroomText.includes("吴老师") && classroomText.includes("陈主任"),
       hasCurriculum: curriculumText.includes("课程航线") && curriculumText.includes("小小帮手周"),
       hasTasks: taskText.includes("今日任务板") && taskText.includes("主动整理玩具"),
-      hasReports:
-        reportText.includes("报告巡检台") &&
-        reportText.includes("成长航海日志") &&
-        reportText.includes("导出家书") &&
-        reportButtons.length >= 1,
-      allReportsReachable: activeClassChildCount > 0 && reportButtons.length >= activeClassChildCount,
+      hasChildTaskPanel:
+        reportText.includes("孩子任务对象") &&
+        reportText.includes("当前孩子") &&
+        reportText.includes("看精灵") &&
+        childButtons.length >= 1,
+      allChildrenReachable: activeClassChildCount > 0 && childButtons.length >= activeClassChildCount,
+      noReportCopy: !/报告|家书|巡检|审批|审核|导出|盖章|退回/.test(reportText),
     };
   });
 
-  const reportText = await page.locator(".organization-report-list button").first().innerText();
-  const reportName =
-    reportText
+  const childButtonText = await page.locator(".organization-report-list button").first().innerText();
+  const childName =
+    childButtonText
       .split("\n")
       .map((line) => line.trim())
       .filter(Boolean)[0] ?? "";
   await page.locator(".organization-report-list button").first().click();
   await page.waitForSelector(".organization-report-preview", { timeout: 4000 });
-  const reportPreview = await page.evaluate(({ reportName }) => {
+  const childPanel = await page.evaluate(({ childName }) => {
     const previewText = document.querySelector(".organization-report-preview")?.textContent ?? "";
-    const activeReportText = document.querySelector(".organization-report-list button.active")?.textContent ?? "";
+    const activeChildText = document.querySelector(".organization-report-list button.active")?.textContent ?? "";
     return {
-      reportName,
-      activeReportSelected: Boolean(reportName) && activeReportText.includes(reportName),
-      hasPreview: previewText.includes("成长航海日志") && previewText.includes("成长家书"),
-      hasEvidence: previewText.includes("条证据") && previewText.includes("XP"),
-      hasCategorySummary: document.querySelectorAll(".organization-category-list span").length >= 1,
-      hasHighlightEvidence: document.querySelectorAll(".organization-evidence-list article").length >= 1,
-      hasExportAction: previewText.includes("导出家书"),
+      childName,
+      activeChildSelected: Boolean(childName) && activeChildText.includes(childName),
+      hasPreview: previewText.includes("当前孩子") && previewText.includes("任务板"),
+      hasEnergySummary: previewText.includes("能量"),
       hasFocusAction: previewText.includes("看精灵"),
-      hasApprovalActions: previewText.includes("送去巡检") && previewText.includes("盖章通过") && previewText.includes("退回补证"),
-      initialReviewStatus: previewText.includes("待提交"),
+      noReportActions: !/报告|家书|巡检|审批|审核|导出|盖章|退回/.test(previewText),
     };
-  }, { reportName });
-  await page.locator(".organization-report-actions button").filter({ hasText: "送去巡检" }).click();
-  await page.waitForFunction(() => {
-    const previewText = document.querySelector(".organization-report-preview")?.textContent ?? "";
-    return previewText.includes("家书已送去巡检") && previewText.includes("审核中");
-  });
-  const reportSubmitted = await page.evaluate(() => {
-    const previewText = document.querySelector(".organization-report-preview")?.textContent ?? "";
-    const reviews = Object.values(window.__growthIslandOrganizationState?.parentReportReviewsByChildId ?? {});
-    return {
-      noticeShown: previewText.includes("家书已送去巡检"),
-      statusShown: previewText.includes("审核中"),
-      backupContract: reviews.some((review) => review.status === "submitted"),
-    };
-  });
-  await page.locator(".organization-report-actions button").filter({ hasText: "盖章通过" }).click();
-  await page.waitForFunction(() => {
-    const previewText = document.querySelector(".organization-report-preview")?.textContent ?? "";
-    return previewText.includes("家书已盖章通过") && previewText.includes("已通过");
-  });
-  const reportApproval = await page.evaluate(() => {
-    const previewText = document.querySelector(".organization-report-preview")?.textContent ?? "";
-    const backup = window.__growthIslandCreateBackupForQa?.();
-    const reviews = Object.values(window.__growthIslandOrganizationState?.parentReportReviewsByChildId ?? {});
-    return {
-      submittedNoticeShown: false,
-      approvalNoticeShown: previewText.includes("家书已盖章通过"),
-      approvedStatusShown: previewText.includes("已通过"),
-      appStateApproved: reviews.some((review) => review.status === "approved" && review.reviewedBy === "园所码头"),
-      backupApproved: Object.values(backup?.organization?.parentReportReviewsByChildId ?? {}).some(
-        (review) => review.status === "approved" && review.reviewedBy === "园所码头",
-      ),
-    };
-  });
-  reportApproval.submittedNoticeShown = reportSubmitted.noticeShown;
-  reportApproval.submittedStatusShown = reportSubmitted.statusShown;
-  reportApproval.submittedBackupContract = reportSubmitted.backupContract;
+  }, { childName });
   await page
     .locator(".organization-track-list article")
     .filter({ hasText: "规则守护周" })
@@ -2792,12 +2766,10 @@ async function exerciseOrganizationFlow(page, organizationScreenshot, homeScreen
   const curriculumPersistenceAfterReload = await page.evaluate(() => {
     const activeTrackText = document.querySelector(".organization-track-list article.active")?.textContent ?? "";
     const firstTaskText = document.querySelector(".organization-task-list article")?.textContent ?? "";
-    const reportText = document.querySelector(".organization-report-panel")?.textContent ?? "";
     return {
       activeAfterReload: activeTrackText.includes("规则守护周") && activeTrackText.includes("当前航线"),
       taskContextAfterReload: firstTaskText.includes("排队守规则") && firstTaskText.includes("当前航线任务"),
       appStateAfterReload: window.__growthIslandOrganizationState?.activeCurriculumByClassroomId?.["middle-2"] === "rule-keeper-week",
-      reportApprovalAfterReload: reportText.includes("已通过"),
     };
   });
   let taskTargetReportName = "";
@@ -2899,8 +2871,7 @@ async function exerciseOrganizationFlow(page, organizationScreenshot, homeScreen
   return {
     initial,
     selectedClass,
-    reportPreview,
-    reportApproval,
+    childPanel,
     curriculumPublication,
     curriculumPersistence: {
       ...curriculumPersistenceBeforeReload,
@@ -3033,6 +3004,7 @@ async function inspectMobileVoice(page, screenshot) {
       return { top: Math.round(r.top), bottom: Math.round(r.bottom), height: Math.round(r.height) };
     };
     const text = document.querySelector(".voice-record-page")?.textContent ?? "";
+    const bodyText = document.body.textContent ?? "";
     const forbiddenCopy = ["AI 建议", "AI 判断结果", "文本记录", "文本记录工作台", "提交分析", "最近文本记录", "后台", "管理"].filter(
       (copy) => text.includes(copy),
     );
@@ -3041,12 +3013,14 @@ async function inspectMobileVoice(page, screenshot) {
     const history = rect(".voice-history-panel");
 
     return {
-      hasSceneTitle: text.includes("贝壳记录台") && text.includes("记录贝壳"),
+      hasSceneTitle: text.includes("贝壳记录台") && bodyText.includes("记录贝壳"),
       hasResultPanel: text.includes("贝壳判断") && visible(".voice-result-panel"),
       hasHistoryPanel: text.includes("最近入账") && visible(".voice-history-panel"),
       hasPrimaryAction: text.includes("生成建议"),
       noPanelOverlap:
-        Boolean(workbench && result && history) && workbench.bottom <= result.top + 1 && result.bottom <= history.top + 1,
+        Boolean(workbench && result && history) &&
+        workbench.bottom <= result.top + 1 &&
+        ((history.top >= result.top - 1 && history.bottom <= result.bottom + 1) || result.bottom <= history.top + 1),
       horizontalOverflow: document.body.scrollWidth > document.documentElement.clientWidth,
       forbiddenCopy,
     };
@@ -3361,8 +3335,8 @@ async function inspectPage(browser, check, viewport) {
     }
     if (geometry.horizontalOverflow) issues.push(`${label} horizontal overflow`);
   }
-  if (moralReviewSafetyDetails?.longTranscript?.layout?.hasTranscriptDetails === false) {
-    issues.push("long transcript review details missing");
+  if (moralReviewSafetyDetails?.longTranscript?.layout?.hasTranscriptLine === false) {
+    issues.push("long transcript review line missing");
   }
   if (moralReviewSafetyDetails?.longTranscript?.layout?.cardContained === false) {
     issues.push("long transcript review card outside viewport");
@@ -3476,7 +3450,7 @@ async function inspectPage(browser, check, viewport) {
 
   if (check.kind === "moral-speak-flow") {
     details = { flow: moralFlowDetails };
-    const expectedFlowSteps = ["我", "说", "看", "亮"];
+    const expectedFlowSteps = ["我", "说", "等", "亮"];
     const hasExactFlowSteps = (flow) =>
       Array.isArray(flow?.flowStepLabels) &&
       flow.flowStepLabels.length === expectedFlowSteps.length &&
@@ -3508,7 +3482,7 @@ async function inspectPage(browser, check, viewport) {
       issues.push("moral speak entered ledger during listening");
     }
     if (moralFlowDetails?.pending?.stage !== "pendingReview") issues.push("moral speak did not enter teacher review");
-    if (!hasExactFlowSteps(moralFlowDetails?.pending) || moralFlowDetails?.pending?.activeFlowStep !== "看") {
+    if (!hasExactFlowSteps(moralFlowDetails?.pending) || moralFlowDetails?.pending?.activeFlowStep !== "等") {
       issues.push("moral speak teacher review rhythm step missing");
     }
     if (
@@ -3516,7 +3490,13 @@ async function inspectPage(browser, check, viewport) {
     ) {
       issues.push("moral speak entered ledger before teacher confirmation");
     }
-    if (!moralFlowDetails?.pending?.teacherCardText.includes("通过")) issues.push("moral speak teacher card missing");
+    if (
+      !moralFlowDetails?.pending?.teacherCardText.includes("老师确认") ||
+      !moralFlowDetails?.pending?.teacherCardText.includes("确认点亮") ||
+      !moralFlowDetails?.pending?.teacherCardText.includes("改能量")
+    ) {
+      issues.push("moral speak teacher card missing confirmation actions");
+    }
     if (!moralFlowDetails?.pending?.hasTeacherStatus) issues.push("moral speak teacher card missing light status");
     if (common.viewport.width > 720 && (moralFlowDetails?.pending?.teacherCardRect?.width ?? 999) > 300) {
       issues.push("moral speak teacher card too wide");
@@ -3659,17 +3639,17 @@ async function inspectPage(browser, check, viewport) {
     if (!low?.start?.started) issues.push("low-confidence review did not start through QA hook");
     if (low?.pending?.stage !== "pendingReview") issues.push("low-confidence review did not enter pending stage");
     if (low?.pending?.result?.delta !== 0) issues.push("low-confidence review should not suggest XP");
-    if (!low?.pending?.approveDisabled) issues.push("low-confidence review approve button should be disabled");
+    if (low?.pending?.hasApproveAction) issues.push("low-confidence review should route through adjust before approval");
     if (low?.pending?.childBubbleText !== "请老师帮忙") issues.push("low-confidence child bubble should only ask teacher for help");
     if (/XP|[+＋-]\d|%|嗯嗯|未分类|待判断/.test(low?.pending?.childBubbleText ?? "")) {
       issues.push("low-confidence child bubble leaked review details");
     }
     if (!low?.pending?.teacherMainText?.includes("请老师帮忙")) issues.push("low-confidence teacher card main state not neutral");
-    if (!low?.pending?.approveText?.includes("先改")) issues.push("low-confidence teacher approve action did not guide adjustment");
+    if (!low?.pending?.adjustText?.includes("改能量")) issues.push("low-confidence teacher adjust action missing");
     if (low?.afterAdjust?.approveDisabled) issues.push("low-confidence adjusted review approve button stayed disabled");
     if ((low?.afterAdjust?.result?.confidence ?? 0) < 0.6) issues.push("low-confidence adjusted review did not reach teacher approval threshold");
-    if (/嗯嗯|%|45|未分类|待判断/.test(low?.pending?.cardText ?? "")) {
-      issues.push("low-confidence teacher card leaked transcript or confidence on home");
+    if (/%|45|未分类|待判断/.test(low?.pending?.cardText ?? "")) {
+      issues.push("low-confidence teacher card leaked confidence or model state on home");
     }
     if (
       low?.pending?.currentEnergySlots !== 0 ||
@@ -3688,15 +3668,15 @@ async function inspectPage(browser, check, viewport) {
     if (!negative?.start?.started) issues.push("negative review did not start through QA hook");
     if (negative?.pending?.stage !== "pendingReview") issues.push("negative review did not enter pending stage");
     if (negative?.pending?.result?.delta >= 0) issues.push("negative review should be detected as a negative suggestion");
-    if (!negative?.pending?.approveDisabled) issues.push("negative review approve button should be disabled before adjustment");
+    if (negative?.pending?.hasApproveAction) issues.push("negative review should route through adjust before approval");
     if (negative?.pending?.childBubbleText !== "请老师帮忙") issues.push("negative child bubble should only ask teacher for help");
     if (/XP|[+＋-]\d|%|推了同学|扣|友爱|规则/.test(negative?.pending?.childBubbleText ?? "")) {
       issues.push("negative child bubble leaked label or score details");
     }
     if (!negative?.pending?.teacherMainText?.includes("需老师处理")) issues.push("negative teacher card main state did not ask for handling");
     if (/[+＋-]\d/.test(negative?.pending?.teacherMainText ?? "")) issues.push("negative teacher card main state leaked score text");
-    if (!negative?.pending?.approveText?.includes("先改")) issues.push("negative teacher approve action did not guide adjustment");
-    if (/推了同学|%|80|友爱|规则|[+＋-]\d/.test(negative?.pending?.cardText ?? "")) {
+    if (!negative?.pending?.adjustText?.includes("改能量")) issues.push("negative teacher adjust action missing");
+    if (/%|80|友爱|规则|[+＋-]\d/.test(negative?.pending?.cardText ?? "")) {
       issues.push("negative teacher card leaked label or score details on home");
     }
     if (
@@ -4085,8 +4065,7 @@ async function inspectPage(browser, check, viewport) {
     details = { flow: organizationFlowDetails };
     const initial = organizationFlowDetails?.initial;
     const selected = organizationFlowDetails?.selectedClass;
-    const report = organizationFlowDetails?.reportPreview;
-    const reportApproval = organizationFlowDetails?.reportApproval;
+    const childPanel = organizationFlowDetails?.childPanel;
     const curriculum = organizationFlowDetails?.curriculumPublication;
     const curriculumPersistence = organizationFlowDetails?.curriculumPersistence;
     const task = organizationFlowDetails?.taskCompletion;
@@ -4095,9 +4074,10 @@ async function inspectPage(browser, check, viewport) {
     if (!initial?.hasSummary) issues.push("organization summary metrics missing");
     if (!initial?.hasOperatingCopy) issues.push("organization operating sections missing");
     if (!initial?.noBackendCopy) issues.push("organization still shows backend/admin copy");
+    if (!initial?.noReportCopy) issues.push("organization still exposes report/approval/export copy");
     if ((initial?.classroomCount ?? 0) < 3) issues.push("organization multi-classroom list missing");
     if ((initial?.teacherCardCount ?? 0) < 2) issues.push("organization multi-teacher cards missing");
-    if ((initial?.reportButtonCount ?? 0) < 1) issues.push("organization parent report drafts missing");
+    if ((initial?.childButtonCount ?? 0) < 1) issues.push("organization child task roster missing");
     if ((initial?.trackCount ?? 0) < 1) issues.push("organization curriculum tracks missing");
     if ((initial?.taskCount ?? 0) < 1) issues.push("organization growth tasks missing");
     if (initial?.horizontalOverflow) issues.push("organization horizontal overflow");
@@ -4105,24 +4085,14 @@ async function inspectPage(browser, check, viewport) {
     if (!selected?.hasTeachers) issues.push("organization selected class teacher links missing");
     if (!selected?.hasCurriculum) issues.push("organization selected class curriculum missing");
     if (!selected?.hasTasks) issues.push("organization selected class growth tasks missing");
-    if (!selected?.hasReports) issues.push("organization selected class report drafts missing");
-    if (!selected?.allReportsReachable) issues.push("organization report list does not expose all class children");
-    if (!report?.activeReportSelected) issues.push("organization parent report selection failed");
-    if (!report?.hasPreview) issues.push("organization parent report preview missing");
-    if (!report?.hasEvidence) issues.push("organization parent report evidence summary missing");
-    if (!report?.hasCategorySummary) issues.push("organization parent report category summary missing");
-    if (!report?.hasHighlightEvidence) issues.push("organization parent report highlight evidence missing");
-    if (!report?.hasExportAction) issues.push("organization parent report export action missing");
-    if (!report?.hasFocusAction) issues.push("organization parent report focus action missing");
-    if (!report?.hasApprovalActions) issues.push("organization parent report approval actions missing");
-    if (!report?.initialReviewStatus) issues.push("organization parent report initial review status missing");
-    if (!reportApproval?.submittedNoticeShown) issues.push("organization parent report submission feedback missing");
-    if (!reportApproval?.submittedStatusShown) issues.push("organization parent report submitted status missing");
-    if (!reportApproval?.submittedBackupContract) issues.push("organization parent report submitted state missing from app state");
-    if (!reportApproval?.approvalNoticeShown) issues.push("organization parent report approval feedback missing");
-    if (!reportApproval?.approvedStatusShown) issues.push("organization parent report approved status missing");
-    if (!reportApproval?.appStateApproved) issues.push("organization parent report approval missing from app state");
-    if (!reportApproval?.backupApproved) issues.push("organization parent report approval missing from backup contract");
+    if (!selected?.hasChildTaskPanel) issues.push("organization selected class child task panel missing");
+    if (!selected?.allChildrenReachable) issues.push("organization child task panel does not expose all class children");
+    if (!selected?.noReportCopy) issues.push("organization selected class still exposes report/approval/export copy");
+    if (!childPanel?.activeChildSelected) issues.push("organization child task selection failed");
+    if (!childPanel?.hasPreview) issues.push("organization child task preview missing");
+    if (!childPanel?.hasEnergySummary) issues.push("organization child task energy summary missing");
+    if (!childPanel?.hasFocusAction) issues.push("organization child task focus action missing");
+    if (!childPanel?.noReportActions) issues.push("organization child task panel still exposes report/approval/export actions");
     if (!curriculum?.activeRuleWeek) issues.push("organization curriculum publication did not activate rule week");
     if (!curriculum?.noticeShown) issues.push("organization curriculum publication feedback missing");
     if (!curriculum?.currentTaskShifted) issues.push("organization curriculum publication did not shift current task context");
@@ -4133,7 +4103,6 @@ async function inspectPage(browser, check, viewport) {
     if (!curriculumPersistence?.activeAfterReload) issues.push("organization curriculum publication did not survive reload");
     if (!curriculumPersistence?.taskContextAfterReload) issues.push("organization curriculum task context did not survive reload");
     if (!curriculumPersistence?.appStateAfterReload) issues.push("organization curriculum app state missing after reload");
-    if (!curriculumPersistence?.reportApprovalAfterReload) issues.push("organization parent report approval did not survive reload");
     if (!task?.recordAdded) issues.push("organization growth task did not create a ledger record");
     if (!task?.taskPanelUpdated) issues.push("organization growth task panel did not update completion state");
     if (!task?.noticeShown) issues.push("organization growth task completion feedback missing");
@@ -4154,7 +4123,7 @@ async function inspectPage(browser, check, viewport) {
     ) {
       issues.push("organization growth task ledger contract missing");
     }
-    if (!organizationFlowDetails?.home?.homeFocused) issues.push("organization report drilldown did not focus child on home");
+    if (!organizationFlowDetails?.home?.homeFocused) issues.push("organization child drilldown did not focus child on home");
   }
 
   if (check.kind === "settings-flow") {

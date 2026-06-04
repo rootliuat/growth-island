@@ -167,17 +167,17 @@ export function RollCallModule({
 
   return (
     <section className="module-page roll-call-page" aria-labelledby="roll-call-title">
-      <div className="roll-call-header">
+      <div className="roll-call-header module-compact-header">
         <div>
           <span className="module-eyebrow">
             <Sparkles size={18} />
-            成长岛
+            点名
           </span>
           <h1 id="roll-call-title">抽取台</h1>
         </div>
-        <button type="button" className="roll-call-home-button" onClick={() => onFocusChild(currentChild.id)}>
+        <button type="button" className="roll-call-home-button" aria-label={`回岛定位${currentChild.name}`} onClick={() => onFocusChild(currentChild.id)}>
           <Home size={18} />
-          回地图
+          定位
         </button>
       </div>
 
@@ -247,14 +247,14 @@ export function RollCallModule({
         </section>
 
         <aside className="roll-call-side">
-          <section className="roll-call-filter-panel" aria-label="候选范围">
-            <div className="roll-call-filter-title">
+          <details className="roll-call-filter-panel roll-call-secondary-details">
+            <summary className="roll-call-filter-title">
               <span>
                 <Filter size={18} />
                 候选范围
               </span>
               <strong>{availableCount}/{filteredChildren.length}</strong>
-            </div>
+            </summary>
             <div className="roll-call-chip-row" aria-label="区域筛选">
               {regionOptions.map((option) => (
                 <button
@@ -284,7 +284,7 @@ export function RollCallModule({
                 </button>
               ))}
             </div>
-          </section>
+          </details>
 
           <div className="roll-call-stats">
             <article>
@@ -304,12 +304,14 @@ export function RollCallModule({
             </article>
           </div>
 
-          <section className="roll-call-list-panel">
-            <div className="roll-call-list-title">
+          <details className="roll-call-list-panel roll-call-secondary-details">
+            <summary className="roll-call-list-title">
               <div>
                 <strong>本轮贝签</strong>
                 <span>{excludeCalled ? `剩余 ${uncalledCount}` : "可重复"}</span>
               </div>
+            </summary>
+            <div className="roll-call-list-actions">
               <button type="button" className="roll-call-copy-button" onClick={handleCopyRound}>
                 <Copy size={17} />
                 复制
@@ -345,7 +347,7 @@ export function RollCallModule({
                 })}
               </ol>
             )}
-          </section>
+          </details>
         </aside>
       </div>
     </section>

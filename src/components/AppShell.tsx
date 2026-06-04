@@ -1,11 +1,12 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { ChevronUp, Cloud, CloudOff, Home, LoaderCircle, MoreHorizontal, Sparkles, Sprout, Trophy, Users } from "lucide-react";
+import { ChevronUp, Cloud, CloudOff, Home, LoaderCircle, MoreHorizontal, Sprout, Trophy, Users } from "lucide-react";
 import { moduleConfigs, type AppModuleId } from "./modules/moduleConfig";
 
 interface AppShellProps {
   activeModule: AppModuleId;
   childrenCount: number;
   selectedChildName: string;
+  selectedChildEnergy: number;
   syncStatus: "connecting" | "online" | "saving" | "offline";
   onModuleChange: (moduleId: AppModuleId) => void;
   onSelfServiceChild: () => void;
@@ -41,6 +42,7 @@ export function AppShell({
   activeModule,
   childrenCount,
   selectedChildName,
+  selectedChildEnergy,
   syncStatus,
   onModuleChange,
   onSelfServiceChild,
@@ -99,38 +101,38 @@ export function AppShell({
       <main className="product-workspace">
         {!isHome && (
           <section className="shell-scene-command-bar" aria-label="当前场景状态">
-            <div className="scene-command-title">
-              <span>
-                <Sparkles size={15} />
-                {activeModuleConfig.sceneLabel}
-              </span>
-              <strong>{activeModuleConfig.label}</strong>
-            </div>
-            <div className="scene-command-status" aria-label="场景奖励与当前孩子">
-              <span className="scene-command-chip child">
-                {selectedChildName}
-                <em>领能量</em>
-              </span>
-              <span className="scene-command-chip xp">
-                <Trophy size={15} />
-                能量槽
-              </span>
-              <span className="scene-command-chip reward">{sceneRewardMeta[activeModule]}</span>
-            </div>
             <button type="button" className="scene-command-home" onClick={() => onModuleChange("home")}>
               <Home size={17} />
               回岛
             </button>
+            <div className="scene-command-title">
+              <span>{activeModuleConfig.dockLabel}</span>
+              <strong>{activeModuleConfig.sceneLabel}</strong>
+            </div>
+            <div className="scene-command-status" aria-label="当前孩子与场景奖励">
+              <span className="scene-command-chip child">
+                {selectedChildName}
+                <em>说成长</em>
+              </span>
+              <span className="scene-command-chip xp">
+                <Sprout size={15} />
+                {selectedChildEnergy} 能量
+              </span>
+              <span className="scene-command-chip reward">
+                <Trophy size={15} />
+                {sceneRewardMeta[activeModule]}
+              </span>
+            </div>
           </section>
         )}
         <div className="scene-workspace-body">{children}</div>
       </main>
 
       <footer className="shell-module-dock" aria-label="成长岛快捷入口">
-        <button type="button" className="shell-child-chip" onClick={onSelfServiceChild} aria-label={`${selectedChildName} 领能量`}>
+        <button type="button" className="shell-child-chip" onClick={onSelfServiceChild} aria-label={`${selectedChildName} 说成长`}>
           <span>{selectedChildName.slice(0, 1)}</span>
           <strong>{selectedChildName}</strong>
-          <em>领能量</em>
+          <em>说成长</em>
         </button>
 
         <nav className="module-dock-scroll" aria-label="成长岛模块">

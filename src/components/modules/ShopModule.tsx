@@ -77,7 +77,7 @@ export function ShopModule({
 
   return (
     <section className="module-page reward-page shop-page" aria-labelledby="shop-title">
-      <div className="reward-header">
+      <div className="reward-header module-compact-header">
         <div>
           <span className="module-eyebrow">
             <ShoppingBag size={18} aria-hidden="true" />

@@ -564,7 +564,7 @@ export function DataManagementModule({
                   <Trash2 size={17} />
                   清空演示数据
                 </span>
-                <p>仅清空本机成长流水、待看记录、抽奖、商店、设置、课程发布和报告审批记录，保留幼儿小屋资料。</p>
+                <p>仅清空本机成长流水、待看记录、抽奖、商店、设置和课程发布记录，保留幼儿小屋资料。</p>
                 <div>
                   <input
                     className="data-clear-input"

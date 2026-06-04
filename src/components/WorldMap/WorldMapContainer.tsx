@@ -20,6 +20,7 @@ import { MoralSpeakOverlay, type MoralSpeakViewState } from "../Hud/MoralSpeakOv
 import { TeacherMoralReviewCard } from "../Hud/TeacherMoralReviewCard";
 import type { PixiWorldMapHandle } from "./PixiWorldMap";
 import { virtueCategories } from "../../data/spirits";
+import { getEnergyGlyphAsset } from "../../domain/energyAssets";
 import {
   canApproveMoralGrowth,
   getChildEnergyColor,
@@ -91,7 +92,7 @@ function getMapActivityLabel(reason: string) {
     .trim();
   if (cleaned.includes("已有成长")) return "已有成长";
   if (cleaned.includes("自助成长")) return "能量到账";
-  if (cleaned.includes("快速加分") || cleaned.includes("课堂积极回应")) return "成长点亮";
+  if (cleaned.includes("快速加分") || cleaned.includes("课堂积极回应")) return "确认点亮";
   if (cleaned.includes("数学魔法")) return "数学光点";
   if (cleaned.includes("快速扣分") || cleaned.includes("减分") || cleaned.includes("扣分")) return "老师提醒";
   return cleaned.replace(/\s*[+＋-]\d+\s*XP?$/i, "").slice(0, 12);
@@ -103,6 +104,30 @@ function isMapActivityRecord(record: LedgerRecord) {
 
 function isSelfServiceEnergyRecord(record?: LedgerRecord) {
   return Boolean(record?.delta && record.delta > 0 && record.reason.startsWith("自助成长："));
+}
+
+function EnergyGlyphBadge({ category }: { category: VirtueCategory }) {
+  const [loaded, setLoaded] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const asset = getEnergyGlyphAsset(category);
+  const imagePath = asset.available ? asset.publicPath : undefined;
+
+  return (
+    <span className={loaded ? "energy-glyph has-image" : "energy-glyph"} aria-hidden="true">
+      <i />
+      {imagePath && !failed ? (
+        <img
+          src={imagePath}
+          alt=""
+          width={30}
+          height={30}
+          draggable="false"
+          onLoad={() => setLoaded(true)}
+          onError={() => setFailed(true)}
+        />
+      ) : null}
+    </span>
+  );
 }
 
 export const WorldMapContainer = forwardRef<PixiWorldMapHandle, WorldMapContainerProps>(function WorldMapContainer(
@@ -137,7 +162,7 @@ export const WorldMapContainer = forwardRef<PixiWorldMapHandle, WorldMapContaine
     ? selectedRecordIsSelfService
       ? "能量进精灵"
       : selectedRecord.delta > 0
-        ? "光点到账"
+        ? "能量进精灵"
         : "老师提醒"
     : "";
   const activityText = selectedRecord ? getMapActivityLabel(selectedRecord.reason) : "";
@@ -166,9 +191,7 @@ export const WorldMapContainer = forwardRef<PixiWorldMapHandle, WorldMapContaine
         : moralSpeak.stage === "error"
           ? "需帮助"
           : selectedRecord
-            ? selectedRecordIsSelfService
-              ? "刚点亮"
-              : "成长点亮"
+            ? "能量进精灵"
             : "能量地图";
 
   useImperativeHandle(ref, () => ({
@@ -272,7 +295,7 @@ export const WorldMapContainer = forwardRef<PixiWorldMapHandle, WorldMapContaine
       )}
       <section
         className={`map-energy-constellation moral-${moralSpeak.stage}`}
-        aria-label="德育能量地图"
+        aria-label="当前能量状态"
         style={{ "--energy-current": currentEnergyColor } as CSSProperties}
       >
         <div className="energy-constellation-head">
@@ -299,9 +322,9 @@ export const WorldMapContainer = forwardRef<PixiWorldMapHandle, WorldMapContaine
                 data-energy-arrival={current && moralSpeak.stage === "success" ? "arriving" : undefined}
                 onClick={() => focusTravelRegion(regionId)}
               >
-                <i />
+                <EnergyGlyphBadge category={category} />
                 <span>{getChildEnergyLabel(category)}</span>
-                <em>{current ? (moralSpeak.stage === "success" ? "进精灵" : selectedRecordIsSelfService ? "刚点亮" : "当前") : active ? "已点亮" : "待点亮"}</em>
+                <em>{current ? (moralSpeak.stage === "success" ? "进精灵" : "当前") : active ? "已点亮" : "待点亮"}</em>
                 <b>{travelMeta[regionId].shortName}</b>
               </button>
             );
@@ -312,7 +335,7 @@ export const WorldMapContainer = forwardRef<PixiWorldMapHandle, WorldMapContaine
         <div className="map-companion-actions" style={{ "--focus-accent": selectedSpirit?.accent ?? "#59B97C" } as CSSProperties}>
           <span className="companion-action-kicker">
             <Sparkles size={15} />
-            自助领取
+            点精灵
           </span>
           <strong>{selectedChild.petName}</strong>
           <div>

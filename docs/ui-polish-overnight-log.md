@@ -127,3 +127,76 @@
 - Medium review findings were addressed for log completeness, repeatable mobile QA coverage, and mobile touch-height gaps.
 - Remaining risk: this pass deliberately avoided deeper product changes such as reducing scoring choices, changing XP behavior, rewriting PixiJS map layers, or editing generated assets.
 - Remaining risk: the branch already has a pushed commit from an earlier explicit upload request; this current goal pass made only local corrective changes and did not commit or push further.
+
+## Energy constellation asset follow-up
+
+### Completed
+
+- Reviewed Batch1 seven virtue-energy glyphs against the Beihai coastal game style.
+- Kept all seven accepted; no full-set regeneration is needed.
+- Added runtime glyph use rules: keep text labels visible, avoid full-background usage, and revisit `energy-aijiaxiang-glyph.png` / `energy-yongqi-glyph.png` only if a future icon-only mode removes labels.
+- Added the asset trail to `docs/asset-generation-and-cutout-log.md`, including source paths, runtime paths, QA files, and engineering acceptance.
+- Produced Batch2 VFX assets after the separate image generation window stopped: `energy-confirm-burst.png`, `energy-arrival-orb.png`, `energy-touch-halo.png`, and `next-child-halo.png`.
+- Rejected two `energy-confirm-burst.png` candidates before accepting the final gold/coral version: one was too much like a large shell badge, and one was too green / plant-like.
+- Added Batch2 manifest and QA: `assets/generated/ui/energy-constellation/energy-vfx-batch2.manifest.json`, `assets/generated/ui/energy-constellation/energy-vfx-batch2-qa.png`, and `assets/generated/ui/energy-constellation/BATCH2_VFX_REVIEW.md`.
+
+### Next frontend slice
+
+P1:
+
+- Use `energy-confirm-burst.png` on teacher approval so the child sees one short, clear success moment near the current spirit or energy card.
+- Use `energy-arrival-orb.png` as a lightweight travel cue from the teacher confirmation card toward the current spirit / growth tree / active energy slot.
+- Use `energy-touch-halo.png` for the current child touch target or speak-growth mic state.
+- Use `next-child-halo.png` after success to mark the next child without adding more persistent text.
+- Keep `energy-confirm-burst.png` to `500-700ms`, with `pointer-events: none`, and respect `prefers-reduced-motion`.
+
+P2:
+
+- Add optional `energy-slot-current.png` only if the CSS card state still reads too flat.
+- Skip `energy-slot-empty.png` and `energy-slot-lit.png` until the UI has a real icon-only or slot-based display need.
+- Keep animations short and reduced-motion aware; do not add idle looping clutter to the home map.
+
+### Validation target
+
+- `npm run build`
+- `npm run qa:visual`
+- Manual screenshot review of `home-whiteboard.png`, focused child state, teacher approval state, and `mobile-home-mobile.png`
+
+## P3 child self-service VFX integration
+
+### Scope
+
+- Integrated Batch2 VFX assets into the child self-service growth loop:
+  - `energy-touch-halo.png`
+  - `energy-confirm-burst.png`
+  - `energy-arrival-orb.png`
+  - `next-child-halo.png`
+- Kept the implementation in the existing React/CSS HUD layers. No PixiJS map rewrite, backend change, XP logic change, service change, or data-file change.
+- Used the VFX as state feedback only: ready mic affordance, teacher-approved success burst, energy arrival bead, and next-child queue marker.
+
+### UX/UI Review Notes
+
+- `ux_researcher` and `ui_designer` completed read-only reviews before implementation.
+- Both reviews recommended keeping effects short, copy-free, and subordinate to existing child-facing labels.
+- Teacher review actions remain calm and functional; the approval button itself does not receive celebratory VFX.
+- Next-child halo is anchored behind the dock/avatar state and does not cover child names.
+
+### Implementation Notes
+
+- `MoralSpeakOverlay.tsx` adds `aria-hidden` VFX hooks for the ready mic and success state.
+- `SpiritDock.tsx` renders `next-child-halo` only when a child is actually in `next-ready` state.
+- `styles.css` binds the hooks to the runtime PNG assets, sets `pointer-events: none`, defines short animations, and extends the existing `prefers-reduced-motion` block.
+- The success burst is capped to `680ms`; the arrival orb is capped to `880ms`; the next-child cue is capped to `940ms` and fades out in normal motion.
+
+### Validation
+
+- `npm run build`: passed.
+- `npm run qa:visual`: passed.
+- Latest visual QA report: `qa-artifacts/latest/report.json`.
+- QA coverage: 32 checks, 0 issues, 0 warnings.
+- Manual screenshots inspected:
+  - `qa-artifacts/latest/moral-speak-flow-ready-whiteboard.png`
+  - `qa-artifacts/latest/moral-speak-flow-whiteboard.png`
+  - `qa-artifacts/latest/moral-speak-flow-pending-mobile.png`
+  - `qa-artifacts/latest/moral-speak-flow-mobile.png`
+- Additional reduced-motion Playwright check confirmed all four Batch2 VFX nodes use `pointer-events: none`, load the expected runtime image paths, and switch to `animation-name: none` under `prefers-reduced-motion: reduce`.

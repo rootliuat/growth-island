@@ -1,14 +1,9 @@
 import { useMemo, useRef, useState } from "react";
-import { BookOpenCheck, CheckCircle2, ClipboardList, Download, Home, MapPin, RotateCcw, School, Send, Sparkles, Users } from "lucide-react";
+import { BookOpenCheck, Home, MapPin, School, Sparkles, Users } from "lucide-react";
 import { organizationConfig } from "../../data/organization";
-import {
-  buildOrganizationRuntime,
-  buildParentReportDocument,
-  formatParentReportMarkdown,
-  type ActiveCurriculumByClassroomId,
-} from "../../domain/organization";
+import { buildOrganizationRuntime, type ActiveCurriculumByClassroomId } from "../../domain/organization";
 import type { ChildWithProgress, LedgerRecord, MoralReviewItem } from "../../types";
-import type { OrganizationState, ParentReportReviewStatus } from "../../types";
+import type { OrganizationState } from "../../types";
 
 interface OrganizationModuleProps {
   childrenWithProgress: ChildWithProgress[];
@@ -20,7 +15,6 @@ interface OrganizationModuleProps {
   onFocusChild: (childId: string) => void;
   onCompleteGrowthTask: (childId: string, taskId: string) => void;
   onPublishCurriculumTrack: (classroomId: string, trackId: string) => boolean;
-  onUpdateParentReportReview: (childId: string, status: ParentReportReviewStatus, note?: string) => boolean;
 }
 
 const cadenceLabels = {
@@ -28,23 +22,6 @@ const cadenceLabels = {
   monthly: "每月",
   seasonal: "学期",
 };
-
-const reportReviewLabels: Record<ParentReportReviewStatus, string> = {
-  draft: "待提交",
-  submitted: "审核中",
-  approved: "已通过",
-  revision_requested: "需修改",
-};
-
-function downloadTextFile(filename: string, content: string) {
-  const blob = new Blob([content], { type: "text/markdown;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = filename;
-  anchor.click();
-  window.setTimeout(() => URL.revokeObjectURL(url), 0);
-}
 
 export function OrganizationModule({
   childrenWithProgress,
@@ -56,7 +33,6 @@ export function OrganizationModule({
   onFocusChild,
   onCompleteGrowthTask,
   onPublishCurriculumTrack,
-  onUpdateParentReportReview,
 }: OrganizationModuleProps) {
   const runtime = useMemo(
     () =>
@@ -72,43 +48,23 @@ export function OrganizationModule({
   );
   const [selectedClassroomId, setSelectedClassroomId] = useState(runtime.classrooms[0]?.id ?? "");
   const selectedClassroom = runtime.classrooms.find((classroom) => classroom.id === selectedClassroomId) ?? runtime.classrooms[0];
-  const [selectedReportChildId, setSelectedReportChildId] = useState(selectedClassroom?.reportDrafts[0]?.childId ?? selectedChild.id);
+  const [selectedTaskChildId, setSelectedTaskChildId] = useState(selectedChild.id);
   const [completedTaskNotice, setCompletedTaskNotice] = useState("");
   const [curriculumNotice, setCurriculumNotice] = useState("");
-  const [reportNotice, setReportNotice] = useState("");
   const completedTaskLockRef = useRef(new Set<string>());
-  const activeReportChildId = selectedClassroom?.reportDrafts.some((report) => report.childId === selectedReportChildId)
-    ? selectedReportChildId
-    : selectedClassroom?.reportDrafts[0]?.childId;
-  const activeReportDraft = selectedClassroom?.reportDrafts.find((report) => report.childId === activeReportChildId);
-  const activeTaskChild = childrenWithProgress.find((child) => child.id === activeReportChildId);
+  const classChildren = childrenWithProgress.filter((child) => selectedClassroom?.childIds.includes(child.id));
+  const activeTaskChildId = selectedClassroom?.childIds.includes(selectedTaskChildId) ? selectedTaskChildId : classChildren[0]?.id;
+  const activeTaskChild = childrenWithProgress.find((child) => child.id === activeTaskChildId);
   const activeTrack = selectedClassroom?.curriculumTracks.find((track) => track.status === "active");
-  const selectedPendingReportCount =
-    selectedClassroom?.reportDrafts.filter((report) => report.status === "ready" && report.reviewStatus !== "approved").length ?? 0;
   const activeTaskCount = selectedClassroom?.growthTasks.filter((task) => task.curriculumActive).length ?? 0;
-  const selectedReportDocument = useMemo(
-    () =>
-      activeReportChildId
-        ? buildParentReportDocument(organizationConfig, childrenWithProgress, ledger, moralReviews, activeReportChildId)
-        : undefined,
-    [activeReportChildId, childrenWithProgress, ledger, moralReviews],
-  );
-
-  const exportParentReport = () => {
-    if (!selectedReportDocument) return;
-    downloadTextFile(
-      `beihai-parent-report-${selectedReportDocument.classroomName}-${selectedReportDocument.childName}.md`,
-      formatParentReportMarkdown(selectedReportDocument),
-    );
-  };
 
   const completeGrowthTask = (taskId: string, taskTitle: string) => {
-    if (!activeReportChildId) return;
-    const taskKey = `${activeReportChildId}:${taskId}`;
-    const taskAlreadyCompleted = selectedClassroom.growthTasks.some((task) => task.id === taskId && task.completedChildIds.includes(activeReportChildId));
+    if (!activeTaskChildId) return;
+    const taskKey = `${activeTaskChildId}:${taskId}`;
+    const taskAlreadyCompleted = selectedClassroom.growthTasks.some((task) => task.id === taskId && task.completedChildIds.includes(activeTaskChildId));
     if (taskAlreadyCompleted || completedTaskLockRef.current.has(taskKey)) return;
     completedTaskLockRef.current.add(taskKey);
-    onCompleteGrowthTask(activeReportChildId, taskId);
+    onCompleteGrowthTask(activeTaskChildId, taskId);
     setCompletedTaskNotice(`${activeTaskChild?.name ?? "孩子"}已完成「${taskTitle}」`);
   };
 
@@ -117,23 +73,18 @@ export function OrganizationModule({
     setCurriculumNotice(`${selectedClassroom.name}已启航「${trackTitle}」`);
   };
 
-  const updateReportReview = (status: ParentReportReviewStatus, message: string, note?: string) => {
-    if (!activeReportChildId || !onUpdateParentReportReview(activeReportChildId, status, note)) return;
-    setReportNotice(message);
-  };
-
   return (
     <section className="module-page organization-page" aria-labelledby="organization-title">
-      <div className="organization-header">
+      <div className="organization-header module-compact-header">
         <div>
           <span className="module-eyebrow">
             <School size={18} />
-            园所码头
+            码头
           </span>
           <h1 id="organization-title">班级码头</h1>
           <div className="organization-header-chips" aria-label="当前码头状态">
             <span>{selectedClassroom.name}</span>
-            <span>{selectedPendingReportCount} 待巡检</span>
+            <span>{activeTaskCount} 当前任务</span>
             <span>{activeTrack?.title ?? "未启航"}</span>
           </div>
         </div>
@@ -157,14 +108,12 @@ export function OrganizationModule({
           <strong>{runtime.teacherCount}</strong>
         </article>
         <article>
-          <span>待巡检</span>
-          <strong>{runtime.activeReportDraftCount}</strong>
+          <span>任务</span>
+          <strong>{runtime.growthTaskCount}</strong>
         </article>
         <article>
-          <span>航线 / 任务</span>
-          <strong>
-            {runtime.curriculumCount} / {runtime.growthTaskCount}
-          </strong>
+          <span>航线</span>
+          <strong>{runtime.curriculumCount}</strong>
         </article>
       </div>
 
@@ -183,9 +132,9 @@ export function OrganizationModule({
                 aria-pressed={classroom.id === selectedClassroom.id}
                 onClick={() => {
                   setSelectedClassroomId(classroom.id);
+                  setSelectedTaskChildId(classroom.childIds[0] ?? selectedChild.id);
                   setCurriculumNotice("");
                   setCompletedTaskNotice("");
-                  setReportNotice("");
                 }}
               >
                 <span>{classroom.grade}</span>
@@ -212,11 +161,11 @@ export function OrganizationModule({
               <span>成长贝壳</span>
               <strong>{selectedClassroom.activeRecordCount}</strong>
             </article>
-            <article>
-              <span>待巡检</span>
-              <strong>{selectedClassroom.pendingReviewCount}</strong>
-            </article>
-          </div>
+              <article>
+                <span>当前任务</span>
+                <strong>{activeTaskCount}</strong>
+              </article>
+            </div>
           <div className="organization-teacher-list" aria-label="教师船员">
             {selectedClassroom.teachers.map((teacher) => (
               <article key={teacher.id}>
@@ -227,102 +176,51 @@ export function OrganizationModule({
           </div>
         </section>
 
-        <section className="organization-report-panel" aria-label="报告巡检台">
+        <section className="organization-report-panel" aria-label="孩子任务对象">
           <div className="organization-panel-title">
-            <ClipboardList size={18} />
-            <strong>报告巡检台</strong>
-            <span>{selectedPendingReportCount} 待巡检</span>
+            <Users size={18} />
+            <strong>孩子任务对象</strong>
+            <span>{classChildren.length} 名孩子</span>
           </div>
           <div className="organization-report-list">
-            {selectedClassroom.reportDrafts.map((report) => (
+            {classChildren.map((child) => {
+              const completedCount = selectedClassroom.growthTasks.filter((task) => task.completedChildIds.includes(child.id)).length;
+              return (
               <button
-                key={report.id}
+                key={child.id}
                 type="button"
-                className={report.childId === activeReportChildId ? "active" : undefined}
-                aria-pressed={report.childId === activeReportChildId}
-                onClick={() => setSelectedReportChildId(report.childId)}
+                className={child.id === activeTaskChildId ? "active" : undefined}
+                aria-pressed={child.id === activeTaskChildId}
+                onClick={() => setSelectedTaskChildId(child.id)}
               >
-                <strong>{report.childName}</strong>
-                <span>{report.status === "ready" ? reportReviewLabels[report.reviewStatus] : "待收集"}</span>
+                <strong>{child.name}</strong>
+                <span>Lv.{child.level} · {child.xp} 能量</span>
                 <em>
-                  {report.recordCount} 条证据 · {report.categories.slice(0, 2).join(" / ") || "暂无维度"}
+                  {completedCount}/{selectedClassroom.growthTasks.length} 个任务已完成
                 </em>
               </button>
-            ))}
+              );
+            })}
           </div>
-          {selectedReportDocument ? (
+          {activeTaskChild ? (
             <div className="organization-report-preview" aria-label="成长航海日志">
               <div>
-                <span>成长航海日志</span>
-                <strong>{selectedReportDocument.childName}成长家书</strong>
+                <span>当前孩子</span>
+                <strong>{activeTaskChild.name} 的任务板</strong>
                 <em>
-                  Lv.{selectedReportDocument.level} · {selectedReportDocument.xp} XP · {selectedReportDocument.recordCount} 条证据 ·{" "}
-                  {reportReviewLabels[activeReportDraft?.reviewStatus ?? "draft"]}
+                  Lv.{activeTaskChild.level} · {activeTaskChild.xp} 能量 · {activeTrack?.title ?? "未启航"}
                 </em>
               </div>
-              <p>{selectedReportDocument.teacherSummary}</p>
-              {activeReportDraft?.reviewNote ? <p className="organization-report-notice">补证提示：{activeReportDraft.reviewNote}</p> : null}
-              <div className="organization-category-list" aria-label="德育维度摘要">
-                {selectedReportDocument.categories.slice(0, 3).map((category) => (
-                  <span key={category.category}>
-                    {category.category} · {category.recordCount} 条
-                  </span>
-                ))}
-              </div>
-              <div className="organization-evidence-list" aria-label="代表证据">
-                {selectedReportDocument.highlights.slice(0, 2).map((record) => (
-                  <article key={record.id}>
-                    <strong>{record.category ?? "成长记录"}</strong>
-                    <span>
-                      {record.delta > 0 ? "+" : ""}
-                      {record.delta} XP
-                    </span>
-                    <em>{record.reason}</em>
-                  </article>
-                ))}
-              </div>
+              <p>先选孩子，再点下面的今日任务。完成后能量直接记入精灵。</p>
               <div className="organization-report-actions">
-                <button
-                  type="button"
-                  disabled={selectedReportDocument.recordCount === 0 || activeReportDraft?.reviewStatus === "submitted" || activeReportDraft?.reviewStatus === "approved"}
-                  onClick={() => updateReportReview("submitted", `${selectedReportDocument.childName}家书已送去巡检`)}
-                >
-                  <Send size={16} />
-                  送去巡检
-                </button>
-                <button
-                  type="button"
-                  disabled={activeReportDraft?.reviewStatus !== "submitted"}
-                  onClick={() => updateReportReview("approved", `${selectedReportDocument.childName}家书已盖章通过`)}
-                >
-                  <CheckCircle2 size={16} />
-                  盖章通过
-                </button>
-                <button
-                  type="button"
-                  disabled={activeReportDraft?.reviewStatus !== "submitted"}
-                  onClick={() => updateReportReview("revision_requested", `${selectedReportDocument.childName}家书已退回补证`, "请补充一条近期家庭可读的代表证据")}
-                >
-                  <RotateCcw size={16} />
-                  退回补证
-                </button>
-                <button type="button" onClick={exportParentReport}>
-                  <Download size={16} />
-                  导出家书
-                </button>
-                <button type="button" onClick={() => onFocusChild(selectedReportDocument.childId)}>
+                <button type="button" onClick={() => onFocusChild(activeTaskChild.id)}>
                   <MapPin size={16} />
                   看精灵
                 </button>
               </div>
-              {reportNotice ? (
-                <p className="organization-report-notice" role="status" aria-live="polite">
-                  {reportNotice}
-                </p>
-              ) : null}
             </div>
           ) : (
-            <p className="organization-empty">码头还没有可巡检的家书</p>
+            <p className="organization-empty">先在班级里选择一个孩子</p>
           )}
         </section>
 
@@ -362,7 +260,7 @@ export function OrganizationModule({
           </div>
           <div className="organization-task-list">
             {selectedClassroom.growthTasks.map((task) => {
-              const taskAlreadyCompleted = Boolean(activeReportChildId && task.completedChildIds.includes(activeReportChildId));
+              const taskAlreadyCompleted = Boolean(activeTaskChildId && task.completedChildIds.includes(activeTaskChildId));
               return (
                 <article key={task.id} className={taskAlreadyCompleted ? "active" : undefined}>
                   <span>{cadenceLabels[task.cadence]}</span>
@@ -374,7 +272,7 @@ export function OrganizationModule({
                     {task.curriculumActive ? "当前航线任务 · " : ""}
                     {task.completedChildCount}/{selectedClassroom.childCount} 名已完成
                   </small>
-                  <button type="button" disabled={!activeReportChildId || taskAlreadyCompleted} onClick={() => completeGrowthTask(task.id, task.title)}>
+                  <button type="button" disabled={!activeTaskChildId || taskAlreadyCompleted} onClick={() => completeGrowthTask(task.id, task.title)}>
                     {taskAlreadyCompleted ? `${activeTaskChild?.name ?? "孩子"}已完成` : `给${activeTaskChild?.name ?? "孩子"}完成`}
                   </button>
                 </article>

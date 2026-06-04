@@ -108,17 +108,17 @@ export function VoiceRecordModule({
 
   return (
     <section className="module-page voice-record-page" aria-labelledby="voice-record-title">
-      <div className="voice-record-header">
+      <div className="voice-record-header module-compact-header">
         <div>
           <span className="module-eyebrow">
             <Mic size={18} aria-hidden="true" />
-            记录贝壳
+            贝壳
           </span>
           <h1 id="voice-record-title">贝壳记录台</h1>
         </div>
-        <button type="button" className="voice-home-button" onClick={() => onFocusChild(selectedChild.id)}>
+        <button type="button" className="voice-home-button" aria-label={`回岛定位${selectedChild.name}`} onClick={() => onFocusChild(selectedChild.id)}>
           <Home size={18} aria-hidden="true" />
-          回成长岛
+          定位
         </button>
       </div>
 
@@ -229,12 +229,12 @@ export function VoiceRecordModule({
             </div>
           )}
 
-          <section className="voice-review-list" aria-label="待老师看记录">
-            <div className="voice-subtitle">
+          <details className="voice-review-list voice-secondary-details">
+            <summary className="voice-subtitle">
               <ClipboardCheck size={17} aria-hidden="true" />
               <strong>待老师看</strong>
               <span>{pendingReviews.length}</span>
-            </div>
+            </summary>
             {pendingReviews.length === 0 ? (
               <p className="voice-muted">暂无待看记录</p>
             ) : (
@@ -261,34 +261,34 @@ export function VoiceRecordModule({
                 );
               })
             )}
-          </section>
+          </details>
+
+          <details className="voice-history-panel voice-secondary-details">
+            <summary className="voice-subtitle">
+              <BadgeCheck size={17} aria-hidden="true" />
+              <strong>最近入账</strong>
+              <span>{selectedVoiceRecords.length}</span>
+            </summary>
+            {selectedVoiceRecords.length === 0 ? (
+              <p className="voice-muted">这个伙伴还没有入账记录</p>
+            ) : (
+              <div className="voice-history-list">
+                {selectedVoiceRecords.map((record) => (
+                  <article className={record.delta >= 0 ? "voice-history-row positive" : "voice-history-row negative"} key={record.id}>
+                    <span>{formatDelta(record.delta)}</span>
+                    <div>
+                      <strong>{record.reason}</strong>
+                      <em>
+                        {record.category ?? "成长记录"} · {formatRecordTime(record.createdAt)}
+                      </em>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
+          </details>
         </aside>
       </div>
-
-      <section className="voice-history-panel" aria-label="最近入账">
-        <div className="voice-subtitle">
-          <BadgeCheck size={17} aria-hidden="true" />
-          <strong>最近入账</strong>
-          <span>{selectedVoiceRecords.length}</span>
-        </div>
-        {selectedVoiceRecords.length === 0 ? (
-          <p className="voice-muted">这个伙伴还没有入账记录</p>
-        ) : (
-          <div className="voice-history-list">
-            {selectedVoiceRecords.map((record) => (
-              <article className={record.delta >= 0 ? "voice-history-row positive" : "voice-history-row negative"} key={record.id}>
-                <span>{formatDelta(record.delta)}</span>
-                <div>
-                  <strong>{record.reason}</strong>
-                  <em>
-                    {record.category ?? "成长记录"} · {formatRecordTime(record.createdAt)}
-                  </em>
-                </div>
-              </article>
-            ))}
-          </div>
-        )}
-      </section>
     </section>
   );
 }

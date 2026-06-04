@@ -1990,6 +1990,8 @@ button {
 }
 
 .dock-spirit {
+  position: relative;
+  isolation: isolate;
   flex: 0 0 92px;
   display: grid;
   justify-items: center;
@@ -2008,6 +2010,8 @@ button {
 }
 
 .dock-avatar {
+  position: relative;
+  isolation: isolate;
   display: grid;
   width: 54px;
   height: 54px;
@@ -2020,10 +2024,17 @@ button {
 }
 
 .dock-avatar img {
+  position: relative;
+  z-index: 1;
   max-width: 62px;
   max-height: 62px;
   object-fit: contain;
   filter: drop-shadow(0 8px 9px rgba(34, 43, 35, 0.18));
+}
+
+.dock-avatar-label {
+  position: relative;
+  z-index: 1;
 }
 
 .dock-spirit strong {
@@ -2457,6 +2468,8 @@ button {
 }
 
 .dock-selected-summary {
+  position: relative;
+  isolation: isolate;
   min-width: 180px;
   padding: 8px 14px;
   border: 2px solid var(--game-border);
@@ -2517,6 +2530,27 @@ button {
     inset 0 -6px 0 rgba(26, 74, 77, 0.18),
     0 0 0 4px rgba(246, 179, 82, 0.16),
     0 8px 0 rgba(53, 82, 74, 0.12);
+}
+
+.next-child-halo {
+  position: absolute;
+  z-index: 0;
+  display: block;
+  background: url("/assets/ui/energy-constellation/next-child-halo.png") center / contain no-repeat;
+  filter: drop-shadow(0 0 10px rgba(246, 179, 82, 0.18));
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.82);
+  animation: nextChildHaloCue 940ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.dock-avatar .next-child-halo {
+  inset: -24px;
+}
+
+.dock-selected-summary > .next-child-halo,
+.dock-spirit > .next-child-halo {
+  inset: -18px;
 }
 
 .dock-avatar {
@@ -3892,11 +3926,11 @@ button {
   position: relative;
   display: grid;
   min-width: 0;
-  min-height: 54px;
+  min-height: 66px;
   align-content: center;
   justify-items: center;
   gap: 3px;
-  padding: 6px 3px 5px;
+  padding: 6px 4px 5px;
   border: 1px solid rgba(23, 76, 90, 0.1);
   border-radius: 14px;
   color: rgba(23, 76, 90, 0.64);
@@ -3917,13 +3951,48 @@ button {
   pointer-events: none;
 }
 
-.energy-slot-row button i {
+.energy-glyph {
+  position: relative;
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 42% 34%, rgba(255, 253, 244, 0.92), rgba(255, 248, 234, 0.44) 55%, transparent 72%),
+    color-mix(in srgb, var(--energy-color, #f0ae3f) 12%, #fffdf4);
+}
+
+.energy-glyph i {
   display: block;
-  width: 9px;
-  height: 9px;
+  width: 12px;
+  height: 12px;
   border: 2px solid rgba(23, 76, 90, 0.12);
   border-radius: 999px;
   background: rgba(23, 76, 90, 0.1);
+}
+
+.energy-glyph img {
+  position: absolute;
+  inset: 2px;
+  width: calc(100% - 4px);
+  height: calc(100% - 4px);
+  object-fit: contain;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 160ms ease;
+}
+
+.energy-glyph.has-image {
+  background: transparent;
+}
+
+.energy-glyph.has-image i {
+  opacity: 0;
+}
+
+.energy-glyph.has-image img {
+  opacity: 1;
 }
 
 .energy-slot-row button span {
@@ -3964,7 +4033,7 @@ button {
   background: color-mix(in srgb, var(--energy-color, #f0ae3f) 16%, #fffdf4);
 }
 
-.energy-slot-row button.active i {
+.energy-slot-row button.active .energy-glyph i {
   border-color: rgba(255, 255, 255, 0.88);
   background: var(--energy-color, #f0ae3f);
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--energy-color, #f0ae3f) 18%, transparent);
@@ -3988,7 +4057,13 @@ button {
     energyCardBreath 2.4s ease-in-out 1.05s infinite;
 }
 
-.energy-slot-row button.current i {
+.energy-slot-row button.current .energy-glyph {
+  background:
+    radial-gradient(circle at 45% 35%, rgba(255, 253, 244, 0.96), rgba(255, 253, 244, 0.28) 58%, transparent 76%),
+    rgba(255, 253, 244, 0.18);
+}
+
+.energy-slot-row button.current .energy-glyph i {
   background: #fffdf4;
   box-shadow: 0 0 0 4px rgba(255, 253, 244, 0.22);
 }
@@ -12528,6 +12603,10 @@ button {
   padding: 78px 24px 118px;
 }
 
+.moral-speak-overlay.recognizing {
+  gap: 10px;
+}
+
 .moral-flow-ribbon {
   position: absolute;
   top: 18px;
@@ -12613,6 +12692,24 @@ button {
   line-height: 1;
 }
 
+.moral-mic-button svg {
+  position: relative;
+  z-index: 1;
+}
+
+.energy-touch-halo {
+  position: absolute;
+  inset: -42px;
+  z-index: 0;
+  display: block;
+  background: url("/assets/ui/energy-constellation/energy-touch-halo.png") center / contain no-repeat;
+  filter: drop-shadow(0 0 12px color-mix(in srgb, var(--moral-accent, #f6b352) 18%, transparent));
+  opacity: 0.74;
+  pointer-events: none;
+  transform: scale(0.94);
+  animation: moralTouchHaloPulse 1.65s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
 .moral-mic-button::before,
 .moral-mic-button::after {
   position: absolute;
@@ -12685,19 +12782,24 @@ button {
 .moral-shell-state {
   min-width: 132px;
   border-color: rgba(24, 35, 31, 0.14);
-  cursor: pointer;
   pointer-events: auto;
   transition: transform 0.18s ease, filter 0.18s ease;
 }
 
-.moral-wave-state:hover,
-.moral-shell-state:hover {
+.moral-wave-state {
+  cursor: pointer;
+}
+
+.moral-shell-state {
+  cursor: default;
+}
+
+.moral-wave-state:hover {
   transform: translateY(-2px);
   filter: brightness(1.04);
 }
 
-.moral-wave-state:focus-visible,
-.moral-shell-state:focus-visible {
+.moral-wave-state:focus-visible {
   outline: 3px solid rgba(255, 255, 255, 0.82);
   outline-offset: 4px;
 }
@@ -12839,6 +12941,41 @@ button {
   pointer-events: none;
 }
 
+.energy-confirm-burst,
+.energy-arrival-orb {
+  position: absolute;
+  z-index: -1;
+  display: block;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  pointer-events: none;
+}
+
+.energy-confirm-burst {
+  top: 50%;
+  left: 50%;
+  width: 156px;
+  height: 156px;
+  background-image: url("/assets/ui/energy-constellation/energy-confirm-burst.png");
+  filter: drop-shadow(0 0 12px color-mix(in srgb, var(--moral-accent, #f6b352) 20%, transparent));
+  opacity: 0;
+  transform: translate(-50%, -62%) scale(0.52);
+  animation: moralConfirmBurst 680ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.energy-arrival-orb {
+  bottom: 48%;
+  left: 50%;
+  width: 74px;
+  height: 74px;
+  background-image: url("/assets/ui/energy-constellation/energy-arrival-orb.png");
+  filter: drop-shadow(0 0 10px color-mix(in srgb, var(--moral-accent, #f6b352) 24%, transparent));
+  opacity: 0;
+  transform: translate(-220px, 72px) scale(0.54);
+  animation: moralArrivalOrb 880ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
 .moral-energy-trail {
   position: absolute;
   bottom: 50%;
@@ -12889,6 +13026,22 @@ button {
   font-weight: 900;
   background: #fff8ea;
   pointer-events: auto;
+}
+
+.moral-cancel-button {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 2px solid rgba(214, 177, 106, 0.44);
+  border-radius: 999px;
+  color: #174c5a;
+  background: rgba(255, 248, 234, 0.94);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 950;
+  box-shadow: 0 8px 18px rgba(19, 51, 45, 0.1);
+  cursor: pointer;
+  pointer-events: auto;
+  touch-action: manipulation;
 }
 
 .teacher-review-corner-card {
@@ -12989,6 +13142,7 @@ button {
 
 .moral-mic-button:focus-visible,
 .moral-retry-button:focus-visible,
+.moral-cancel-button:focus-visible,
 .teacher-review-actions button:focus-visible,
 .review-edit-popover summary:focus-visible,
 .review-transcript summary:focus-visible {
@@ -13057,7 +13211,7 @@ button {
   cursor: pointer;
 }
 
-.review-transcript p {
+.review-transcript > p:not(.teacher-review-transcript-line) {
   display: -webkit-box;
   margin: 6px 0 0;
   overflow: hidden;
@@ -13069,7 +13223,7 @@ button {
   -webkit-line-clamp: 2;
 }
 
-.review-transcript span {
+.review-transcript > span {
   display: inline-block;
   margin-top: 4px;
   color: rgba(23, 76, 90, 0.58);
@@ -13085,6 +13239,19 @@ button {
   100% {
     opacity: 0;
     transform: scale(1.22);
+  }
+}
+
+@keyframes moralTouchHaloPulse {
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: scale(0.9);
+  }
+
+  52% {
+    opacity: 0.82;
+    transform: scale(1.03);
   }
 }
 
@@ -13113,6 +13280,38 @@ button {
   to {
     opacity: 1;
     transform: translateY(-4px) scale(1.02);
+  }
+}
+
+@keyframes moralConfirmBurst {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -60%) scale(0.48);
+  }
+
+  28% {
+    opacity: 0.9;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -66%) scale(1.02);
+  }
+}
+
+@keyframes moralArrivalOrb {
+  0% {
+    opacity: 0;
+    transform: translate(-220px, 72px) scale(0.54);
+  }
+
+  34% {
+    opacity: 0.94;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(-42px, -12px) scale(0.92);
   }
 }
 
@@ -13181,6 +13380,22 @@ button {
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes nextChildHaloCue {
+  0% {
+    opacity: 0;
+    transform: scale(0.72);
+  }
+
+  34% {
+    opacity: 0.9;
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(1.08);
   }
 }
 
@@ -13487,6 +13702,10 @@ button {
   .moral-wave-state span,
   .moral-shell-state span,
   .moral-shell-state svg,
+  .energy-touch-halo,
+  .energy-confirm-burst,
+  .energy-arrival-orb,
+  .next-child-halo,
   .moral-energy-sparks,
   .moral-energy-trail,
   .moral-next-turn-card,
@@ -13499,9 +13718,29 @@ button {
   }
 
   .moral-mic-button,
+  .energy-touch-halo,
+  .energy-confirm-burst,
+  .energy-arrival-orb,
+  .next-child-halo,
   .teacher-review-actions button,
   .review-edit-popover summary {
     transition: none;
+  }
+
+  .energy-touch-halo {
+    opacity: 0.42;
+    transform: scale(0.96);
+  }
+
+  .energy-confirm-burst,
+  .energy-arrival-orb {
+    opacity: 0.28;
+    transform: translate(-50%, -58%) scale(0.72);
+  }
+
+  .next-child-halo {
+    opacity: 0.28;
+    transform: scale(0.96);
   }
 }
 
@@ -18086,6 +18325,384 @@ button {
   }
 }
 
+/* P0/P1 text diet: compact module HUD and secondary teacher tools. */
+.module-screen-shell .shell-scene-command-bar {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  min-height: 42px;
+  gap: 8px;
+  padding: 5px 6px;
+  border-radius: 14px;
+  background: rgba(255, 248, 234, 0.92);
+  box-shadow: none;
+}
+
+.module-screen-shell .shell-top-hud .shell-scene-chip {
+  display: none;
+}
+
+.module-screen-shell .scene-command-home {
+  min-height: 44px;
+  padding: 0 11px;
+  border-radius: 12px;
+  box-shadow: none;
+}
+
+.module-screen-shell .scene-command-status {
+  flex: 0 1 auto;
+  justify-content: end;
+}
+
+.module-screen-shell .scene-command-chip {
+  min-height: 28px;
+  max-width: 136px;
+  padding: 0 8px;
+  border-color: rgba(214, 177, 106, 0.28);
+  background: rgba(255, 253, 244, 0.76);
+}
+
+.module-screen-shell .scene-command-chip.reward {
+  background: #fff0bf;
+}
+
+.module-compact-header {
+  min-height: 40px;
+  gap: 10px;
+  margin: -4px 0 0;
+}
+
+.module-compact-header .module-eyebrow {
+  min-height: 26px;
+  padding: 0 8px;
+  border-width: 1px;
+  color: #174c5a;
+  background: rgba(135, 216, 208, 0.2);
+  font-size: 12px;
+}
+
+.module-compact-header .module-eyebrow svg {
+  width: 15px;
+  height: 15px;
+}
+
+.module-compact-header h1 {
+  font-size: 18px;
+}
+
+.module-compact-header :is(.roll-call-home-button, .voice-home-button, .reward-home-button, .organization-home-button, .workbench-home-button) {
+  min-height: 44px;
+  padding: 0 11px;
+  border-radius: 12px;
+}
+
+.teacher-workbench-page .workbench-header.module-compact-header {
+  min-height: 40px;
+  margin: -4px 0 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.teacher-workbench-page .workbench-score-drawer {
+  gap: 8px;
+}
+
+.teacher-workbench-page .workbench-selected-child.compact,
+.teacher-workbench-page .workbench-recent-feedback,
+.teacher-workbench-page .deduct-confirm-panel,
+.teacher-workbench-page .workbench-secondary-details,
+.teacher-workbench-page .workbench-result-card,
+.teacher-workbench-page .workbench-record-list article,
+.teacher-workbench-page .workbench-review-list article {
+  border-width: 1px;
+  border-radius: 14px;
+  box-shadow: none;
+}
+
+.teacher-workbench-page .workbench-selected-child.compact {
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 9px;
+  padding: 8px;
+}
+
+.teacher-workbench-page .workbench-selected-child.compact .workbench-child-avatar {
+  width: 56px;
+  height: 56px;
+  border-width: 2px;
+  border-radius: 18px;
+}
+
+.teacher-workbench-page .workbench-selected-child.compact strong {
+  font-size: 19px;
+}
+
+.teacher-workbench-page .workbench-profile-button {
+  min-height: 30px;
+  margin-top: 4px;
+  padding: 0 9px;
+}
+
+.teacher-workbench-page .workbench-recent-feedback {
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 7px 9px;
+  padding: 8px;
+}
+
+.teacher-workbench-page .workbench-recent-feedback > span {
+  min-width: 48px;
+  min-height: 34px;
+  border-radius: 11px;
+  font-size: 13px;
+}
+
+.teacher-workbench-page .workbench-recent-feedback .workbench-undo-button {
+  min-height: 34px;
+  padding: 0 10px;
+  font-size: 12px;
+}
+
+.teacher-workbench-page .workbench-section-title {
+  min-height: 44px;
+}
+
+.teacher-workbench-page .batch-score-grid button {
+  min-height: 44px;
+  border-radius: 12px;
+}
+
+.teacher-workbench-page .template-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.teacher-workbench-page .template-grid button {
+  min-height: 48px;
+  padding: 8px;
+  border-width: 1px;
+  border-radius: 12px;
+}
+
+.teacher-workbench-page .template-grid button span {
+  font-size: 14px;
+}
+
+.teacher-workbench-page .workbench-secondary-details,
+.teacher-workbench-page .manual-score-pad {
+  display: grid;
+  gap: 8px;
+  padding: 7px 0 0;
+  border-top: 1px solid rgba(214, 177, 106, 0.34);
+}
+
+.teacher-workbench-page .workbench-secondary-details > summary,
+.teacher-workbench-page .manual-score-pad > summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+.teacher-workbench-page .workbench-secondary-details > summary::-webkit-details-marker,
+.teacher-workbench-page .manual-score-pad > summary::-webkit-details-marker {
+  display: none;
+}
+
+.teacher-workbench-page .workbench-secondary-details:not([open]) {
+  padding-bottom: 0;
+}
+
+.teacher-workbench-page :is(.workbench-secondary-details, .manual-score-pad):not([open]) > :not(summary) {
+  display: none !important;
+}
+
+.teacher-workbench-page .workbench-secondary-details:not([open]) > summary span,
+.teacher-workbench-page .manual-score-pad:not([open]) > summary span {
+  color: rgba(23, 76, 90, 0.72);
+  background: rgba(255, 240, 191, 0.72);
+}
+
+.teacher-workbench-page .workbench-ai-panel,
+.teacher-workbench-page .workbench-review-panel {
+  padding: 7px 0 0;
+  background: transparent;
+}
+
+.teacher-workbench-page .transcript-samples button {
+  min-height: 44px;
+  border-width: 1px;
+}
+
+.teacher-workbench-page .manual-score-grid button {
+  min-height: 44px;
+}
+
+.teacher-workbench-page .workbench-transcript textarea {
+  min-height: 64px;
+}
+
+.roll-call-page .roll-call-side {
+  grid-template-rows: auto auto auto;
+  align-content: start;
+}
+
+.roll-call-page .roll-call-secondary-details,
+.voice-record-page .voice-secondary-details {
+  min-width: 0;
+  border-width: 1px;
+  border-radius: 16px;
+  box-shadow: none;
+}
+
+.roll-call-page .roll-call-secondary-details > summary,
+.voice-record-page .voice-secondary-details > summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+.roll-call-page .roll-call-secondary-details > summary::-webkit-details-marker,
+.voice-record-page .voice-secondary-details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.roll-call-page .roll-call-secondary-details:not([open]) > :not(summary),
+.voice-record-page .voice-secondary-details:not([open]) > :not(summary) {
+  display: none !important;
+}
+
+.roll-call-page .roll-call-secondary-details:not([open]) {
+  padding: 8px 12px;
+}
+
+.roll-call-page .roll-call-filter-title,
+.roll-call-page .roll-call-list-title,
+.voice-record-page .voice-subtitle {
+  min-height: 44px;
+}
+
+.roll-call-page .roll-call-list-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+
+.voice-record-page {
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.voice-record-page .voice-result-panel {
+  overflow: auto;
+}
+
+.voice-record-page .voice-secondary-details {
+  padding: 0;
+  border: 1px solid rgba(214, 177, 106, 0.36);
+  background: rgba(255, 253, 244, 0.72);
+}
+
+.voice-record-page .voice-secondary-details > :not(summary) {
+  margin: 0 12px 12px;
+}
+
+.voice-record-page .voice-history-panel {
+  display: grid;
+  gap: 8px;
+  background: rgba(255, 253, 244, 0.72);
+}
+
+.voice-record-page .voice-history-list {
+  max-height: 190px;
+  overflow: auto;
+}
+
+@media (max-width: 900px) {
+  .module-screen-shell .shell-scene-command-bar {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .module-screen-shell .scene-command-status {
+    grid-column: auto;
+    justify-content: end;
+    overflow-x: auto;
+    padding-bottom: 1px;
+  }
+
+  .module-screen-shell .scene-command-chip.reward {
+    display: inline-flex;
+  }
+}
+
+@media (max-width: 720px) {
+  .module-screen-shell .shell-scene-command-bar {
+    min-height: 40px;
+    gap: 6px;
+    padding: 5px;
+  }
+
+  .module-screen-shell .scene-command-chip {
+    max-width: 44vw;
+  }
+
+  .module-compact-header {
+    min-height: 38px;
+  }
+
+  .module-compact-header > div {
+    gap: 6px;
+  }
+
+  .module-compact-header .module-eyebrow {
+    max-width: 86px;
+  }
+
+  .module-compact-header h1 {
+    font-size: 16px;
+  }
+
+  .teacher-workbench-page .workbench-score-drawer {
+    order: 1;
+    gap: 7px;
+  }
+
+  .teacher-workbench-page .workbench-class-board {
+    order: 2;
+    max-height: 390px;
+  }
+
+  .teacher-workbench-page .workbench-class-grid {
+    grid-auto-rows: minmax(92px, auto);
+    max-height: 360px;
+  }
+
+  .teacher-workbench-page .template-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .roll-call-page .roll-call-filter-panel,
+  .roll-call-page .roll-call-list-panel {
+    padding: 8px 10px;
+  }
+
+  .voice-record-page .voice-result-panel {
+    max-height: none;
+  }
+
+  .voice-record-page {
+    grid-template-rows: auto auto;
+    overflow: auto;
+  }
+
+  .voice-record-page .voice-record-layout {
+    grid-template-rows: auto auto;
+    min-height: auto;
+    overflow: visible;
+  }
+
+  .voice-record-page .voice-record-workbench,
+  .voice-record-page .voice-result-panel {
+    overflow: visible;
+  }
+}
+
 /* P1/P3 math arena: make PK read as an island battle scene instead of a form panel. */
 .math-arena-page {
   --arena-sea: #174c5a;
@@ -19323,6 +19940,8 @@ button {
 .module-dock-button:focus-visible,
 .shell-child-chip:focus-visible,
 .teacher-tools-drawer summary:focus-visible,
+.roll-call-secondary-details > summary:focus-visible,
+.voice-secondary-details > summary:focus-visible,
 .spirit-self-service-button:focus-visible {
   outline: 3px solid rgba(246, 179, 82, 0.86);
   outline-offset: 3px;
@@ -19437,17 +20056,23 @@ button {
 }
 
 .home-screen-shell .home-module:has(.world-map-shell:not(.moral-stage-idle)) .spirit-dock:not(.collapsed) .dock-spirit {
-  flex-basis: 62px;
-  min-height: 56px;
+  flex-basis: 76px;
+  min-height: 64px;
   padding: 4px;
   border-radius: 18px;
 }
 
-.home-screen-shell .home-module:has(.world-map-shell:not(.moral-stage-idle)) .spirit-dock:not(.collapsed) .dock-spirit strong,
 .home-screen-shell .home-module:has(.world-map-shell:not(.moral-stage-idle)) .spirit-dock:not(.collapsed) .dock-spirit em,
 .home-screen-shell .home-module:has(.world-map-shell:not(.moral-stage-idle)) .spirit-dock:not(.collapsed) .dock-spirit::before,
 .home-screen-shell .home-module:has(.world-map-shell:not(.moral-stage-idle)) .spirit-dock:not(.collapsed) .dock-spirit.active::after {
   display: none;
+}
+
+.home-screen-shell .home-module:has(.world-map-shell:not(.moral-stage-idle)) .spirit-dock:not(.collapsed) .dock-spirit strong {
+  display: block;
+  max-width: 68px;
+  font-size: 12px;
+  line-height: 1.05;
 }
 
 .home-screen-shell .home-module:has(.world-map-shell:not(.moral-stage-idle)) .spirit-dock:not(.collapsed) .dock-avatar {
@@ -19458,6 +20083,419 @@ button {
 .home-screen-shell .home-module:has(.world-map-shell:not(.moral-stage-idle)) .spirit-dock:not(.collapsed) .dock-avatar img {
   max-width: 54px;
   max-height: 54px;
+}
+
+.home-screen-shell .spirit-dock.expanded {
+  display: grid;
+  grid-template-columns: minmax(176px, 220px) minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 8px 10px;
+  max-height: min(214px, calc(100% - 28px));
+  padding: 8px;
+  overflow: hidden;
+  border: 1px solid rgba(31, 74, 66, 0.14);
+  border-radius: 20px;
+  background: #fffaf0;
+  box-shadow: 0 14px 34px rgba(24, 47, 41, 0.12);
+}
+
+.home-screen-shell .spirit-dock.expanded .dock-tools {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: auto minmax(150px, 240px) minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+}
+
+.home-screen-shell .spirit-dock.expanded .dock-tools-head,
+.home-screen-shell .spirit-dock.expanded .dock-search,
+.home-screen-shell .spirit-dock.expanded .dock-filters {
+  min-width: 0;
+}
+
+.home-screen-shell .spirit-dock.expanded .dock-tools-head {
+  gap: 10px;
+  min-height: 44px;
+}
+
+.home-screen-shell .spirit-dock.expanded .dock-tools-head strong {
+  font-size: 15px;
+  white-space: nowrap;
+}
+
+.home-screen-shell .spirit-dock.expanded .dock-tools-head strong::before {
+  display: none;
+}
+
+.home-screen-shell .spirit-dock.expanded .dock-collapse {
+  min-height: 44px;
+  padding-inline: 12px;
+  box-shadow: none;
+}
+
+.home-screen-shell .spirit-dock.expanded .dock-search {
+  min-height: 44px;
+  border-color: rgba(31, 74, 66, 0.12);
+  background: #ffffff;
+}
+
+.home-screen-shell .spirit-dock.expanded .dock-filters {
+  display: flex;
+  min-height: 44px;
+  padding-bottom: 0;
+}
+
+.home-screen-shell .spirit-dock.expanded .dock-filters button {
+  min-height: 36px;
+  border-color: rgba(31, 74, 66, 0.12);
+  background: #fff7d8;
+}
+
+.home-screen-shell .spirit-dock.expanded .dock-filters button.active {
+  color: #fff8df;
+  border-color: rgba(23, 76, 90, 0.24);
+  background: #2f7f87;
+}
+
+.home-screen-shell .spirit-dock.expanded .dock-selected-summary.expanded {
+  display: grid;
+  grid-column: 1;
+  grid-row: 2;
+  grid-template-columns: 56px minmax(0, 1fr);
+  align-self: stretch;
+  gap: 10px;
+  width: 100%;
+  max-width: none;
+  min-height: 96px;
+  padding: 10px;
+  text-align: left;
+  border-color: rgba(31, 74, 66, 0.14);
+  background: #fff7d8;
+}
+
+.home-screen-shell .spirit-dock.expanded .dock-selected-summary.expanded .dock-avatar {
+  width: 56px;
+  height: 56px;
+  align-self: center;
+}
+
+.home-screen-shell .spirit-dock.expanded .dock-selected-summary.expanded .dock-avatar img {
+  max-width: 66px;
+  max-height: 66px;
+}
+
+.dock-selected-copy {
+  display: grid;
+  min-width: 0;
+  align-content: center;
+  gap: 3px;
+}
+
+.home-screen-shell .dock-selected-summary .dock-selected-copy strong,
+.home-screen-shell .dock-selected-summary .dock-selected-copy em,
+.home-screen-shell .dock-selected-summary .dock-selected-copy small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-screen-shell .dock-selected-summary .dock-selected-copy small {
+  color: #7a6a4d;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.home-screen-shell .spirit-dock.expanded .dock-scroll {
+  display: grid;
+  grid-column: 2;
+  grid-row: 2;
+  grid-auto-flow: column;
+  grid-auto-columns: 86px;
+  grid-template-rows: repeat(2, minmax(74px, 1fr));
+  align-items: stretch;
+  gap: 7px;
+  min-height: 0;
+  padding: 6px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  border-color: rgba(31, 74, 66, 0.1);
+  background: #f3ead2;
+  overscroll-behavior-x: contain;
+}
+
+.home-screen-shell .spirit-dock.expanded.has-many-children .dock-scroll {
+  grid-auto-columns: 82px;
+}
+
+.home-screen-shell .spirit-dock.expanded .dock-scroll::before {
+  display: none;
+}
+
+.home-screen-shell .spirit-dock.expanded .dock-spirit {
+  display: grid;
+  grid-template-rows: 42px auto auto;
+  align-content: center;
+  justify-items: center;
+  gap: 2px;
+  width: 100%;
+  min-width: 0;
+  min-height: 74px;
+  padding: 5px 4px;
+  border-radius: 16px;
+  scroll-margin-inline: 94px;
+}
+
+.home-screen-shell .spirit-dock.expanded .dock-avatar {
+  width: 42px;
+  height: 42px;
+}
+
+.home-screen-shell .spirit-dock.expanded .dock-avatar img {
+  max-width: 50px;
+  max-height: 50px;
+}
+
+.home-screen-shell .spirit-dock.expanded .dock-spirit strong {
+  max-width: 72px;
+  color: #14342e;
+  font-size: 13px;
+}
+
+.home-screen-shell .spirit-dock.expanded .dock-spirit em {
+  max-width: 72px;
+  min-width: 0;
+  padding: 1px 6px;
+  font-size: 11px;
+}
+
+.home-screen-shell .spirit-dock.expanded .dock-spirit.active {
+  transform: none;
+}
+
+.home-screen-shell .spirit-dock.expanded .dock-spirit.active strong,
+.home-screen-shell .spirit-dock.expanded .dock-spirit.active em {
+  color: #fff9df;
+}
+
+.home-screen-shell .home-module:has(.world-map-shell:not(.moral-stage-idle)) .spirit-dock.expanded {
+  grid-template-columns: minmax(166px, 210px) minmax(0, 1fr);
+  max-height: 166px;
+  overflow: hidden;
+}
+
+.home-screen-shell .home-module:has(.world-map-shell:not(.moral-stage-idle)) .spirit-dock.expanded .dock-tools {
+  display: grid;
+  grid-template-columns: auto auto;
+  justify-content: space-between;
+}
+
+.home-screen-shell .home-module:has(.world-map-shell:not(.moral-stage-idle)) .spirit-dock.expanded .dock-search,
+.home-screen-shell .home-module:has(.world-map-shell:not(.moral-stage-idle)) .spirit-dock.expanded .dock-filters {
+  display: none;
+}
+
+.home-screen-shell .home-module:has(.world-map-shell:not(.moral-stage-idle)) .spirit-dock.expanded .dock-selected-summary.expanded {
+  min-height: 78px;
+}
+
+.home-screen-shell .home-module:has(.world-map-shell:not(.moral-stage-idle)) .spirit-dock.expanded .dock-scroll {
+  grid-template-rows: 1fr;
+  grid-auto-columns: 76px;
+  min-height: 78px;
+  padding: 5px;
+}
+
+.home-screen-shell .home-module:has(.world-map-shell:not(.moral-stage-idle)) .spirit-dock.expanded .dock-spirit {
+  grid-template-rows: 44px auto;
+  min-height: 68px;
+  padding: 4px;
+}
+
+.home-screen-shell .home-module:has(.world-map-shell:not(.moral-stage-idle)) .spirit-dock.expanded .dock-spirit em,
+.home-screen-shell .home-module:has(.world-map-shell:not(.moral-stage-idle)) .spirit-dock.expanded .dock-spirit::before,
+.home-screen-shell .home-module:has(.world-map-shell:not(.moral-stage-idle)) .spirit-dock.expanded .dock-spirit.active::after {
+  display: none;
+}
+
+.home-screen-shell .home-module:has(.world-map-shell:not(.moral-stage-idle)) .spirit-dock.expanded .dock-spirit strong {
+  display: block;
+  max-width: 68px;
+  font-size: 12px;
+  line-height: 1.05;
+}
+
+.home-screen-shell .home-module:has(.world-map-shell:not(.moral-stage-idle)) .spirit-dock.expanded .dock-selected-summary.expanded strong {
+  display: block;
+}
+
+/* P1/P2 child flow pass: one task at a time on the whiteboard. */
+.home-screen-shell .game-layout:has(.world-map-shell:not(.moral-stage-idle)) .hud-rail,
+.home-screen-shell .home-module:has(.spirit-dock.expanded) .hud-rail,
+.world-map-shell:not(.moral-stage-idle) .map-companion-actions {
+  display: none;
+}
+
+.world-map-shell:not(.moral-stage-idle) .energy-slot-row button:not(.current) {
+  display: none;
+}
+
+.world-map-shell:not(.moral-stage-idle) .map-energy-constellation {
+  pointer-events: none;
+}
+
+.world-map-shell:not(.moral-stage-idle) .energy-card.current {
+  pointer-events: auto;
+}
+
+.world-map-shell:not(.moral-stage-idle) .moral-flow-ribbon {
+  opacity: 0.78;
+  transform: translateX(-50%) scale(0.94);
+}
+
+.home-screen-shell .map-scene-gate button,
+.home-screen-shell .energy-slot-row button,
+.home-screen-shell .zoom-controls button {
+  min-width: 48px;
+  min-height: 48px;
+  touch-action: manipulation;
+}
+
+.teacher-review-status {
+  gap: 5px;
+}
+
+.teacher-review-transcript-line {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 7px;
+  margin: 0;
+  padding: 8px 9px;
+  border: 1px solid rgba(214, 177, 106, 0.28);
+  border-radius: 13px;
+  color: #174c5a;
+  background: rgba(255, 253, 244, 0.72);
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.34;
+}
+
+.teacher-review-transcript-line span {
+  display: inline-flex;
+  min-height: 22px;
+  align-items: center;
+  padding: 0 7px;
+  border-radius: 999px;
+  color: #fffdf4;
+  background: #2d9fb2;
+  font-size: 11px;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.review-transcript {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+
+.review-transcript summary {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 32px;
+  align-items: center;
+  padding: 0 10px;
+  border: 1px solid rgba(214, 177, 106, 0.34);
+  border-radius: 999px;
+  color: rgba(23, 76, 90, 0.72);
+  background: rgba(255, 253, 244, 0.74);
+  font-size: 12px;
+  font-weight: 950;
+  cursor: pointer;
+  list-style: none;
+}
+
+.review-transcript summary::-webkit-details-marker {
+  display: none;
+}
+
+.review-transcript summary::after {
+  margin-left: 6px;
+  content: "展开";
+}
+
+.review-transcript[open] summary::after {
+  content: "收起";
+}
+
+.teacher-review-actions[data-mode="approve"] {
+  grid-template-columns: minmax(118px, 1fr) minmax(94px, 0.8fr) minmax(96px, 0.74fr);
+}
+
+.teacher-review-actions[data-mode="adjust"] {
+  grid-template-columns: minmax(142px, 1fr) minmax(104px, 0.72fr);
+}
+
+.teacher-review-actions button,
+.review-edit-popover summary {
+  min-height: 52px;
+  padding-inline: 10px;
+}
+
+.teacher-review-actions .approve {
+  background: #3b7d53;
+}
+
+.teacher-review-actions[data-mode="adjust"] .review-edit-popover summary,
+.review-edit-popover.primary summary {
+  color: #fffdf4;
+  background: #174c5a;
+  box-shadow: inset 0 -3px 0 rgba(7, 41, 50, 0.16);
+}
+
+.review-edit-popover[open] {
+  grid-column: 1 / -1;
+}
+
+.review-edit-popover > div {
+  position: static;
+  display: grid;
+  width: auto;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+  margin-top: 7px;
+  padding: 7px;
+  border-radius: 13px;
+  box-shadow: inset 0 0 0 1px rgba(214, 177, 106, 0.32);
+}
+
+.review-edit-popover > div button {
+  min-height: 48px;
+  padding: 0 8px;
+}
+
+.review-confidence {
+  display: flex;
+  min-height: 30px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 4px;
+  border-top: 1px solid rgba(214, 177, 106, 0.28);
+  color: rgba(23, 76, 90, 0.66);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.review-confidence em {
+  min-height: 24px;
+  padding: 5px 8px;
+  border-radius: 999px;
+  color: color-mix(in srgb, var(--moral-accent, #f6b352) 76%, #174c5a);
+  background: color-mix(in srgb, var(--moral-accent, #f6b352) 12%, #fffdf4);
+  font-style: normal;
+  line-height: 1;
 }
 
 @media (max-width: 720px) {
@@ -19485,8 +20523,13 @@ button {
   }
 
   .energy-slot-row button {
-    flex: 0 0 44px;
-    min-height: 44px;
+    flex: 0 0 56px;
+    min-height: 56px;
+  }
+
+  .energy-glyph {
+    width: 28px;
+    height: 28px;
   }
 
   .home-screen-shell .map-scene-gate {
@@ -19495,6 +20538,57 @@ button {
 
   .home-screen-shell .spirit-dock:not(.collapsed) {
     max-height: min(232px, calc(100% - 112px));
+  }
+
+  .home-screen-shell .spirit-dock.expanded {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto minmax(0, 1fr);
+    max-height: min(314px, calc(100% - 112px));
+  }
+
+  .home-screen-shell .spirit-dock.expanded .dock-tools {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .home-screen-shell .spirit-dock.expanded .dock-search,
+  .home-screen-shell .spirit-dock.expanded .dock-filters {
+    grid-column: 1 / -1;
+  }
+
+  .home-screen-shell .spirit-dock.expanded .dock-selected-summary.expanded,
+  .home-screen-shell .spirit-dock.expanded .dock-scroll {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .home-screen-shell .spirit-dock.expanded .dock-selected-summary.expanded {
+    min-height: 72px;
+  }
+
+  .home-screen-shell .spirit-dock.expanded .dock-scroll {
+    grid-template-rows: repeat(2, minmax(74px, 1fr));
+    grid-auto-columns: 84px;
+  }
+
+  .home-screen-shell .home-module:has(.world-map-shell:not(.moral-stage-idle)) .spirit-dock.expanded {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto minmax(0, 1fr);
+    max-height: min(286px, calc(100% - 112px));
+  }
+
+  .home-screen-shell .home-module:has(.world-map-shell:not(.moral-stage-idle)) .spirit-dock.expanded .dock-tools {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .home-screen-shell .home-module:has(.world-map-shell:not(.moral-stage-idle)) .spirit-dock.expanded .dock-selected-summary.expanded,
+  .home-screen-shell .home-module:has(.world-map-shell:not(.moral-stage-idle)) .spirit-dock.expanded .dock-scroll {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .home-screen-shell .home-module:has(.world-map-shell:not(.moral-stage-idle)) .spirit-dock.expanded .dock-scroll {
+    grid-template-rows: 1fr;
+    grid-auto-columns: 58px;
   }
 
   .home-screen-shell .teacher-review-corner-card {
@@ -19510,7 +20604,18 @@ button {
   }
 
   .home-screen-shell .teacher-review-corner-card:has(.review-edit-popover[open]) {
-    overflow: visible;
+    bottom: 88px;
+    max-height: min(300px, calc(100% - 116px));
+    overflow: auto;
+  }
+
+  .home-screen-shell .home-module:has(.world-map-shell:not(.moral-stage-idle)):has(.spirit-dock.expanded) .teacher-review-corner-card {
+    bottom: 304px;
+    max-height: min(220px, calc(100% - 332px));
+  }
+
+  .home-screen-shell .home-module:has(.world-map-shell.moral-stage-pendingReview):has(.spirit-dock.expanded) .spirit-speech-bubble {
+    display: none;
   }
 
   .home-screen-shell .moral-speak-overlay.pendingReview {
@@ -19527,12 +20632,10 @@ button {
   }
 
   .home-screen-shell .review-edit-popover > div {
-    position: absolute;
-    top: auto;
-    right: 0;
-    bottom: calc(100% + 8px);
-    width: min(180px, calc(100vw - 40px));
-    z-index: 2;
+    position: static;
+    width: auto;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    z-index: auto;
   }
 
   .home-screen-shell .spirit-speech-bubble {

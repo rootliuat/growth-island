@@ -208,18 +208,17 @@ export function TeacherWorkbenchModule({
 
   return (
     <section className="module-page teacher-workbench-page" aria-label="老师记录港">
-      <div className="workbench-header">
+      <div className="workbench-header module-compact-header">
         <div className="workbench-harbor-status" aria-label="老师记录港状态">
           <span className="module-eyebrow">
             <ScrollText size={18} aria-hidden="true" />
             老师记录港
           </span>
-          <strong>{selectedChild.name}</strong>
           <em>{pendingReviews.length > 0 ? `待看 ${pendingReviews.length}` : "轻补记"}</em>
         </div>
-        <button type="button" className="workbench-home-button" onClick={() => onFocusChild(selectedChild.id)}>
+        <button type="button" className="workbench-home-button" aria-label={`回岛定位${selectedChild.name}`} onClick={() => onFocusChild(selectedChild.id)}>
           <Home size={18} aria-hidden="true" />
-          回岛看{selectedChild.name}
+          定位
         </button>
       </div>
 
@@ -367,11 +366,12 @@ export function TeacherWorkbenchModule({
             </div>
           ) : null}
 
-          <section className="workbench-ai-panel" aria-label="贝壳建议">
-            <div className="workbench-section-title">
+          <details className="workbench-ai-panel workbench-secondary-details">
+            <summary className="workbench-section-title">
               <ShieldCheck size={18} />
               <strong>贝壳建议</strong>
-            </div>
+              <span>{result ? "有建议" : "打开"}</span>
+            </summary>
             <div className="transcript-samples">
               {transcriptSamples.map((sample) => (
                 <button key={sample} type="button" onClick={() => updateTranscript(sample)}>
@@ -414,14 +414,14 @@ export function TeacherWorkbenchModule({
                 </div>
               </article>
             ) : null}
-          </section>
+          </details>
 
-          <section>
-            <div className="workbench-section-title">
+          <details className="workbench-secondary-details">
+            <summary className="workbench-section-title">
               <BadgeCheck size={18} />
               <strong>最近入港</strong>
               <span>{selectedRecords.length}</span>
-            </div>
+            </summary>
             <div className="workbench-record-list">
               {selectedRecords.length === 0 ? (
                 <p>暂无入账</p>
@@ -439,14 +439,14 @@ export function TeacherWorkbenchModule({
                 ))
               )}
             </div>
-          </section>
+          </details>
 
-          <section className="workbench-review-panel" aria-label="待老师看">
-            <div className="workbench-section-title">
+          <details className="workbench-review-panel workbench-secondary-details">
+            <summary className="workbench-section-title">
               <ClipboardCheck size={18} />
               <strong>待老师看</strong>
               <span>{pendingReviews.length}</span>
-            </div>
+            </summary>
             <div className="workbench-review-list">
               {pendingReviews.length === 0 ? (
                 <p>暂无待确认</p>
@@ -476,7 +476,7 @@ export function TeacherWorkbenchModule({
                 })
               )}
             </div>
-          </section>
+          </details>
         </aside>
       </div>
     </section>

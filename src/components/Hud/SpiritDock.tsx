@@ -46,48 +46,67 @@ export function SpiritDock({ childrenWithProgress, spiritsById, selectedChildId,
   const selectedSpirit = selectedChild ? spiritsById.get(selectedChild.spiritId) : undefined;
   const selectedAsset = selectedSpirit ? getSpiritAsset(selectedSpirit, selectedChild.state) : undefined;
   const selectedIsNextTurn = selectedChild?.id === nextTurnChildId;
+  const selectedStatus = selectedIsNextTurn ? "下一位" : "说成长";
+  const dockClasses = [
+    "spirit-dock",
+    collapsed ? "collapsed is-collapsed" : "expanded is-expanded",
+    childrenWithProgress.length > 18 ? "has-many-children" : "",
+    selectedIsNextTurn ? "next-ready" : "",
+  ].filter(Boolean).join(" ");
+  const selectChildFromRoster = (childId: string) => {
+    onSelectChild(childId);
+    setCollapsed(true);
+  };
 
   if (collapsed) {
     return (
-      <section className={selectedIsNextTurn ? "spirit-dock collapsed next-ready" : "spirit-dock collapsed"}>
+      <section className={dockClasses}>
         <button
           type="button"
           className={selectedIsNextTurn ? "dock-selected-summary next-ready" : "dock-selected-summary"}
           style={{ "--dock-accent": selectedSpirit?.accent ?? "#6ebf8b" } as CSSProperties}
           data-next-turn={selectedIsNextTurn ? "true" : undefined}
-          aria-label={`${selectedChild.name}${selectedIsNextTurn ? "，下一位，说成长" : "，领能量"}`}
+          aria-label={`当前孩子：${selectedChild.name}，${selectedStatus}`}
           onClick={() => onSelectChild(selectedChild.id)}
         >
           <span className="dock-avatar">
-            {selectedAsset?.url ? <img src={selectedAsset.url} alt="" /> : selectedChild.name.slice(0, 1)}
+            {selectedIsNextTurn ? <span className="next-child-halo next-ready" aria-hidden="true" /> : null}
+            {selectedAsset?.url ? <img src={selectedAsset.url} alt="" /> : <span className="dock-avatar-label">{selectedChild.name.slice(0, 1)}</span>}
           </span>
           <strong>{selectedChild.name}</strong>
-          <em>{selectedIsNextTurn ? "下一位 · 说成长" : "精灵 · 领能量"}</em>
+          <em>{selectedStatus}</em>
         </button>
-        <button className="dock-collapse" type="button" aria-label="展开精灵队伍" onClick={() => setCollapsed(false)}>
+        <button
+          className="dock-collapse"
+          type="button"
+          aria-expanded="false"
+          aria-label="展开全班孩子"
+          onClick={() => setCollapsed(false)}
+        >
           <ChevronUp size={16} />
-          展开
+          全班
         </button>
       </section>
     );
   }
 
   return (
-    <section className="spirit-dock">
+    <section className={dockClasses}>
       <div className="dock-tools">
         <div className="dock-tools-head">
           <strong>
-            {collapsed ? `${selectedChild.name} · 领能量` : "精灵队伍"}
+            选孩子
             <small>{filtered.length}/{childrenWithProgress.length}</small>
           </strong>
           <button
             className="dock-collapse"
             type="button"
-            aria-label={collapsed ? "展开精灵队伍" : "收起精灵队伍"}
+            aria-expanded="true"
+            aria-label="收起全班孩子"
             onClick={() => setCollapsed((current) => !current)}
           >
-            {collapsed ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-            {collapsed ? "展开" : "收起"}
+            <ChevronDown size={16} />
+            收起
           </button>
         </div>
         <div className="dock-search">
@@ -95,9 +114,9 @@ export function SpiritDock({ childrenWithProgress, spiritsById, selectedChildId,
           <input
             id="spirit-dock-search"
             name="spiritDockSearch"
-            aria-label="搜索幼儿或精灵"
+            aria-label="搜索孩子名字"
             value={query}
-            placeholder="搜索幼儿或精灵"
+            placeholder="搜名字"
             onChange={(event) => setQuery(event.target.value)}
           />
         </div>
@@ -109,6 +128,23 @@ export function SpiritDock({ childrenWithProgress, spiritsById, selectedChildId,
           ))}
         </div>
       </div>
+      <div
+        role="group"
+        className={selectedIsNextTurn ? "dock-selected-summary expanded next-ready" : "dock-selected-summary expanded"}
+        style={{ "--dock-accent": selectedSpirit?.accent ?? "#6ebf8b" } as CSSProperties}
+        data-next-turn={selectedIsNextTurn ? "true" : undefined}
+        aria-label={`当前孩子：${selectedChild.name}，${selectedStatus}，全班${childrenWithProgress.length}人`}
+      >
+        <span className="dock-avatar">
+          {selectedIsNextTurn ? <span className="next-child-halo next-ready" aria-hidden="true" /> : null}
+          {selectedAsset?.url ? <img src={selectedAsset.url} alt="" /> : <span className="dock-avatar-label">{selectedChild.name.slice(0, 1)}</span>}
+        </span>
+        <span className="dock-selected-copy">
+          <strong>{selectedChild.name}</strong>
+          <em>{selectedStatus}</em>
+          <small>全班 {childrenWithProgress.length}</small>
+        </span>
+      </div>
       <div className="dock-scroll" ref={dockScrollRef}>
         {filtered.map((child) => {
           const spirit = spiritsById.get(child.spiritId);
@@ -119,15 +155,16 @@ export function SpiritDock({ childrenWithProgress, spiritsById, selectedChildId,
               key={child.id}
               className={`${child.id === selectedChildId ? "dock-spirit active" : "dock-spirit"} ${isNextTurn ? "next-ready" : ""}`.trim()}
               aria-current={child.id === selectedChildId ? "true" : undefined}
-              aria-label={`${child.name}${isNextTurn ? "，下一位，说成长" : "，领能量"}`}
+              aria-label={`${child.id === selectedChildId ? "当前孩子" : "选择孩子"}：${child.name}${isNextTurn ? "，下一位" : "，说成长"}`}
               data-next-turn={isNextTurn ? "true" : undefined}
-              onClick={() => onSelectChild(child.id)}
+              onClick={() => selectChildFromRoster(child.id)}
             >
               <span className="dock-avatar" style={{ "--dock-accent": spirit?.accent ?? "#6ebf8b" } as CSSProperties}>
-                {asset?.url ? <img src={asset.url} alt="" /> : child.name.slice(0, 1)}
+                {isNextTurn ? <span className="next-child-halo next-ready" aria-hidden="true" /> : null}
+                {asset?.url ? <img src={asset.url} alt="" /> : <span className="dock-avatar-label">{child.name.slice(0, 1)}</span>}
               </span>
               <strong>{child.name}</strong>
-              <em>{isNextTurn ? "下一位 · 说成长" : "领能量"}</em>
+              <em>{isNextTurn ? "下一位" : "说成长"}</em>
             </button>
           );
         })}

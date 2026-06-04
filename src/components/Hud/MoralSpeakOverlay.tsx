@@ -35,7 +35,7 @@ interface MoralSpeakOverlayProps {
 const flowSteps: Array<{ id: "ready" | "listening" | "pendingReview" | "success"; label: string }> = [
   { id: "ready", label: "我" },
   { id: "listening", label: "说" },
-  { id: "pendingReview", label: "看" },
+  { id: "pendingReview", label: "等" },
   { id: "success", label: "亮" },
 ];
 
@@ -82,6 +82,7 @@ export function MoralSpeakOverlay({ child, spirit, state, onStart, onStop, onRet
             </div>
           ) : null}
           <button type="button" className="moral-mic-button" onClick={() => onStart()} aria-label={`${child.name} 开始说成长`}>
+            <span className="energy-touch-halo" aria-hidden="true" style={{ pointerEvents: "none" }} />
             <Mic size={42} />
             <span>说成长</span>
           </button>
@@ -99,13 +100,18 @@ export function MoralSpeakOverlay({ child, spirit, state, onStart, onStop, onRet
       ) : null}
 
       {state.stage === "recognizing" ? (
-        <button type="button" className="moral-shell-state" onClick={() => onClose()} aria-label="结束识别">
-          <Shell size={42} />
-          <span />
-          <span />
-          <span />
-          <em>听一听</em>
-        </button>
+        <>
+          <div className="moral-shell-state" role="status" aria-label="正在听孩子刚才说的成长">
+            <Shell size={42} />
+            <span />
+            <span />
+            <span />
+            <em>贝壳在听</em>
+          </div>
+          <button type="button" className="moral-cancel-button" onClick={() => onClose()} aria-label="取消识别">
+            取消
+          </button>
+        </>
       ) : null}
 
       {state.stage === "pendingReview" ? (
@@ -118,6 +124,8 @@ export function MoralSpeakOverlay({ child, spirit, state, onStart, onStop, onRet
       {state.stage === "success" ? (
         <div className="spirit-speech-bubble success" data-energy-arrival="true">
           <i className="moral-energy-trail" aria-hidden="true" />
+          <i className="energy-confirm-burst" aria-hidden="true" style={{ pointerEvents: "none" }} />
+          <i className="energy-arrival-orb" aria-hidden="true" style={{ pointerEvents: "none" }} />
           <i className="moral-energy-sparks" aria-hidden="true" />
           <Sparkles size={24} />
           <strong>能量进精灵</strong>

@@ -36,7 +36,7 @@ import {
   summarizeClassroomBackup,
 } from "./domain/classroomBackup";
 import { evaluateMoralText } from "./domain/moralAgent";
-import { createGrowthTaskLedgerInput, publishCurriculumTrack, updateParentReportReview as updateOrganizationParentReportReview } from "./domain/organization";
+import { createGrowthTaskLedgerInput, publishCurriculumTrack } from "./domain/organization";
 import { enrichChildren, makeLedgerRecord, normalizeLedgerRecord } from "./domain/progression";
 import { getSpiritAsset, loadSpiritAsset } from "./domain/spiritAssets";
 import { canApproveMoralGrowth, getChildEnergyLabel } from "./domain/virtueEnergy";
@@ -65,7 +65,6 @@ import type {
   MoralEvaluationResult,
   MoralReviewItem,
   OrganizationState,
-  ParentReportReviewStatus,
   SettingsChangeRecord,
   ShopRedemption,
   SpiritDefinition,
@@ -112,7 +111,7 @@ function getShortFeedbackReason(reason: string) {
     .replace(/^语音记录：/, "贝壳记录：")
     .replace(/^复核通过：/, "复核通过：")
     .trim();
-  if (cleaned.includes("快速加分") || cleaned.includes("课堂积极回应")) return "课堂成长点亮";
+  if (cleaned.includes("快速加分") || cleaned.includes("课堂积极回应")) return "确认点亮";
   if (cleaned.includes("扣分") || cleaned.includes("减分")) return "老师提醒";
   return cleaned.replace(/\s*[+＋-]\d+\s*XP?$/i, "").slice(0, 34);
 }
@@ -145,7 +144,7 @@ function GrowthFeedbackOverlay({ feedback }: { feedback?: GrowthFeedback }) {
     >
       {typeof feedback.delta === "number" ? (
         <span className="growth-feedback-float" aria-hidden="true">
-          {feedback.delta > 0 ? "光点到账" : "老师提醒"}
+          {feedback.delta > 0 ? "能量进精灵" : "老师提醒"}
         </span>
       ) : null}
       <div className="growth-feedback-card">
@@ -466,7 +465,7 @@ export function App() {
       showGrowthFeedback({
         kind: "focus",
         tone: "neutral",
-        title: `${selectedChild.name} 准备领能量`,
+        title: `${selectedChild.name} 准备说成长`,
         detail: "点麦克风说成长",
         childName: selectedChild.name,
       });
@@ -479,7 +478,7 @@ export function App() {
       showGrowthFeedback({
         kind: "focus",
         tone: "neutral",
-        title: `${child.name} 准备领能量`,
+        title: `${child.name} 准备说成长`,
         detail: `点麦克风说成长`,
         childName: child.name,
       });
@@ -495,7 +494,7 @@ export function App() {
       showGrowthFeedback({
         kind: "status",
         tone: "neutral",
-        title: `${child.name} 准备记录`,
+        title: `${child.name} 准备说成长`,
         detail: latestEnergyRecord?.category
           ? `${getChildEnergyLabel(latestEnergyRecord.category)}能量已点亮`
           : "点麦克风说成长",
@@ -810,7 +809,7 @@ export function App() {
         showGrowthFeedback({
           kind: "xp",
           tone: input.delta > 0 ? "positive" : "watch",
-          title: input.delta > 0 ? `${feedbackChild.name} 成长光点到账` : `${feedbackChild.name} 需要老师提醒`,
+          title: input.delta > 0 ? `${feedbackChild.name} 能量进精灵` : `${feedbackChild.name} 需要老师提醒`,
           detail: `${getShortFeedbackReason(input.reason)} · 精灵能量变亮`,
           delta: input.delta,
           childName: feedbackChild.name,
@@ -1025,7 +1024,7 @@ export function App() {
       transcript,
       summary: getMoralSpeakSummary(result, summary),
       result,
-      reviewId: review.id,
+      reviewId: syncStatus === "offline" ? review.id : undefined,
     });
   };
 
@@ -1241,7 +1240,7 @@ export function App() {
         kind: "status",
         tone: "watch",
         title: "请老师先处理",
-        detail: childName ? `${childName} 先改成成长记录` : "先改成成长记录",
+        detail: childName ? `${childName} 改能量后再确认` : "改能量后再确认",
       });
       return;
     }
@@ -1331,8 +1330,7 @@ export function App() {
     const child = childrenWithProgress.find((item) => item.id === childId) ?? selectedChild;
     setSelectedChildId(childId);
     if (options?.prepareMoralSpeak) {
-      moralSpeakApprovingRef.current = false;
-      setMoralSpeak({ stage: "ready", childId });
+      prepareMoralSpeakForChild(childId);
     }
     setActiveModule("home");
     showGrowthFeedback({
@@ -1470,27 +1468,6 @@ export function App() {
     return true;
   };
 
-  const updateParentReportReview = (childId: string, status: ParentReportReviewStatus, note?: string) => {
-    const nextState = updateOrganizationParentReportReview(
-      organizationConfig,
-      organizationState,
-      childId,
-      status,
-      new Date().toISOString(),
-      "园所码头",
-      note,
-    );
-    if (!nextState) return false;
-    setOrganizationState(nextState);
-    showGrowthFeedback({
-      kind: "status",
-      tone: status === "approved" ? "positive" : "neutral",
-      title: status === "approved" ? "报告已通过" : status === "revision_requested" ? "报告已退回" : "报告已提交",
-      detail: childrenWithProgress.find((child) => child.id === childId)?.name,
-    });
-    return true;
-  };
-
   const openVoiceRecordFromRollCall = (childId: string) => {
     setSelectedChildId(childId);
     setActiveModule("voice-record");
@@ -1514,7 +1491,7 @@ export function App() {
         kind: "status",
         tone: "watch",
         title: "请老师先处理",
-        detail: "先改成成长记录",
+        detail: "改能量后再确认",
       });
       return;
     }
@@ -1646,6 +1623,7 @@ export function App() {
       activeModule={activeModule}
       childrenCount={children.length}
       selectedChildName={selectedChild.name}
+      selectedChildEnergy={selectedChild.xp}
       syncStatus={syncStatus}
       onModuleChange={setActiveModule}
       onSelfServiceChild={() => focusChildOnHome(selectedChild.id, { prepareMoralSpeak: true })}
@@ -1824,7 +1802,6 @@ export function App() {
           onFocusChild={focusChildOnHome}
           onCompleteGrowthTask={completeGrowthTask}
           onPublishCurriculumTrack={publishOrganizationCurriculumTrack}
-          onUpdateParentReportReview={updateParentReportReview}
         />
       ) : activeModule === "settings" ? (
         <SettingsModule

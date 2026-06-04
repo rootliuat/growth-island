@@ -388,3 +388,107 @@ P6.2：totalPng 99, spirit 27, map 72
 ```
 
 验证结果：`npm run build` 通过；Playwright 打开首页、聚焦当前精灵、执行一次 +30 XP、切换 9 个模块均无失败请求或 console error。
+
+## 2026-06-04 能量星座 UI 图标 Batch1
+
+本轮只验收并接入“小图标 / 小反馈资产”方向，不生成整张星座背景，也不生成带中文文字的大卡片。目标是服务幼儿自助点亮成长能量的短反馈链路。
+
+Batch1 七枚德育能量 glyph 已通过风格与工程验收：
+
+| 资产 | 对应能量 | 结论 |
+| --- | --- | --- |
+| `energy-aijiaxiang-glyph.png` | 爱家乡 | 通过；图形最复杂，保留文字标签一起使用 |
+| `energy-jianchi-glyph.png` | 坚持 | 通过 |
+| `energy-youai-glyph.png` | 友爱 | 通过 |
+| `energy-yongqi-glyph.png` | 勇气 | 通过；与爱家乡同属暖色，图标独立模式需再区分 |
+| `energy-zhengjie-glyph.png` | 整洁 | 通过 |
+| `energy-chuangxiang-glyph.png` | 创想 | 通过 |
+| `energy-guize-glyph.png` | 规则 | 通过 |
+
+源图路径：
+
+```text
+assets/generated/ui/energy-constellation/
+assets/generated/ui/energy-constellation/source/
+```
+
+运行时路径：
+
+```text
+public/assets/ui/energy-constellation/
+```
+
+记录与 QA：
+
+```text
+assets/generated/ui/energy-constellation/energy-glyphs-batch1.manifest.json
+assets/generated/ui/energy-constellation/energy-glyphs-batch1-qa.png
+assets/generated/ui/energy-constellation/STYLE_REVIEW.md
+assets/generated/ui/energy-constellation/BATCH2_VFX_PLAN.md
+qa-artifacts/latest/energy-glyph-style-strip.png
+qa-artifacts/latest/energy-glyph-size-check.png
+qa-artifacts/latest/home-whiteboard.png
+```
+
+工程检查结论：
+
+```text
+source PNG: 1254x1254 RGBA
+runtime PNG: 256x256 RGBA
+transparent corner alpha: 0
+green/magenta chroma-key residue: not detected
+runtime payload: about 0.42 MB total for seven PNGs
+```
+
+后续生图边界：
+
+- 优先补 `energy-confirm-burst.png`、`energy-arrival-orb.png`、`energy-touch-halo.png`、`next-child-halo.png`。
+- 可选补 `energy-slot-current.png`、`energy-slot-empty.png`、`energy-slot-lit.png`。
+- 不生成星座大背景、暗色星空、占星/十二星座视觉、带中文文字的位图、七张大插画卡。
+- 当前前端保留图标旁文字标签；若未来改成纯图标模式，优先重做 `energy-aijiaxiang-glyph.png` 和 `energy-yongqi-glyph.png` 的轮廓差异。
+
+## 2026-06-04 能量星座 UI 动效 Batch2
+
+Batch2 接续 Batch1，只产出小型可复用 VFX，不生成星座大背景。
+
+本批使用内置 `image_gen` 生图，本地用 `sharp` 做四角色键估计、透明去背、运行时缩放和缩放后 key-like 像素清理。没有使用 BiRefNet，也没有修改前端代码。
+
+Accepted 资产：
+
+| 资产 | 用途 | Runtime | 结论 |
+| --- | --- | ---: | --- |
+| `energy-confirm-burst.png` | 老师通过后的短确认光效 | `256x256` | 通过；接入时限制 `500-700ms`，避免遮挡姓名 |
+| `energy-arrival-orb.png` | 能量从确认卡飞向精灵、成长树或能量槽 | `128x128` | 通过 |
+| `energy-touch-halo.png` | 当前孩子点选或说成长入口光圈 | `256x256` | 通过；置于头像/姓名后方 |
+| `next-child-halo.png` | 成功后提示下一位孩子 | `256x256` | 通过；短时显示，不做常驻装饰 |
+
+Rejected 记录：
+
+- `energy-confirm-burst.png` 初版像大贝壳奖章，遮挡风险高。
+- `energy-confirm-burst.png` 第二版偏绿色植物喷发，不符合金珊瑚确认反馈。
+
+记录与 QA：
+
+```text
+assets/generated/ui/energy-constellation/energy-vfx-batch2.manifest.json
+assets/generated/ui/energy-constellation/energy-vfx-batch2-qa.png
+assets/generated/ui/energy-constellation/BATCH2_VFX_REVIEW.md
+```
+
+运行时路径：
+
+```text
+public/assets/ui/energy-constellation/energy-confirm-burst.png
+public/assets/ui/energy-constellation/energy-arrival-orb.png
+public/assets/ui/energy-constellation/energy-touch-halo.png
+public/assets/ui/energy-constellation/next-child-halo.png
+```
+
+工程检查结论：
+
+```text
+final PNG: 1254x1254 RGBA
+runtime PNG: 128x128 or 256x256 RGBA
+transparent corner alpha: 0
+estimated key-color residue: 0
+```

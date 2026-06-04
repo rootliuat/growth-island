@@ -1,4 +1,4 @@
-import { Check, Clock3, Edit3 } from "lucide-react";
+import { Check, Clock3, Edit3, Shell } from "lucide-react";
 import type { CSSProperties } from "react";
 import {
   canApproveMoralGrowth,
@@ -41,10 +41,14 @@ export function TeacherMoralReviewCard({
     20: "点亮",
     30: "多点亮",
   };
+  const transcriptPreview = transcript?.trim() || "未收到文字";
 
   return (
     <aside className="teacher-review-corner-card" style={style} aria-label="老师确认">
-      <span className="teacher-review-status">待老师看</span>
+      <span className="teacher-review-status">
+        <Shell size={13} />
+        老师确认
+      </span>
       <div className="teacher-review-main">
         <span className={canApprove ? "energy-chip" : "energy-chip needs-help"}>
           {canApprove ? getChildEnergyResultText(result) : helpText}
@@ -52,21 +56,22 @@ export function TeacherMoralReviewCard({
         <strong>{child.name}</strong>
       </div>
 
-      <div className="teacher-review-actions">
-        <button
-          type="button"
-          className="approve"
-          disabled={!canApprove}
-          onClick={onApprove}
-          aria-label={canApprove ? "通过" : "请先改成成长记录或稍后处理"}
-        >
-          <Check size={18} />
-          {canApprove ? "通过" : "先改"}
-        </button>
-        <details className="review-edit-popover">
+      <div className="teacher-review-actions" data-mode={canApprove ? "approve" : "adjust"}>
+        {canApprove ? (
+          <button
+            type="button"
+            className="approve"
+            onClick={onApprove}
+            aria-label={`${child.name} 确认点亮`}
+          >
+            <Check size={18} />
+            确认点亮
+          </button>
+        ) : null}
+        <details className={canApprove ? "review-edit-popover" : "review-edit-popover primary"}>
           <summary>
             <Edit3 size={17} />
-            改
+            改能量
           </summary>
           <div>
             {[10, 20, 30].map((delta) => (
@@ -78,17 +83,23 @@ export function TeacherMoralReviewCard({
         </details>
         <button type="button" className="defer" onClick={onDefer}>
           <Clock3 size={17} />
-          稍后
+          稍后处理
         </button>
       </div>
 
-      {canApprove ? (
-        <details className="review-transcript">
-          <summary>听到的话</summary>
-          <p>{transcript || "未收到文本"}</p>
-          <span>{Math.round(result.confidence * 100)}%</span>
-        </details>
-      ) : null}
+      <details className="review-transcript">
+        <summary>记录</summary>
+        <p className="teacher-review-transcript-line">
+          <span>听到</span>
+          {transcriptPreview}
+        </p>
+        {canApprove ? (
+          <div className="review-confidence">
+            <span>确认后能量进精灵</span>
+            <em>{Math.round(result.confidence * 100)}%</em>
+          </div>
+        ) : null}
+      </details>
     </aside>
   );
 }
