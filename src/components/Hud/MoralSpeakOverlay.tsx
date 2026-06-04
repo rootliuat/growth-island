@@ -59,7 +59,12 @@ export function MoralSpeakOverlay({ child, spirit, state, onStart, onStop, onRet
   const currentStepIndex = flowStepOrder[state.stage];
 
   return (
-    <div className={`moral-speak-overlay ${state.stage}`} style={style} aria-live="polite">
+    <div
+      className={`moral-speak-overlay ${state.stage}`}
+      data-moral-stage={state.stage}
+      style={style}
+      aria-live="polite"
+    >
       <div className="moral-flow-ribbon" aria-hidden="true">
         {flowSteps.map((step, index) => {
           const isActive = index === currentStepIndex;
@@ -81,6 +86,9 @@ export function MoralSpeakOverlay({ child, spirit, state, onStart, onStop, onRet
               {state.queueTotal ? <em>{state.queueIndex}/{state.queueTotal}</em> : null}
             </div>
           ) : null}
+          <div className="moral-ready-child" aria-hidden="true">
+            {child.name}
+          </div>
           <button type="button" className="moral-mic-button" onClick={() => onStart()} aria-label={`${child.name} 开始说成长`}>
             <span className="energy-touch-halo" aria-hidden="true" style={{ pointerEvents: "none" }} />
             <Mic size={42} />

@@ -200,3 +200,48 @@ P2:
   - `qa-artifacts/latest/moral-speak-flow-pending-mobile.png`
   - `qa-artifacts/latest/moral-speak-flow-mobile.png`
 - Additional reduced-motion Playwright check confirmed all four Batch2 VFX nodes use `pointer-events: none`, load the expected runtime image paths, and switch to `animation-name: none` under `prefers-reduced-motion: reduce`.
+
+## P4 whiteboard touch and home information layer
+
+### Scope
+
+- Reworked only the home React/CSS touch layer for the electronic whiteboard flow.
+- Kept backend, server API, XP/ledger logic, data files, generated map assets, and PixiJS map rendering untouched.
+- Did not add parent, reviewer, kindergarten admin, PDF export, approval flow, account, or permission surfaces.
+
+### UX/UI Review Notes
+
+- `ux_researcher` and `ui_designer` completed read-only reviews before implementation.
+- Both reviews identified the same P4 risk: the home screen was technically map-first, but too many persistent HUD layers competed with the child action.
+- The selected direction was to keep the island and child spirit primary, lower the visual weight of energy and scene-entry boards, and let teacher tools appear only as guardrails during review.
+
+### Implementation Notes
+
+- `SpiritDock.tsx` now separates the selected child name from the status chip, adds a clearer all-class affordance, and keeps long names truncatable without hiding the current child.
+- `MoralSpeakOverlay.tsx` adds a small ready-state child name near the mic so a child standing at the whiteboard can see whose turn it is.
+- `AppShell.tsx` adds title attributes to current-child chips so clipped names remain inspectable.
+- `styles.css` adds the P4 home touch pass:
+  - lighter home energy board and scene gate;
+  - shorter collapsed child queue;
+  - single-row expanded roster on the home map;
+  - hidden duplicate home HUD layers during moral-speaking stages;
+  - mobile non-idle expanded dock compressed into a bottom short queue so it does not overlap the mic;
+  - pointer-events disabled for VFX/image-only layers.
+
+### Validation
+
+- `git diff --check`: passed.
+- `npm run build`: passed.
+- `npm run qa:visual`: passed.
+- Latest visual QA report: `qa-artifacts/latest/report.json`.
+- QA coverage: 32 checks, 0 issues, 0 warnings.
+- `code_reviewer` found one medium issue: mobile expanded `SpiritDock` search/filter controls were hidden in normal idle browsing, not only during moral-speaking states. The rule was narrowed so normal mobile full-class browsing keeps search/filter, while non-idle moral stages still compress the dock away from the mic.
+- Manual screenshots inspected:
+  - `qa-artifacts/latest/home-whiteboard.png`
+  - `qa-artifacts/latest/moral-speak-flow-ready-whiteboard.png`
+  - `qa-artifacts/latest/moral-speak-flow-ready-mobile.png`
+  - `qa-artifacts/latest/moral-speak-flow-whiteboard.png`
+  - `qa-artifacts/latest/moral-speak-flow-mobile.png`
+  - `qa-artifacts/latest/moral-speak-flow-pending-whiteboard.png`
+  - `qa-artifacts/latest/moral-review-safety-mobile.png`
+- First P4 QA run found one mobile ready-state overlap between expanded `SpiritDock` and the mic; the mobile non-idle expanded dock was then compressed and the second QA run passed.

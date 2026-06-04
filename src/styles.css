@@ -20642,3 +20642,356 @@ button {
     max-width: calc(100vw - 44px);
   }
 }
+
+/* P4 home touch pass: keep the island primary and avoid duplicated touch targets. */
+.home-screen-shell .map-energy-constellation {
+  width: min(430px, calc(100% - 116px));
+  gap: 6px;
+  padding: 7px;
+  border-radius: 16px;
+  background: rgba(255, 248, 234, 0.76);
+  box-shadow: 0 8px 18px rgba(19, 51, 45, 0.1);
+}
+
+.home-screen-shell .energy-constellation-head strong {
+  max-width: 210px;
+  min-height: 26px;
+  padding-inline: 9px;
+  font-size: 12px;
+}
+
+.home-screen-shell .energy-constellation-head span {
+  min-height: 26px;
+  padding-inline: 8px;
+  font-size: 12px;
+}
+
+.home-screen-shell .energy-slot-row {
+  gap: 5px;
+}
+
+.home-screen-shell .energy-slot-row button {
+  min-height: 54px;
+  padding: 4px 3px;
+  border-radius: 12px;
+  font-size: 11px;
+}
+
+.home-screen-shell .energy-glyph {
+  width: 26px;
+  height: 26px;
+}
+
+.home-screen-shell .map-scene-gate {
+  opacity: 0.78;
+  transform: scale(0.94);
+  transform-origin: top right;
+}
+
+.home-screen-shell .map-scene-gate > strong,
+.home-screen-shell .map-scene-gate button em,
+.home-screen-shell .map-scene-gate button small {
+  display: none;
+}
+
+.home-screen-shell .spirit-dock.collapsed {
+  z-index: 16;
+  min-height: 56px;
+  padding: 5px 8px;
+  overflow: visible;
+}
+
+.home-screen-shell .dock-selected-summary {
+  max-width: min(360px, calc(100vw - 148px));
+  min-height: 46px;
+  overflow: visible;
+  padding: 4px 12px 4px 5px;
+}
+
+.home-screen-shell .dock-summary-copy {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+  text-align: left;
+}
+
+.home-screen-shell .dock-summary-copy small {
+  color: rgba(20, 52, 46, 0.58);
+  font-size: 11px;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.home-screen-shell .dock-summary-copy strong {
+  display: block;
+  max-width: 220px;
+  overflow: hidden;
+  font-size: 16px;
+  line-height: 1.08;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-screen-shell .dock-selected-summary > em {
+  display: none;
+}
+
+.home-screen-shell .dock-selected-summary > .dock-summary-status {
+  display: inline-flex;
+  min-height: 28px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 8px;
+  border-radius: 999px;
+  color: #174c5a;
+  background: rgba(255, 240, 191, 0.92);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 950;
+  white-space: nowrap;
+}
+
+.home-screen-shell .dock-selected-summary.next-ready > .dock-summary-status {
+  color: #fffdf4;
+  background: #f6b352;
+}
+
+.home-screen-shell .spirit-dock.collapsed .dock-collapse {
+  display: inline-flex;
+  min-width: 72px;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding-inline: 11px;
+  font-size: 13px;
+}
+
+.home-screen-shell .spirit-dock.expanded {
+  grid-template-columns: minmax(160px, 210px) minmax(0, 1fr);
+  grid-template-rows: auto 86px;
+  max-height: 154px;
+  overflow: visible;
+}
+
+.home-screen-shell .spirit-dock.expanded .dock-tools {
+  grid-template-columns: auto minmax(132px, 210px) minmax(0, 1fr);
+}
+
+.home-screen-shell .spirit-dock.expanded .dock-selected-summary.expanded {
+  min-height: 78px;
+  padding: 8px;
+}
+
+.home-screen-shell .spirit-dock.expanded .dock-selected-summary.expanded .dock-avatar {
+  width: 50px;
+  height: 50px;
+}
+
+.home-screen-shell .spirit-dock.expanded .dock-scroll {
+  grid-template-rows: 1fr;
+  grid-auto-columns: 84px;
+  min-height: 78px;
+  padding: 5px;
+  scrollbar-width: none;
+}
+
+.home-screen-shell .spirit-dock.expanded .dock-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.home-screen-shell .spirit-dock.expanded .dock-spirit {
+  grid-template-rows: 42px auto;
+  min-height: 74px;
+  touch-action: manipulation;
+}
+
+.home-screen-shell .spirit-dock.expanded .dock-spirit em {
+  display: none;
+}
+
+.home-screen-shell .dock-avatar,
+.home-screen-shell .dock-avatar img,
+.home-screen-shell .next-child-halo,
+.moral-flow-ribbon,
+.moral-energy-sparks,
+.moral-energy-trail,
+.energy-touch-halo,
+.energy-confirm-burst,
+.energy-arrival-orb {
+  pointer-events: none;
+}
+
+.home-screen-shell:has(.world-map-shell:is(.moral-stage-ready, .moral-stage-listening, .moral-stage-recognizing, .moral-stage-pendingReview, .moral-stage-success)) {
+  grid-template-rows: minmax(0, 1fr) 0;
+}
+
+.home-screen-shell:has(.world-map-shell:is(.moral-stage-ready, .moral-stage-listening, .moral-stage-recognizing, .moral-stage-pendingReview, .moral-stage-success)) .shell-module-dock {
+  display: none;
+}
+
+.home-screen-shell .world-map-shell:is(.moral-stage-ready, .moral-stage-listening, .moral-stage-recognizing, .moral-stage-pendingReview, .moral-stage-success) .map-companion-actions,
+.home-screen-shell .world-map-shell:is(.moral-stage-ready, .moral-stage-listening, .moral-stage-recognizing, .moral-stage-pendingReview, .moral-stage-success) .map-scene-gate,
+.home-screen-shell .world-map-shell:is(.moral-stage-ready, .moral-stage-listening, .moral-stage-recognizing, .moral-stage-pendingReview, .moral-stage-success) ~ .hud-rail {
+  display: none;
+}
+
+.home-screen-shell .moral-speak-overlay {
+  z-index: 34;
+}
+
+.home-screen-shell .moral-speak-overlay.ready,
+.home-screen-shell .moral-speak-overlay.listening,
+.home-screen-shell .moral-speak-overlay.recognizing {
+  padding-bottom: 96px;
+}
+
+.home-screen-shell .moral-speak-overlay.pendingReview {
+  padding: 62px 24px 112px;
+}
+
+.home-screen-shell .moral-speak-overlay.success {
+  padding: 70px 24px 96px;
+}
+
+.home-screen-shell .moral-speak-overlay.ready:has(.moral-next-turn-card) {
+  align-content: center;
+}
+
+.moral-ready-child {
+  display: inline-flex;
+  max-width: min(240px, calc(100vw - 72px));
+  min-height: 34px;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 0 14px;
+  border: 1px solid rgba(246, 179, 82, 0.44);
+  border-radius: 999px;
+  color: #174c5a;
+  background: rgba(255, 248, 234, 0.92);
+  box-shadow: 0 8px 18px rgba(19, 51, 45, 0.1);
+  font-size: 17px;
+  font-weight: 950;
+  line-height: 1;
+  pointer-events: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-screen-shell .moral-wave-state,
+.home-screen-shell .moral-shell-state,
+.home-screen-shell .moral-retry-button,
+.home-screen-shell .moral-cancel-button {
+  min-width: 44px;
+  min-height: 44px;
+  touch-action: manipulation;
+}
+
+@media (max-width: 720px) {
+  .home-screen-shell .map-energy-constellation {
+    width: min(208px, calc(100% - 92px));
+    padding: 6px;
+  }
+
+  .home-screen-shell .energy-constellation-head strong {
+    display: none;
+  }
+
+  .home-screen-shell .energy-slot-row button {
+    flex-basis: 50px;
+    min-height: 50px;
+  }
+
+  .home-screen-shell .map-scene-gate {
+    right: 10px;
+    bottom: 84px;
+    transform: scale(0.88);
+  }
+
+  .home-screen-shell .dock-selected-summary {
+    max-width: calc(100vw - 112px);
+  }
+
+  .home-screen-shell .dock-summary-copy strong {
+    max-width: calc(100vw - 248px);
+    font-size: 15px;
+  }
+
+  .home-screen-shell .spirit-dock.collapsed .dock-collapse {
+    min-width: 54px;
+    padding-inline: 8px;
+  }
+
+  .home-screen-shell .spirit-dock.expanded {
+    grid-template-rows: auto auto 84px;
+    max-height: min(244px, calc(100% - 96px));
+  }
+
+  .home-screen-shell .spirit-dock.expanded .dock-tools {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .home-screen-shell .spirit-dock.expanded .dock-scroll {
+    grid-template-rows: 1fr;
+    grid-auto-columns: 78px;
+  }
+
+  .home-screen-shell .moral-speak-overlay.ready,
+  .home-screen-shell .moral-speak-overlay.listening,
+  .home-screen-shell .moral-speak-overlay.recognizing {
+    padding: 54px 14px 94px;
+  }
+
+  .home-screen-shell .moral-speak-overlay.pendingReview,
+  .home-screen-shell .moral-speak-overlay.success {
+    padding: 54px 14px 104px;
+  }
+
+  .home-screen-shell .home-module:has(.world-map-shell:is(.moral-stage-ready, .moral-stage-listening, .moral-stage-recognizing, .moral-stage-pendingReview, .moral-stage-success)) .spirit-dock.expanded {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: 44px 58px;
+    max-height: 114px;
+    overflow: hidden;
+  }
+
+  .home-screen-shell .home-module:has(.world-map-shell:is(.moral-stage-ready, .moral-stage-listening, .moral-stage-recognizing, .moral-stage-pendingReview, .moral-stage-success)) .spirit-dock.expanded .dock-tools {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .home-screen-shell .home-module:has(.world-map-shell:is(.moral-stage-ready, .moral-stage-listening, .moral-stage-recognizing, .moral-stage-pendingReview, .moral-stage-success)) .spirit-dock.expanded .dock-selected-summary.expanded,
+  .home-screen-shell .home-module:has(.world-map-shell:is(.moral-stage-ready, .moral-stage-listening, .moral-stage-recognizing, .moral-stage-pendingReview, .moral-stage-success)) .spirit-dock.expanded .dock-search,
+  .home-screen-shell .home-module:has(.world-map-shell:is(.moral-stage-ready, .moral-stage-listening, .moral-stage-recognizing, .moral-stage-pendingReview, .moral-stage-success)) .spirit-dock.expanded .dock-filters {
+    display: none;
+  }
+
+  .home-screen-shell .home-module:has(.world-map-shell:is(.moral-stage-ready, .moral-stage-listening, .moral-stage-recognizing, .moral-stage-pendingReview, .moral-stage-success)) .spirit-dock.expanded .dock-scroll {
+    grid-column: 1;
+    grid-row: 2;
+    grid-template-rows: 1fr;
+    grid-auto-columns: 58px;
+    min-height: 56px;
+    padding: 4px;
+  }
+
+  .home-screen-shell .home-module:has(.world-map-shell:is(.moral-stage-ready, .moral-stage-listening, .moral-stage-recognizing, .moral-stage-pendingReview, .moral-stage-success)) .spirit-dock.expanded .dock-spirit {
+    grid-template-rows: 34px auto;
+    min-height: 50px;
+    padding: 3px;
+  }
+
+  .home-screen-shell .home-module:has(.world-map-shell:is(.moral-stage-ready, .moral-stage-listening, .moral-stage-recognizing, .moral-stage-pendingReview, .moral-stage-success)) .spirit-dock.expanded .dock-avatar {
+    width: 34px;
+    height: 34px;
+  }
+
+  .home-screen-shell .home-module:has(.world-map-shell:is(.moral-stage-ready, .moral-stage-listening, .moral-stage-recognizing, .moral-stage-pendingReview, .moral-stage-success)) .spirit-dock.expanded .dock-avatar img {
+    max-width: 40px;
+    max-height: 40px;
+  }
+
+  .home-screen-shell .home-module:has(.world-map-shell:is(.moral-stage-ready, .moral-stage-listening, .moral-stage-recognizing, .moral-stage-pendingReview, .moral-stage-success)) .spirit-dock.expanded .dock-spirit strong {
+    max-width: 50px;
+    font-size: 11px;
+  }
+}

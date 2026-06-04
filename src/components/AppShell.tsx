@@ -88,7 +88,7 @@ export function AppShell({
             <Users size={16} />
             {childrenCount} 名幼儿
           </span>
-          <span className="shell-status-chip active-child">{selectedChildName}</span>
+          <span className="shell-status-chip active-child" title={selectedChildName}>{selectedChildName}</span>
           <span className={`shell-status-chip sync ${syncStatus}`}>
             <SyncIcon size={16} />
             {syncMeta[syncStatus].label}
@@ -131,7 +131,7 @@ export function AppShell({
       <footer className="shell-module-dock" aria-label="成长岛快捷入口">
         <button type="button" className="shell-child-chip" onClick={onSelfServiceChild} aria-label={`${selectedChildName} 说成长`}>
           <span>{selectedChildName.slice(0, 1)}</span>
-          <strong>{selectedChildName}</strong>
+          <strong title={selectedChildName}>{selectedChildName}</strong>
           <em>说成长</em>
         </button>
 

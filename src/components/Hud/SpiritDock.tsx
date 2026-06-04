@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronUp, Search } from "lucide-react";
+import { ChevronDown, Search, Users } from "lucide-react";
 import type { CSSProperties } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ChildWithProgress, SpiritDefinition } from "../../types";
@@ -73,8 +73,11 @@ export function SpiritDock({ childrenWithProgress, spiritsById, selectedChildId,
             {selectedIsNextTurn ? <span className="next-child-halo next-ready" aria-hidden="true" /> : null}
             {selectedAsset?.url ? <img src={selectedAsset.url} alt="" /> : <span className="dock-avatar-label">{selectedChild.name.slice(0, 1)}</span>}
           </span>
-          <strong>{selectedChild.name}</strong>
-          <em>{selectedStatus}</em>
+          <span className="dock-summary-copy">
+            <small>当前</small>
+            <strong title={selectedChild.name}>{selectedChild.name}</strong>
+          </span>
+          <em className="dock-summary-status">{selectedStatus}</em>
         </button>
         <button
           className="dock-collapse"
@@ -83,7 +86,7 @@ export function SpiritDock({ childrenWithProgress, spiritsById, selectedChildId,
           aria-label="展开全班孩子"
           onClick={() => setCollapsed(false)}
         >
-          <ChevronUp size={16} />
+          <Users size={17} />
           全班
         </button>
       </section>
@@ -95,7 +98,7 @@ export function SpiritDock({ childrenWithProgress, spiritsById, selectedChildId,
       <div className="dock-tools">
         <div className="dock-tools-head">
           <strong>
-            选孩子
+            全班
             <small>{filtered.length}/{childrenWithProgress.length}</small>
           </strong>
           <button
@@ -116,7 +119,7 @@ export function SpiritDock({ childrenWithProgress, spiritsById, selectedChildId,
             name="spiritDockSearch"
             aria-label="搜索孩子名字"
             value={query}
-            placeholder="搜名字"
+            placeholder="搜名字..."
             onChange={(event) => setQuery(event.target.value)}
           />
         </div>
