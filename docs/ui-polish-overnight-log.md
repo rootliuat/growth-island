@@ -245,3 +245,47 @@ P2:
   - `qa-artifacts/latest/moral-speak-flow-pending-whiteboard.png`
   - `qa-artifacts/latest/moral-review-safety-mobile.png`
 - First P4 QA run found one mobile ready-state overlap between expanded `SpiritDock` and the mic; the mobile non-idle expanded dock was then compressed and the second QA run passed.
+
+## P5 map spirit selection and name anchor closure
+
+### Scope
+
+- Improved the child-facing map selection loop without changing backend, server API, XP/ledger logic, data files, generated assets, or the PixiJS map architecture.
+- Kept the work to React/CSS glue and small existing Pixi layer adjustments for visible name anchors and touch hit areas.
+- Did not add parent, reviewer, kindergarten admin, PDF export, approval flow, account, or permission surfaces.
+
+### UX/UI Review Notes
+
+- `ux_researcher` and `ui_designer` completed read-only reviews before implementation.
+- Both reviews found that P4 made the home screen less crowded, but the next risk was child identity on the map: a child could tap or use the dock, yet the map did not give enough non-hover evidence that spirits and homes were tappable.
+- The selected direction was to reinforce the current/next child state and name anchors, keep the teacher card secondary, and avoid restoring large home information plaques.
+
+### Implementation Notes
+
+- `LabelLayer.ts` now keeps compact spirit name chips visible in full-island find mode, gives the selected child a stronger name ring, and keeps the selected label above other labels.
+- `HomeLayer.ts` shows the selected home beacon in overview/focused community ranges, so the current child has a clearer map anchor before speaking.
+- `SpiritLayer.ts` slightly enlarges the spirit hit area for whiteboard taps.
+- `MoralSpeakOverlay.tsx` updates the child flow rhythm to `找 / 说 / 等 / 亮`, simplifies pending review to a short wait state, and changes success copy to `{能量}能量进精灵`.
+- `SpiritDock.tsx` separates `当前` and `下一位` roles, so the same selected child no longer reads like `当前 + 下一位`.
+- `WorldMapContainer.tsx` adds travel-button `aria-label`s and uses `等待点亮` during non-idle wait states.
+- `styles.css` adds P5 touch feedback, focus-visible coverage, 44px touch floors for remaining controls, compact non-idle energy board behavior, mobile teacher-card overlap containment, and quieter duplicate shell child-chip styling.
+- `scripts/qa-visual.mjs` was updated to validate the new `找 / 说 / 等 / 亮` rhythm labels.
+
+### Validation
+
+- `git diff --check`: passed.
+- `npm run build`: passed.
+- First `npm run qa:visual` found:
+  - QA still expected the old `我 / 说 / 等 / 亮` rhythm labels.
+  - Mobile shell child chip text was hidden too aggressively, so the self-service dock entry looked missing.
+  - Mobile teacher adjust menu overlapped the child speech bubble.
+- These were fixed by updating QA expectations, restoring mobile shell child-chip text, and moving the child bubble away while the teacher adjust popover is open.
+- Second `npm run qa:visual`: passed.
+- Latest visual QA report: `qa-artifacts/latest/report.json`.
+- QA coverage: 32 checks, 0 issues, 0 warnings.
+- Manual screenshots inspected:
+  - `qa-artifacts/latest/home-whiteboard.png`
+  - `qa-artifacts/latest/moral-speak-flow-ready-whiteboard.png`
+  - `qa-artifacts/latest/moral-speak-flow-whiteboard.png`
+  - `qa-artifacts/latest/moral-speak-flow-ready-mobile.png`
+  - `qa-artifacts/latest/moral-review-safety-mobile.png`

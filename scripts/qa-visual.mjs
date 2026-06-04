@@ -3450,7 +3450,7 @@ async function inspectPage(browser, check, viewport) {
 
   if (check.kind === "moral-speak-flow") {
     details = { flow: moralFlowDetails };
-    const expectedFlowSteps = ["我", "说", "等", "亮"];
+    const expectedFlowSteps = ["找", "说", "等", "亮"];
     const hasExactFlowSteps = (flow) =>
       Array.isArray(flow?.flowStepLabels) &&
       flow.flowStepLabels.length === expectedFlowSteps.length &&
@@ -3466,7 +3466,7 @@ async function inspectPage(browser, check, viewport) {
     if (moralFlowDetails?.uniqueChildCount !== 3) issues.push("moral speak did not cover 3 unique children");
     if (moralFlowDetails?.selfServiceEntryCount !== 3) issues.push("moral speak self-service entry did not ready all children");
     if (moralFlowDetails?.ready?.stage !== "ready") issues.push("moral speak did not enter ready stage");
-    if (!hasExactFlowSteps(moralFlowDetails?.ready) || moralFlowDetails?.ready?.activeFlowStep !== "我") {
+    if (!hasExactFlowSteps(moralFlowDetails?.ready) || moralFlowDetails?.ready?.activeFlowStep !== "找") {
       issues.push("moral speak ready rhythm rail missing");
     }
     if (!moralFlowDetails?.ready?.micText.includes("说成长")) issues.push("moral speak ready mic missing child action label");

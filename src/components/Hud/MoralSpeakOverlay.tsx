@@ -33,7 +33,7 @@ interface MoralSpeakOverlayProps {
 }
 
 const flowSteps: Array<{ id: "ready" | "listening" | "pendingReview" | "success"; label: string }> = [
-  { id: "ready", label: "我" },
+  { id: "ready", label: "找" },
   { id: "listening", label: "说" },
   { id: "pendingReview", label: "等" },
   { id: "success", label: "亮" },
@@ -125,7 +125,7 @@ export function MoralSpeakOverlay({ child, spirit, state, onStart, onStop, onRet
       {state.stage === "pendingReview" ? (
         <div className="spirit-speech-bubble">
           <Sparkles size={22} />
-          {state.summary ?? "帮助同伴"}
+          {safeResult ? "等老师点亮" : state.summary ?? "请老师帮忙"}
         </div>
       ) : null}
 
@@ -136,8 +136,8 @@ export function MoralSpeakOverlay({ child, spirit, state, onStart, onStop, onRet
           <i className="energy-arrival-orb" aria-hidden="true" style={{ pointerEvents: "none" }} />
           <i className="moral-energy-sparks" aria-hidden="true" />
           <Sparkles size={24} />
-          <strong>能量进精灵</strong>
-          <span className="moral-success-chip">{energyLabel}点亮</span>
+          <strong>{energyLabel}能量进精灵</strong>
+          <span className="moral-success-chip">已点亮</span>
           {state.nextChildName ? <span className="moral-next-chip">下一位 {state.nextChildName}</span> : null}
         </div>
       ) : null}

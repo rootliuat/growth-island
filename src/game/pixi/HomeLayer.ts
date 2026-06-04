@@ -79,7 +79,7 @@ export class HomeLayer {
       node.plaque.visible = false;
       node.decor.visible = selected || (zoom >= 1.18 && zoom < 1.45);
       node.prompt.visible = node.hovered && zoom >= 1.05;
-      node.beacon.visible = node.hovered && zoom < 1.24;
+      node.beacon.visible = (selected || node.hovered) && zoom < 1.24;
       node.root.alpha = zoom < 0.72 && !selected ? 0.94 : 1;
     });
   }

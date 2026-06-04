@@ -174,25 +174,20 @@ export const WorldMapContainer = forwardRef<PixiWorldMapHandle, WorldMapContaine
   const currentEnergyLabel = getChildEnergyLabel(currentEnergyCategory);
   const currentEnergyValue = moralSpeak.result
     ? moralSpeak.stage === "success" && safeMoralResult
-      ? `${currentEnergyLabel}点亮`
+      ? `${currentEnergyLabel}进精灵`
       : getChildEnergyResultText(moralSpeak.result)
     : selectedRecord?.category
       ? selectedRecordIsSelfService
         ? `${getChildEnergyLabel(selectedRecord.category)}能量`
         : `${getChildEnergyLabel(selectedRecord.category)}能量`
       : "等待点亮";
-  const currentEnergyState =
-    moralSpeak.stage === "pendingReview"
-      ? safeMoralResult
-        ? "待点亮"
-        : "需帮助"
-      : moralSpeak.stage === "success"
-        ? "能量进精灵"
-        : moralSpeak.stage === "error"
-          ? "需帮助"
-          : selectedRecord
-            ? "能量进精灵"
-            : "能量地图";
+  const currentEnergyState = (() => {
+    if (moralSpeak.stage === "pendingReview") return safeMoralResult ? "待点亮" : "需帮助";
+    if (moralSpeak.stage === "success") return "能量进精灵";
+    if (moralSpeak.stage === "error") return "需帮助";
+    if (moralSpeak.stage !== "idle") return "等待点亮";
+    return selectedRecord ? "能量进精灵" : "能量地图";
+  })();
 
   useImperativeHandle(ref, () => ({
     focusFullIsland: () => {
@@ -255,6 +250,7 @@ export const WorldMapContainer = forwardRef<PixiWorldMapHandle, WorldMapContaine
                 className={activeTravelRegion === region.id ? "active" : undefined}
                 style={{ "--region-accent": toCssHex(region.accent) } as CSSProperties}
                 title={region.description}
+                aria-label={`前往${region.name}，${region.description}`}
                 onClick={() => focusTravelRegion(region.id)}
               >
                 <Icon size={16} />

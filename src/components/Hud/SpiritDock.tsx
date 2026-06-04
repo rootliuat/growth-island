@@ -46,7 +46,9 @@ export function SpiritDock({ childrenWithProgress, spiritsById, selectedChildId,
   const selectedSpirit = selectedChild ? spiritsById.get(selectedChild.spiritId) : undefined;
   const selectedAsset = selectedSpirit ? getSpiritAsset(selectedSpirit, selectedChild.state) : undefined;
   const selectedIsNextTurn = selectedChild?.id === nextTurnChildId;
-  const selectedStatus = selectedIsNextTurn ? "下一位" : "说成长";
+  const selectedRoleLabel = selectedIsNextTurn ? "下一位" : "当前";
+  const selectedAriaLabel = selectedIsNextTurn ? "下一位孩子" : "当前孩子";
+  const selectedStatus = "说成长";
   const dockClasses = [
     "spirit-dock",
     collapsed ? "collapsed is-collapsed" : "expanded is-expanded",
@@ -66,7 +68,8 @@ export function SpiritDock({ childrenWithProgress, spiritsById, selectedChildId,
           className={selectedIsNextTurn ? "dock-selected-summary next-ready" : "dock-selected-summary"}
           style={{ "--dock-accent": selectedSpirit?.accent ?? "#6ebf8b" } as CSSProperties}
           data-next-turn={selectedIsNextTurn ? "true" : undefined}
-          aria-label={`当前孩子：${selectedChild.name}，${selectedStatus}`}
+          data-selected-role={selectedIsNextTurn ? "next" : "current"}
+          aria-label={`${selectedAriaLabel}：${selectedChild.name}，${selectedStatus}`}
           onClick={() => onSelectChild(selectedChild.id)}
         >
           <span className="dock-avatar">
@@ -74,7 +77,7 @@ export function SpiritDock({ childrenWithProgress, spiritsById, selectedChildId,
             {selectedAsset?.url ? <img src={selectedAsset.url} alt="" /> : <span className="dock-avatar-label">{selectedChild.name.slice(0, 1)}</span>}
           </span>
           <span className="dock-summary-copy">
-            <small>当前</small>
+            <small>{selectedRoleLabel}</small>
             <strong title={selectedChild.name}>{selectedChild.name}</strong>
           </span>
           <em className="dock-summary-status">{selectedStatus}</em>
@@ -119,7 +122,7 @@ export function SpiritDock({ childrenWithProgress, spiritsById, selectedChildId,
             name="spiritDockSearch"
             aria-label="搜索孩子名字"
             value={query}
-            placeholder="搜名字..."
+            placeholder="搜名字…"
             onChange={(event) => setQuery(event.target.value)}
           />
         </div>
@@ -136,7 +139,8 @@ export function SpiritDock({ childrenWithProgress, spiritsById, selectedChildId,
         className={selectedIsNextTurn ? "dock-selected-summary expanded next-ready" : "dock-selected-summary expanded"}
         style={{ "--dock-accent": selectedSpirit?.accent ?? "#6ebf8b" } as CSSProperties}
         data-next-turn={selectedIsNextTurn ? "true" : undefined}
-        aria-label={`当前孩子：${selectedChild.name}，${selectedStatus}，全班${childrenWithProgress.length}人`}
+        data-selected-role={selectedIsNextTurn ? "next" : "current"}
+        aria-label={`${selectedAriaLabel}：${selectedChild.name}，${selectedStatus}，全班${childrenWithProgress.length}人`}
       >
         <span className="dock-avatar">
           {selectedIsNextTurn ? <span className="next-child-halo next-ready" aria-hidden="true" /> : null}
@@ -158,8 +162,9 @@ export function SpiritDock({ childrenWithProgress, spiritsById, selectedChildId,
               key={child.id}
               className={`${child.id === selectedChildId ? "dock-spirit active" : "dock-spirit"} ${isNextTurn ? "next-ready" : ""}`.trim()}
               aria-current={child.id === selectedChildId ? "true" : undefined}
-              aria-label={`${child.id === selectedChildId ? "当前孩子" : "选择孩子"}：${child.name}${isNextTurn ? "，下一位" : "，说成长"}`}
+              aria-label={`${isNextTurn ? "下一位孩子" : child.id === selectedChildId ? "当前孩子" : "选择孩子"}：${child.name}${isNextTurn ? "，下一位" : "，说成长"}`}
               data-next-turn={isNextTurn ? "true" : undefined}
+              data-selected-role={child.id === selectedChildId ? (isNextTurn ? "next" : "current") : undefined}
               onClick={() => selectChildFromRoster(child.id)}
             >
               <span className="dock-avatar" style={{ "--dock-accent": spirit?.accent ?? "#6ebf8b" } as CSSProperties}>

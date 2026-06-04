@@ -159,7 +159,7 @@ export class SpiritLayer {
     root.label = spirit.id;
     root.eventMode = "static";
     root.cursor = "pointer";
-    root.hitArea = new Rectangle(-70, -118, 140, 154);
+    root.hitArea = new Rectangle(-88, -132, 176, 184);
     root.on("pointertap", () => {
       this.onSelect(spirit.id);
       const target = getDoorFocusTarget(spirit.doorPosition, cameraConfig.spiritZoom);

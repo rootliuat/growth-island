@@ -20995,3 +20995,111 @@ button {
     font-size: 11px;
   }
 }
+
+/* P5 map spirit selection pass: make child identity and touch feedback explicit. */
+.home-screen-shell .shell-child-chip {
+  opacity: 0.72;
+}
+
+.home-screen-shell .shell-child-chip strong,
+.home-screen-shell .shell-child-chip em {
+  font-size: 11px;
+}
+
+.home-screen-shell .dock-selected-summary[data-selected-role="next"] {
+  border-color: rgba(246, 179, 82, 0.64);
+  background: #fff8ea;
+}
+
+.home-screen-shell .dock-selected-summary[data-selected-role="next"] .dock-summary-copy small,
+.home-screen-shell .dock-selected-summary[data-selected-role="next"] .dock-selected-copy em {
+  color: #9a6b19;
+}
+
+.home-screen-shell .dock-selected-summary[data-selected-role="next"] > .dock-summary-status {
+  color: #fffdf4;
+  background: #f6b352;
+}
+
+.home-screen-shell .world-map-shell:not(.moral-stage-idle) .map-energy-constellation {
+  width: min(276px, calc(100% - 116px));
+}
+
+.home-screen-shell .world-map-shell:not(.moral-stage-idle) .energy-slot-row {
+  display: flex;
+}
+
+.home-screen-shell .world-map-shell:not(.moral-stage-idle) .energy-slot-row button.current {
+  flex: 0 0 76px;
+}
+
+.home-screen-shell .world-map-shell:is(.moral-stage-ready, .moral-stage-listening, .moral-stage-recognizing) .energy-slot-row {
+  display: none;
+}
+
+.map-travel-board button,
+.review-transcript summary,
+.dock-filters button {
+  min-height: 44px;
+  touch-action: manipulation;
+}
+
+.dock-selected-summary,
+.dock-collapse,
+.dock-spirit,
+.module-dock-button,
+.map-scene-gate button,
+.energy-slot-row button,
+.moral-mic-button,
+.teacher-review-actions button,
+.map-travel-board button,
+.review-transcript summary,
+.moral-cancel-button {
+  transition: transform 150ms ease, filter 150ms ease, box-shadow 150ms ease, background-color 150ms ease;
+  touch-action: manipulation;
+}
+
+.dock-selected-summary:active,
+.dock-collapse:active,
+.dock-spirit:active,
+.module-dock-button:active,
+.map-scene-gate button:active,
+.energy-slot-row button:active,
+.moral-mic-button:active,
+.teacher-review-actions button:active,
+.map-travel-board button:active,
+.review-transcript summary:active,
+.moral-cancel-button:active {
+  transform: translateY(1px) scale(0.985);
+  filter: brightness(0.98);
+}
+
+.map-scene-gate button:focus-visible,
+.energy-slot-row button:focus-visible,
+.map-travel-board button:focus-visible,
+.moral-cancel-button:focus-visible,
+.review-transcript summary:focus-visible {
+  outline: 3px solid rgba(246, 179, 82, 0.86);
+  outline-offset: 3px;
+}
+
+.home-screen-shell .teacher-review-corner-card:has(.review-edit-popover[open]) {
+  max-height: min(560px, calc(100% - 112px));
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+@media (max-width: 720px) {
+  .home-screen-shell .world-map-shell:not(.moral-stage-idle) .map-energy-constellation {
+    width: min(184px, calc(100% - 92px));
+  }
+
+  .home-screen-shell .home-module:has(.spirit-dock:not(.collapsed)) .map-scene-gate,
+  .home-screen-shell .world-map-shell:not(.moral-stage-idle) .map-scene-gate {
+    display: none;
+  }
+
+  .home-screen-shell .home-module:has(.teacher-review-corner-card .review-edit-popover[open]) .moral-speak-overlay.pendingReview .spirit-speech-bubble {
+    transform: translateY(-72px);
+  }
+}

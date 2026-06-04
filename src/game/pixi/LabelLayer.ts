@@ -10,8 +10,11 @@ export class LabelLayer {
   private readonly regionLabels: Container[] = [];
   private readonly spiritLabels = new Map<string, Container>();
   private readonly spiritMeta = new Map<string, { rank: number; level: number; hasActivity: boolean; x: number; y: number }>();
+  private readonly spiritLabelLayer = new Container();
 
   constructor(private readonly layer: Container) {
+    this.spiritLabelLayer.label = "spirit-labels";
+    this.spiritLabelLayer.sortableChildren = true;
     regions.forEach((region) => {
       const node = new Container();
       node.x = region.signPosition.x;
@@ -38,6 +41,7 @@ export class LabelLayer {
       this.regionLabels.push(node);
       this.layer.addChild(node);
     });
+    this.layer.addChild(this.spiritLabelLayer);
   }
 
   update(data: WorldMapData) {
@@ -53,7 +57,7 @@ export class LabelLayer {
       if (!node) {
         node = this.createSpiritLabel();
         this.spiritLabels.set(spirit.id, node);
-        this.layer.addChild(node);
+        this.spiritLabelLayer.addChild(node);
       }
       node.x = spirit.spritePosition.x + assetScaleRules.label.selectedNameOffset.x;
       node.y = spirit.spritePosition.y + assetScaleRules.label.selectedNameOffset.y;
@@ -71,6 +75,7 @@ export class LabelLayer {
 
   updateZoom(zoom: number, selectedChildId: string) {
     const selectedMeta = this.spiritMeta.get(selectedChildId);
+    const overviewFindMode = zoom <= 0.72;
     this.regionLabels.forEach((label) => {
       label.visible = zoom < 1.2;
       label.alpha = zoom < 0.72 ? 1 : 0.76;
@@ -83,9 +88,12 @@ export class LabelLayer {
         selectedMeta && meta
           ? Math.abs(meta.x - selectedMeta.x) < 360 && Math.abs(meta.y - selectedMeta.y) < 280
           : false;
-      label.visible = selected || (zoom >= 1.36 && nearSelected);
-      label.alpha = selected ? 1 : 0.72;
-      label.scale.set(selected ? (zoom >= 1.42 ? 0.94 : 0.86) : 0.72);
+      label.visible = selected || overviewFindMode || (zoom >= 1.36 && nearSelected);
+      label.alpha = selected ? 1 : overviewFindMode ? 0.68 : 0.72;
+      label.scale.set(selected ? (zoom >= 1.42 ? 0.98 : 0.9) : overviewFindMode ? 0.56 : 0.72);
+      label.zIndex = selected ? 20 : overviewFindMode ? 2 : 1;
+      const currentRing = label.getChildByLabel("current-ring") as Graphics | undefined;
+      if (currentRing) currentRing.visible = selected;
       const bubble = label.getChildByLabel("activity-bubble");
       if (bubble) bubble.visible = selected && Boolean(meta?.hasActivity) && zoom >= 1.48;
     });
@@ -93,6 +101,9 @@ export class LabelLayer {
 
   private createSpiritLabel() {
     const node = new Container();
+    const currentRing = new Graphics();
+    currentRing.label = "current-ring";
+    currentRing.visible = false;
     const bg = new Graphics();
     bg.label = "name-bg";
     const text = new Text({
@@ -126,7 +137,7 @@ export class LabelLayer {
     bubbleText.anchor.set(0.5);
     bubble.addChild(bubbleBg, tokenBg, tokenText, bubbleText);
 
-    node.addChild(bg, text, bubble);
+    node.addChild(currentRing, bg, text, bubble);
     return node;
   }
 
@@ -227,12 +238,21 @@ export class LabelLayer {
     if (text) text.text = spirit.child.name;
     if (bg) {
       const width = Math.max(68, Math.min(118, (text?.width ?? 56) + 28));
+      const currentRing = node.getChildByLabel("current-ring") as Graphics | undefined;
+      if (currentRing) {
+        currentRing.clear();
+        currentRing
+          .roundRect(-width / 2 - 7, -20, width + 14, 39, 19)
+          .fill({ color: 0xfff3c8, alpha: 0.2 })
+          .stroke({ width: 3, color: spirit.accent, alpha: 0.56 });
+        currentRing.ellipse(0, 18, width * 0.43, 8).fill({ color: palette.inkShadow, alpha: 0.1 });
+      }
       bg.clear();
       bg.ellipse(0, 15, width * 0.36, 7).fill({ color: palette.inkShadow, alpha: 0.1 });
       bg.roundRect(-width / 2, -16, width, 31, 15).fill(0xfff6d7).stroke({
-        width: 2,
+        width: 2.5,
         color: spirit.accent,
-        alpha: 0.32,
+        alpha: 0.42,
       });
       bg.circle(-width / 2 + 13, -1, 3).fill({ color: spirit.accent, alpha: 0.58 });
       bg.circle(width / 2 - 13, -1, 3).fill({ color: spirit.accent, alpha: 0.58 });
