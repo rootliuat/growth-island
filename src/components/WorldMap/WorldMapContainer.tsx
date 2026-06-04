@@ -48,7 +48,9 @@ interface WorldMapContainerProps {
   onStopMoralSpeak?: () => void;
   onRetryMoralSpeak?: () => void;
   onApproveMoralSpeak?: () => void;
-  onAdjustMoralSpeak?: (delta: 10 | 20 | 30) => void;
+  onAdjustMoralSpeak?: (category: VirtueCategory, delta: 10 | 20 | 30) => void;
+  onRespeakMoralSpeak?: () => void;
+  onSkipMoralSpeak?: () => void;
   onDeferMoralSpeak?: () => void;
 }
 
@@ -384,12 +386,14 @@ export const WorldMapContainer = forwardRef<PixiWorldMapHandle, WorldMapContaine
       />
       {moralSpeak.stage === "pendingReview" ? (
         <TeacherMoralReviewCard
+          key={moralSpeak.reviewId ?? `${moralSpeak.childId ?? "child"}:${moralSpeak.transcript ?? ""}`}
           child={moralSpeakChild}
           transcript={moralSpeak.transcript}
           result={moralSpeak.result}
           onApprove={props.onApproveMoralSpeak ?? (() => undefined)}
           onAdjust={props.onAdjustMoralSpeak ?? (() => undefined)}
-          onDefer={props.onDeferMoralSpeak ?? (() => undefined)}
+          onRespeak={props.onRespeakMoralSpeak ?? (() => undefined)}
+          onSkip={props.onSkipMoralSpeak ?? (() => undefined)}
         />
       ) : null}
     </section>

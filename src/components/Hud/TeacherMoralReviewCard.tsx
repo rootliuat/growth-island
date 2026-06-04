@@ -1,22 +1,23 @@
-import { Check, Clock3, Edit3, Shell } from "lucide-react";
-import type { CSSProperties } from "react";
+import { Check, Mic, Shell, SkipForward, Wrench } from "lucide-react";
+import { useMemo, useState, type CSSProperties } from "react";
+import { virtueCategories } from "../../data/spirits";
 import {
   canApproveMoralGrowth,
-  formatSignedXp,
   getChildEnergyColor,
   getChildEnergyLabel,
   getChildEnergyResultText,
   getTeacherHelpText,
 } from "../../domain/virtueEnergy";
-import type { ChildWithProgress, MoralEvaluationResult } from "../../types";
+import type { ChildWithProgress, MoralEvaluationResult, VirtueCategory } from "../../types";
 
 interface TeacherMoralReviewCardProps {
   child?: ChildWithProgress;
   transcript?: string;
   result?: MoralEvaluationResult;
   onApprove: () => void;
-  onAdjust: (delta: 10 | 20 | 30) => void;
-  onDefer: () => void;
+  onAdjust: (category: VirtueCategory, delta: 10 | 20 | 30) => void;
+  onRespeak: () => void;
+  onSkip: () => void;
 }
 
 export function TeacherMoralReviewCard({
@@ -25,8 +26,15 @@ export function TeacherMoralReviewCard({
   result,
   onApprove,
   onAdjust,
-  onDefer,
+  onRespeak,
+  onSkip,
 }: TeacherMoralReviewCardProps) {
+  const initialCategory = useMemo<VirtueCategory>(
+    () => (result?.category && virtueCategories.includes(result.category) ? result.category : virtueCategories[0]),
+    [result?.category],
+  );
+  const [selectedCategory, setSelectedCategory] = useState<VirtueCategory>(initialCategory);
+
   if (!child || !result) return null;
 
   const canApprove = canApproveMoralGrowth(result);
@@ -35,12 +43,6 @@ export function TeacherMoralReviewCard({
   const style = { "--moral-accent": accent } as CSSProperties;
   const energyLabel = getChildEnergyLabel(safeCategory);
   const helpText = getTeacherHelpText(result);
-  const adjustmentLabel = canApprove ? energyLabel : "成长";
-  const safeAdjustmentLabels: Record<10 | 20 | 30, string> = {
-    10: "轻点亮",
-    20: "点亮",
-    30: "多点亮",
-  };
   const transcriptPreview = transcript?.trim() || "未收到文字";
 
   return (
@@ -70,20 +72,34 @@ export function TeacherMoralReviewCard({
         ) : null}
         <details className={canApprove ? "review-edit-popover" : "review-edit-popover primary"}>
           <summary>
-            <Edit3 size={17} />
-            改能量
+            <Wrench size={17} />
+            修正
           </summary>
-          <div>
+          <div className="review-edit-panel">
+            <label>
+              <span>能量词</span>
+              <select value={selectedCategory} onChange={(event) => setSelectedCategory(event.target.value as VirtueCategory)}>
+                {virtueCategories.map((category) => (
+                  <option key={category} value={category}>
+                    {getChildEnergyLabel(category)} · {category}
+                  </option>
+                ))}
+              </select>
+            </label>
             {[10, 20, 30].map((delta) => (
-              <button key={delta} type="button" onClick={() => onAdjust(delta as 10 | 20 | 30)}>
-                {canApprove ? `${adjustmentLabel} ${formatSignedXp(delta)}` : safeAdjustmentLabels[delta as 10 | 20 | 30]}
+              <button key={delta} type="button" onClick={() => onAdjust(selectedCategory, delta as 10 | 20 | 30)}>
+                {getChildEnergyLabel(selectedCategory)} +{delta}
               </button>
             ))}
           </div>
         </details>
-        <button type="button" className="defer" onClick={onDefer}>
-          <Clock3 size={17} />
-          稍后处理
+        <button type="button" className="respeak" onClick={onRespeak}>
+          <Mic size={17} />
+          补说
+        </button>
+        <button type="button" className="skip" onClick={onSkip}>
+          <SkipForward size={17} />
+          跳过这位
         </button>
       </div>
 

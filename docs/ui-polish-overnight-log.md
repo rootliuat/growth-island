@@ -289,3 +289,44 @@ P2:
   - `qa-artifacts/latest/moral-speak-flow-whiteboard.png`
   - `qa-artifacts/latest/moral-speak-flow-ready-mobile.png`
   - `qa-artifacts/latest/moral-review-safety-mobile.png`
+
+## P6 teacher confirmation and exception closure
+
+### Scope
+
+- Reworked the child self-service teacher confirmation stage into a light guardrail flow: confirm, correct, say again, or skip this child.
+- Kept backend, server API, XP/ledger logic, data files, generated assets, and PixiJS map rendering untouched.
+- Did not add parent, reviewer, kindergarten admin, PDF export, approval flow, account, permission, or cloud-sync surfaces.
+
+### UX/UI Review Notes
+
+- `ux_researcher` and `ui_designer` completed read-only reviews before implementation.
+- Both reviews found that the prior confirmation card still read like a score-adjustment card in exception cases.
+- The selected direction was to make the teacher card task-based: normal suggestions get `确认点亮`; unclear or negative suggestions route through `修正`, `补说`, or `跳过这位`.
+
+### Implementation Notes
+
+- `TeacherMoralReviewCard.tsx` now shows `确认点亮` as a full-width primary action only when the suggestion is safe to approve.
+- The correction panel now lets the teacher choose the child-facing energy category and a `+10 / +20 / +30` amount, so corrected records no longer default to one category.
+- `MoralSpeakOverlay.tsx` keeps unsafe pending child copy fixed at `请老师帮忙`, avoiding transcript, score, confidence, or negative-label leakage on the child layer.
+- `App.tsx` adds separate say-again and skip handlers. Say-again returns the current child to ready without writing a ledger record; skip marks the pending review handled locally and readies the next child without writing energy.
+- `WorldMapContainer.tsx` remounts the teacher review card by review identity so an open correction panel does not leak into the next child's review.
+- `styles.css` updates the teacher-card action grid, mobile review-card safe heights, and correction-panel overlap behavior.
+- `scripts/qa-visual.mjs` now validates low-confidence and negative review safety, correction category persistence, say-again, skip-to-next, single positive ledger writes after correction, and action layout clipping.
+
+### Validation
+
+- `git diff --check`: passed.
+- `npm run build`: passed.
+- `npm run qa:visual`: passed.
+- Latest visual QA report: `qa-artifacts/latest/report.json`.
+- Latest visual QA generated at `2026-06-04T23:35:09.120Z`.
+- QA coverage: 32 checks, 0 issues, 0 warnings.
+- Fixes during QA:
+  - Stabilized correction-panel opening in QA when a previous `details` state was already open.
+  - Cleared stale global feedback before pending review so it does not overlap the teacher card.
+  - Remounted the review card per review and adjusted mobile safe heights so expanded dock, topbar, speech bubble, and teacher card do not collide.
+- Code review follow-up:
+  - Say-again and skip now also reject the current review through the existing online API when a review id exists, so pending server reviews do not reappear after the next snapshot.
+  - Visual QA now asserts that say-again and skip leave no matching pending review and store the expected rejection reason.
+  - Confirmation no longer overwrites a server snapshot's review result with the local pre-submit result.

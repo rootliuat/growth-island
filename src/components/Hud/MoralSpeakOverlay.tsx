@@ -125,7 +125,7 @@ export function MoralSpeakOverlay({ child, spirit, state, onStart, onStop, onRet
       {state.stage === "pendingReview" ? (
         <div className="spirit-speech-bubble">
           <Sparkles size={22} />
-          {safeResult ? "等老师点亮" : state.summary ?? "请老师帮忙"}
+          {safeResult ? "等老师点亮" : "请老师帮忙"}
         </div>
       ) : null}
 

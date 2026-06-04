@@ -13114,7 +13114,7 @@ button {
 
 .teacher-review-actions {
   display: grid;
-  grid-template-columns: minmax(82px, 1fr) 58px 62px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px;
 }
 
@@ -13124,15 +13124,24 @@ button {
   align-items: center;
   justify-content: center;
   gap: 5px;
-  min-height: 38px;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 8px;
   border: 0;
   border-radius: 13px;
   color: #fffdf4;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 950;
+  line-height: 1.12;
   background: #174c5a;
   box-shadow: none;
   cursor: pointer;
+  white-space: normal;
+}
+
+.teacher-review-actions .approve {
+  grid-column: 1 / -1;
+  font-size: 14px;
 }
 
 .teacher-review-actions button:disabled {
@@ -13150,7 +13159,8 @@ button {
   outline-offset: 3px;
 }
 
-.teacher-review-actions .defer,
+.teacher-review-actions .respeak,
+.teacher-review-actions .skip,
 .review-edit-popover summary {
   color: #174c5a;
   background: #fffdf4;
@@ -13158,7 +13168,7 @@ button {
 }
 
 .review-edit-popover {
-  min-width: 64px;
+  min-width: 0;
   position: relative;
 }
 
@@ -13172,12 +13182,12 @@ button {
   display: none;
 }
 
-.review-edit-popover > div {
+.review-edit-panel {
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
   display: grid;
-  width: 142px;
+  width: min(246px, calc(100vw - 40px));
   gap: 6px;
   padding: 8px;
   border: 1px solid rgba(214, 177, 106, 0.44);
@@ -13186,8 +13196,28 @@ button {
   box-shadow: 0 12px 24px rgba(19, 51, 45, 0.14);
 }
 
-.review-edit-popover > div button {
-  min-height: 36px;
+.review-edit-panel label {
+  display: grid;
+  gap: 4px;
+  color: rgba(23, 76, 90, 0.72);
+  font-size: 11px;
+  font-weight: 950;
+}
+
+.review-edit-panel select {
+  min-height: 44px;
+  width: 100%;
+  border: 1px solid rgba(23, 76, 90, 0.14);
+  border-radius: 12px;
+  color: #174c5a;
+  background: #fffdf4;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.review-edit-panel button {
+  min-height: 44px;
   color: #174c5a;
   background: #fffdf4;
 }
@@ -13681,10 +13711,10 @@ button {
   }
 
   .teacher-review-actions {
-    grid-template-columns: minmax(82px, 1fr) 56px 60px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .review-edit-popover > div {
+  .review-edit-panel {
     top: auto;
     bottom: calc(100% + 8px);
   }
@@ -19925,7 +19955,8 @@ button {
 .spirit-self-service-button,
 .teacher-review-actions button,
 .review-edit-popover summary,
-.review-edit-popover > div button {
+.review-edit-panel button,
+.review-edit-panel select {
   min-height: 44px;
   touch-action: manipulation;
 }
@@ -19967,7 +19998,7 @@ button {
 }
 
 .teacher-review-actions {
-  grid-template-columns: minmax(92px, 1fr) 64px 68px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .teacher-review-actions button,
@@ -19975,11 +20006,11 @@ button {
   border-radius: 14px;
 }
 
-.review-edit-popover > div button {
+.review-edit-panel button {
   justify-content: center;
 }
 
-.review-edit-popover:not([open]) > div {
+.review-edit-popover:not([open]) .review-edit-panel {
   display: none;
 }
 
@@ -20430,11 +20461,11 @@ button {
 }
 
 .teacher-review-actions[data-mode="approve"] {
-  grid-template-columns: minmax(118px, 1fr) minmax(94px, 0.8fr) minmax(96px, 0.74fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .teacher-review-actions[data-mode="adjust"] {
-  grid-template-columns: minmax(142px, 1fr) minmax(104px, 0.72fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .teacher-review-actions button,
@@ -20458,11 +20489,10 @@ button {
   grid-column: 1 / -1;
 }
 
-.review-edit-popover > div {
+.review-edit-panel {
   position: static;
   display: grid;
   width: auto;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 7px;
   margin-top: 7px;
   padding: 7px;
@@ -20470,7 +20500,7 @@ button {
   box-shadow: inset 0 0 0 1px rgba(214, 177, 106, 0.32);
 }
 
-.review-edit-popover > div button {
+.review-edit-panel button {
   min-height: 48px;
   padding: 0 8px;
 }
@@ -20611,7 +20641,7 @@ button {
 
   .home-screen-shell .home-module:has(.world-map-shell:not(.moral-stage-idle)):has(.spirit-dock.expanded) .teacher-review-corner-card {
     bottom: 304px;
-    max-height: min(220px, calc(100% - 332px));
+    max-height: min(300px, calc(100% - 116px));
   }
 
   .home-screen-shell .home-module:has(.world-map-shell.moral-stage-pendingReview):has(.spirit-dock.expanded) .spirit-speech-bubble {
@@ -20631,10 +20661,9 @@ button {
     bottom: 184px;
   }
 
-  .home-screen-shell .review-edit-popover > div {
+  .home-screen-shell .review-edit-panel {
     position: static;
     width: auto;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
     z-index: auto;
   }
 
@@ -21100,6 +21129,6 @@ button {
   }
 
   .home-screen-shell .home-module:has(.teacher-review-corner-card .review-edit-popover[open]) .moral-speak-overlay.pendingReview .spirit-speech-bubble {
-    transform: translateY(-72px);
+    display: none;
   }
 }

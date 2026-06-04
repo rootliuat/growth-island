@@ -401,6 +401,12 @@ export function App() {
     }, 2600);
   };
 
+  const clearGrowthFeedback = () => {
+    if (growthFeedbackTimerRef.current) window.clearTimeout(growthFeedbackTimerRef.current);
+    growthFeedbackTimerRef.current = undefined;
+    setGrowthFeedback(undefined);
+  };
+
   const clearHomeFocusTimers = () => {
     homeFocusTimerRefs.current.forEach((timer) => window.clearTimeout(timer));
     homeFocusTimerRefs.current = [];
@@ -441,7 +447,7 @@ export function App() {
   };
 
   const getNextSelfServiceChild = (childId: string) => {
-    if (childrenWithProgress.length === 0) return undefined;
+    if (childrenWithProgress.length <= 1) return undefined;
     const currentIndex = childrenWithProgress.findIndex((child) => child.id === childId);
     const nextIndex = currentIndex >= 0 ? (currentIndex + 1) % childrenWithProgress.length : 0;
     return {
@@ -456,6 +462,38 @@ export function App() {
     stopMoralSpeakRecording(true);
     moralSpeakApprovingRef.current = false;
     setMoralSpeak({ stage: "ready", childId });
+  };
+
+  const readyNextMoralSpeakChild = (currentChildId: string, previousChildName?: string) => {
+    const nextTurn = getNextSelfServiceChild(currentChildId);
+    const nextChild = nextTurn?.child;
+
+    if (!nextTurn || !nextChild) {
+      setMoralSpeak({ stage: "idle" });
+      worldMapRef.current?.focusFullIsland();
+      return;
+    }
+
+    setSelectedChildId(nextChild.id);
+    setMoralSpeak({
+      stage: "ready",
+      childId: nextChild.id,
+      previousChildName,
+      nextChildId: nextChild.id,
+      nextChildName: nextChild.name,
+      queueAutoReady: true,
+      queueIndex: nextTurn.queueIndex,
+      queueTotal: nextTurn.queueTotal,
+    });
+    showGrowthFeedback({
+      kind: "focus",
+      tone: "neutral",
+      title: `下一位 ${nextChild.name}`,
+      detail: "说成长",
+      childName: nextChild.name,
+    });
+    worldMapRef.current?.focusFullIsland();
+    scheduleMoralSpeakTimer(() => worldMapRef.current?.focusFullIsland(), 140);
   };
 
   const selectChildFromDock = (childId: string) => {
@@ -958,6 +996,7 @@ export function App() {
         setLastEvaluation(response.result);
         applySnapshot(response.snapshot);
         setSelectedChildId(child.id);
+        clearGrowthFeedback();
         setMoralSpeak({
           stage: "pendingReview",
           childId: child.id,
@@ -984,6 +1023,7 @@ export function App() {
       createdAt: new Date().toISOString(),
     };
     setMoralReviews((current) => [review, ...current]);
+    clearGrowthFeedback();
     setMoralSpeak({
       stage: "pendingReview",
       childId: child.id,
@@ -1018,13 +1058,14 @@ export function App() {
       createdAt: new Date().toISOString(),
     };
     setMoralReviews((current) => [review, ...current]);
+    clearGrowthFeedback();
     setMoralSpeak({
       stage: "pendingReview",
       childId: child.id,
       transcript,
       summary: getMoralSpeakSummary(result, summary),
       result,
-      reviewId: syncStatus === "offline" ? review.id : undefined,
+      reviewId: review.id,
     });
   };
 
@@ -1105,7 +1146,7 @@ export function App() {
     const transcript = moralSpeak.transcript ?? "孩子自助成长记录";
     const reviewId = moralSpeak.reviewId;
     const completedChild = childrenWithProgress.find((child) => child.id === moralSpeak.childId) ?? selectedChild;
-    const nextTurn = getNextSelfServiceChild(moralSpeak.childId);
+    const nextTurn = getNextSelfServiceChild(completedChild.id);
     const nextChild = nextTurn?.child;
 
     try {
@@ -1138,7 +1179,6 @@ export function App() {
           review.id === reviewId
             ? {
                 ...review,
-                result,
                 status: "approved",
                 reviewedAt: new Date().toISOString(),
                 reviewedByChildId: selectedChild.id,
@@ -1160,39 +1200,16 @@ export function App() {
     }));
     scheduleMoralSpeakTimer(() => {
       moralSpeakApprovingRef.current = false;
-      if (nextTurn && nextChild) {
-        setSelectedChildId(nextChild.id);
-        setMoralSpeak({
-          stage: "ready",
-          childId: nextChild.id,
-          previousChildName: completedChild.name,
-          nextChildId: nextChild.id,
-          nextChildName: nextChild.name,
-          queueAutoReady: true,
-          queueIndex: nextTurn.queueIndex,
-          queueTotal: nextTurn.queueTotal,
-        });
-        showGrowthFeedback({
-          kind: "focus",
-          tone: "neutral",
-          title: `下一位 ${nextChild.name}`,
-          detail: "说成长",
-          childName: nextChild.name,
-        });
-      } else {
-        setMoralSpeak({ stage: "idle" });
-      }
-      worldMapRef.current?.focusFullIsland();
-      scheduleMoralSpeakTimer(() => worldMapRef.current?.focusFullIsland(), 140);
+      readyNextMoralSpeakChild(completedChild.id, completedChild.name);
     }, 2400);
   };
 
-  const adjustMoralSpeak = (delta: 10 | 20 | 30) => {
+  const adjustMoralSpeak = (category: VirtueCategory, delta: 10 | 20 | 30) => {
     setMoralSpeak((current) => {
       if (!current.result) return current;
       const result = {
         ...current.result,
-        category: current.result.category ?? "积极阳光",
+        category,
         confidence: Math.max(current.result.confidence, 0.6),
         xpDelta: delta,
         intent: "reward" as const,
@@ -1205,6 +1222,47 @@ export function App() {
       }
       return { ...current, result, adjusted: true };
     });
+  };
+
+  const markCurrentMoralReviewRejected = (rejectionReason: string) => {
+    const reviewId = moralSpeak.reviewId;
+    if (!reviewId) return;
+    setMoralReviews((current) =>
+      current.map((review) =>
+        review.id === reviewId
+          ? {
+              ...review,
+              status: "rejected",
+              reviewedAt: new Date().toISOString(),
+              reviewedByChildId: selectedChild.id,
+              rejectionReason,
+            }
+          : review,
+      ),
+    );
+    if (syncStatus === "offline") return;
+    setSyncStatus("saving");
+    rejectMoralReview(reviewId, selectedChild.id, rejectionReason).then(applySnapshot).catch(() => setSyncStatus("offline"));
+  };
+
+  const respeakMoralSpeak = () => {
+    clearMoralSpeakTimers();
+    stopMoralSpeakRecording(true);
+    moralSpeakApprovingRef.current = false;
+    markCurrentMoralReviewRejected("补说");
+    const childId = moralSpeak.childId ?? selectedChild.id;
+    setSelectedChildId(childId);
+    setMoralSpeak({ stage: "ready", childId });
+  };
+
+  const skipMoralSpeakChild = () => {
+    clearMoralSpeakTimers();
+    stopMoralSpeakRecording(true);
+    moralSpeakApprovingRef.current = false;
+    markCurrentMoralReviewRejected("跳过这位");
+    const childId = moralSpeak.childId ?? selectedChild.id;
+    const completedChild = childrenWithProgress.find((child) => child.id === childId) ?? selectedChild;
+    readyNextMoralSpeakChild(childId, completedChild.name);
   };
 
   const deferMoralSpeak = () => {
@@ -1240,7 +1298,7 @@ export function App() {
         kind: "status",
         tone: "watch",
         title: "请老师先处理",
-        detail: childName ? `${childName} 改能量后再确认` : "改能量后再确认",
+        detail: childName ? `${childName} 修正后再确认` : "修正后再确认",
       });
       return;
     }
@@ -1491,7 +1549,7 @@ export function App() {
         kind: "status",
         tone: "watch",
         title: "请老师先处理",
-        detail: "改能量后再确认",
+        detail: "修正后再确认",
       });
       return;
     }
@@ -1656,6 +1714,8 @@ export function App() {
               onRetryMoralSpeak={retryMoralSpeak}
               onApproveMoralSpeak={approveMoralSpeak}
               onAdjustMoralSpeak={adjustMoralSpeak}
+              onRespeakMoralSpeak={respeakMoralSpeak}
+              onSkipMoralSpeak={skipMoralSpeakChild}
               onDeferMoralSpeak={deferMoralSpeak}
             />
 

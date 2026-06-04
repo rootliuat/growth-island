@@ -519,7 +519,7 @@ async function inspectTouchAndOverlap(page) {
       { label: "speaking-state", selector: ".moral-wave-state, .moral-shell-state" },
       { label: "retry", selector: ".moral-retry-button" },
       { label: "teacher-review-action", selector: ".teacher-review-actions button, .review-edit-popover summary" },
-      { label: "review-adjust-option", selector: ".review-edit-popover > div button" },
+      { label: "review-adjust-option", selector: ".review-edit-panel button, .review-edit-panel select" },
       { label: "selected-spirit", selector: ".dock-selected-summary" },
       { label: "dock-collapse", selector: ".dock-collapse" },
       { label: "dock-spirit", selector: ".dock-spirit" },
@@ -1010,12 +1010,24 @@ async function inspectMoralReviewCard(page, transcript, childId) {
   return page.evaluate(({ transcript, childId }) => {
     const approve = document.querySelector(".teacher-review-corner-card .approve");
     const adjust = document.querySelector(".teacher-review-corner-card .review-edit-popover summary");
+    const respeak = document.querySelector(".teacher-review-corner-card .respeak");
+    const skip = document.querySelector(".teacher-review-corner-card .skip");
+    const actionButtons = [...document.querySelectorAll(".teacher-review-actions button, .teacher-review-actions summary")];
     const speak = window.__growthIslandMoralSpeak ?? {};
     const dockNextTurn = document.querySelector(".spirit-dock .dock-selected-summary.next-ready, .spirit-dock .dock-spirit.next-ready");
     const records = window.__growthIslandLedger ?? [];
+    const reviews = window.__growthIslandReviews ?? [];
+    const card = document.querySelector(".teacher-review-corner-card");
+    const publicCardText = (() => {
+      if (!card) return "";
+      const clone = card.cloneNode(true);
+      clone.querySelectorAll(".review-edit-panel, .review-transcript").forEach((node) => node.remove());
+      return clone.textContent ?? "";
+    })();
     const matchingRecords = records.filter(
       (record) => record.childId === childId && record.reason === `自助成长：${transcript}`,
     );
+    const matchingReviews = reviews.filter((review) => review.childId === childId && review.transcript === transcript);
     return {
       stage: window.__growthIslandMoralSpeakStage,
       childId: window.__growthIslandSelectedChildId,
@@ -1029,9 +1041,23 @@ async function inspectMoralReviewCard(page, transcript, childId) {
           }
         : undefined,
       hasApproveAction: approve instanceof HTMLButtonElement,
+      hasRespeakAction: respeak instanceof HTMLButtonElement,
+      hasSkipAction: skip instanceof HTMLButtonElement,
       approveDisabled: approve instanceof HTMLButtonElement ? approve.disabled : undefined,
       approveText: approve?.textContent?.replace(/\s+/g, "") ?? "",
       adjustText: adjust?.textContent?.replace(/\s+/g, "") ?? "",
+      actionLayout: actionButtons.map((button) => {
+        const rect = button.getBoundingClientRect();
+        return {
+          text: button.textContent?.replace(/\s+/g, "") ?? "",
+          width: Math.round(rect.width),
+          height: Math.round(rect.height),
+          scrollWidth: button.scrollWidth,
+          clientWidth: button.clientWidth,
+          clipped: button.scrollWidth > button.clientWidth + 1 || button.scrollHeight > button.clientHeight + 1,
+          row: Math.round(rect.top),
+        };
+      }),
       queueAutoReady: speak.queueAutoReady === true,
       hasNextReadyDock: Boolean(dockNextTurn),
       nextReadyDockText: dockNextTurn?.textContent?.replace(/\s+/g, "") ?? "",
@@ -1040,9 +1066,14 @@ async function inspectMoralReviewCard(page, transcript, childId) {
       energyBoardStateText: document.querySelector(".energy-constellation-head span")?.textContent?.replace(/\s+/g, "") ?? "",
       energyBoardValueText: document.querySelector(".energy-constellation-head strong")?.textContent?.replace(/\s+/g, "") ?? "",
       currentEnergySlots: document.querySelectorAll(".energy-slot-row button.current").length,
-      cardText: document.querySelector(".teacher-review-corner-card")?.textContent ?? "",
+      cardText: card?.textContent ?? "",
+      publicCardText,
+      pendingMatchingReviewCount: matchingReviews.filter((review) => review.status === "pending_review").length,
+      latestReviewStatus: matchingReviews[0]?.status,
+      latestReviewRejectionReason: matchingReviews[0]?.rejectionReason,
       matchingSelfServiceCount: matchingRecords.length,
       hasNegativeLedger: matchingRecords.some((record) => record.delta < 0),
+      latestPositiveCategory: matchingRecords.find((record) => record.delta > 0)?.category,
       hasPositiveLedger: matchingRecords.some(
         (record) =>
           record.delta > 0 &&
@@ -1052,6 +1083,19 @@ async function inspectMoralReviewCard(page, transcript, childId) {
       ),
     };
   }, { transcript, childId });
+}
+
+async function openMoralCorrectionPanel(page) {
+  const popover = page.locator(".teacher-review-corner-card .review-edit-popover").first();
+  await popover.waitFor({ state: "visible", timeout: 5000 });
+  const isOpen = await popover.evaluate((element) => element.hasAttribute("open"));
+  if (!isOpen) {
+    await popover.locator("summary").click();
+  }
+  await page.waitForSelector(".teacher-review-corner-card .review-edit-popover[open] .review-edit-panel select", {
+    state: "visible",
+    timeout: 5000,
+  });
 }
 
 async function inspectExpandedDockGeometry(page) {
@@ -1211,8 +1255,8 @@ async function exerciseMoralReviewSafety(page, pendingScreenshot, adjustedScreen
       cardScrolls: card ? card.scrollHeight > card.clientHeight + 1 : false,
     };
   });
-  await page.locator(".teacher-review-corner-card .defer").click();
-  await page.waitForFunction(() => window.__growthIslandMoralSpeakStage === "idle", null, { timeout: 3500 });
+  await page.locator(".teacher-review-corner-card .skip").click();
+  await page.waitForFunction(() => window.__growthIslandMoralSpeakStage === "ready", null, { timeout: 3500 });
 
   const lowConfidence = {
     childId: "child-07",
@@ -1230,17 +1274,34 @@ async function exerciseMoralReviewSafety(page, pendingScreenshot, adjustedScreen
   }
   await page.waitForTimeout(250);
   const lowAfterApproveAttempt = await inspectMoralReviewCard(page, lowConfidence.transcript, lowConfidence.childId);
-  await page.locator(".review-edit-popover summary").click();
+  await page.locator(".teacher-review-corner-card .respeak").click();
+  await page.waitForFunction(
+    ({ childId }) => window.__growthIslandMoralSpeakStage === "ready" && window.__growthIslandMoralSpeak?.childId === childId,
+    { childId: lowConfidence.childId },
+    { timeout: 3500 },
+  );
+  const lowAfterRespeak = await inspectMoralReviewCard(page, lowConfidence.transcript, lowConfidence.childId);
+
+  await startQaMoralReview(page, lowConfidence);
+  const lowBeforeSkip = await inspectMoralReviewCard(page, lowConfidence.transcript, lowConfidence.childId);
+  await page.locator(".teacher-review-corner-card .skip").click();
+  await page.waitForFunction(
+    ({ childId }) => window.__growthIslandMoralSpeakStage === "ready" && window.__growthIslandMoralSpeak?.childId !== childId,
+    { childId: lowConfidence.childId },
+    { timeout: 3500 },
+  );
+  const lowAfterSkip = await inspectMoralReviewCard(page, lowConfidence.transcript, lowConfidence.childId);
+
+  await startQaMoralReview(page, lowConfidence);
+  await openMoralCorrectionPanel(page);
   const lowAdjustMenuTouch = await inspectTouchAndOverlap(page);
-  await page.locator(".review-edit-popover button").first().click();
+  await page.locator(".teacher-review-corner-card .review-edit-popover[open] .review-edit-panel select").selectOption("开拓创新");
+  await page.locator(".teacher-review-corner-card .review-edit-popover[open] .review-edit-panel button").nth(1).click();
   await page.waitForFunction(() => {
     const approve = document.querySelector(".teacher-review-corner-card .approve");
     return approve instanceof HTMLButtonElement && !approve.disabled;
   });
   const lowAfterAdjust = await inspectMoralReviewCard(page, lowConfidence.transcript, lowConfidence.childId);
-  await page.locator(".teacher-review-corner-card .defer").click();
-  await page.waitForFunction(() => window.__growthIslandMoralSpeakStage === "idle", null, { timeout: 3500 });
-  const lowAfterDefer = await inspectMoralReviewCard(page, lowConfidence.transcript, lowConfidence.childId);
 
   const negative = {
     childId: "child-06",
@@ -1257,9 +1318,10 @@ async function exerciseMoralReviewSafety(page, pendingScreenshot, adjustedScreen
   }
   await page.waitForTimeout(250);
   const negativeAfterApproveAttempt = await inspectMoralReviewCard(page, negative.transcript, negative.childId);
-  await page.locator(".review-edit-popover summary").click();
+  await openMoralCorrectionPanel(page);
   const negativeAdjustMenuTouch = await inspectTouchAndOverlap(page);
-  await page.locator(".review-edit-popover button").first().click();
+  await page.locator(".teacher-review-corner-card .review-edit-popover[open] .review-edit-panel select").selectOption("开拓创新");
+  await page.locator(".teacher-review-corner-card .review-edit-popover[open] .review-edit-panel button").nth(1).click();
   await page.waitForFunction(() => {
     const approve = document.querySelector(".teacher-review-corner-card .approve");
     return approve instanceof HTMLButtonElement && !approve.disabled;
@@ -1286,12 +1348,15 @@ async function exerciseMoralReviewSafety(page, pendingScreenshot, adjustedScreen
       start: lowStart,
       pending: lowPending,
       afterApproveAttempt: lowAfterApproveAttempt,
+      afterRespeak: lowAfterRespeak,
+      beforeSkip: lowBeforeSkip,
+      afterSkip: lowAfterSkip,
       afterAdjust: lowAfterAdjust,
-      afterDefer: lowAfterDefer,
       adjustMenuTouchGeometry: lowAdjustMenuTouch,
       ledgerUnchanged:
         lowStart.before.matchingSelfServiceCount === lowAfterApproveAttempt.matchingSelfServiceCount &&
-        lowStart.before.matchingSelfServiceCount === lowAfterDefer.matchingSelfServiceCount,
+        lowStart.before.matchingSelfServiceCount === lowAfterRespeak.matchingSelfServiceCount &&
+        lowStart.before.matchingSelfServiceCount === lowAfterSkip.matchingSelfServiceCount,
     },
     negative: {
       start: negativeStart,
@@ -3493,7 +3558,7 @@ async function inspectPage(browser, check, viewport) {
     if (
       !moralFlowDetails?.pending?.teacherCardText.includes("老师确认") ||
       !moralFlowDetails?.pending?.teacherCardText.includes("确认点亮") ||
-      !moralFlowDetails?.pending?.teacherCardText.includes("改能量")
+      !moralFlowDetails?.pending?.teacherCardText.includes("修正")
     ) {
       issues.push("moral speak teacher card missing confirmation actions");
     }
@@ -3645,10 +3710,17 @@ async function inspectPage(browser, check, viewport) {
       issues.push("low-confidence child bubble leaked review details");
     }
     if (!low?.pending?.teacherMainText?.includes("请老师帮忙")) issues.push("low-confidence teacher card main state not neutral");
-    if (!low?.pending?.adjustText?.includes("改能量")) issues.push("low-confidence teacher adjust action missing");
+    if (!low?.pending?.adjustText?.includes("修正")) issues.push("low-confidence teacher adjust action missing");
+    if (!low?.pending?.hasRespeakAction) issues.push("low-confidence teacher card missing respeak action");
+    if (!low?.pending?.hasSkipAction) issues.push("low-confidence teacher card missing skip action");
+    if (low?.pending?.actionLayout?.some((action) => action.clipped)) issues.push("low-confidence teacher action text clipped");
+    if (low?.afterAdjust?.actionLayout?.some((action) => action.text.includes("确认点亮") && low.afterAdjust.actionLayout.some((other) => other !== action && other.row === action.row))) {
+      issues.push("adjusted low-confidence approve action did not occupy its own row");
+    }
     if (low?.afterAdjust?.approveDisabled) issues.push("low-confidence adjusted review approve button stayed disabled");
     if ((low?.afterAdjust?.result?.confidence ?? 0) < 0.6) issues.push("low-confidence adjusted review did not reach teacher approval threshold");
-    if (/%|45|未分类|待判断/.test(low?.pending?.cardText ?? "")) {
+    if (low?.afterAdjust?.result?.category !== "开拓创新") issues.push("low-confidence correction did not keep selected category");
+    if (/%|45|未分类|待判断/.test(low?.pending?.publicCardText ?? "")) {
       issues.push("low-confidence teacher card leaked confidence or model state on home");
     }
     if (
@@ -3659,10 +3731,17 @@ async function inspectPage(browser, check, viewport) {
       issues.push("low-confidence home energy board leaked category state");
     }
     if (!low?.ledgerUnchanged) issues.push("low-confidence review entered ledger without teacher decision");
-    if (low?.afterDefer?.stage !== "idle") issues.push("low-confidence review did not return idle after defer");
-    if (low?.afterDefer?.queueAutoReady) issues.push("low-confidence review incorrectly readied the next child");
-    if (low?.afterDefer?.childId !== low?.childId) issues.push("low-confidence review changed selected child after defer");
-    if (low?.afterDefer?.hasNextReadyDock) issues.push("low-confidence review left next-child dock highlight after defer");
+    if (low?.afterRespeak?.stage !== "ready") issues.push("low-confidence respeak did not return current child to ready");
+    if (low?.afterRespeak?.childId !== low?.childId) issues.push("low-confidence respeak changed selected child");
+    if ((low?.afterRespeak?.pendingMatchingReviewCount ?? 1) !== 0) issues.push("low-confidence respeak left review pending");
+    if (low?.afterRespeak?.latestReviewStatus !== "rejected") issues.push("low-confidence respeak did not reject the pending review");
+    if (low?.afterRespeak?.latestReviewRejectionReason !== "补说") issues.push("low-confidence respeak rejection reason missing");
+    if (low?.afterSkip?.stage !== "ready") issues.push("low-confidence skip did not ready next child");
+    if (!low?.afterSkip?.queueAutoReady) issues.push("low-confidence skip did not mark next child auto-ready");
+    if (low?.afterSkip?.childId === low?.childId) issues.push("low-confidence skip stayed on current child");
+    if ((low?.afterSkip?.pendingMatchingReviewCount ?? 1) !== 0) issues.push("low-confidence skip left review pending");
+    if (low?.afterSkip?.latestReviewStatus !== "rejected") issues.push("low-confidence skip did not reject the pending review");
+    if (low?.afterSkip?.latestReviewRejectionReason !== "跳过这位") issues.push("low-confidence skip rejection reason missing");
 
     const negative = moralReviewSafetyDetails?.negative;
     if (!negative?.start?.started) issues.push("negative review did not start through QA hook");
@@ -3675,8 +3754,14 @@ async function inspectPage(browser, check, viewport) {
     }
     if (!negative?.pending?.teacherMainText?.includes("需老师处理")) issues.push("negative teacher card main state did not ask for handling");
     if (/[+＋-]\d/.test(negative?.pending?.teacherMainText ?? "")) issues.push("negative teacher card main state leaked score text");
-    if (!negative?.pending?.adjustText?.includes("改能量")) issues.push("negative teacher adjust action missing");
-    if (/%|80|友爱|规则|[+＋-]\d/.test(negative?.pending?.cardText ?? "")) {
+    if (!negative?.pending?.adjustText?.includes("修正")) issues.push("negative teacher adjust action missing");
+    if (!negative?.pending?.hasRespeakAction) issues.push("negative teacher card missing respeak action");
+    if (!negative?.pending?.hasSkipAction) issues.push("negative teacher card missing skip action");
+    if (negative?.pending?.actionLayout?.some((action) => action.clipped)) issues.push("negative teacher action text clipped");
+    if (negative?.afterAdjust?.actionLayout?.some((action) => action.text.includes("确认点亮") && negative.afterAdjust.actionLayout.some((other) => other !== action && other.row === action.row))) {
+      issues.push("adjusted negative approve action did not occupy its own row");
+    }
+    if (/%|80|友爱|规则|[+＋-]\d/.test(negative?.pending?.publicCardText ?? "")) {
       issues.push("negative teacher card leaked label or score details on home");
     }
     if (
@@ -3691,7 +3776,9 @@ async function inspectPage(browser, check, viewport) {
       issues.push("negative review adjustment did not set a positive teacher decision");
     }
     if (negative?.afterAdjust?.approveDisabled) issues.push("adjusted review approve button stayed disabled");
+    if (negative?.afterAdjust?.result?.category !== "开拓创新") issues.push("negative correction did not keep selected category");
     if (!negative?.final?.hasPositiveLedger) issues.push("adjusted review did not create an approved positive ledger record");
+    if (negative?.final?.latestPositiveCategory !== "开拓创新") issues.push("adjusted review ledger used the wrong category");
     if (negative?.final?.stage !== "ready") issues.push("adjusted review did not ready next child after approval");
     if (!negative?.noNegativeLedger) issues.push("negative AI suggestion created a negative ledger record");
   }
