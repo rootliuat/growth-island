@@ -44,9 +44,9 @@ export function SpiritDock({ childrenWithProgress, spiritsById, selectedChildId,
 
   const selectedSpirit = selectedChild ? spiritsById.get(selectedChild.spiritId) : undefined;
   const selectedAsset = selectedSpirit ? getSpiritAsset(selectedSpirit, selectedChild.state) : undefined;
-  const selectedRoleLabel = "当前";
-  const selectedAriaLabel = "当前孩子";
-  const selectedStatus = "说成长";
+  const selectedRoleLabel = "找我";
+  const selectedAriaLabel = "已选孩子";
+  const selectedStatus = "点精灵";
   const dockClasses = [
     "spirit-dock",
     collapsed ? "collapsed is-collapsed" : "expanded is-expanded",
@@ -65,7 +65,7 @@ export function SpiritDock({ childrenWithProgress, spiritsById, selectedChildId,
           className="dock-selected-summary"
           style={{ "--dock-accent": selectedSpirit?.accent ?? "#6ebf8b" } as CSSProperties}
           data-selected-role="current"
-          aria-label={`${selectedAriaLabel}：${selectedChild.name}，${selectedStatus}`}
+          aria-label={`${selectedAriaLabel}：${selectedChild.name}，查看自己的精灵`}
           onClick={() => onSelectChild(selectedChild.id)}
         >
           <span className="dock-avatar">
@@ -134,7 +134,7 @@ export function SpiritDock({ childrenWithProgress, spiritsById, selectedChildId,
         className="dock-selected-summary expanded"
         style={{ "--dock-accent": selectedSpirit?.accent ?? "#6ebf8b" } as CSSProperties}
         data-selected-role="current"
-        aria-label={`${selectedAriaLabel}：${selectedChild.name}，${selectedStatus}，全班${childrenWithProgress.length}人`}
+        aria-label={`${selectedAriaLabel}：${selectedChild.name}，查看自己的精灵，全班${childrenWithProgress.length}人`}
       >
         <span className="dock-avatar">
           {selectedAsset?.url ? <img src={selectedAsset.url} alt="" /> : <span className="dock-avatar-label">{selectedChild.name.slice(0, 1)}</span>}
@@ -154,7 +154,7 @@ export function SpiritDock({ childrenWithProgress, spiritsById, selectedChildId,
               key={child.id}
               className={child.id === selectedChildId ? "dock-spirit active" : "dock-spirit"}
               aria-current={child.id === selectedChildId ? "true" : undefined}
-              aria-label={`${child.id === selectedChildId ? "当前孩子" : "选择孩子"}：${child.name}，说成长`}
+              aria-label={`${child.id === selectedChildId ? "已选孩子" : "选择孩子"}：${child.name}`}
               data-selected-role={child.id === selectedChildId ? "current" : undefined}
               onClick={() => selectChildFromRoster(child.id)}
             >
@@ -162,7 +162,7 @@ export function SpiritDock({ childrenWithProgress, spiritsById, selectedChildId,
                 {asset?.url ? <img src={asset.url} alt="" /> : <span className="dock-avatar-label">{child.name.slice(0, 1)}</span>}
               </span>
               <strong>{child.name}</strong>
-              <em>说成长</em>
+              <em>点我</em>
             </button>
           );
         })}

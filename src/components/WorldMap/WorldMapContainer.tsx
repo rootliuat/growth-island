@@ -68,16 +68,14 @@ const travelMeta: Record<RegionId, { shortName: string; Icon: LucideIcon }> = {
 const sceneGateEntries: Array<{
   moduleId: "roll-call" | "math-arena" | "shop" | "leaderboard";
   label: string;
-  reward: string;
-  hint: string;
   status: string;
   accent: string;
   Icon: LucideIcon;
 }> = [
-  { moduleId: "roll-call", label: "抽取台", reward: "贝签光", hint: "贝签", status: "开始", accent: "#f6b352", Icon: Sparkles },
-  { moduleId: "math-arena", label: "贝壳算术", reward: "数学光", hint: "算术", status: "点亮", accent: "#ff7a59", Icon: Shell },
-  { moduleId: "shop", label: "海岛小铺", reward: "兑换", hint: "小票", status: "可换", accent: "#2d9fb2", Icon: ShoppingBag },
-  { moduleId: "leaderboard", label: "荣誉广场", reward: "荣誉光", hint: "广场", status: "看看", accent: "#3b7d53", Icon: Trophy },
+  { moduleId: "roll-call", label: "抽取台", status: "开始", accent: "#f6b352", Icon: Sparkles },
+  { moduleId: "math-arena", label: "贝壳算术", status: "点亮", accent: "#ff7a59", Icon: Shell },
+  { moduleId: "shop", label: "海岛小铺", status: "可换", accent: "#2d9fb2", Icon: ShoppingBag },
+  { moduleId: "leaderboard", label: "荣誉广场", status: "看看", accent: "#3b7d53", Icon: Trophy },
 ];
 
 function toCssHex(color: number) {
@@ -268,7 +266,7 @@ export const WorldMapContainer = forwardRef<PixiWorldMapHandle, WorldMapContaine
             小岛活动
           </strong>
           <div>
-            {sceneGateEntries.map(({ moduleId, label, reward, hint, status, accent, Icon }, index) => (
+            {sceneGateEntries.map(({ moduleId, label, status, accent, Icon }, index) => (
               <button
                 key={moduleId}
                 type="button"
@@ -276,14 +274,12 @@ export const WorldMapContainer = forwardRef<PixiWorldMapHandle, WorldMapContaine
                 style={{ "--scene-accent": accent, "--scene-index": index } as CSSProperties}
                 data-scene-hotspot={moduleId}
                 data-scene-status={status}
+                aria-label={`${label}，${status}`}
                 onClick={() => props.onOpenModule?.(moduleId)}
               >
                 <i aria-hidden="true" />
-                <b aria-hidden="true">{index + 1}</b>
                 <Icon size={17} />
                 <span>{label}</span>
-                <em>{reward}</em>
-                <small>{hint}</small>
                 <strong>{status}</strong>
               </button>
             ))}

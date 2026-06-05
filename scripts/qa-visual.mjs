@@ -109,6 +109,7 @@ async function readGrowthFeedback(page) {
     const domDelta = overlay?.getAttribute("data-delta") ?? "";
     const parsedDomDelta = domDelta === "" ? undefined : Number(domDelta);
     const text = overlay?.textContent?.replace(/\s+/g, " ").trim() ?? "";
+
     return {
       exists: Boolean(feedback || overlay),
       visible: Boolean(rect && rect.width > 0 && rect.height > 0 && rect.bottom > 0 && rect.top < window.innerHeight),
@@ -365,6 +366,10 @@ async function inspectHomeBigScreen(page) {
       "家园 3",
       "家园 4",
     ].filter((text) => rootText.includes(text));
+    const sceneGateText = sceneGate?.textContent?.replace(/\s+/g, "") ?? "";
+    const sceneGateMicrocopy = ["贝签光", "数学光", "荣誉光", "贝签", "小票", "兑换"].filter((copy) =>
+      sceneGateText.includes(copy),
+    );
 
     return {
       root: rect(".home-module"),
@@ -397,6 +402,7 @@ async function inspectHomeBigScreen(page) {
       },
       mapShare,
       energySlotCount: document.querySelectorAll(".energy-slot-row button").length,
+      visibleEnergyCardCount: [...document.querySelectorAll(".energy-slot-row .energy-card")].filter(isVisibleElement).length,
       activeEnergySlotCount: document.querySelectorAll(".energy-slot-row button.active").length,
       currentEnergySlotCount: document.querySelectorAll(".energy-slot-row button.current").length,
       energyCardCount: document.querySelectorAll(".energy-slot-row .energy-card").length,
@@ -407,7 +413,8 @@ async function inspectHomeBigScreen(page) {
       sceneHotspotCount: document.querySelectorAll(".map-scene-gate [data-scene-hotspot]").length,
       sceneHotspotStatusCount: document.querySelectorAll(".map-scene-gate [data-scene-status]").length,
       sceneLiveHotspotCount: document.querySelectorAll(".map-scene-gate .scene-hotspot.is-live").length,
-      sceneGateText: sceneGate?.textContent?.replace(/\s+/g, "") ?? "",
+      sceneGateText,
+      sceneGateMicrocopy,
       hasSelfServiceAction:
         Boolean(document.querySelector(".map-self-service-action, .spirit-self-service-button")) && visibleText.includes("说成长"),
       hasSelfServiceDock: Boolean(document.querySelector(".shell-child-chip[aria-label*='说成长']")) && shellDockText.includes("说成长"),
@@ -4227,9 +4234,15 @@ async function inspectPage(browser, check, viewport) {
     if (!["抽取台", "贝壳算术", "海岛小铺", "荣誉广场"].every((label) => bigScreen.sceneGateText.includes(label))) {
       issues.push("home map scene gate labels missing");
     }
+    if (bigScreen.sceneGateMicrocopy?.length) {
+      issues.push(`home map scene gate still shows trial-noise copy: ${bigScreen.sceneGateMicrocopy.join(", ")}`);
+    }
     if (bigScreen.energySlotCount !== 7) issues.push(`home map energy slots missing: ${bigScreen.energySlotCount}`);
     if (bigScreen.energyCardCount !== 7) issues.push(`home energy cards missing: ${bigScreen.energyCardCount}`);
     if (bigScreen.energyStateCount !== 7) issues.push(`home energy card states missing: ${bigScreen.energyStateCount}`);
+    if (bigScreen.visibleEnergyCardCount > 4) {
+      issues.push(`home idle energy board is too visually dense: ${bigScreen.visibleEnergyCardCount} visible cards`);
+    }
     if (bigScreen.currentEnergyCardsWithStatus < 1) issues.push("home current energy card status missing");
     if (bigScreen.activeEnergySlotCount < 1) issues.push("home map has no active virtue energy slot");
     if (bigScreen.currentEnergySlotCount < 1) issues.push("home map has no current virtue energy slot");

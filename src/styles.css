@@ -21282,3 +21282,222 @@ button {
     max-height: 44px;
   }
 }
+
+/* P10 trial-classroom pass: make idle home calmer and self-selection clearer. */
+.home-screen-shell .map-energy-constellation.moral-idle {
+  width: min(338px, calc(100% - 132px));
+  gap: 6px;
+  padding: 8px 9px;
+  border-width: 1px;
+  border-radius: 18px;
+  background: rgba(255, 248, 234, 0.72);
+  box-shadow: 0 8px 18px rgba(19, 51, 45, 0.09);
+}
+
+.home-screen-shell .map-energy-constellation.moral-idle .energy-constellation-head {
+  gap: 6px;
+}
+
+.home-screen-shell .map-energy-constellation.moral-idle .energy-constellation-head span,
+.home-screen-shell .map-energy-constellation.moral-idle .energy-constellation-head strong {
+  min-height: 28px;
+  padding-inline: 9px;
+}
+
+.home-screen-shell .map-energy-constellation.moral-idle .energy-constellation-head strong {
+  max-width: 176px;
+}
+
+.home-screen-shell .map-energy-constellation.moral-idle .energy-slot-row {
+  display: flex;
+  gap: 6px;
+  overflow: hidden;
+}
+
+.home-screen-shell .map-energy-constellation.moral-idle .energy-card:not(.active):not(.current) {
+  display: none;
+}
+
+.home-screen-shell .map-energy-constellation.moral-idle .energy-card {
+  flex: 0 0 62px;
+  min-height: 58px;
+  padding: 5px 4px;
+  border-radius: 13px;
+}
+
+.home-screen-shell .map-energy-constellation.moral-idle .energy-card b {
+  display: none;
+}
+
+.home-screen-shell .map-scene-gate {
+  width: 222px;
+  padding: 8px;
+  border-width: 1px;
+  opacity: 0.64;
+  box-shadow: 0 8px 18px rgba(19, 51, 45, 0.08);
+}
+
+.home-screen-shell .map-scene-gate:hover,
+.home-screen-shell .map-scene-gate:focus-within {
+  opacity: 0.92;
+}
+
+.home-screen-shell .map-scene-gate > strong {
+  display: none;
+}
+
+.home-screen-shell .map-scene-gate > div {
+  gap: 6px;
+}
+
+.home-screen-shell .map-scene-gate button {
+  grid-template-columns: 30px minmax(0, 1fr);
+  grid-template-areas:
+    "icon label"
+    "icon status";
+  min-height: 50px;
+  padding: 6px 8px;
+  border-radius: 14px;
+  box-shadow: inset 0 -2px 0 rgba(122, 74, 50, 0.055);
+}
+
+.home-screen-shell .map-scene-gate button b,
+.home-screen-shell .map-scene-gate button em,
+.home-screen-shell .map-scene-gate button small {
+  display: none;
+}
+
+.home-screen-shell .map-scene-gate button svg {
+  width: 28px;
+  height: 28px;
+}
+
+.home-screen-shell .map-scene-gate button strong {
+  justify-self: start;
+  min-height: 0;
+  padding: 0;
+  color: color-mix(in srgb, var(--scene-accent, #2d9fb2) 78%, #174c5a);
+  background: transparent;
+  font-size: 10px;
+}
+
+.home-screen-shell .map-companion-actions {
+  width: min(252px, calc(100% - 210px));
+  padding: 10px;
+  border-width: 2px;
+  background: rgba(244, 241, 230, 0.94);
+  box-shadow: 0 8px 18px rgba(35, 66, 61, 0.14);
+}
+
+.home-screen-shell .companion-action-kicker {
+  display: none;
+}
+
+.home-screen-shell .map-companion-actions > strong {
+  margin-top: 0;
+  font-size: 20px;
+  text-align: center;
+}
+
+.home-screen-shell .map-companion-actions > div {
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.home-screen-shell .map-companion-actions .map-self-service-action {
+  min-height: 46px;
+}
+
+.home-screen-shell .map-companion-actions button:not(.map-self-service-action) {
+  width: 46px;
+  min-height: 46px;
+  padding: 0;
+  font-size: 0;
+}
+
+.home-screen-shell .map-companion-actions button:not(.map-self-service-action) svg {
+  width: 19px;
+  height: 19px;
+}
+
+.home-screen-shell .dock-summary-copy small {
+  color: #2f7f87;
+}
+
+.home-screen-shell .dock-selected-summary > .dock-summary-status {
+  color: #174c5a;
+  background: rgba(135, 216, 208, 0.28);
+}
+
+.home-screen-shell .module-dock-button:not(.active),
+.home-screen-shell .teacher-tools-drawer summary {
+  box-shadow: none;
+}
+
+.home-screen-shell .module-dock-button:not(.active) {
+  opacity: 0.82;
+}
+
+@media (max-width: 720px) {
+  .home-screen-shell .zoom-controls {
+    display: grid;
+    grid-template-columns: repeat(2, 44px);
+    gap: 5px;
+    padding: 5px;
+    border-radius: 18px;
+  }
+
+  .home-screen-shell .zoom-controls button {
+    width: 44px;
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .home-screen-shell .map-energy-constellation.moral-idle {
+    width: min(210px, calc(100% - 94px));
+    padding: 6px;
+  }
+
+  .home-screen-shell .map-energy-constellation.moral-idle .energy-constellation-head strong {
+    display: none;
+  }
+
+  .home-screen-shell .map-energy-constellation.moral-idle .energy-card {
+    flex-basis: 50px;
+    min-height: 50px;
+  }
+
+  .home-screen-shell .map-scene-gate {
+    right: 8px;
+    bottom: 92px;
+    width: min(196px, calc(100vw - 18px));
+    opacity: 0.58;
+    transform: none;
+  }
+
+  .home-screen-shell .map-scene-gate button {
+    min-height: 44px;
+    padding: 5px 7px;
+  }
+
+  .home-screen-shell .map-scene-gate button svg {
+    width: 26px;
+    height: 26px;
+  }
+
+  .home-screen-shell .map-companion-actions {
+    right: 10px;
+    bottom: 98px;
+    width: min(218px, calc(100vw - 20px));
+  }
+
+  .home-screen-shell .map-companion-actions > strong {
+    font-size: 18px;
+  }
+
+  .home-screen-shell .map-companion-actions button:not(.map-self-service-action) {
+    width: 44px;
+    min-height: 44px;
+  }
+}

@@ -484,3 +484,44 @@ P2:
   - `qa-artifacts/latest/classroom-touch-loop-whiteboard.png`
   - `qa-artifacts/latest/moral-speak-flow-whiteboard.png`
   - `qa-artifacts/latest/moral-review-safety-mobile.png`
+
+## P10 trial classroom polish first slice
+
+### Scope
+
+- Started the P10 trial-classroom product closure with P10.1 and P10.2.
+- Kept the existing classroom loop and product scope intact: child self-selects, says growth, teacher confirms, energy feedback plays, and the next child self-selects.
+- Kept backend, server API, XP/ledger contracts, data files, generated assets, and PixiJS map structure unchanged.
+- Did not add parent, reviewer, kindergarten admin, PDF export, approval flow, accounts, permissions, cloud sync, or a fixed next-child queue.
+
+### UX/UI Review Notes
+
+- Read-only UX review found the home screen still exposed too many first actions for a trial classroom: map taps, energy cards, scene gates, companion card, spirit dock, bottom module dock, and teacher affordance.
+- Read-only UI review found the map dominated by area but not by attention because idle overlays were still too dense.
+- Selected direction: keep the island as the first visual, make self-selection language clearer, and reduce always-visible idle microcopy without removing existing routes or interactions.
+
+### Implementation Notes
+
+- `SpiritDock.tsx` changes the collapsed selector from `当前 / 说成长` to the self-identification language `找我 / 点精灵`; expanded roster cards now say `点我`.
+- `WorldMapContainer.tsx` simplifies the home scene gate to four compact entries with label and status only, removing reward/hint microcopy and numeric badges from the DOM.
+- `styles.css` adds a P10 final home layer: calmer idle energy board, fewer visible idle energy cards, lighter scene gate, simplified companion action card, and a mobile 2x2 zoom cluster that still keeps 44px touch targets.
+- The idle energy board intentionally exposes only current/lit energy cards visually and interactively; all seven energy states remain in the DOM and QA coverage.
+- `scripts/qa-visual.mjs` now fails the home check if idle scene gates reintroduce trial-noise copy such as `贝签光`, `数学光`, `荣誉光`, `小票`, or `兑换`.
+- `scripts/qa-visual.mjs` also checks that the idle home energy board does not visually show more than four energy cards.
+- Design record written to `docs/superpowers/specs/2026-06-06-p10-trial-classroom-polish-design.md`.
+
+### Validation
+
+- `git diff --check`: passed.
+- `node --check scripts/qa-visual.mjs`: passed.
+- `npm run build`: passed.
+- `npm run qa:visual`: passed.
+- Latest visual QA report: `qa-artifacts/latest/report.json`.
+- Latest visual QA generated at `2026-06-05T17:03:32.565Z`.
+- QA coverage: 33 checks, 0 issues, 0 warnings.
+- New P10 QA assertions: idle scene gate microcopy is absent, and visible idle energy cards are capped.
+- Final read-only code review found no blocking issues. Its medium notes were addressed by tightening dock aria labels, documenting idle energy-card exposure, and removing a redundant pointer-events suppression layer.
+- Manual screenshots inspected:
+  - `qa-artifacts/latest/home-whiteboard.png`
+  - `qa-artifacts/latest/mobile-home-mobile.png`
+  - `qa-artifacts/latest/moral-review-safety-mobile.png`
