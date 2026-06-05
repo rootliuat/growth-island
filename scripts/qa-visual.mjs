@@ -887,6 +887,7 @@ async function exerciseSingleMoralSpeak(page, screenshots = {}) {
   );
   await page.waitForFunction(() => window.__growthIslandMoralSpeakStage === "recognizing", null, { timeout: 5000 });
   const recognizingState = await inspectMoralSelfServiceState(page);
+  if (screenshots.recognizing) await page.screenshot({ path: screenshots.recognizing, fullPage: false });
   const recognizingDetails = {
     ...recognizingState,
     flowStepCount: recognizingState.flowStepLabels.length,
@@ -1002,6 +1003,7 @@ async function exerciseSingleMoralSpeak(page, screenshots = {}) {
     };
   }, { completedChildId: readyDetails.selectedChildId, initialSelfServiceCount: readyDetails.selfServiceRecordCount });
   const handoffFeedback = await readGrowthFeedback(page);
+  if (screenshots.final) await page.screenshot({ path: screenshots.final, fullPage: false });
 
   return {
     mapEntry,
@@ -1029,7 +1031,15 @@ async function exerciseMoralSpeakFlow(page, readyScreenshot, pendingScreenshot, 
     await selectDockChildByIndex(page, childIndex);
     const details = await exerciseSingleMoralSpeak(
       page,
-      index === 0 ? { ready: readyScreenshot, pending: pendingScreenshot, success: successScreenshot } : {},
+      index === 0
+        ? {
+            ready: readyScreenshot,
+            recognizing: options.recognizingScreenshot,
+            pending: pendingScreenshot,
+            success: successScreenshot,
+            final: options.finalScreenshot,
+          }
+        : {},
     );
     children.push(details);
   }
@@ -3447,6 +3457,10 @@ async function inspectPage(browser, check, viewport) {
           path.join(outputDir, `${check.name}-ready-${viewport.name}.png`),
           path.join(outputDir, `${check.name}-pending-${viewport.name}.png`),
           screenshot,
+          {
+            recognizingScreenshot: path.join(outputDir, `${check.name}-recognizing-${viewport.name}.png`),
+            finalScreenshot: path.join(outputDir, `${check.name}-final-${viewport.name}.png`),
+          },
         )
       : undefined;
   const classroomLoopDetails =

@@ -566,3 +566,40 @@ P2:
   - `qa-artifacts/latest/moral-speak-flow-pending-whiteboard.png`
   - `qa-artifacts/latest/moral-speak-flow-whiteboard.png`
   - `qa-artifacts/latest/moral-review-safety-mobile.png`
+
+## P10 trial readiness QA and checklist slice
+
+### Scope
+
+- Continued P10.5 and P10.6: visual QA expansion and trial-classroom checklist documentation.
+- Kept product scope unchanged: no parent, reviewer, kindergarten admin, PDF export, approval flow, accounts, permissions, cloud sync, fixed queueing, backend changes, data changes, or PixiJS map rewrite.
+- Did not change product UI behavior; this slice only adds QA evidence and trial documentation.
+
+### Implementation Notes
+
+- `scripts/qa-visual.mjs` now captures two extra moral self-service artifacts on both whiteboard and mobile:
+  - `moral-speak-flow-recognizing-*.png` for the `贝壳在听` state.
+  - `moral-speak-flow-final-*.png` for the returned-to-island handoff state.
+- The existing moral-flow assertions continue to prove that recognizing hides duplicate map focus plaque and energy board.
+- `docs/trial-classroom-checklist.md` documents the trial setup, core classroom steps, exception paths, pass criteria, validation commands, required screenshots, and current non-goals.
+- `docs/superpowers/specs/2026-06-06-p10-hud-state-unity-design.md` now lists the new recognizing and final whiteboard screenshots in its manual review set.
+
+### Validation
+
+- `git diff --check`: passed.
+- `node --check scripts/qa-visual.mjs`: passed.
+- `npm run build`: passed.
+- `npm run qa:visual`: passed.
+- Latest visual QA report: `qa-artifacts/latest/report.json`.
+- Latest visual QA generated at `2026-06-05T18:11:13.200Z`.
+- QA coverage: 33 checks, 0 issues, 0 warnings.
+- New P10.5 screenshot artifacts:
+  - `qa-artifacts/latest/moral-speak-flow-recognizing-whiteboard.png`
+  - `qa-artifacts/latest/moral-speak-flow-recognizing-mobile.png`
+  - `qa-artifacts/latest/moral-speak-flow-final-whiteboard.png`
+  - `qa-artifacts/latest/moral-speak-flow-final-mobile.png`
+- Manual screenshots inspected:
+  - `qa-artifacts/latest/moral-speak-flow-recognizing-whiteboard.png`
+  - `qa-artifacts/latest/moral-speak-flow-final-whiteboard.png`
+  - `qa-artifacts/latest/moral-speak-flow-recognizing-mobile.png`
+  - `qa-artifacts/latest/moral-speak-flow-final-mobile.png`

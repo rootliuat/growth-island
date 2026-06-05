@@ -50,6 +50,8 @@ The slice removes duplicate state narration during active moral stages and stand
 Manual screenshots to inspect:
 
 - `qa-artifacts/latest/moral-speak-flow-ready-whiteboard.png`
+- `qa-artifacts/latest/moral-speak-flow-recognizing-whiteboard.png`
 - `qa-artifacts/latest/moral-speak-flow-pending-whiteboard.png`
 - `qa-artifacts/latest/moral-speak-flow-whiteboard.png`
+- `qa-artifacts/latest/moral-speak-flow-final-whiteboard.png`
 - `qa-artifacts/latest/moral-review-safety-mobile.png`
