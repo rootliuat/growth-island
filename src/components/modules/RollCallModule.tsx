@@ -175,9 +175,9 @@ export function RollCallModule({
           </span>
           <h1 id="roll-call-title">抽取台</h1>
         </div>
-        <button type="button" className="roll-call-home-button" aria-label={`回岛定位${currentChild.name}`} onClick={() => onFocusChild(currentChild.id)}>
+        <button type="button" className="roll-call-home-button" aria-label={`看${currentChild.name}的精灵`} onClick={() => onFocusChild(currentChild.id)}>
           <Home size={18} />
-          定位
+          看精灵
         </button>
       </div>
 

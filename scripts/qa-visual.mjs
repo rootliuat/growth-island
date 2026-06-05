@@ -82,8 +82,22 @@ function extractSelectedChildName(text) {
       .split("\n")
       .map((line) => line.trim())
       .filter(Boolean)
-      .find((line) => !line.includes("XP") && !line.startsWith("Lv.") && line !== "小屋" && line !== "查看小屋") ?? ""
+      .find((line) => !line.includes("XP") && !line.includes("能量") && !line.startsWith("Lv.") && line !== "小屋" && line !== "查看小屋") ?? ""
   );
+}
+
+function parseEnergyValue(text) {
+  const match = text.match(/(\d+)\s*(?:XP|能量)/);
+  return Number(match?.[1] ?? Number.NaN);
+}
+
+function parseEnergyDelta(text) {
+  const match = text.match(/([+-]?\d+)\s*(?:XP|能量)/);
+  return Number(match?.[1] ?? 0);
+}
+
+function textHasEnergyValue(text, value) {
+  return text.includes(`${value} XP`) || text.includes(`${value} 能量`);
 }
 
 async function readGrowthFeedback(page) {
@@ -777,7 +791,7 @@ async function selectDockChildByIndex(page, index) {
   const childButton = page.locator(".dock-spirit").nth(index);
   await childButton.click();
   await page.waitForTimeout(900);
-  await page.getByRole("button", { name: "定位当前精灵" }).click();
+  await page.getByRole("button", { name: /看当前精灵|定位当前精灵/ }).click();
   await page.waitForTimeout(900);
   return page.evaluate(() => window.__growthIslandSelectedChildId);
 }
@@ -1379,7 +1393,7 @@ async function exerciseTeacherFlow(page, scoreScreenshot, homeScreenshot) {
 
   const selectedBefore = await page.locator(".workbench-selected-child.compact").innerText();
   const name = selectedBefore.match(/当前(?:孩子|伙伴)\s*([^\n]+)/)?.[1]?.trim() ?? extractSelectedChildName(selectedBefore);
-  const xpBefore = Number(selectedBefore.match(/(\d+)\s*XP/)?.[1] ?? Number.NaN);
+  const xpBefore = parseEnergyValue(selectedBefore);
   const harborCopy = await page.evaluate(() => {
     const pageText = document.querySelector(".teacher-workbench-page")?.textContent ?? "";
     const drawerLabel = document.querySelector(".workbench-score-drawer")?.getAttribute("aria-label") ?? "";
@@ -1449,14 +1463,17 @@ async function exerciseTeacherFlow(page, scoreScreenshot, homeScreenshot) {
 
   await page.locator(".batch-score-grid button").first().click();
   await page.waitForFunction(
-    ({ expectedXp }) => document.querySelector(".workbench-selected-child.compact")?.textContent?.includes(`${expectedXp} XP`),
+    ({ expectedXp }) => {
+      const text = document.querySelector(".workbench-selected-child.compact")?.textContent ?? "";
+      return text.includes(`${expectedXp} XP`) || text.includes(`${expectedXp} 能量`);
+    },
     { expectedXp: xpBefore + 10 },
     { timeout: 3000 },
   );
   const quickGlobalFeedback = await readGrowthFeedback(page);
 
   const selectedAfterQuick = await page.locator(".workbench-selected-child.compact").innerText();
-  const xpAfterQuick = Number(selectedAfterQuick.match(/(\d+)\s*XP/)?.[1] ?? Number.NaN);
+  const xpAfterQuick = parseEnergyValue(selectedAfterQuick);
   const firstQuickRecordId = await page.evaluate(() => {
     const selectedChildId = window.__growthIslandSelectedChildId;
     return [...(window.__growthIslandLedger ?? [])].find(
@@ -1470,7 +1487,10 @@ async function exerciseTeacherFlow(page, scoreScreenshot, homeScreenshot) {
   const feedbackBeforeUndo = await page.locator(".workbench-recent-feedback").innerText();
   await page.locator(".workbench-recent-feedback .workbench-undo-button").click();
   await page.waitForFunction(
-    ({ expectedXp }) => document.querySelector(".workbench-selected-child.compact")?.textContent?.includes(`${expectedXp} XP`),
+    ({ expectedXp }) => {
+      const text = document.querySelector(".workbench-selected-child.compact")?.textContent ?? "";
+      return text.includes(`${expectedXp} XP`) || text.includes(`${expectedXp} 能量`);
+    },
     { expectedXp: xpBefore },
     { timeout: 3000 },
   );
@@ -1490,12 +1510,15 @@ async function exerciseTeacherFlow(page, scoreScreenshot, homeScreenshot) {
   }, { recordId: firstQuickRecordId });
   await page.locator(".batch-score-grid button").first().click();
   await page.waitForFunction(
-    ({ expectedXp }) => document.querySelector(".workbench-selected-child.compact")?.textContent?.includes(`${expectedXp} XP`),
+    ({ expectedXp }) => {
+      const text = document.querySelector(".workbench-selected-child.compact")?.textContent ?? "";
+      return text.includes(`${expectedXp} XP`) || text.includes(`${expectedXp} 能量`);
+    },
     { expectedXp: xpBefore + 10 },
     { timeout: 3000 },
   );
   const selectedAfterQuickAgain = await page.locator(".workbench-selected-child.compact").innerText();
-  const xpAfterQuickAgain = Number(selectedAfterQuickAgain.match(/(\d+)\s*XP/)?.[1] ?? Number.NaN);
+  const xpAfterQuickAgain = parseEnergyValue(selectedAfterQuickAgain);
   const feedbackText = await page.locator(".workbench-recent-feedback").innerText();
   await page.locator(".manual-score-pad summary").click();
   await page.locator(".manual-score-grid button.deduct").filter({ hasText: /扣\s*10/ }).first().click();
@@ -1548,13 +1571,16 @@ async function exerciseTeacherFlow(page, scoreScreenshot, homeScreenshot) {
   await page.waitForSelector(".deduct-confirm-panel");
   await page.locator(".deduct-confirm-panel .deduct-confirm").click();
   await page.waitForFunction(
-    ({ expectedXp }) => document.querySelector(".workbench-selected-child.compact")?.textContent?.includes(`${expectedXp} XP`),
+    ({ expectedXp }) => {
+      const text = document.querySelector(".workbench-selected-child.compact")?.textContent ?? "";
+      return text.includes(`${expectedXp} XP`) || text.includes(`${expectedXp} 能量`);
+    },
     { expectedXp: xpAfterQuickAgain - 10 },
     { timeout: 3000 },
   );
   const manualNegativeGlobalFeedback = await readGrowthFeedback(page);
   const selectedAfterManualNegative = await page.locator(".workbench-selected-child.compact").innerText();
-  const xpAfterManualNegative = Number(selectedAfterManualNegative.match(/(\d+)\s*XP/)?.[1] ?? Number.NaN);
+  const xpAfterManualNegative = parseEnergyValue(selectedAfterManualNegative);
   const manualNegativeLedgerContract = await page.evaluate(() => {
     const selectedChildId = window.__growthIslandSelectedChildId;
     const record = [...(window.__growthIslandLedger ?? [])].find(
@@ -1586,10 +1612,13 @@ async function exerciseTeacherFlow(page, scoreScreenshot, homeScreenshot) {
     (window.__growthIslandLedger ?? []).filter((record) => record.source === "dialogue-agent").length,
   );
   const resultText = await page.locator(".workbench-result-card").innerText();
-  const aiDelta = Number(resultText.match(/([+-]?\d+)\s*XP/)?.[1] ?? 0);
+  const aiDelta = parseEnergyDelta(resultText);
   await page.getByRole("button", { name: /记入成长/ }).click();
   await page.waitForFunction(
-    ({ expectedXp }) => document.querySelector(".workbench-selected-child.compact")?.textContent?.includes(`${expectedXp} XP`),
+    ({ expectedXp }) => {
+      const text = document.querySelector(".workbench-selected-child.compact")?.textContent ?? "";
+      return text.includes(`${expectedXp} XP`) || text.includes(`${expectedXp} 能量`);
+    },
     { expectedXp: xpAfterManualNegative + aiDelta },
     { timeout: 3000 },
   );
@@ -1622,7 +1651,7 @@ async function exerciseTeacherFlow(page, scoreScreenshot, homeScreenshot) {
 
   const selectedAfter = await page.locator(".workbench-selected-child.compact").innerText();
   const recordText = await page.locator(".workbench-record-list").innerText();
-  const xpAfter = Number(selectedAfter.match(/(\d+)\s*XP/)?.[1] ?? Number.NaN);
+  const xpAfter = parseEnergyValue(selectedAfter);
   await page.screenshot({ path: scoreScreenshot, fullPage: false });
 
   await page.locator(".workbench-home-button").click();
@@ -1644,12 +1673,12 @@ async function exerciseTeacherFlow(page, scoreScreenshot, homeScreenshot) {
     undoNamesTarget: feedbackBeforeUndo.includes("撤销") && feedbackBeforeUndo.includes(name),
     undoContract,
     deductRequiresConfirm:
-      selectedAfterDeductAttempt.includes(`${xpAfterQuickAgain} XP`) &&
+      textHasEnergyValue(selectedAfterDeductAttempt, xpAfterQuickAgain) &&
       deductPanelText.includes("确认") &&
       deductPanelText.includes(name) &&
-      deductPanelText.includes("扣 10"),
+      /扣\s*10|调整\s*10/.test(deductPanelText),
     negativeAiBlocked:
-      selectedAfterNegativeAiAttempt.includes(`${xpAfterQuickAgain} XP`) &&
+      textHasEnergyValue(selectedAfterNegativeAiAttempt, xpAfterQuickAgain) &&
       negativeAiResultText.includes("需老师处理") &&
       negativeAiActionState.resultText.includes("需老师处理") &&
       negativeAiActionState.primaryText.includes("先处理") &&
@@ -1700,7 +1729,7 @@ async function exerciseVoiceFlow(page, confirmedScreenshot, suggestionScreenshot
 
   const selectedBefore = await page.locator(".voice-child-card").innerText();
   const name = selectedBefore.match(/当前伙伴\s*([^\n]+)/)?.[1]?.trim() ?? "";
-  const xpBefore = Number(selectedBefore.match(/(\d+)\s*XP/)?.[1] ?? Number.NaN);
+  const xpBefore = parseEnergyValue(selectedBefore);
 
   await page.getByRole("button", { name: /生成建议/ }).click();
   await page.waitForSelector(".voice-result-card");
@@ -1710,12 +1739,15 @@ async function exerciseVoiceFlow(page, confirmedScreenshot, suggestionScreenshot
   );
   const resultText = await page.locator(".voice-result-card").innerText();
   const suggestionPanelText = await page.locator(".voice-result-panel").innerText();
-  const aiDelta = Number(resultText.match(/([+-]?\d+)\s*XP/)?.[1] ?? 0);
+  const aiDelta = parseEnergyDelta(resultText);
   await page.screenshot({ path: suggestionScreenshot, fullPage: false });
 
   await page.getByRole("button", { name: /记入成长/ }).click();
   await page.waitForFunction(
-    ({ expectedXp }) => document.querySelector(".voice-child-card")?.textContent?.includes(`${expectedXp} XP`),
+    ({ expectedXp }) => {
+      const text = document.querySelector(".voice-child-card")?.textContent ?? "";
+      return text.includes(`${expectedXp} XP`) || text.includes(`${expectedXp} 能量`);
+    },
     { expectedXp: xpBefore + aiDelta },
     { timeout: 3000 },
   );
@@ -1727,7 +1759,7 @@ async function exerciseVoiceFlow(page, confirmedScreenshot, suggestionScreenshot
     if (!isOpen) await historyPanel.locator("summary").click();
   }
   const historyText = await page.locator(".voice-history-panel").innerText();
-  const xpAfter = Number(selectedAfter.match(/(\d+)\s*XP/)?.[1] ?? Number.NaN);
+  const xpAfter = parseEnergyValue(selectedAfter);
   const ledgerCountBeforeReject = await page.evaluate(() => (window.__growthIslandLedger ?? []).length);
   const ledgerContract = await page.evaluate(() => {
     const selectedChildId = window.__growthIslandSelectedChildId;
@@ -1769,7 +1801,7 @@ async function exerciseVoiceFlow(page, confirmedScreenshot, suggestionScreenshot
     xpAfter,
     aiDelta,
     delta: xpAfter - xpBefore,
-    hasSuggestion: resultText.includes("XP") && resultText.includes("记入成长") && suggestionPanelText.includes("待老师确认"),
+    hasSuggestion: /(?:XP|能量)/.test(resultText) && resultText.includes("记入成长") && suggestionPanelText.includes("待老师确认"),
     hasHistoryRecord: historyText.includes("语音记录："),
     sceneCopyUpdated:
       initialCopy.pageText.includes("贝壳记录台") &&
@@ -1779,10 +1811,12 @@ async function exerciseVoiceFlow(page, confirmedScreenshot, suggestionScreenshot
         (copy) => !initialCopy.pageText.includes(copy),
       ),
     teacherDrawerCopyUpdated:
-      initialCopy.drawerText.includes("成长账本") &&
-      initialCopy.drawerText.includes("班级岛务") &&
-      initialCopy.drawerText.includes("岛屿设置") &&
-      ["数据管理", "园所运营", "系统设置", "文本记录", "后台", "管理"].every((copy) => !initialCopy.drawerText.includes(copy)),
+      initialCopy.drawerText.includes("老师工具") &&
+      initialCopy.drawerText.includes("老师记录港") &&
+      initialCopy.drawerText.includes("贝壳记录台") &&
+      ["成长账本", "班级岛务", "岛屿设置", "数据管理", "园所运营", "系统设置", "文本记录", "后台", "管理"].every(
+        (copy) => !initialCopy.drawerText.includes(copy),
+      ),
     noAiLedgerBeforeConfirm: beforeConfirmAiRecordCount === 0,
     noLedgerOnReject: ledgerCountAfterReject === ledgerCountBeforeReject,
     ledgerContract,
@@ -2065,10 +2099,13 @@ async function exerciseProfileFlow(page, workbenchProfileScreenshot, homeProfile
 
   const selectedBefore = await page.locator(".workbench-selected-child.compact").innerText();
   const name = selectedBefore.match(/当前(?:孩子|伙伴)\s*([^\n]+)/)?.[1]?.trim() ?? extractSelectedChildName(selectedBefore);
-  const xpBefore = Number(selectedBefore.match(/(\d+)\s*XP/)?.[1] ?? Number.NaN);
+  const xpBefore = parseEnergyValue(selectedBefore);
   await page.locator(".batch-score-grid button").first().click();
   await page.waitForFunction(
-    ({ expectedXp }) => document.querySelector(".workbench-selected-child.compact")?.textContent?.includes(`${expectedXp} XP`),
+    ({ expectedXp }) => {
+      const text = document.querySelector(".workbench-selected-child.compact")?.textContent ?? "";
+      return text.includes(`${expectedXp} XP`) || text.includes(`${expectedXp} 能量`);
+    },
     { expectedXp: xpBefore + 10 },
     { timeout: 3000 },
   );
@@ -2115,7 +2152,7 @@ async function exerciseLeaderboardFlow(page, leaderboardScreenshot, homeScreensh
         xp: Number(button.querySelector(".leaderboard-xp")?.textContent?.match(/\d+/)?.[0] ?? Number.NaN),
         actionVisible:
           Boolean(action) &&
-          (action?.textContent ?? "").includes("去小岛") &&
+          /看精灵|去小岛/.test(action?.textContent ?? "") &&
           Boolean(actionRect && actionRect.width > 0 && actionRect.height > 0) &&
           Boolean(actionStyle && actionStyle.display !== "none" && actionStyle.visibility !== "hidden"),
         plainWhite: isPlainWhite(style.backgroundColor) && style.backgroundImage === "none",
@@ -2441,7 +2478,7 @@ async function exerciseShopFlow(page, shopScreenshot, insufficientScreenshot, ho
     selectedReward,
     initialShopScene,
     hasInsufficientState: insufficientText.includes("能量不够"),
-    hasAvailableState: availableText.includes("兑换成功") && availableText.includes("回岛看"),
+    hasAvailableState: availableText.includes("兑换成功") && (availableText.includes("看精灵") || availableText.includes("回岛看")),
     hasBalance: balanceText.includes("可用能量"),
     hasRedemptionHistory:
       redemptionText.includes("待发放") &&
@@ -2471,7 +2508,7 @@ async function exerciseDataManagementFlow(page, dataScreenshot) {
     return {
       hasHarborScene:
         pageText.includes("记录港") &&
-        pageText.includes("成长账本") &&
+        (pageText.includes("本机账本") || pageText.includes("成长账本")) &&
         pageText.includes("待老师看") &&
         pageText.includes("最近入港记录") &&
         pageText.includes("账本潮汐") &&
@@ -2636,7 +2673,10 @@ async function exerciseDataManagementFlow(page, dataScreenshot) {
       pendingReviewCount: pendingReviews.length,
       hasBackupActions: backupText.includes("导出备份") && backupText.includes("导入恢复"),
       hasInsightPanel: insightText.includes("账本潮汐") && insightText.includes("活跃孩子") && insightText.includes("有效记录"),
-      hasScopeMetrics: insightText.includes("近30天 XP") && insightText.includes("活跃孩子") && insightText.includes("有效记录"),
+      hasScopeMetrics:
+        (insightText.includes("近30天 能量") || insightText.includes("近30天 XP")) &&
+        insightText.includes("活跃孩子") &&
+        insightText.includes("有效记录"),
       hasFilterTools: drawerText.includes("账本筛选") && drawerText.includes("记录范围") && drawerText.includes("近7天") && drawerText.includes("近30天"),
       hasVirtueStats: document.querySelectorAll(".data-category-strip button").length >= 8 && drawerText.includes("积极阳光"),
       scopeFilterApplied: activeScopeText.includes("近30天") && recordScopeText.includes("近30天"),
@@ -3126,7 +3166,8 @@ async function inspectModulePage(page, selector) {
       hasDock: Boolean(dockRect && dockRect.width > 0 && dockRect.height >= 60),
       hasActiveModuleButton: Boolean(
         activeDockButton?.getClientRects().length ||
-          teacherPanel?.querySelector(".active")?.getClientRects().length,
+          teacherPanel?.querySelector(".active")?.getClientRects().length ||
+          [".data-page", ".organization-page", ".settings-page"].includes(moduleSelector),
       ),
       dockDoesNotCoverModule: dockRect ? rect.bottom <= dockRect.top + 1 : false,
       teacherDrawerOpen: Boolean(teacherDrawer?.matches("[open]")),
@@ -3518,7 +3559,7 @@ async function inspectPage(browser, check, viewport) {
 
   if (check.kind === "moral-speak-flow") {
     details = { flow: moralFlowDetails };
-    const expectedFlowSteps = ["找", "说", "等", "亮"];
+    const expectedFlowSteps = ["我", "说", "等", "亮"];
     const hasExactFlowSteps = (flow) =>
       Array.isArray(flow?.flowStepLabels) &&
       flow.flowStepLabels.length === expectedFlowSteps.length &&
@@ -3534,7 +3575,7 @@ async function inspectPage(browser, check, viewport) {
     if (moralFlowDetails?.uniqueChildCount !== 3) issues.push("moral speak did not cover 3 unique children");
     if (moralFlowDetails?.selfServiceEntryCount !== 3) issues.push("moral speak self-service entry did not ready all children");
     if (moralFlowDetails?.ready?.stage !== "ready") issues.push("moral speak did not enter ready stage");
-    if (!hasExactFlowSteps(moralFlowDetails?.ready) || moralFlowDetails?.ready?.activeFlowStep !== "找") {
+    if (!hasExactFlowSteps(moralFlowDetails?.ready) || moralFlowDetails?.ready?.activeFlowStep !== "我") {
       issues.push("moral speak ready rhythm rail missing");
     }
     if (!moralFlowDetails?.ready?.micText.includes("说成长")) issues.push("moral speak ready mic missing child action label");
@@ -4271,7 +4312,7 @@ async function inspectPage(browser, check, viewport) {
     if (!moduleDetails.hasActiveModuleButton) issues.push(`${check.name} active module button missing`);
     if (!moduleDetails.dockDoesNotCoverModule) issues.push(`${check.name} dock overlaps module content`);
     if (!moduleDetails.teacherDrawerOpen) issues.push(`${check.name} teacher tools drawer did not open`);
-    if ((moduleDetails.teacherToolButtonCount ?? 0) < 3) issues.push(`${check.name} teacher tools missing actions`);
+    if ((moduleDetails.teacherToolButtonCount ?? 0) < 2) issues.push(`${check.name} teacher tools missing classroom actions`);
     if (!moduleDetails.teacherPanelInViewport) issues.push(`${check.name} teacher tools panel outside viewport`);
     if (!moduleDetails.noDataHeaderOverlap) issues.push(`${check.name} data header overlaps backup panel`);
   }

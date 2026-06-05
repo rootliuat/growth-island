@@ -87,7 +87,7 @@ export function ShopModule({
         </div>
         <button type="button" className="reward-home-button" onClick={() => onFocusChild(activeChild.id)}>
           <Home size={18} aria-hidden="true" />
-          回岛
+          看精灵
         </button>
       </div>
 
@@ -134,7 +134,7 @@ export function ShopModule({
                 {lastIntent.redeemed ? (
                   <button type="button" className="shop-return-action" onClick={() => onFocusChild(activeChild.id)}>
                     <Home size={16} aria-hidden="true" />
-                    回岛看{activeChild.name}
+                    看精灵
                   </button>
                 ) : (
                   <button type="button" className="shop-redeem-button" onClick={redeemReward} disabled={!lastIntent.affordable}>

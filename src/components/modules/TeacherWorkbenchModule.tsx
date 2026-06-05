@@ -78,6 +78,19 @@ function formatDelta(delta: number) {
   return delta > 0 ? `+${delta}` : String(delta);
 }
 
+function formatEnergyDelta(delta: number) {
+  return `${formatDelta(delta)}能量`;
+}
+
+function formatRecordReason(reason: string) {
+  return reason
+    .replace(/^课堂记录：/, "")
+    .replace("快速加分", "补记点亮")
+    .replace("老师确认扣分", "老师确认调整")
+    .replace(/\s*[+＋-]\d+\s*XP?$/i, "")
+    .trim();
+}
+
 function formatRecordTime(createdAt: string) {
   const date = new Date(createdAt);
   if (Number.isNaN(date.getTime())) return "刚刚";
@@ -216,9 +229,9 @@ export function TeacherWorkbenchModule({
           </span>
           <em>{pendingReviews.length > 0 ? `待看 ${pendingReviews.length}` : "轻补记"}</em>
         </div>
-        <button type="button" className="workbench-home-button" aria-label={`回岛定位${selectedChild.name}`} onClick={() => onFocusChild(selectedChild.id)}>
+        <button type="button" className="workbench-home-button" aria-label={`看${selectedChild.name}的精灵`} onClick={() => onFocusChild(selectedChild.id)}>
           <Home size={18} aria-hidden="true" />
-          定位
+          看精灵
         </button>
       </div>
 
@@ -233,9 +246,9 @@ export function TeacherWorkbenchModule({
                   <div className="student-card-topline">
                     <div className="student-card-top-actions">
                       <em>Lv.{child.level}</em>
-                      <button type="button" className="student-card-focus" aria-label={`回岛定位${child.name}`} onClick={() => onFocusChild(child.id)}>
+                      <button type="button" className="student-card-focus" aria-label={`看${child.name}的精灵`} onClick={() => onFocusChild(child.id)}>
                         <Home size={13} aria-hidden="true" />
-                        定位
+                        看精灵
                       </button>
                     </div>
                   </div>
@@ -245,7 +258,7 @@ export function TeacherWorkbenchModule({
                     </span>
                     <span className="student-card-meta">
                       <strong>{child.name}</strong>
-                      <span className="student-card-xp">{child.xp} XP</span>
+                      <span className="student-card-xp">{child.xp} 能量</span>
                     </span>
                   </button>
                 </article>
@@ -263,7 +276,7 @@ export function TeacherWorkbenchModule({
               <span>当前伙伴</span>
               <strong>{selectedChild.name}</strong>
               <em>
-                Lv.{selectedChild.level} · {selectedChild.xp} XP
+                Lv.{selectedChild.level} · {selectedChild.xp} 能量
               </em>
               <button type="button" className="workbench-profile-button" onClick={() => onOpenProfile(selectedChild.id)}>
                 <BookOpenText size={15} aria-hidden="true" />
@@ -274,12 +287,12 @@ export function TeacherWorkbenchModule({
 
           {latestUndoableRecord ? (
             <div className={latestUndoableRecord.delta < 0 ? "workbench-recent-feedback negative" : "workbench-recent-feedback"} aria-live="polite">
-              <span>{formatDelta(latestUndoableRecord.delta)} XP</span>
+              <span>{formatEnergyDelta(latestUndoableRecord.delta)}</span>
               <div>
                 <strong>
                   {latestUndoableRecord.delta >= 0 ? "已给" : "已记录"} {selectedChild.name}
                 </strong>
-                <em>{latestUndoableRecord.reason}</em>
+                <em>{formatRecordReason(latestUndoableRecord.reason)}</em>
               </div>
               <button type="button" className="workbench-undo-button" onClick={() => onUndoLast(latestUndoableRecord.id)}>
                 <RotateCcw size={17} />
@@ -297,7 +310,7 @@ export function TeacherWorkbenchModule({
               <button
                 key={value}
                 type="button"
-                aria-label={`为${selectedChild.name}补记+${value} XP`}
+                aria-label={`为${selectedChild.name}补记+${value}能量`}
                 onClick={() => scoreSelected(value, `课堂记录：快速加分 +${value}`, "积极阳光")}
               >
                 <Plus size={18} />
@@ -350,7 +363,7 @@ export function TeacherWorkbenchModule({
           {pendingDeduct ? (
             <div className="deduct-confirm-panel" role="alert">
               <strong>
-                确认给 {selectedChild.name} 扣 {Math.abs(pendingDeduct.delta)} XP？
+                确认给 {selectedChild.name} 调整 {Math.abs(pendingDeduct.delta)} 能量？
               </strong>
               <p>{pendingDeduct.reason}</p>
               <div>
@@ -399,7 +412,7 @@ export function TeacherWorkbenchModule({
               <article className={result.xpDelta < 0 ? "workbench-result-card negative" : "workbench-result-card"}>
                 <div>
                   <strong>{result.category ?? "待老师选择"}</strong>
-                  <span>{canApproveMoralGrowth(result) ? `${formatDelta(result.xpDelta)} XP` : getTeacherHelpText(result)}</span>
+                  <span>{canApproveMoralGrowth(result) ? formatEnergyDelta(result.xpDelta) : getTeacherHelpText(result)}</span>
                 </div>
                 <p>{result.reasonForTeacher}</p>
                 <div className="workbench-result-actions">
@@ -430,7 +443,7 @@ export function TeacherWorkbenchModule({
                   <article key={record.id} className={record.delta < 0 ? "negative" : undefined}>
                     <span>{formatDelta(record.delta)}</span>
                     <div>
-                      <strong>{record.reason}</strong>
+                      <strong>{formatRecordReason(record.reason)}</strong>
                       <em>
                         {record.category ?? "成长记录"} · {formatRecordTime(record.createdAt)}
                       </em>
@@ -457,7 +470,7 @@ export function TeacherWorkbenchModule({
                     <article key={review.id}>
                       <div>
                         <strong>{childNames.get(review.childId) ?? "幼儿"}</strong>
-                        <span>{canRecord ? `${formatDelta(review.result.xpDelta)} XP` : getTeacherHelpText(review.result)}</span>
+                        <span>{canRecord ? formatEnergyDelta(review.result.xpDelta) : getTeacherHelpText(review.result)}</span>
                       </div>
                       <p>{review.transcript || review.result.reasonForTeacher}</p>
                       <em>{review.result.category ?? "待分类"}</em>

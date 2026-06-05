@@ -16,7 +16,7 @@ export function ZoomControls({ onZoomIn, onZoomOut, onFocusSelected, onFullIslan
       <button onClick={onZoomOut} title="缩小地图" aria-label="缩小地图">
         <Minus size={18} />
       </button>
-      <button onClick={onFocusSelected} title="定位当前精灵" aria-label="定位当前精灵">
+      <button onClick={onFocusSelected} title="看当前精灵" aria-label="看当前精灵">
         <LocateFixed size={18} />
       </button>
       <button onClick={onFullIsland} title="返回全岛" aria-label="返回全岛">

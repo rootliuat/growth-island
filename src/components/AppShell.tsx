@@ -21,7 +21,9 @@ const syncMeta = {
 };
 
 const dockModules = moduleConfigs.filter((module) => module.hudGroup === "dock");
-const teacherToolModules = moduleConfigs.filter((module) => module.hudGroup === "teacher-tools");
+const allTeacherToolModules = moduleConfigs.filter((module) => module.hudGroup === "teacher-tools");
+const classroomTeacherToolIds = new Set<AppModuleId>(["teacher-workbench", "voice-record"]);
+const teacherToolModules = allTeacherToolModules.filter((module) => classroomTeacherToolIds.has(module.id));
 
 const sceneRewardMeta: Record<AppModuleId, string> = {
   home: "能量地图",
@@ -33,9 +35,9 @@ const sceneRewardMeta: Record<AppModuleId, string> = {
   lottery: "幸运奖票",
   shop: "兑换票",
   leaderboard: "荣誉能量",
-  "data-management": "贝壳账本",
-  organization: "成长任务",
-  settings: "舵盘状态",
+  "data-management": "本机账本",
+  organization: "班级任务",
+  settings: "本机舵盘",
 };
 
 export function AppShell({
@@ -51,7 +53,7 @@ export function AppShell({
   const isHome = activeModule === "home";
   const activeModuleConfig = moduleConfigs.find((module) => module.id === activeModule) ?? moduleConfigs[0];
   const SyncIcon = syncMeta[syncStatus].Icon;
-  const teacherToolActive = teacherToolModules.some((module) => module.id === activeModule);
+  const teacherToolActive = allTeacherToolModules.some((module) => module.id === activeModule);
   const [teacherDrawerOpen, setTeacherDrawerOpen] = useState(false);
   const teacherDrawerClassName = [
     "teacher-tools-drawer",
@@ -60,7 +62,7 @@ export function AppShell({
   ]
     .filter(Boolean)
     .join(" ");
-  const teacherDrawerLabel = teacherDrawerOpen ? "收起老师补记兜底工具" : "打开老师补记兜底工具";
+  const teacherDrawerLabel = teacherDrawerOpen ? "收起老师工具" : "打开老师工具";
 
   useEffect(() => {
     if (isHome) {
@@ -158,14 +160,14 @@ export function AppShell({
         >
           <summary aria-label={teacherDrawerLabel}>
             <MoreHorizontal size={20} />
-            <span className="teacher-tools-label">补记</span>
+            <span className="teacher-tools-label">老师</span>
             <span className="teacher-tools-badge" aria-hidden="true">师</span>
             <ChevronUp size={15} />
           </summary>
-          <div className="teacher-tools-panel" aria-label="老师补记兜底">
+          <div className="teacher-tools-panel" aria-label="老师工具">
             <div className="teacher-tools-panel-head">
-              <strong>补记兜底</strong>
-              <span>老师需要时再打开</span>
+              <strong>老师工具</strong>
+              <span>课堂需要时再打开</span>
             </div>
             {teacherToolModules.map(({ id, dockLabel, label, Icon }) => (
               <button

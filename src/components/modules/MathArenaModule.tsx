@@ -109,7 +109,7 @@ export function MathArenaModule({
 
   return (
     <section className="module-page math-arena-page" aria-labelledby="math-arena-title">
-      <div className="math-arena-header">
+      <div className="math-arena-header module-compact-header">
         <div className="math-arena-title-pack">
           <span className="module-eyebrow">
             <Shell size={18} />
@@ -120,7 +120,7 @@ export function MathArenaModule({
         </div>
         <button type="button" className="math-arena-home-button" onClick={() => onFocusChild(completedChild?.id ?? player.id)}>
           <Home size={18} />
-          回岛
+          看精灵
         </button>
       </div>
 
@@ -214,7 +214,7 @@ export function MathArenaModule({
               onClick={() => completedChild && onFocusChild(completedChild.id)}
             >
               <Sparkles size={18} />
-              {completedChild ? `回岛查看 ${completedChild.name}` : "完成后回岛"}
+              {completedChild ? "看精灵" : "完成后回岛"}
             </button>
           </div>
 

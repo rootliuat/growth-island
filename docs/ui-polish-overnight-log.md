@@ -400,3 +400,45 @@ P2:
   - `qa-artifacts/latest/home-whiteboard.png`
   - `qa-artifacts/latest/math-arena-whiteboard.png`
   - `qa-artifacts/latest/mobile-math-arena-mobile.png`
+
+## P8 global UI and experience consistency closure
+
+### Scope
+
+- Tightened the existing classroom frontend without adding new product capabilities.
+- Preserved the child self-selection loop: child chooses their own spirit, says growth, teacher confirms, energy feedback plays, then the map returns to the full island.
+- Kept backend, server API, XP/ledger contracts, data files, generated assets, and PixiJS map structure unchanged.
+- Did not add parent, reviewer, kindergarten admin, PDF export, approval flow, accounts, permissions, or cloud sync.
+
+### UX/UI Review Notes
+
+- Read-only UX review found the largest remaining drift in teacher tools: the drawer label promised a narrow fallback but exposed backstage routes such as账本、岛务、设置.
+- Read-only UI review found the largest visual drift in module headers and CSS chrome: several modules carried their own return buttons and one-off header styles on top of the global command bar.
+- Selected direction: keep URL access and QA coverage for backstage routes, but make the whiteboard dock classroom-first and keep teacher tools secondary.
+
+### Implementation Notes
+
+- `AppShell.tsx` now presents the bottom-right drawer as `老师工具` and only shows the two classroom fallback tools: `老师记录港` and `贝壳记录台`.
+- `moduleConfig.ts` keeps direct routes for `data-management`, `organization`, and `settings`, but renames their visible scene language to `本机账本`, `班级任务`, and `本机舵盘`.
+- Module focus actions now use `看精灵` when they return to the island and focus a child; `回岛` remains the global command-bar return action.
+- Default visible XP copy in child-facing and primary teacher surfaces is now `能量`; internal ledger source ids and compatibility reasons remain unchanged.
+- `VoiceRecordModule.tsx` removes the disabled `语音未开` action so the fallback tool no longer looks broken.
+- `MoralSpeakOverlay.tsx` changes the child rhythm rail from `找 / 说 / 等 / 亮` to `我 / 说 / 等 / 亮`.
+- `styles.css` adds a final P8 chrome layer for compact module headers, teacher drawer buttons, mobile command chips, and no-wrap energy feedback badges.
+- `scripts/qa-visual.mjs` now validates P8 behavior: demoted backstage drawer entries, energy text parsing, `看精灵` actions, and the updated child rhythm rail.
+- Design record written to `docs/superpowers/specs/2026-06-05-p8-global-ui-consistency-design.md`.
+
+### Validation
+
+- `git diff --check`: passed.
+- `node --check scripts/qa-visual.mjs`: passed.
+- `npm run build`: passed.
+- `npm run qa:visual`: passed.
+- Latest visual QA report: `qa-artifacts/latest/report.json`.
+- Latest visual QA generated at `2026-06-05T13:49:37.515Z`.
+- QA coverage: 32 checks, 0 issues, 0 warnings.
+- Manual screenshots inspected:
+  - `qa-artifacts/latest/home-whiteboard.png`
+  - `qa-artifacts/latest/teacher-workbench-whiteboard.png`
+  - `qa-artifacts/latest/mobile-voice-record-mobile.png`
+  - `qa-artifacts/latest/mobile-organization-mobile.png`

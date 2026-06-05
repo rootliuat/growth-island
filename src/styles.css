@@ -20945,3 +20945,111 @@ button {
     display: none;
   }
 }
+
+/* P8 global classroom polish: final chrome layer for module headers and teacher tools. */
+.module-screen-shell .module-compact-header {
+  align-items: center;
+  min-height: 38px;
+  margin-top: -2px;
+}
+
+.module-screen-shell .module-compact-header > div,
+.module-screen-shell .module-compact-header .math-arena-title-pack {
+  min-width: 0;
+}
+
+.module-screen-shell .module-compact-header h1 {
+  overflow: hidden;
+  max-width: min(34vw, 260px);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.module-screen-shell .module-compact-header > :is(
+  button,
+  .roll-call-home-button,
+  .math-arena-home-button,
+  .leaderboard-home-button,
+  .reward-home-button,
+  .data-home-button,
+  .organization-home-button,
+  .settings-home-button,
+  .voice-home-button,
+  .workbench-home-button,
+  .profile-home-button
+) {
+  min-height: 42px;
+  padding-inline: 11px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 950;
+  white-space: nowrap;
+}
+
+.teacher-tools-panel {
+  width: min(196px, calc(100vw - 24px));
+}
+
+.teacher-tools-panel button {
+  grid-template-columns: 30px minmax(0, 1fr);
+}
+
+.teacher-tools-panel button small {
+  grid-column: 2;
+  min-width: 0;
+}
+
+.voice-record-page .voice-actions {
+  justify-content: flex-end;
+}
+
+.voice-record-page .voice-primary-action {
+  min-width: min(180px, 100%);
+}
+
+.teacher-workbench-page .workbench-recent-feedback > span {
+  min-width: 58px;
+  padding-inline: 6px;
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .module-screen-shell .scene-command-title strong {
+    max-width: min(42vw, 160px);
+  }
+
+  .module-screen-shell .scene-command-chip.xp {
+    display: inline-flex;
+  }
+
+  .module-screen-shell .scene-command-chip.reward {
+    display: none;
+  }
+
+  .module-screen-shell .module-compact-header h1 {
+    max-width: min(38vw, 150px);
+    font-size: 16px;
+  }
+
+  .module-screen-shell .module-compact-header > :is(
+    button,
+    .roll-call-home-button,
+    .math-arena-home-button,
+    .leaderboard-home-button,
+    .reward-home-button,
+    .data-home-button,
+    .organization-home-button,
+    .settings-home-button,
+    .voice-home-button,
+    .workbench-home-button,
+    .profile-home-button
+  ) {
+    min-height: 40px;
+    padding-inline: 10px;
+  }
+
+  .teacher-tools-panel {
+    right: 0;
+    width: min(196px, calc(100vw - 24px));
+  }
+}

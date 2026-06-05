@@ -62,7 +62,7 @@ export function SettingsModule({
 
   return (
     <section className="module-page settings-page" aria-labelledby="settings-title">
-      <div className="settings-header">
+      <div className="settings-header module-compact-header">
         <div>
           <span className="module-eyebrow">
             <ShipWheel size={18} aria-hidden="true" />
@@ -139,14 +139,14 @@ export function SettingsModule({
             {levelThresholds.map((threshold) => (
               <article key={threshold.level}>
                 <span>Lv.{threshold.level}</span>
-                <strong>{threshold.minXp} XP</strong>
+                <strong>{threshold.minXp} 能量</strong>
               </article>
             ))}
           </div>
           <div className="settings-score-rules">
             <span>手动加分：+10 / +20 / +30</span>
             <span>手动扣分：-10 / -20 / -30</span>
-            <span>算术点亮完成：+30 XP</span>
+            <span>算术点亮完成：+30 能量</span>
             <span>语音记录：确认后入账</span>
           </div>
         </section>

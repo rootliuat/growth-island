@@ -53,7 +53,7 @@ export function LotteryModule({
 
   return (
     <section className="module-page reward-page lottery-page" aria-labelledby="lottery-title">
-      <div className="reward-header">
+      <div className="reward-header module-compact-header">
         <div>
           <span className="module-eyebrow">
             <Shell size={18} aria-hidden="true" />
@@ -63,7 +63,7 @@ export function LotteryModule({
         </div>
         <button type="button" className="reward-home-button" onClick={() => onFocusChild(activeChild.id)}>
           <Home size={18} aria-hidden="true" />
-          回岛看{activeChild.name}
+          看精灵
         </button>
       </div>
 

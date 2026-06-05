@@ -24,7 +24,7 @@ export function Leaderboard({ childrenWithProgress, selectedChildId, onSelectChi
         >
           <strong>{child.rank}</strong>
           <span>{child.name}</span>
-          <em>{child.xp} XP</em>
+          <em>{child.xp} 能量</em>
         </button>
       ))}
     </section>

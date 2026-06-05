@@ -103,7 +103,7 @@ export function ChildProfileModule({
 
   return (
     <section className="module-page profile-page" aria-labelledby="profile-title">
-      <div className="profile-header">
+      <div className="profile-header module-compact-header">
         <div>
           <span className="module-eyebrow">
             <BookOpenText size={18} aria-hidden="true" />
@@ -113,7 +113,7 @@ export function ChildProfileModule({
         </div>
         <button type="button" className="profile-home-button" onClick={() => onFocusChild(selectedChild.id)}>
           <Home size={18} aria-hidden="true" />
-          回岛看{selectedChild.name}
+          看精灵
         </button>
       </div>
 
@@ -197,7 +197,7 @@ export function ChildProfileModule({
                   <span>{voiceNotice || `${selectedVoice.label} 声线`}</span>
                   <button type="button" onClick={() => onFocusChild(selectedChild.id)}>
                     <Home size={16} aria-hidden="true" />
-                    回岛看{selectedChild.name}
+                    看精灵
                   </button>
                 </div>
               </div>

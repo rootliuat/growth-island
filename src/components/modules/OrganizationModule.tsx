@@ -90,7 +90,7 @@ export function OrganizationModule({
         </div>
         <button type="button" className="organization-home-button" onClick={() => onFocusChild(selectedChild.id)}>
           <Home size={18} />
-          回岛
+          看精灵
         </button>
       </div>
 
@@ -266,7 +266,7 @@ export function OrganizationModule({
                   <span>{cadenceLabels[task.cadence]}</span>
                   <strong>{task.title}</strong>
                   <em>
-                    {task.category} · +{task.xpDelta} XP
+                    {task.category} · +{task.xpDelta} 能量
                   </em>
                   <small>
                     {task.curriculumActive ? "当前航线任务 · " : ""}

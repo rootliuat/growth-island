@@ -43,7 +43,7 @@ export function ModulePlaceholder({ module, selectedChild, pendingReviewCount, o
           <span>{pendingReviewCount} 待老师看</span>
         </div>
         <button type="button" onClick={onReturnHome}>
-          回岛定位
+          看精灵
         </button>
       </section>
     </section>

@@ -1350,8 +1350,8 @@ export function App() {
     showGrowthFeedback({
       kind: "focus",
       tone: "neutral",
-      title: `回岛定位 ${child.name}`,
-      detail: "回岛看精灵能量",
+      title: `看精灵 ${child.name}`,
+      detail: "回岛查看能量",
       childName: child.name,
     });
     clearHomeFocusTimers();

@@ -72,11 +72,11 @@ function formatBackupTime(value: string) {
 }
 
 function describeBackupSummary(summary: ClassroomBackupSummary) {
-  return `${summary.childCount} 名幼儿 · ${summary.ledgerCount} 条流水 · ${summary.reviewCount} 条待看记录 · ${summary.activeCurriculumCount} 个课程发布 · ${summary.parentReportReviewCount} 个报告状态 · ${formatBackupTime(summary.exportedAt)}`;
+  return `${summary.childCount} 名幼儿 · ${summary.ledgerCount} 条流水 · ${summary.reviewCount} 条待看记录 · ${summary.activeCurriculumCount} 条任务航线 · ${summary.parentReportReviewCount} 条本机状态 · ${formatBackupTime(summary.exportedAt)}`;
 }
 
 function describeClearSummary(summary: ClassroomDataClearSummary) {
-  return `${summary.childCount} 名幼儿保留 · 清空 ${summary.clearedLedgerCount} 条流水、${summary.clearedReviewCount} 条待看记录、${summary.clearedActiveCurriculumCount} 个课程发布、${summary.clearedParentReportReviewCount} 个报告状态`;
+  return `${summary.childCount} 名幼儿保留 · 清空 ${summary.clearedLedgerCount} 条流水、${summary.clearedReviewCount} 条待看记录、${summary.clearedActiveCurriculumCount} 条任务航线、${summary.clearedParentReportReviewCount} 条本机状态`;
 }
 
 function formatDelta(value: number) {
@@ -194,22 +194,22 @@ export function DataManagementModule({
 
   return (
     <section className="module-page data-page data-harbor-page" aria-labelledby="data-title">
-      <div className="data-header data-harbor-header">
+      <div className="data-header data-harbor-header module-compact-header">
         <div>
           <span className="module-eyebrow">
             <ClipboardList size={18} />
             老师港口
           </span>
           <h1 id="data-title">记录港</h1>
-          <div className="data-harbor-title-chips" aria-label="成长账本概览">
-            <span>成长账本</span>
+          <div className="data-harbor-title-chips" aria-label="本机账本概览">
+            <span>本机账本</span>
             <span>{pendingReviews.length} 待老师看</span>
             <span>{recentRecords.length} 流水</span>
           </div>
         </div>
         <button type="button" className="data-home-button" onClick={() => onFocusChild(selectedChild.id)}>
           <Home size={18} />
-          回岛
+          看精灵
         </button>
       </div>
 
@@ -219,7 +219,7 @@ export function DataManagementModule({
           <strong>{filteredReviews.length}</strong>
         </article>
         <article>
-          <span>{ledgerTimeScopeLabels[timeScope]} XP</span>
+          <span>{ledgerTimeScopeLabels[timeScope]} 能量</span>
           <strong>{formatXpDelta(analytics.xpDelta)}</strong>
         </article>
         <article>
@@ -250,7 +250,7 @@ export function DataManagementModule({
                   <article key={review.id}>
                     <div>
                       <strong>{child?.name ?? "未知孩子"}</strong>
-                      <span>{canRecord ? `${review.result.xpDelta} XP` : getTeacherHelpText(review.result)}</span>
+                      <span>{canRecord ? `${review.result.xpDelta} 能量` : getTeacherHelpText(review.result)}</span>
                     </div>
                     <p>{review.transcript}</p>
                     <em>{review.result.category ?? "待判断"} · {Math.round(review.result.confidence * 100)}%</em>
@@ -309,7 +309,7 @@ export function DataManagementModule({
             </div>
             <div className="data-insight-metrics" aria-label="范围统计">
               <article>
-                <span>{ledgerTimeScopeLabels[timeScope]} XP</span>
+                <span>{ledgerTimeScopeLabels[timeScope]} 能量</span>
                 <strong>{formatXpDelta(analytics.xpDelta)}</strong>
               </article>
               <article>
@@ -357,7 +357,7 @@ export function DataManagementModule({
               <div className="data-roster-current">
                 <span>领航船员</span>
                 <strong>{topChild.name}</strong>
-                <em>{topChild.xp} XP · #{topChild.rank}</em>
+                <em>{topChild.xp} 能量 · #{topChild.rank}</em>
               </div>
             )}
           </section>
@@ -472,7 +472,7 @@ export function DataManagementModule({
                       </em>
                     </span>
                     <span className="data-child-rank">#{child.rank}</span>
-                    <span className="data-child-xp">{child.xp} XP</span>
+                    <span className="data-child-xp">{child.xp} 能量</span>
                   </button>
                 );
               })}
@@ -564,7 +564,7 @@ export function DataManagementModule({
                   <Trash2 size={17} />
                   清空演示数据
                 </span>
-                <p>仅清空本机成长流水、待看记录、抽奖、商店、设置和课程发布记录，保留幼儿小屋资料。</p>
+                <p>仅清空本机成长流水、待看记录、抽奖、商店、设置和任务航线记录，保留幼儿小屋资料。</p>
                 <div>
                   <input
                     className="data-clear-input"

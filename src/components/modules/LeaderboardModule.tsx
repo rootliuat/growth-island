@@ -25,7 +25,7 @@ export function LeaderboardModule({
 
   return (
     <section className="module-page leaderboard-page" aria-labelledby="leaderboard-title">
-      <div className="leaderboard-header">
+      <div className="leaderboard-header module-compact-header">
         <div>
           <span className="module-eyebrow">
             <Trophy size={18} aria-hidden="true" />
@@ -35,7 +35,7 @@ export function LeaderboardModule({
         </div>
         <button type="button" className="leaderboard-home-button" onClick={() => onFocusChild(selectedChild.id)}>
           <Home size={18} aria-hidden="true" />
-          回小岛
+          看精灵
         </button>
       </div>
 
@@ -65,7 +65,7 @@ export function LeaderboardModule({
                     </span>
                     <strong>{child.name}</strong>
                     <em>{child.xp} 能量</em>
-                    <span className="leaderboard-row-action">去小岛</span>
+                    <span className="leaderboard-row-action">看精灵</span>
                   </button>
                 );
               })}
@@ -100,7 +100,7 @@ export function LeaderboardModule({
                     <button
                       type="button"
                       aria-current={isSelected ? "true" : undefined}
-                      aria-label={`第${child.rank}名，${child.name}，成长能量 ${child.xp}，去小岛`}
+                      aria-label={`第${child.rank}名，${child.name}，成长能量 ${child.xp}，看精灵`}
                       onClick={() => onFocusChild(child.id)}
                     >
                       <span className="leaderboard-rank">#{child.rank}</span>
@@ -114,7 +114,7 @@ export function LeaderboardModule({
                       <span className="leaderboard-xp">{child.xp}</span>
                       <span className="leaderboard-row-action">
                         <MapPinned size={15} aria-hidden="true" />
-                        去小岛
+                        看精灵
                       </span>
                     </button>
                   </li>

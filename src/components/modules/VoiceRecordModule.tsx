@@ -48,6 +48,10 @@ function formatDelta(delta: number) {
   return delta > 0 ? `+${delta}` : String(delta);
 }
 
+function formatEnergyDelta(delta: number) {
+  return `${formatDelta(delta)}能量`;
+}
+
 export function VoiceRecordModule({
   childrenWithProgress,
   spiritsById,
@@ -116,9 +120,9 @@ export function VoiceRecordModule({
           </span>
           <h1 id="voice-record-title">贝壳记录台</h1>
         </div>
-        <button type="button" className="voice-home-button" aria-label={`回岛定位${selectedChild.name}`} onClick={() => onFocusChild(selectedChild.id)}>
+        <button type="button" className="voice-home-button" aria-label={`看${selectedChild.name}的精灵`} onClick={() => onFocusChild(selectedChild.id)}>
           <Home size={18} aria-hidden="true" />
-          定位
+          看精灵
         </button>
       </div>
 
@@ -132,7 +136,7 @@ export function VoiceRecordModule({
               <span>当前伙伴</span>
               <strong>{selectedChild.name}</strong>
               <em>
-                Lv.{selectedChild.level} · {selectedChild.xp} XP
+                Lv.{selectedChild.level} · {selectedChild.xp} 能量
               </em>
             </div>
           </div>
@@ -182,10 +186,6 @@ export function VoiceRecordModule({
           </label>
 
           <div className="voice-actions">
-            <button type="button" className="voice-secondary-action" disabled aria-label="语音记录暂未开启">
-              <Mic size={18} aria-hidden="true" />
-              语音未开
-            </button>
             <button type="button" className="voice-primary-action" onClick={submitAnalysis} disabled={!canSubmit}>
               <WandSparkles size={19} aria-hidden="true" />
               {analysisState === "analyzing" ? "生成中" : "生成建议"}
@@ -204,7 +204,7 @@ export function VoiceRecordModule({
             <div className="voice-result-card">
               <div className="voice-score-row">
                 <span>{result.category ?? "待老师选择"}</span>
-                <strong>{canApproveMoralGrowth(result) ? `${formatDelta(result.xpDelta)} XP` : getTeacherHelpText(result)}</strong>
+                <strong>{canApproveMoralGrowth(result) ? formatEnergyDelta(result.xpDelta) : getTeacherHelpText(result)}</strong>
               </div>
               <div className="voice-confidence">
                 <span style={{ width: `${Math.round(result.confidence * 100)}%` }} />
@@ -245,7 +245,7 @@ export function VoiceRecordModule({
                     <div>
                       <strong>{childNames.get(review.childId) ?? "幼儿"}</strong>
                       <span>
-                        {canRecord ? `${review.result.category ?? "未分类"} · ${formatDelta(review.result.xpDelta)} XP` : getTeacherHelpText(review.result)}
+                        {canRecord ? `${review.result.category ?? "未分类"} · ${formatEnergyDelta(review.result.xpDelta)}` : getTeacherHelpText(review.result)}
                       </span>
                     </div>
                     <p>{review.transcript || review.result.reasonForTeacher}</p>

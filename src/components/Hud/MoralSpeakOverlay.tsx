@@ -28,7 +28,7 @@ interface MoralSpeakOverlayProps {
 }
 
 const flowSteps: Array<{ id: "ready" | "listening" | "pendingReview" | "success"; label: string }> = [
-  { id: "ready", label: "找" },
+  { id: "ready", label: "我" },
   { id: "listening", label: "说" },
   { id: "pendingReview", label: "等" },
   { id: "success", label: "亮" },

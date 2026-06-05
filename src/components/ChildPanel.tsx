@@ -58,7 +58,7 @@ export function ChildPanel({
       <div className="xp-block">
         <div className="xp-row">
           <strong>Lv.{child.level}</strong>
-          <span>{child.xp} XP</span>
+          <span>{child.xp} 能量</span>
         </div>
         <div className="xp-track">
           <div className="xp-fill" style={{ width: `${progress}%` }} />
@@ -102,12 +102,12 @@ export function ChildPanel({
         <div className="agent-card">
           <div>
             <Sparkles size={18} />
-            <strong>德育 Agent mock</strong>
+            <strong>贝壳建议</strong>
           </div>
           <p>{lastEvaluation.reasonForChild}</p>
           <small>
             {lastEvaluation.category ?? "待确认"} · {lastEvaluation.xpDelta > 0 ? "+" : ""}
-            {lastEvaluation.xpDelta} XP · 置信度 {Math.round(lastEvaluation.confidence * 100)}%
+            {lastEvaluation.xpDelta} 能量
           </small>
         </div>
       )}
