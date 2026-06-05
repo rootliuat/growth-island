@@ -103,8 +103,7 @@ export class WorldScene {
     }
   }
 
-  update(ticker: Ticker) {
-    this.updateZoomState();
+  update(ticker: Ticker, interactionActive = false) {
     this.animationElapsed += ticker.deltaMS;
     if (this.animationElapsed < this.animationStepMs) return;
 
@@ -113,6 +112,9 @@ export class WorldScene {
       deltaTime: this.animationElapsed / (1000 / 60),
     } as Ticker;
     this.animationElapsed = 0;
+
+    this.updateZoomState();
+    if (interactionActive) return;
 
     this.regions.update(frame, this.camera.zoom);
     this.effects.update(frame);

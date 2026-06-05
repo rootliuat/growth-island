@@ -11,7 +11,6 @@ import {
   ShoppingBag,
   Sparkles,
   Sun,
-  Swords,
   TreePine,
   Trophy,
   type LucideIcon,
@@ -62,7 +61,7 @@ const travelMeta: Record<RegionId, { shortName: string; Icon: LucideIcon }> = {
   "shell-bay": { shortName: "贝壳湾", Icon: Shell },
   "pearl-bay": { shortName: "珍珠湾", Icon: CircleDot },
   "sun-town": { shortName: "小镇", Icon: Sun },
-  "math-arena": { shortName: "竞技场", Icon: Swords },
+  "math-arena": { shortName: "算术湾", Icon: Shell },
   "old-street": { shortName: "老街", Icon: Landmark },
 };
 
@@ -76,7 +75,7 @@ const sceneGateEntries: Array<{
   Icon: LucideIcon;
 }> = [
   { moduleId: "roll-call", label: "抽取台", reward: "贝签光", hint: "贝签", status: "开始", accent: "#f6b352", Icon: Sparkles },
-  { moduleId: "math-arena", label: "魔法赛", reward: "魔法光", hint: "闯关", status: "挑战", accent: "#ff7a59", Icon: Swords },
+  { moduleId: "math-arena", label: "贝壳算术", reward: "数学光", hint: "算术", status: "点亮", accent: "#ff7a59", Icon: Shell },
   { moduleId: "shop", label: "海岛小铺", reward: "兑换", hint: "小票", status: "可换", accent: "#2d9fb2", Icon: ShoppingBag },
   { moduleId: "leaderboard", label: "荣誉广场", reward: "荣誉光", hint: "广场", status: "看看", accent: "#3b7d53", Icon: Trophy },
 ];
@@ -95,7 +94,7 @@ function getMapActivityLabel(reason: string) {
   if (cleaned.includes("已有成长")) return "已有成长";
   if (cleaned.includes("自助成长")) return "能量到账";
   if (cleaned.includes("快速加分") || cleaned.includes("课堂积极回应")) return "确认点亮";
-  if (cleaned.includes("数学魔法")) return "数学光点";
+  if (cleaned.includes("数学魔法") || cleaned.includes("数学光路")) return "数学光点";
   if (cleaned.includes("快速扣分") || cleaned.includes("减分") || cleaned.includes("扣分")) return "老师提醒";
   return cleaned.replace(/\s*[+＋-]\d+\s*XP?$/i, "").slice(0, 12);
 }
@@ -224,7 +223,7 @@ export const WorldMapContainer = forwardRef<PixiWorldMapHandle, WorldMapContaine
           <div className="focus-copy">
             <strong>{selectedChild.petName}</strong>
             <p>
-              精灵能量 · 能量槽变亮 · {selectedSpirit?.name ?? "精灵伙伴"}
+              点自己，说成长 · {selectedSpirit?.name ?? "精灵伙伴"}
             </p>
           </div>
           {selectedRecord && (
@@ -236,10 +235,10 @@ export const WorldMapContainer = forwardRef<PixiWorldMapHandle, WorldMapContaine
           {activityText && <em>{activityText}</em>}
         </div>
       )}
-      <nav className="map-travel-board" aria-label="成长岛区域旅行">
+        <nav className="map-travel-board" aria-label="成长岛区域">
         <strong>
           <Leaf size={15} />
-          岛屿旅行
+          去这里
         </strong>
         <div>
           {regions.map((region) => {
@@ -263,10 +262,10 @@ export const WorldMapContainer = forwardRef<PixiWorldMapHandle, WorldMapContaine
         </div>
       </nav>
       {props.onOpenModule && (
-        <nav className="map-scene-gate" aria-label="成长岛场景入口">
+        <nav className="map-scene-gate" aria-label="小岛活动入口">
           <strong>
             <Sparkles size={15} />
-            支线场景
+            小岛活动
           </strong>
           <div>
             {sceneGateEntries.map(({ moduleId, label, reward, hint, status, accent, Icon }, index) => (
@@ -355,8 +354,8 @@ export const WorldMapContainer = forwardRef<PixiWorldMapHandle, WorldMapContaine
             ) : null}
             {props.onOpenPk ? (
               <button type="button" onClick={props.onOpenPk}>
-                <Swords size={18} />
-                魔法赛
+                <Shell size={18} />
+                算术
               </button>
             ) : null}
             <button type="button" onClick={() => pixiMapRef.current?.focusSelected()}>

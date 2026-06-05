@@ -151,21 +151,27 @@ async function measureFrameRate(page, selector) {
     let frames = 0;
     let maxFrameGap = 0;
     let previous = start;
-    const initialScrollTop = scroller && "scrollTop" in scroller ? scroller.scrollTop : 0;
+    const canScroll =
+      scroller &&
+      "scrollTop" in scroller &&
+      "scrollHeight" in scroller &&
+      "clientHeight" in scroller &&
+      scroller.scrollHeight > scroller.clientHeight;
+    const initialScrollTop = canScroll ? scroller.scrollTop : 0;
 
     await new Promise((resolve) => {
       function tick(now) {
         frames += 1;
         maxFrameGap = Math.max(maxFrameGap, now - previous);
         previous = now;
-        if (scroller && "scrollTop" in scroller) scroller.scrollTop = initialScrollTop + frames * 6;
+        if (canScroll) scroller.scrollTop = initialScrollTop + frames * 6;
         if (now - start < 1200) requestAnimationFrame(tick);
         else resolve();
       }
       requestAnimationFrame(tick);
     });
 
-    if (scroller && "scrollTop" in scroller) scroller.scrollTop = initialScrollTop;
+    if (canScroll) scroller.scrollTop = initialScrollTop;
     return {
       frames,
       fps: Number((frames / 1.2).toFixed(1)),
@@ -632,8 +638,11 @@ async function measureHomeWheel(page) {
   if (!box) return undefined;
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.wheel(0, -320);
-  await page.waitForTimeout(300);
-  const fps = await measureFrameRate(page, ".world-map-stage");
+  await page.waitForFunction(() => document.querySelector(".pixi-world-canvas")?.dataset.renderState === "active", undefined, {
+    timeout: 1000,
+  }).catch(() => undefined);
+  await page.waitForTimeout(80);
+  const fps = await measureFrameRate(page, ".pixi-world-canvas");
   await waitForPixiIdle(page);
   return fps;
 }
@@ -1829,18 +1838,18 @@ async function exerciseMathFlow(page, battleScreenshot, homeScreenshot) {
       .reduce((sum, record) => sum + record.delta, 0);
   });
 
-  await page.getByRole("button", { name: /开始闯关/ }).click();
+  await page.getByRole("button", { name: /开始点亮/ }).click();
   await page.waitForSelector(".problem-card");
   const initialBattleText = await page.locator(".math-arena-battle-shell").innerText();
 
   for (let i = 0; i < 12; i += 1) {
-    const log = await page.locator(".battle-log").innerText();
+    const log = await page.locator(".light-log").innerText();
     if (log.includes("点亮数学能量")) break;
     await answerCurrentMathProblem(page);
     await page.waitForTimeout(520);
   }
 
-  await page.waitForFunction(() => document.querySelector(".battle-log")?.textContent?.includes("点亮数学能量"), undefined, {
+  await page.waitForFunction(() => document.querySelector(".light-log")?.textContent?.includes("点亮数学能量"), undefined, {
     timeout: 3000,
   });
   await page.waitForFunction(
@@ -1850,28 +1859,32 @@ async function exerciseMathFlow(page, battleScreenshot, homeScreenshot) {
   );
   const winGlobalFeedback = await readGrowthFeedback(page);
   const battleText = await page.locator(".math-arena-page").innerText();
-  const winnerName = (await page.locator(".battle-log").innerText()).match(/^(.+?)\s*点亮数学能量/)?.[1]?.trim() ?? "";
-  const battleFeel = await page.evaluate(() => {
-    const field = document.querySelector(".battlefield");
+  const completedName = (await page.locator(".light-log").innerText()).match(/^(.+?)\s*点亮数学能量/)?.[1]?.trim() ?? "";
+  const lightFeel = await page.evaluate(() => {
+    const field = document.querySelector(".lightfield");
     return {
-      cue: field?.getAttribute("data-battle-cue") ?? "",
-      hasTurnBanner: Boolean(document.querySelector(".battle-turn-banner")),
-      hasActionVfx: Boolean(document.querySelector(".battle-action-vfx")),
-      hasDamagePop: Boolean(document.querySelector(".battle-damage-pop")),
-      hasDamagedPet: Boolean(document.querySelector(".battle-pet.damaged")),
-      hasWinnerMedal: Boolean(document.querySelector(".battle-pet.winner .battle-winner-medal")),
-      hasWinnerClass: Boolean(document.querySelector(".battle-pet.winner")),
+      cue: field?.getAttribute("data-light-cue") ?? "",
+      hasTurnBanner: Boolean(document.querySelector(".light-turn-banner")),
+      hasActionVfx: Boolean(document.querySelector(".light-action-vfx")),
+      hasLightPop: Boolean(document.querySelector(".light-pop")),
+      hasGlowingPartner: Boolean(document.querySelector(".light-partner.glowing")),
+      hasCompleteMedal: Boolean(document.querySelector(".light-partner.complete .light-complete-medal")),
+      hasCompleteClass: Boolean(document.querySelector(".light-partner.complete")),
       skillShellCount: document.querySelectorAll(".answer-grid .skill-shell").length,
       skillShellStateCount: document.querySelectorAll(".answer-grid [data-answer-state]").length,
-      skillShellHitCount: document.querySelectorAll('.answer-grid [data-answer-state="hit"]').length,
-      skillShellLabelSeen: (document.querySelector(".answer-grid")?.textContent ?? "").includes("技能贝壳"),
-      battleLogCue: document.querySelector(".battle-log")?.getAttribute("data-battle-log-cue") ?? "",
+      skillShellLitCount: document.querySelectorAll('.answer-grid [data-answer-state="lit"]').length,
+      skillShellLabelSeen: (document.querySelector(".answer-grid")?.textContent ?? "").includes("答案贝壳"),
+      lightLogCue: document.querySelector(".light-log")?.getAttribute("data-light-log-cue") ?? "",
+      lightTrackCount: document.querySelectorAll(".light-track").length,
+      forbiddenCopy: ["PK", "HP", "攻击", "开战", "战斗", "对手", "胜者", "获胜"].filter((copy) =>
+        (document.querySelector(".math-arena-page")?.textContent ?? "").includes(copy),
+      ),
     };
   });
   const ledgerContract = await page.evaluate(() => {
     const selectedChildId = window.__growthIslandSelectedChildId;
     const record = [...(window.__growthIslandLedger ?? [])].find(
-      (item) => item.childId === selectedChildId && item.source === "math-pk" && item.reason.includes("数学魔法 PK"),
+      (item) => item.childId === selectedChildId && item.source === "math-pk" && item.reason.includes("数学光路点亮"),
     );
     return record
       ? {
@@ -1899,14 +1912,14 @@ async function exerciseMathFlow(page, battleScreenshot, homeScreenshot) {
     playerName: selectedFighters.playerName,
     opponentName: selectedFighters.opponentName,
     xpBefore,
-    winnerName,
+    completedName,
     questionSeen: /[+-]\s*\d+\s*=/.test(initialBattleText),
-    energyTrackSeen: initialBattleText.includes("格光") || initialBattleText.includes("每题一束光"),
-    battleLogWinner: battleText.includes("点亮数学能量") && !/XP|HP|攻击|获胜/.test(battleText),
-    battleFeel,
+    energyTrackSeen: initialBattleText.includes("光格") || initialBattleText.includes("每题一格光"),
+    completionLogSeen: battleText.includes("点亮数学能量") && !/XP|PK|HP|攻击|胜者|获胜|战斗|对手/.test(battleText),
+    lightFeel,
     ledgerContract,
     winGlobalFeedback,
-    homeFocused: Boolean(winnerName) && homeText.includes(winnerName),
+    homeFocused: Boolean(completedName) && homeText.includes(completedName),
     homeHasRecord: /数学光点|光点到账|能量|点亮/.test(homeText) && !/XP|PK|HP|攻击|[+＋-]\d/.test(homeText),
     homeScreenshot,
   };
@@ -1971,7 +1984,7 @@ async function inspectCurrentProfile(page) {
         pageText.includes("点亮能量") &&
         !/XP|Lv\.|PK|积分|加分|扣分|减分/.test(pageText),
       hasSpirit: Boolean(document.querySelector(".profile-portrait img, .profile-portrait")),
-      hasTimelineRecord: /课堂成长点亮|能量进精灵|数学闯关点亮|已有成长|成长贝壳/.test(timelineText),
+      hasTimelineRecord: /课堂成长点亮|能量进精灵|数学光路点亮|已有成长|成长贝壳/.test(timelineText),
       hasAnyTimelineRecord: records.length === 0 || timelineRows.length > 0,
       evidenceHasRecordCount: evidenceText.includes(`${records.length} 条`),
       evidenceHasPositiveEnergy: evidenceText.includes(`${positiveXp} 能量`),
@@ -3819,19 +3832,23 @@ async function inspectPage(browser, check, viewport) {
     if (!mathFlowDetails?.playerName) issues.push("math flow player missing");
     if (!mathFlowDetails?.questionSeen) issues.push("math flow question missing");
     if (!mathFlowDetails?.energyTrackSeen) issues.push("math flow energy track state missing");
-    if (!mathFlowDetails?.battleLogWinner) issues.push("math flow winner log missing");
-    if (!mathFlowDetails?.battleFeel?.hasTurnBanner) issues.push("math battle turn banner missing");
-    if (!mathFlowDetails?.battleFeel?.hasActionVfx) issues.push("math battle action VFX missing");
-    if (!mathFlowDetails?.battleFeel?.hasDamagePop) issues.push("math battle damage pop missing");
-    if (!mathFlowDetails?.battleFeel?.hasDamagedPet) issues.push("math battle damaged pet state missing");
-    if (!mathFlowDetails?.battleFeel?.hasWinnerMedal || !mathFlowDetails?.battleFeel?.hasWinnerClass) {
-      issues.push("math battle winner celebration missing");
+    if (!mathFlowDetails?.completionLogSeen) issues.push("math light-up completion log missing or combat copy visible");
+    if (!mathFlowDetails?.lightFeel?.hasTurnBanner) issues.push("math light-up turn banner missing");
+    if (!mathFlowDetails?.lightFeel?.hasActionVfx) issues.push("math light-up action VFX missing");
+    if (!mathFlowDetails?.lightFeel?.hasLightPop) issues.push("math light-up feedback pop missing");
+    if (!mathFlowDetails?.lightFeel?.hasGlowingPartner) issues.push("math light-up partner glow missing");
+    if (!mathFlowDetails?.lightFeel?.hasCompleteMedal || !mathFlowDetails?.lightFeel?.hasCompleteClass) {
+      issues.push("math light-up completion celebration missing");
     }
-    if ((mathFlowDetails?.battleFeel?.skillShellCount ?? 0) !== 4) issues.push("math skill shell answers missing");
-    if ((mathFlowDetails?.battleFeel?.skillShellStateCount ?? 0) !== 4) issues.push("math skill shell states missing");
-    if ((mathFlowDetails?.battleFeel?.skillShellHitCount ?? 0) < 1) issues.push("math skill shell hit state missing");
-    if (!mathFlowDetails?.battleFeel?.skillShellLabelSeen) issues.push("math skill shell label missing");
-    if (!["hit", "miss", "win"].includes(mathFlowDetails?.battleFeel?.battleLogCue ?? "")) issues.push("math battle log cue missing");
+    if ((mathFlowDetails?.lightFeel?.skillShellCount ?? 0) !== 4) issues.push("math answer shells missing");
+    if ((mathFlowDetails?.lightFeel?.skillShellStateCount ?? 0) !== 4) issues.push("math answer shell states missing");
+    if ((mathFlowDetails?.lightFeel?.skillShellLitCount ?? 0) < 1) issues.push("math answer shell lit state missing");
+    if (!mathFlowDetails?.lightFeel?.skillShellLabelSeen) issues.push("math answer shell label missing");
+    if ((mathFlowDetails?.lightFeel?.lightTrackCount ?? 0) !== 2) issues.push("math light tracks missing");
+    if (!["lit", "try", "complete"].includes(mathFlowDetails?.lightFeel?.lightLogCue ?? "")) issues.push("math light log cue missing");
+    if (mathFlowDetails?.lightFeel?.forbiddenCopy?.length) {
+      issues.push(`math light-up still shows combat copy: ${mathFlowDetails.lightFeel.forbiddenCopy.join(", ")}`);
+    }
     if (!feedbackShowsDelta(mathFlowDetails?.winGlobalFeedback, 30)) {
       issues.push("math flow win global energy feedback missing");
     }
@@ -3849,7 +3866,7 @@ async function inspectPage(browser, check, viewport) {
     ) {
       issues.push("math flow ledger contract fields missing");
     }
-    if (!mathFlowDetails?.homeFocused) issues.push("math flow home focus did not sync winner");
+    if (!mathFlowDetails?.homeFocused) issues.push("math flow home focus did not sync completed child");
     if (!mathFlowDetails?.homeHasRecord) issues.push("math flow home recent record missing");
   }
 
@@ -3928,7 +3945,7 @@ async function inspectPage(browser, check, viewport) {
     if (bigScreen.sceneHotspotCount !== 4) issues.push(`home map dynamic scene hotspots missing: ${bigScreen.sceneHotspotCount}`);
     if (bigScreen.sceneHotspotStatusCount !== 4) issues.push(`home map scene hotspot status missing: ${bigScreen.sceneHotspotStatusCount}`);
     if (bigScreen.sceneLiveHotspotCount < 1) issues.push("home map live scene hotspot missing");
-    if (!["抽取台", "魔法赛", "海岛小铺", "荣誉广场"].every((label) => bigScreen.sceneGateText.includes(label))) {
+    if (!["抽取台", "贝壳算术", "海岛小铺", "荣誉广场"].every((label) => bigScreen.sceneGateText.includes(label))) {
       issues.push("home map scene gate labels missing");
     }
     if (bigScreen.energySlotCount !== 7) issues.push(`home map energy slots missing: ${bigScreen.energySlotCount}`);

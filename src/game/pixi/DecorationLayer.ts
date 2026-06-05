@@ -76,7 +76,7 @@ export class DecorationLayer {
   private drawEntranceBadges() {
     this.layer.addChild(
       this.makeEntranceBadge({
-        label: "PK",
+        label: "算术",
         x: arenaPosition.x + 188,
         y: arenaPosition.y - 142,
         color: palette.arenaDark,

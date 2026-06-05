@@ -359,3 +359,44 @@ P2:
 - QA coverage: 32 checks, 0 issues, 1 warning.
 - Remaining warning: home wheel frame sample is low at 11.7 FPS; not introduced by the self-selection state change.
 - Code review follow-up: restored the QA helper's `moralSpeak` state read after removing queue checks, so moral-review safety assertions still inspect result intent/category/status.
+
+## P7 whiteboard performance and math light-up
+
+### Scope
+
+- Removed the combat/PK feel from the math module and reframed it as cooperative arithmetic light-up.
+- Improved home whiteboard interaction performance for wheel zoom and map drag.
+- Kept backend, server API, XP/ledger source id, data files, generated assets, and PixiJS map structure unchanged.
+- Did not add parent, reviewer, kindergarten admin, PDF export, approval flow, account, permission, or cloud-sync surfaces.
+
+### UX/UI Review Notes
+
+- `ux_researcher` and `ui_designer` completed read-only reviews before implementation.
+- Both reviews agreed that the child self-selection loop should stay simple: children choose their own spirit, speak growth, teacher confirms, then the screen returns to the full island.
+- The math module direction changed from battle language to a classroom-safe light route: shell answers, light tracks, completion glow, and energy feedback.
+- Visible text should avoid `PK`, `HP`, attack, damage, opponent, winner, arena, battle, and similar combat terms.
+
+### Implementation Notes
+
+- `MathPkBattle.tsx` keeps the compatibility export name but now renders a light-up field with two children, `0/5` light progress, answer shells, short light feedback, and completion state.
+- `MathArenaModule.tsx`, `MathPkModal.tsx`, module config, HUD labels, map labels, growth log labels, and child profile labels now use `贝壳算术`, `算术点亮`, `数学光路`, and `数学光点` wording.
+- `App.tsx` keeps the ledger `source: "math-pk"` for compatibility, but the visible reason is now `数学光路点亮 +30`.
+- `styles.css` replaces math combat motion with light-track, shell-answer, glow, and reduced-motion-safe feedback styles.
+- `PixiWorld.ts` lowers the canvas resolution to `0.7`, prevents native wheel scroll during map zoom, temporarily caps active interaction rendering at 30 FPS, and wakes rendering only while needed.
+- `WorldScene.ts` skips noncritical idle animation work during active drag or zoom while keeping static scene caches enabled.
+- `scripts/qa-visual.mjs` now validates the math light-up UI and forbids visible combat terms in the completed math flow.
+
+### Validation
+
+- `node --check scripts/qa-visual.mjs`: passed.
+- `npm run typecheck`: passed.
+- `npm run build`: passed.
+- `npm run qa:visual`: passed.
+- Latest visual QA report: `qa-artifacts/latest/report.json`.
+- Latest visual QA generated at `2026-06-05T13:06:46.191Z`.
+- QA coverage: 32 checks, 0 issues, 0 warnings.
+- Home wheel sample improved to 27.5 FPS with a 33-frame sample and max gap of 50.1 ms.
+- Manual screenshots inspected:
+  - `qa-artifacts/latest/home-whiteboard.png`
+  - `qa-artifacts/latest/math-arena-whiteboard.png`
+  - `qa-artifacts/latest/mobile-math-arena-mobile.png`

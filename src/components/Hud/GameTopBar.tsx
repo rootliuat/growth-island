@@ -31,7 +31,7 @@ export function GameTopBar({
         <div className="game-brand-mark">北</div>
         <div>
           <h1>北海成长岛</h1>
-          <p>精灵家园 · 成长能量 · 数学魔法</p>
+          <p>精灵家园 · 成长能量 · 贝壳算术</p>
         </div>
       </div>
 

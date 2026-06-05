@@ -1,4 +1,4 @@
-import { Mic, Minus, Plus, RotateCcw, ShieldCheck, Sparkles, Swords } from "lucide-react";
+import { Mic, Minus, Plus, RotateCcw, ShieldCheck, Shell, Sparkles } from "lucide-react";
 import type { CSSProperties } from "react";
 import type { ChildWithProgress, LedgerRecord, MoralEvaluationResult, SpiritDefinition } from "../types";
 import { getLevelInfo, getSpiritStageLabel, xpProgressPercent } from "../domain/progression";
@@ -87,8 +87,8 @@ export function ChildPanel({
           对话记录
         </button>
         <button onClick={onOpenPk}>
-          <Swords size={21} />
-          数学 PK
+          <Shell size={21} />
+          贝壳算术
         </button>
         {teacherMode && (
           <button onClick={onUndoLast}>

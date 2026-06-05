@@ -17,7 +17,7 @@ function getBigScreenRecordLabel(reason: string) {
   if (reason.includes("自助成长") || reason.includes("语音记录")) return "成长能量";
   if (reason.includes("已有成长")) return "成长点亮";
   if (reason.includes("加分")) return "成长点亮";
-  if (reason.includes("数学魔法")) return "数学光点";
+  if (reason.includes("数学魔法") || reason.includes("数学光路")) return "数学光点";
   if (reason.includes("课堂积极回应")) return "课堂成长";
   if (reason.includes("减分") || reason.includes("扣分")) return "老师提醒";
   return reason

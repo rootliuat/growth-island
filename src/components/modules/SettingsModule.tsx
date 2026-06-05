@@ -146,7 +146,7 @@ export function SettingsModule({
           <div className="settings-score-rules">
             <span>手动加分：+10 / +20 / +30</span>
             <span>手动扣分：-10 / -20 / -30</span>
-            <span>数学 PK 胜者：+30 XP</span>
+            <span>算术点亮完成：+30 XP</span>
             <span>语音记录：确认后入账</span>
           </div>
         </section>

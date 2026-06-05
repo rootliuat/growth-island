@@ -29,7 +29,7 @@ const sceneRewardMeta: Record<AppModuleId, string> = {
   "child-profile": "小屋成长",
   "voice-record": "贝壳建议",
   "roll-call": "贝签点亮",
-  "math-arena": "魔法光点",
+  "math-arena": "数学光点",
   lottery: "幸运奖票",
   shop: "兑换票",
   leaderboard: "荣誉能量",

@@ -245,7 +245,7 @@ export class RegionLayer {
       "shell-bay": "贝壳屋社区",
       "pearl-bay": "珍珠水湾",
       "sun-town": "花园小镇",
-      "math-arena": "数学魔法 PK",
+      "math-arena": "贝壳算术",
       "old-street": "德育任务街区",
     };
     return taglines[regionId];

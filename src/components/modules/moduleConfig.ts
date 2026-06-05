@@ -9,7 +9,6 @@ import {
   Settings,
   ShoppingBag,
   Sparkles,
-  Swords,
   type LucideIcon,
 } from "lucide-react";
 
@@ -73,11 +72,11 @@ export const moduleConfigs: ModuleConfig[] = [
   },
   {
     id: "math-arena",
-    label: "数学闯关岛",
-    dockLabel: "闯关",
-    sceneLabel: "数学闯关",
+    label: "贝壳算术",
+    dockLabel: "算术",
+    sceneLabel: "算术点亮",
     hudGroup: "dock",
-    Icon: Swords,
+    Icon: Sparkles,
   },
   {
     id: "lottery",

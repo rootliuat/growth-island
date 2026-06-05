@@ -12,15 +12,13 @@ interface MathPkBattleProps {
 }
 
 type FighterId = "player" | "opponent";
-type BattleEventKind = "ready" | "hit" | "miss" | "win";
-type AnswerResult = "hit" | "miss";
+type LightEventKind = "ready" | "lit" | "try" | "complete";
+type AnswerResult = "lit" | "try";
 
-interface BattleEvent {
+interface LightEvent {
   id: number;
-  kind: BattleEventKind;
-  attacker: FighterId;
-  defender: FighterId;
-  damage: number;
+  kind: LightEventKind;
+  actor: FighterId;
 }
 
 interface SelectedAnswer {
@@ -31,25 +29,23 @@ interface SelectedAnswer {
 
 export function MathPkBattle({ player, opponent, spiritsById, onWin }: MathPkBattleProps) {
   const resolveTimerRef = useRef<number | undefined>(undefined);
-  const [hp, setHp] = useState<Record<FighterId, number>>({ player: 100, opponent: 100 });
+  const [lights, setLights] = useState<Record<FighterId, number>>({ player: 0, opponent: 0 });
   const [turn, setTurn] = useState<FighterId>("player");
   const [problem, setProblem] = useState(generateProblem);
   const [lastAnswer, setLastAnswer] = useState<number | null>(null);
   const [selectedAnswer, setSelectedAnswer] = useState<SelectedAnswer | undefined>();
   const [isResolving, setIsResolving] = useState(false);
-  const [battleEvent, setBattleEvent] = useState<BattleEvent>({
+  const [lightEvent, setLightEvent] = useState<LightEvent>({
     id: 0,
     kind: "ready",
-    attacker: "player",
-    defender: "opponent",
-    damage: 0,
+    actor: "player",
   });
-  const [log, setLog] = useState("轮到当前小伙伴答题。答对点亮一束光。");
-  const [winnerId, setWinnerId] = useState<FighterId | null>(null);
+  const [log, setLog] = useState("当前小伙伴答题，答对点亮一枚贝壳。");
+  const [completedId, setCompletedId] = useState<FighterId | null>(null);
   const fighters: Record<FighterId, ChildWithProgress> = { player, opponent };
-  const defenderId: FighterId = turn === "player" ? "opponent" : "player";
+  const nextTurnId: FighterId = turn === "player" ? "opponent" : "player";
   const current = fighters[turn];
-  const defender = fighters[defenderId];
+  const lightGoal = 5;
 
   useEffect(() => {
     return () => {
@@ -66,34 +62,32 @@ export function MathPkBattle({ player, opponent, spiritsById, onWin }: MathPkBat
   }, [problem]);
 
   const submit = (value: number) => {
-    if (winnerId || isResolving) return;
+    if (completedId || isResolving) return;
     if (resolveTimerRef.current) window.clearTimeout(resolveTimerRef.current);
     setLastAnswer(value);
     const eventId = Date.now();
 
     if (value === problem.answer) {
-      const nextHp = Math.max(0, hp[defenderId] - 20);
-      const nextHpState = { ...hp, [defenderId]: nextHp };
-      setHp(nextHpState);
-      setSelectedAnswer({ value, result: "hit", eventId });
-      setBattleEvent({
+      const nextLights = Math.min(lightGoal, lights[turn] + 1);
+      const nextLightState = { ...lights, [turn]: nextLights };
+      setLights(nextLightState);
+      setSelectedAnswer({ value, result: "lit", eventId });
+      setLightEvent({
         id: eventId,
-        kind: nextHp === 0 ? "win" : "hit",
-        attacker: turn,
-        defender: defenderId,
-        damage: 20,
+        kind: nextLights >= lightGoal ? "complete" : "lit",
+        actor: turn,
       });
-      setLog(`${current.name} 答对了，贝壳赛道亮起一束光。`);
+      setLog(`${current.name} 答对了，贝壳光路亮起一格。`);
 
-      if (nextHp === 0) {
-        setWinnerId(turn);
+      if (nextLights >= lightGoal) {
+        setCompletedId(turn);
         onWin(current);
         return;
       }
 
       setIsResolving(true);
       resolveTimerRef.current = window.setTimeout(() => {
-        setTurn(defenderId);
+        setTurn(nextTurnId);
         setProblem(generateProblem());
         setSelectedAnswer(undefined);
         setIsResolving(false);
@@ -102,18 +96,16 @@ export function MathPkBattle({ player, opponent, spiritsById, onWin }: MathPkBat
       return;
     }
 
-    setSelectedAnswer({ value, result: "miss", eventId });
-    setBattleEvent({
+    setSelectedAnswer({ value, result: "try", eventId });
+    setLightEvent({
       id: eventId,
-      kind: "miss",
-      attacker: turn,
-      defender: defenderId,
-      damage: 0,
+      kind: "try",
+      actor: turn,
     });
-    setLog(`${current.name} 这题没点亮，换下一位继续。`);
+    setLog(`${current.name} 这题先留着，换伙伴继续点亮。`);
     setIsResolving(true);
     resolveTimerRef.current = window.setTimeout(() => {
-      setTurn(defenderId);
+      setTurn(nextTurnId);
       setProblem(generateProblem());
       setSelectedAnswer(undefined);
       setIsResolving(false);
@@ -121,37 +113,37 @@ export function MathPkBattle({ player, opponent, spiritsById, onWin }: MathPkBat
     }, 420);
   };
 
-  const winner = winnerId ? fighters[winnerId] : null;
-  const fieldCue = winner ? "win" : battleEvent.kind;
+  const completed = completedId ? fighters[completedId] : null;
+  const fieldCue = completed ? "complete" : lightEvent.kind;
 
   return (
     <>
-      <div className={`battlefield ${fieldCue} attacker-${battleEvent.attacker}`} data-battle-cue={fieldCue}>
-        <div className="battle-turn-banner" aria-live="polite">
+      <div className={`lightfield ${fieldCue} actor-${lightEvent.actor}`} data-light-cue={fieldCue}>
+        <div className="light-turn-banner" aria-live="polite">
           <Sparkles size={16} />
-          {winner ? `${winner.name} 完成闯关` : `${current.name} 回合`}
+          {completed ? `${completed.name} 完成点亮` : `${current.name} 点亮中`}
         </div>
-        {battleEvent.kind !== "ready" && (
-          <div key={`vfx-${battleEvent.id}`} className={`battle-action-vfx ${battleEvent.kind} from-${battleEvent.attacker}`} aria-hidden="true">
+        {lightEvent.kind !== "ready" && (
+          <div key={`vfx-${lightEvent.id}`} className={`light-action-vfx ${lightEvent.kind} from-${lightEvent.actor}`} aria-hidden="true">
             <i />
-            <span>{battleEvent.kind === "miss" ? "再试" : "珍珠光"}</span>
+            <span>{lightEvent.kind === "try" ? "再试" : "珍珠光"}</span>
           </div>
         )}
-        <BattlePet
+        <LightPartner
           fighter={player}
-          hp={hp.player}
+          lights={lights.player}
+          lightGoal={lightGoal}
           side="left"
           active={turn === "player"}
-          winner={winnerId === "player"}
-          attacking={battleEvent.attacker === "player" && battleEvent.kind !== "ready"}
-          damaged={battleEvent.defender === "player" && (battleEvent.kind === "hit" || battleEvent.kind === "win")}
-          damage={battleEvent.defender === "player" ? battleEvent.damage : 0}
-          eventId={battleEvent.id}
+          completed={completedId === "player"}
+          glowing={lightEvent.actor === "player" && lightEvent.kind !== "ready"}
+          popLabel={lightEvent.kind === "try" ? "再试" : "点亮"}
+          eventId={lightEvent.id}
           spiritsById={spiritsById}
         />
 
         <div className="problem-card">
-          <span>本回合题目</span>
+          <span>这一题</span>
           <strong>{problem.text}</strong>
           <div className="answer-grid" aria-label="技能贝壳答案">
             {options.map((value) => (
@@ -162,60 +154,60 @@ export function MathPkBattle({ player, opponent, spiritsById, onWin }: MathPkBat
                 data-answer-value={value}
                 data-answer-state={selectedAnswer?.value === value ? selectedAnswer.result : "ready"}
                 aria-pressed={selectedAnswer?.value === value}
-                disabled={!!winner || isResolving}
+                disabled={!!completed || isResolving}
                 onClick={() => submit(value)}
               >
-                <span>技能贝壳</span>
+                <span>答案贝壳</span>
                 <strong>{value}</strong>
-                <em>{selectedAnswer?.value === value ? (selectedAnswer.result === "hit" ? "点亮" : "再试") : "待选"}</em>
+                <em>{selectedAnswer?.value === value ? (selectedAnswer.result === "lit" ? "点亮" : "再试") : "待选"}</em>
               </button>
             ))}
           </div>
         </div>
 
-        <BattlePet
+        <LightPartner
           fighter={opponent}
-          hp={hp.opponent}
+          lights={lights.opponent}
+          lightGoal={lightGoal}
           side="right"
           active={turn === "opponent"}
-          winner={winnerId === "opponent"}
-          attacking={battleEvent.attacker === "opponent" && battleEvent.kind !== "ready"}
-          damaged={battleEvent.defender === "opponent" && (battleEvent.kind === "hit" || battleEvent.kind === "win")}
-          damage={battleEvent.defender === "opponent" ? battleEvent.damage : 0}
-          eventId={battleEvent.id}
+          completed={completedId === "opponent"}
+          glowing={lightEvent.actor === "opponent" && lightEvent.kind !== "ready"}
+          popLabel={lightEvent.kind === "try" ? "再试" : "点亮"}
+          eventId={lightEvent.id}
           spiritsById={spiritsById}
         />
       </div>
 
-      <div key={`log-${battleEvent.id}-${winnerId ?? "live"}`} className={`battle-log ${fieldCue}`} data-battle-log-cue={fieldCue}>
+      <div key={`log-${lightEvent.id}-${completedId ?? "live"}`} className={`light-log ${fieldCue}`} data-light-log-cue={fieldCue}>
         <Zap size={18} />
-        <span>{winner ? `${winner.name} 点亮数学能量。` : log}</span>
+        <span>{completed ? `${completed.name} 点亮数学能量。` : log}</span>
         {lastAnswer !== null && <em>最近选择：{lastAnswer}</em>}
       </div>
     </>
   );
 }
 
-function BattlePet({
+function LightPartner({
   fighter,
-  hp,
+  lights,
+  lightGoal,
   side,
   active,
-  winner,
-  attacking,
-  damaged,
-  damage,
+  completed,
+  glowing,
+  popLabel,
   eventId,
   spiritsById,
 }: {
   fighter: ChildWithProgress;
-  hp: number;
+  lights: number;
+  lightGoal: number;
   side: "left" | "right";
   active: boolean;
-  winner: boolean;
-  attacking: boolean;
-  damaged: boolean;
-  damage: number;
+  completed: boolean;
+  glowing: boolean;
+  popLabel: "点亮" | "再试";
   eventId: number;
   spiritsById?: Map<string, SpiritDefinition>;
 }) {
@@ -223,27 +215,27 @@ function BattlePet({
   const asset = spirit ? getSpiritAsset(spirit, fighter.state) : undefined;
 
   return (
-    <div className={`battle-pet ${side} ${active ? "active" : ""} ${winner ? "winner" : ""} ${attacking ? "attacking" : ""} ${damaged ? "damaged" : ""}`}>
-      <div className="battle-shadow" />
-      <div className={`battle-orb ${asset?.url ? "has-image" : ""}`}>
+    <div className={`light-partner ${side} ${active ? "active" : ""} ${completed ? "complete" : ""} ${glowing ? "glowing" : ""}`}>
+      <div className="light-shadow" />
+      <div className={`light-orb ${asset?.url ? "has-image" : ""}`}>
         {asset?.url ? <img src={asset.url} alt={`${fighter.petName} 精灵`} /> : <span>{fighter.petName.slice(0, 1)}</span>}
       </div>
-      {damaged && damage > 0 && (
-        <span key={`damage-${eventId}`} className="battle-damage-pop" aria-live="polite">
-          点亮
+      {glowing && (
+        <span key={`light-${eventId}`} className="light-pop" aria-live="polite">
+          {popLabel}
         </span>
       )}
-      {winner && <span className="battle-winner-medal">数学能量</span>}
-      <div className="battle-nameplate">
+      {completed && <span className="light-complete-medal">数学能量</span>}
+      <div className="light-nameplate">
         <strong>{fighter.name}</strong>
         <em>
-          {fighter.petName} · 闯关光
+          {fighter.petName} · 贝壳光路
         </em>
       </div>
-      <div className="hp-track" aria-label={`${fighter.name} 闯关光`}>
-        <div style={{ width: `${hp}%` }} />
+      <div className="light-track" aria-label={`${fighter.name} 贝壳光路`}>
+        <div style={{ width: `${(lights / lightGoal) * 100}%` }} />
       </div>
-      <span className="hp-value">{Math.max(0, Math.ceil(hp / 20))} 格光</span>
+      <span className="light-value">{lights}/{lightGoal} 光格</span>
     </div>
   );
 }

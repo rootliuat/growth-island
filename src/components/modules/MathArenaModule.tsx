@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Home, Play, RotateCcw, Shield, Sparkles, Swords, Trophy } from "lucide-react";
+import { Home, Play, RotateCcw, Shield, Shell, Sparkles, Trophy } from "lucide-react";
 import { getSpiritAsset } from "../../domain/spiritAssets";
 import type { ChildWithProgress, LedgerRecord, SpiritDefinition } from "../../types";
 import { MathPkBattle } from "../MathPkBattle";
@@ -44,9 +44,9 @@ export function MathArenaModule({
   const initialOpponent = getNextOpponent(childrenWithProgress, selectedChild.id) ?? childrenWithProgress[0];
   const [playerId, setPlayerId] = useState(selectedChild.id);
   const [opponentId, setOpponentId] = useState(initialOpponent?.id ?? selectedChild.id);
-  const [battleStarted, setBattleStarted] = useState(false);
-  const [battleKey, setBattleKey] = useState(0);
-  const [winnerId, setWinnerId] = useState<string | undefined>();
+  const [sessionStarted, setSessionStarted] = useState(false);
+  const [sessionKey, setSessionKey] = useState(0);
+  const [completedChildId, setCompletedChildId] = useState<string | undefined>();
 
   const childById = useMemo(() => new Map(childrenWithProgress.map((child) => [child.id, child])), [childrenWithProgress]);
   const player = childById.get(playerId) ?? selectedChild;
@@ -56,7 +56,7 @@ export function MathArenaModule({
     () => recentRecords.filter((record) => record.source === "math-pk" && !record.undone).slice(0, 5),
     [recentRecords],
   );
-  const winner = winnerId ? childById.get(winnerId) : undefined;
+  const completedChild = completedChildId ? childById.get(completedChildId) : undefined;
   const canStart = Boolean(player && opponent && player.id !== opponent.id);
 
   useEffect(() => {
@@ -71,30 +71,30 @@ export function MathArenaModule({
   }, [childrenWithProgress, opponent, player.id]);
 
   const resetBattle = () => {
-    setWinnerId(undefined);
-    setBattleStarted(false);
-    setBattleKey((current) => current + 1);
+    setCompletedChildId(undefined);
+    setSessionStarted(false);
+    setSessionKey((current) => current + 1);
   };
 
   const startBattle = () => {
     if (!opponent || !canStart) return;
-    setWinnerId(undefined);
-    setBattleStarted(true);
-    setBattleKey((current) => current + 1);
+    setCompletedChildId(undefined);
+    setSessionStarted(true);
+    setSessionKey((current) => current + 1);
     onSelectChild(player.id);
   };
 
-  const handleWin = (nextWinner: ChildWithProgress) => {
-    setWinnerId(nextWinner.id);
-    onSelectChild(nextWinner.id);
-    onWin(nextWinner);
+  const handleWin = (nextCompletedChild: ChildWithProgress) => {
+    setCompletedChildId(nextCompletedChild.id);
+    onSelectChild(nextCompletedChild.id);
+    onWin(nextCompletedChild);
   };
 
   const choosePlayer = (childId: string) => {
     setPlayerId(childId);
     onSelectChild(childId);
-    setWinnerId(undefined);
-    setBattleStarted(false);
+    setCompletedChildId(undefined);
+    setSessionStarted(false);
     if (childId === opponentId) {
       const fallback = childrenWithProgress.find((child) => child.id !== childId);
       if (fallback) setOpponentId(fallback.id);
@@ -103,8 +103,8 @@ export function MathArenaModule({
 
   const chooseOpponent = (childId: string) => {
     setOpponentId(childId);
-    setWinnerId(undefined);
-    setBattleStarted(false);
+    setCompletedChildId(undefined);
+    setSessionStarted(false);
   };
 
   return (
@@ -112,24 +112,24 @@ export function MathArenaModule({
       <div className="math-arena-header">
         <div className="math-arena-title-pack">
           <span className="module-eyebrow">
-            <Swords size={18} />
-            数学魔法
+            <Shell size={18} />
+            算术点亮
           </span>
-          <h1 id="math-arena-title">数学闯关岛</h1>
-          <span className="math-arena-round-chip">{winner ? `${winner.name} 点亮` : battleStarted ? "闯关中" : "待开始"}</span>
+          <h1 id="math-arena-title">贝壳算术</h1>
+          <span className="math-arena-round-chip">{completedChild ? `${completedChild.name} 点亮` : sessionStarted ? "点亮中" : "待开始"}</span>
         </div>
-        <button type="button" className="math-arena-home-button" onClick={() => onFocusChild(winner?.id ?? player.id)}>
+        <button type="button" className="math-arena-home-button" onClick={() => onFocusChild(completedChild?.id ?? player.id)}>
           <Home size={18} />
           回岛
         </button>
       </div>
 
       <div className="math-arena-layout">
-        <section className="math-arena-stage" aria-label="数学闯关区">
+        <section className="math-arena-stage" aria-label="贝壳算术区">
           <div className="math-arena-setup">
-            <div className="math-arena-fighter-lane" aria-label="闯关伙伴">
+            <div className="math-arena-fighter-lane" aria-label="算术伙伴">
               <FighterSelectCard
-                label="左侧答题"
+                label="小伙伴 A"
                 selectId="math-arena-player"
                 child={player}
                 childrenWithProgress={childrenWithProgress}
@@ -140,7 +140,7 @@ export function MathArenaModule({
                 一起
               </span>
               <FighterSelectCard
-                label="右侧答题"
+                label="小伙伴 B"
                 selectId="math-arena-opponent"
                 child={opponent ?? player}
                 childrenWithProgress={opponentOptions}
@@ -151,34 +151,34 @@ export function MathArenaModule({
             <div className="math-arena-command-panel">
               <button type="button" className="math-arena-primary" onClick={startBattle} disabled={!canStart}>
                 <Play size={19} />
-                {battleStarted ? "重新开始" : "开始闯关"}
+                {sessionStarted ? "重新开始" : "开始点亮"}
               </button>
               <button type="button" className="math-arena-secondary" onClick={resetBattle}>
                 <RotateCcw size={18} />
-                重新准备
+                重新选人
               </button>
             </div>
           </div>
 
-          <div className={`math-arena-battle-shell ${battleStarted ? "is-live" : "is-idle"} ${winner ? "has-winner" : ""}`}>
-            <div className="math-arena-stage-strip" aria-label="闯关状态">
+          <div className={`math-arena-battle-shell ${sessionStarted ? "is-live" : "is-idle"} ${completedChild ? "has-winner" : ""}`}>
+            <div className="math-arena-stage-strip" aria-label="点亮状态">
               <span>贝壳赛道</span>
-              <strong>{winner ? `${winner.name} 闯关完成` : battleStarted ? "答题进行中" : "选择小伙伴开始"}</strong>
-              <em>{winner ? "数学能量点亮" : "每题一束光"}</em>
+              <strong>{completedChild ? `${completedChild.name} 完成点亮` : sessionStarted ? "答题进行中" : "选择小伙伴开始"}</strong>
+              <em>{completedChild ? "数学能量点亮" : "每题一格光"}</em>
             </div>
-            {winner && (
+            {completedChild && (
               <div className="math-arena-victory-badge" role="status" aria-live="polite">
                 <Trophy size={18} />
-                {winner.name} 点亮数学能量
+                {completedChild.name} 点亮数学能量
               </div>
             )}
-            {battleStarted && opponent ? (
-              <MathPkBattle key={battleKey} player={player} opponent={opponent} spiritsById={spiritsById} onWin={handleWin} />
+            {sessionStarted && opponent ? (
+              <MathPkBattle key={sessionKey} player={player} opponent={opponent} spiritsById={spiritsById} onWin={handleWin} />
             ) : (
               <div className="math-arena-empty">
-                <Swords size={34} />
+                <Shell size={34} />
                 <strong>等待开始</strong>
-                <div className="math-arena-empty-chips" aria-label="闯关准备">
+                <div className="math-arena-empty-chips" aria-label="点亮准备">
                   <span>两位伙伴</span>
                   <span>轮流答题</span>
                 </div>
@@ -187,11 +187,11 @@ export function MathArenaModule({
           </div>
         </section>
 
-        <aside className="math-arena-side" aria-label="数学竞技场信息">
+        <aside className="math-arena-side" aria-label="贝壳算术信息">
           <div className="math-arena-scoreboard">
             <div className="math-arena-side-title">
               <Trophy size={19} />
-              <strong>奖杯看板</strong>
+              <strong>光格看板</strong>
             </div>
             <dl>
               <div>
@@ -210,34 +210,34 @@ export function MathArenaModule({
             <button
               type="button"
               className="math-arena-focus-winner"
-              disabled={!winner}
-              onClick={() => winner && onFocusChild(winner.id)}
+              disabled={!completedChild}
+              onClick={() => completedChild && onFocusChild(completedChild.id)}
             >
               <Sparkles size={18} />
-              {winner ? `回岛查看 ${winner.name}` : "等待胜者"}
+              {completedChild ? `回岛查看 ${completedChild.name}` : "完成后回岛"}
             </button>
           </div>
 
           <div className="math-arena-rules">
             <div className="math-arena-side-title">
               <Shield size={19} />
-              <strong>赛场规则</strong>
+              <strong>点亮规则</strong>
             </div>
             <ul>
               <li>两位伙伴轮流答题。</li>
               <li>答对点亮一束光。</li>
               <li>答错不扣能量，换对方继续。</li>
-              <li>完成闯关后，胜者点亮数学能量。</li>
+              <li>完成光路后，点亮数学能量。</li>
             </ul>
           </div>
 
           <div className="math-arena-history">
             <div className="math-arena-side-title">
-              <Swords size={19} />
-              <strong>最近闯关</strong>
+              <Shell size={19} />
+              <strong>最近点亮</strong>
             </div>
             {recentMathRecords.length === 0 ? (
-              <p className="math-arena-muted">还没有数学闯关。</p>
+              <p className="math-arena-muted">还没有算术点亮。</p>
             ) : (
               <ol>
                 {recentMathRecords.map((record) => {

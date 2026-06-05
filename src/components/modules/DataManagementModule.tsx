@@ -39,7 +39,7 @@ interface DataManagementModuleProps {
 const sourceLabels: Record<LedgerRecord["source"], string> = {
   manual: "手动",
   "dialogue-agent": "贝壳记录",
-  "math-pk": "数学 PK",
+  "math-pk": "算术点亮",
   undo: "撤销",
 };
 

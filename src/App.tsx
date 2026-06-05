@@ -107,7 +107,8 @@ function getShortFeedbackReason(reason: string) {
     .replace(/^课堂记录：/, "")
     .replace(/^抽取台：/, "")
     .replace(/^随机点名：/, "")
-    .replace(/^数学魔法 PK 胜利 \+30$/, "数学魔法闯关")
+    .replace(/^数学魔法 PK 胜利 \+30$/, "数学光路点亮")
+    .replace(/^数学光路点亮 \+30$/, "数学光路点亮")
     .replace(/^语音记录：/, "贝壳记录：")
     .replace(/^复核通过：/, "复核通过：")
     .trim();
@@ -870,7 +871,7 @@ export function App() {
       delta: 30,
       source: "math-pk",
       category: "积极阳光",
-      reason: "数学魔法 PK 胜利 +30",
+      reason: "数学光路点亮 +30",
     });
   };
 

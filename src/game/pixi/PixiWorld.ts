@@ -14,13 +14,28 @@ export class PixiWorld {
   private host?: HTMLDivElement;
   private lastData?: WorldMapData;
   private idleTimer?: number;
+  private interactionTimer?: number;
+  private interactionActive = false;
   private disposed = false;
   private viewMode: "overview" | "focused" | "manual" = "overview";
   private readonly tick = (ticker: Ticker) => {
     this.camera?.update(ticker);
-    this.scene?.update(ticker);
+    this.scene?.update(ticker, this.interactionActive);
   };
-  private readonly wakeFromInteraction = () => this.wake(1800);
+  private readonly wakeFromInteraction = () => {
+    this.interactionActive = true;
+    if (this.app) this.app.ticker.maxFPS = 30;
+    window.clearTimeout(this.interactionTimer);
+    this.interactionTimer = window.setTimeout(() => {
+      this.interactionActive = false;
+      if (this.app) this.app.ticker.maxFPS = 60;
+    }, 220);
+    this.wake(1800);
+  };
+  private readonly handleWheelInteraction = (event: WheelEvent) => {
+    event.preventDefault();
+    this.wakeFromInteraction();
+  };
   private readonly wakeFromAssetLoad = () => this.wake(900);
 
   constructor(private readonly callbacks: WorldMapCallbacks) {}
@@ -39,7 +54,7 @@ export class PixiWorld {
       antialias: false,
       preference: "webgl",
       powerPreference: "high-performance",
-      resolution: 1,
+      resolution: 0.7,
       autoDensity: true,
     });
     app.ticker.maxFPS = 60;
@@ -71,10 +86,12 @@ export class PixiWorld {
     this.interactions.add(() => this.resizeObserver?.disconnect());
     app.canvas.addEventListener("pointerdown", this.wakeFromInteraction);
     app.canvas.addEventListener("pointermove", this.wakeFromInteraction);
+    app.canvas.addEventListener("wheel", this.handleWheelInteraction, { passive: false });
     window.addEventListener("growth-island-asset-loaded", this.wakeFromAssetLoad);
     this.interactions.add(() => {
       app.canvas.removeEventListener("pointerdown", this.wakeFromInteraction);
       app.canvas.removeEventListener("pointermove", this.wakeFromInteraction);
+      app.canvas.removeEventListener("wheel", this.handleWheelInteraction);
       window.removeEventListener("growth-island-asset-loaded", this.wakeFromAssetLoad);
     });
     if (this.lastData) this.scene.updateData(this.lastData);
@@ -148,6 +165,7 @@ export class PixiWorld {
   private wake(durationMs: number) {
     if (!this.app || this.disposed) return;
     window.clearTimeout(this.idleTimer);
+    if (durationMs <= 0) this.interactionActive = false;
     const wasIdle = !this.app.ticker.started;
     this.app.canvas.dataset.renderState = "active";
     if (!this.app.ticker.started) this.app.ticker.start();
@@ -165,6 +183,7 @@ export class PixiWorld {
   destroy() {
     this.disposed = true;
     window.clearTimeout(this.idleTimer);
+    window.clearTimeout(this.interactionTimer);
     this.interactions.destroy();
     this.app?.ticker.remove(this.tick);
     this.scene?.destroy();

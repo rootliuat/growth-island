@@ -74,7 +74,8 @@ button {
 .record-title,
 .modal-heading,
 .agent-card > div,
-.battle-log {
+.battle-log,
+.light-log {
   display: flex;
   align-items: center;
 }
@@ -370,7 +371,8 @@ button {
 }
 
 .xp-track,
-.hp-track {
+.hp-track,
+.light-track {
   height: 14px;
   overflow: hidden;
   border-radius: 999px;
@@ -894,7 +896,8 @@ button {
   box-shadow: 0 5px 0 rgba(104, 85, 49, 0.12);
 }
 
-.battlefield {
+.battlefield,
+.lightfield {
   position: relative;
   display: grid;
   min-height: 410px;
@@ -910,7 +913,8 @@ button {
   box-shadow: inset 0 0 0 4px rgba(44, 143, 153, 0.18);
 }
 
-.battlefield::before {
+.battlefield::before,
+.lightfield::before {
   position: absolute;
   right: 58px;
   bottom: -66px;
@@ -923,7 +927,8 @@ button {
   content: "";
 }
 
-.battlefield::after {
+.battlefield::after,
+.lightfield::after {
   position: absolute;
   right: 18%;
   bottom: 82px;
@@ -935,21 +940,26 @@ button {
   content: "";
 }
 
-.battlefield.hit .problem-card {
+.battlefield.hit .problem-card,
+.lightfield.lit .problem-card,
+.lightfield.complete .problem-card {
   border-color: rgba(242, 201, 76, 0.72);
 }
 
-.battlefield.miss .problem-card {
+.battlefield.miss .problem-card,
+.lightfield.try .problem-card {
   border-color: rgba(139, 146, 154, 0.5);
 }
 
 .battle-pet,
+.light-partner,
 .problem-card {
   position: relative;
   z-index: 1;
 }
 
-.battle-pet {
+.battle-pet,
+.light-partner {
   display: grid;
   justify-items: center;
   align-content: end;
@@ -958,15 +968,18 @@ button {
   transition: transform 180ms ease, opacity 180ms ease;
 }
 
-.battle-pet:not(.active):not(.winner) {
+.battle-pet:not(.active):not(.winner),
+.light-partner:not(.active):not(.complete) {
   opacity: 0.86;
 }
 
-.battle-pet.active {
+.battle-pet.active,
+.light-partner.active {
   transform: translateY(-8px);
 }
 
-.battle-shadow {
+.battle-shadow,
+.light-shadow {
   width: 152px;
   height: 24px;
   margin-bottom: -8px;
@@ -974,7 +987,8 @@ button {
   background: rgba(52, 62, 47, 0.16);
 }
 
-.battle-orb {
+.battle-orb,
+.light-orb {
   display: grid;
   width: 146px;
   height: 146px;
@@ -986,7 +1000,8 @@ button {
   box-shadow: inset -14px -16px 0 rgba(41, 104, 96, 0.18), 0 18px 30px rgba(55, 82, 94, 0.24);
 }
 
-.battle-orb span {
+.battle-orb span,
+.light-orb span {
   display: grid;
   width: 72px;
   height: 72px;
@@ -998,36 +1013,43 @@ button {
   background: #fff4c8;
 }
 
-.battle-orb.has-image {
+.battle-orb.has-image,
+.light-orb.has-image {
   overflow: visible;
   background: #fff7d8;
 }
 
-.battle-orb img {
+.battle-orb img,
+.light-orb img {
   max-width: 142px;
   max-height: 142px;
   object-fit: contain;
   filter: drop-shadow(0 12px 0 rgba(58, 77, 56, 0.12));
 }
 
-.battle-pet.right .battle-orb {
+.battle-pet.right .battle-orb,
+.light-partner.right .light-orb {
   background: #de815f;
   box-shadow: inset 14px -16px 0 rgba(126, 63, 51, 0.17), 0 18px 30px rgba(55, 82, 94, 0.24);
 }
 
-.battle-pet.right .battle-orb.has-image {
+.battle-pet.right .battle-orb.has-image,
+.light-partner.right .light-orb.has-image {
   background: #fff2cf;
 }
 
-.battle-pet.active .battle-orb {
+.battle-pet.active .battle-orb,
+.light-partner.active .light-orb {
   outline: 5px solid rgba(242, 201, 76, 0.34);
 }
 
-.battle-pet.winner .battle-orb {
+.battle-pet.winner .battle-orb,
+.light-partner.complete .light-orb {
   outline: 7px solid rgba(242, 201, 76, 0.56);
 }
 
-.battle-nameplate {
+.battle-nameplate,
+.light-nameplate {
   display: grid;
   min-width: 150px;
   justify-items: center;
@@ -1039,26 +1061,31 @@ button {
   box-shadow: 0 5px 0 rgba(104, 85, 49, 0.1);
 }
 
-.battle-nameplate strong {
+.battle-nameplate strong,
+.light-nameplate strong {
   color: #2f4f47;
   font-size: 22px;
 }
 
 .battle-nameplate em,
-.hp-value {
+.light-nameplate em,
+.hp-value,
+.light-value {
   color: #745b3f;
   font-style: normal;
   font-weight: 900;
 }
 
-.battle-pet .hp-track {
+.battle-pet .hp-track,
+.light-partner .light-track {
   width: min(190px, 86%);
   margin-top: 12px;
   border: 2px solid rgba(47, 79, 71, 0.18);
   background: rgba(255, 246, 207, 0.74);
 }
 
-.hp-track div {
+.hp-track div,
+.light-track div {
   height: 100%;
   border-radius: inherit;
   background: #59b97c;
@@ -1110,7 +1137,8 @@ button {
   opacity: 0.7;
 }
 
-.battle-log {
+.battle-log,
+.light-log {
   gap: 8px;
   justify-content: space-between;
   margin-top: 14px;
@@ -1121,12 +1149,14 @@ button {
   background: #fff1b8;
 }
 
-.battle-log span {
+.battle-log span,
+.light-log span {
   flex: 1;
   font-weight: 800;
 }
 
-.battle-log em {
+.battle-log em,
+.light-log em {
   color: #91643a;
   font-style: normal;
   font-weight: 900;
@@ -5933,7 +5963,8 @@ button {
   padding: 16px;
 }
 
-.math-arena-battle-shell .battlefield {
+.math-arena-battle-shell .battlefield,
+.math-arena-battle-shell .lightfield {
   min-height: 432px;
   grid-template-columns: minmax(132px, 0.86fr) minmax(236px, 1.04fr) minmax(132px, 0.86fr);
   gap: 12px;
@@ -5941,49 +5972,58 @@ button {
   padding: 28px 14px 24px;
 }
 
-.math-arena-battle-shell .battle-pet {
+.math-arena-battle-shell .battle-pet,
+.math-arena-battle-shell .light-partner {
   min-height: 300px;
   padding-inline: 2px;
 }
 
-.math-arena-battle-shell .battle-shadow {
+.math-arena-battle-shell .battle-shadow,
+.math-arena-battle-shell .light-shadow {
   width: 120px;
 }
 
-.math-arena-battle-shell .battle-orb {
+.math-arena-battle-shell .battle-orb,
+.math-arena-battle-shell .light-orb {
   width: 118px;
   height: 118px;
   border-width: 5px;
 }
 
-.math-arena-battle-shell .battle-orb img {
+.math-arena-battle-shell .battle-orb img,
+.math-arena-battle-shell .light-orb img {
   max-width: 124px;
   max-height: 124px;
 }
 
-.math-arena-battle-shell .battle-orb span {
+.math-arena-battle-shell .battle-orb span,
+.math-arena-battle-shell .light-orb span {
   width: 58px;
   height: 58px;
   font-size: 32px;
 }
 
-.math-arena-battle-shell .battle-nameplate {
+.math-arena-battle-shell .battle-nameplate,
+.math-arena-battle-shell .light-nameplate {
   min-width: 122px;
   padding: 7px 9px;
 }
 
-.math-arena-battle-shell .battle-nameplate strong {
+.math-arena-battle-shell .battle-nameplate strong,
+.math-arena-battle-shell .light-nameplate strong {
   font-size: 20px;
 }
 
-.math-arena-battle-shell .battle-nameplate em {
+.math-arena-battle-shell .battle-nameplate em,
+.math-arena-battle-shell .light-nameplate em {
   max-width: 132px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.math-arena-battle-shell .battle-pet .hp-track {
+.math-arena-battle-shell .battle-pet .hp-track,
+.math-arena-battle-shell .light-partner .light-track {
   width: min(150px, 90%);
 }
 
@@ -18581,7 +18621,7 @@ button {
   }
 }
 
-/* P1/P3 math arena: make PK read as an island battle scene instead of a form panel. */
+/* P7 math light-up: arithmetic as shell-light progress, not combat. */
 .math-arena-page {
   --arena-sea: #174c5a;
   --arena-lagoon: #2d9fb2;
@@ -18826,7 +18866,7 @@ button {
   animation: arenaVictoryPop 520ms ease both;
 }
 
-.math-arena-page .math-arena-battle-shell .battlefield {
+.math-arena-page .math-arena-battle-shell .lightfield {
   position: relative;
   min-height: 430px;
   border: 1px solid rgba(255, 253, 244, 0.86);
@@ -18837,7 +18877,7 @@ button {
   box-shadow: inset 0 0 0 4px rgba(45, 159, 178, 0.12);
 }
 
-.math-arena-page .battle-turn-banner {
+.math-arena-page .light-turn-banner {
   position: absolute;
   top: 14px;
   left: 50%;
@@ -18857,7 +18897,7 @@ button {
   transform: translateX(-50%);
 }
 
-.math-arena-page .battle-action-vfx {
+.math-arena-page .light-action-vfx {
   position: absolute;
   top: 48%;
   left: 50%;
@@ -18870,7 +18910,7 @@ button {
   transform: translate(-50%, -50%);
 }
 
-.math-arena-page .battle-action-vfx i {
+.math-arena-page .light-action-vfx i {
   display: block;
   height: 12px;
   border-radius: 999px;
@@ -18881,7 +18921,7 @@ button {
   animation: arenaPearlBeam 680ms ease-out both;
 }
 
-.math-arena-page .battle-action-vfx span {
+.math-arena-page .light-action-vfx span {
   justify-self: center;
   margin-top: 5px;
   padding: 3px 8px;
@@ -18893,36 +18933,28 @@ button {
   animation: arenaCuePop 620ms ease-out both;
 }
 
-.math-arena-page .battle-action-vfx.from-opponent i {
+.math-arena-page .light-action-vfx.from-opponent i {
   animation-name: arenaPearlBeamReverse;
 }
 
-.math-arena-page .battle-action-vfx.miss {
+.math-arena-page .light-action-vfx.try {
   opacity: 0.78;
 }
 
-.math-arena-page .battle-action-vfx.miss i {
+.math-arena-page .light-action-vfx.try i {
   background:
     radial-gradient(circle, rgba(255, 253, 244, 0.95) 0 22%, transparent 24%),
     linear-gradient(90deg, rgba(255, 253, 244, 0), rgba(255, 253, 244, 0.62), rgba(135, 216, 208, 0.45), rgba(255, 253, 244, 0));
   box-shadow: 0 0 12px rgba(255, 253, 244, 0.58);
 }
 
-.math-arena-page .battle-pet.attacking.left {
-  animation: arenaLungeLeft 520ms ease-out both;
+.math-arena-page .light-partner.glowing .light-orb {
+  animation: arenaLightGlow 520ms ease-out both;
+  filter: saturate(1.08) drop-shadow(0 0 14px rgba(246, 179, 82, 0.32));
 }
 
-.math-arena-page .battle-pet.attacking.right {
-  animation: arenaLungeRight 520ms ease-out both;
-}
-
-.math-arena-page .battle-pet.damaged .battle-orb {
-  animation: arenaHitShake 520ms ease-out both;
-  filter: saturate(1.08) drop-shadow(0 0 14px rgba(255, 122, 89, 0.35));
-}
-
-.math-arena-page .battle-damage-pop,
-.math-arena-page .battle-winner-medal {
+.math-arena-page .light-pop,
+.math-arena-page .light-complete-medal {
   position: absolute;
   z-index: 5;
   display: inline-flex;
@@ -18935,7 +18967,7 @@ button {
   pointer-events: none;
 }
 
-.math-arena-page .battle-damage-pop {
+.math-arena-page .light-pop {
   top: 64px;
   right: 28px;
   min-width: 54px;
@@ -18943,15 +18975,15 @@ button {
   background: var(--arena-coral);
   box-shadow: 0 10px 20px rgba(122, 74, 50, 0.18), inset 0 -4px 0 rgba(122, 74, 50, 0.16);
   font-size: 20px;
-  animation: arenaDamagePop 740ms ease-out both;
+  animation: arenaLightPop 740ms ease-out both;
 }
 
-.math-arena-page .battle-pet.right .battle-damage-pop {
+.math-arena-page .light-partner.right .light-pop {
   right: auto;
   left: 28px;
 }
 
-.math-arena-page .battle-winner-medal {
+.math-arena-page .light-complete-medal {
   top: 40px;
   left: 50%;
   min-height: 32px;
@@ -18963,7 +18995,7 @@ button {
   animation: arenaVictoryPop 520ms ease both;
 }
 
-.math-arena-page .battlefield.win {
+.math-arena-page .lightfield.complete {
   box-shadow: inset 0 0 0 4px rgba(45, 159, 178, 0.12), 0 0 0 3px rgba(246, 179, 82, 0.28);
 }
 
@@ -19047,7 +19079,7 @@ button {
   background: var(--arena-lagoon);
 }
 
-.math-arena-page .math-arena-battle-shell .answer-grid button.selected.hit {
+.math-arena-page .math-arena-battle-shell .answer-grid button.selected.lit {
   background:
     radial-gradient(circle at 50% 50%, rgba(255, 253, 244, 0.24), transparent 42%),
     var(--arena-leaf);
@@ -19055,7 +19087,7 @@ button {
   animation: skillShellHit 420ms ease both;
 }
 
-.math-arena-page .math-arena-battle-shell .answer-grid button.selected.miss {
+.math-arena-page .math-arena-battle-shell .answer-grid button.selected.try {
   background:
     radial-gradient(circle at 50% 50%, rgba(255, 253, 244, 0.18), transparent 42%),
     #8a7162;
@@ -19063,25 +19095,25 @@ button {
   animation: skillShellMiss 420ms ease both;
 }
 
-.math-arena-page .math-arena-battle-shell .answer-grid button.selected.hit em {
+.math-arena-page .math-arena-battle-shell .answer-grid button.selected.lit em {
   color: var(--arena-leaf);
 }
 
-.math-arena-page .math-arena-battle-shell .answer-grid button.selected.miss em {
+.math-arena-page .math-arena-battle-shell .answer-grid button.selected.try em {
   color: #7a4a32;
 }
 
-.math-arena-page .math-arena-battle-shell .battle-log {
+.math-arena-page .math-arena-battle-shell .light-log {
   position: relative;
   z-index: 4;
   border-color: rgba(214, 177, 106, 0.36);
   background: rgba(255, 253, 244, 0.9);
 }
 
-.math-arena-page .math-arena-battle-shell .battle-log.hit,
-.math-arena-page .math-arena-battle-shell .battle-log.miss,
-.math-arena-page .math-arena-battle-shell .battle-log.win {
-  animation: battleLogFlash 420ms ease both;
+.math-arena-page .math-arena-battle-shell .light-log.lit,
+.math-arena-page .math-arena-battle-shell .light-log.try,
+.math-arena-page .math-arena-battle-shell .light-log.complete {
+  animation: lightLogFlash 420ms ease both;
 }
 
 .math-arena-page .math-arena-empty {
@@ -19160,54 +19192,14 @@ button {
   }
 }
 
-@keyframes arenaLungeLeft {
-  0% {
-    transform: translateY(-8px);
-  }
-
-  42% {
-    transform: translate(28px, -18px) scale(1.04);
-  }
-
-  100% {
-    transform: translateY(0);
-  }
-}
-
-@keyframes arenaLungeRight {
-  0% {
-    transform: translateY(-8px);
-  }
-
-  42% {
-    transform: translate(-28px, -18px) scale(1.04);
-  }
-
-  100% {
-    transform: translateY(0);
-  }
-}
-
-@keyframes arenaHitShake {
+@keyframes arenaLightGlow {
   0%,
   100% {
-    transform: translateX(0) rotate(0deg);
+    transform: translateY(0) scale(1);
   }
 
-  16% {
-    transform: translateX(-9px) rotate(-3deg);
-  }
-
-  32% {
-    transform: translateX(8px) rotate(3deg);
-  }
-
-  48% {
-    transform: translateX(-6px) rotate(-2deg);
-  }
-
-  64% {
-    transform: translateX(4px) rotate(1deg);
+  42% {
+    transform: translateY(-8px) scale(1.04);
   }
 }
 
@@ -19265,7 +19257,7 @@ button {
   }
 }
 
-@keyframes arenaDamagePop {
+@keyframes arenaLightPop {
   from {
     opacity: 0;
     transform: translateY(10px) scale(0.8);
@@ -19311,7 +19303,7 @@ button {
   }
 }
 
-@keyframes battleLogFlash {
+@keyframes lightLogFlash {
   from {
     transform: translateY(4px);
     box-shadow: 0 0 0 0 rgba(246, 179, 82, 0);
@@ -19415,24 +19407,24 @@ button {
     max-width: calc(100% - 24px);
   }
 
-  .math-arena-page .math-arena-battle-shell .battlefield {
+  .math-arena-page .math-arena-battle-shell .lightfield {
     min-height: 430px;
     padding: 18px 10px 20px;
   }
 
-  .math-arena-page .battle-turn-banner {
+  .math-arena-page .light-turn-banner {
     top: 10px;
     min-height: 30px;
     font-size: 12px;
   }
 
-  .math-arena-page .battle-action-vfx {
+  .math-arena-page .light-action-vfx {
     top: 42%;
     width: min(220px, 56%);
     height: 36px;
   }
 
-  .math-arena-page .battle-damage-pop {
+  .math-arena-page .light-pop {
     top: 52px;
     right: 12px;
     min-width: 46px;
@@ -19440,11 +19432,11 @@ button {
     font-size: 17px;
   }
 
-  .math-arena-page .battle-pet.right .battle-damage-pop {
+  .math-arena-page .light-partner.right .light-pop {
     left: 12px;
   }
 
-  .math-arena-page .battle-winner-medal {
+  .math-arena-page .light-complete-medal {
     top: 34px;
   }
 
@@ -19454,18 +19446,16 @@ button {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .math-arena-page .battle-action-vfx i,
-  .math-arena-page .battle-action-vfx span,
-  .math-arena-page .battle-pet.attacking.left,
-  .math-arena-page .battle-pet.attacking.right,
-  .math-arena-page .battle-pet.damaged .battle-orb,
-  .math-arena-page .battle-damage-pop,
-  .math-arena-page .battle-winner-medal,
-  .math-arena-page .answer-grid button.selected.hit,
-  .math-arena-page .answer-grid button.selected.miss,
-  .math-arena-page .battle-log.hit,
-  .math-arena-page .battle-log.miss,
-  .math-arena-page .battle-log.win {
+  .math-arena-page .light-action-vfx i,
+  .math-arena-page .light-action-vfx span,
+  .math-arena-page .light-partner.glowing .light-orb,
+  .math-arena-page .light-pop,
+  .math-arena-page .light-complete-medal,
+  .math-arena-page .answer-grid button.selected.lit,
+  .math-arena-page .answer-grid button.selected.try,
+  .math-arena-page .light-log.lit,
+  .math-arena-page .light-log.try,
+  .math-arena-page .light-log.complete {
     animation: none;
   }
 }
@@ -20871,21 +20861,6 @@ button {
 .home-screen-shell .shell-child-chip strong,
 .home-screen-shell .shell-child-chip em {
   font-size: 11px;
-}
-
-.home-screen-shell .dock-selected-summary[data-selected-role="next"] {
-  border-color: rgba(246, 179, 82, 0.64);
-  background: #fff8ea;
-}
-
-.home-screen-shell .dock-selected-summary[data-selected-role="next"] .dock-summary-copy small,
-.home-screen-shell .dock-selected-summary[data-selected-role="next"] .dock-selected-copy em {
-  color: #9a6b19;
-}
-
-.home-screen-shell .dock-selected-summary[data-selected-role="next"] > .dock-summary-status {
-  color: #fffdf4;
-  background: #f6b352;
 }
 
 .home-screen-shell .world-map-shell:not(.moral-stage-idle) .map-energy-constellation {

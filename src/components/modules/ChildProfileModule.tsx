@@ -19,7 +19,7 @@ interface ChildProfileModuleProps {
 const sourceLabels: Record<LedgerRecord["source"], string> = {
   manual: "老师贝壳",
   "dialogue-agent": "贝壳建议",
-  "math-pk": "数学闯关",
+  "math-pk": "算术点亮",
   undo: "撤销",
 };
 
@@ -49,7 +49,7 @@ function getChildRecordLabel(record: LedgerRecord) {
     .replace(/^语音记录[:：]?\s*/, "")
     .replace(/^复核通过[:：]?\s*/, "")
     .trim();
-  if (record.source === "math-pk") return "数学闯关点亮";
+  if (record.source === "math-pk") return "数学光路点亮";
   if (reason.includes("快速加分") || reason.includes("课堂积极回应")) return "课堂成长点亮";
   if (reason.includes("自助成长")) return "能量进精灵";
   if (reason.includes("已有成长")) return "已有成长";
