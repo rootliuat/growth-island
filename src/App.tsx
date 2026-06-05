@@ -446,17 +446,6 @@ export function App() {
     moralSpeakTimersRef.current.push(timer);
   };
 
-  const getNextSelfServiceChild = (childId: string) => {
-    if (childrenWithProgress.length <= 1) return undefined;
-    const currentIndex = childrenWithProgress.findIndex((child) => child.id === childId);
-    const nextIndex = currentIndex >= 0 ? (currentIndex + 1) % childrenWithProgress.length : 0;
-    return {
-      child: childrenWithProgress[nextIndex],
-      queueIndex: nextIndex + 1,
-      queueTotal: childrenWithProgress.length,
-    };
-  };
-
   const prepareMoralSpeakForChild = (childId: string) => {
     clearMoralSpeakTimers();
     stopMoralSpeakRecording(true);
@@ -464,34 +453,8 @@ export function App() {
     setMoralSpeak({ stage: "ready", childId });
   };
 
-  const readyNextMoralSpeakChild = (currentChildId: string, previousChildName?: string) => {
-    const nextTurn = getNextSelfServiceChild(currentChildId);
-    const nextChild = nextTurn?.child;
-
-    if (!nextTurn || !nextChild) {
-      setMoralSpeak({ stage: "idle" });
-      worldMapRef.current?.focusFullIsland();
-      return;
-    }
-
-    setSelectedChildId(nextChild.id);
-    setMoralSpeak({
-      stage: "ready",
-      childId: nextChild.id,
-      previousChildName,
-      nextChildId: nextChild.id,
-      nextChildName: nextChild.name,
-      queueAutoReady: true,
-      queueIndex: nextTurn.queueIndex,
-      queueTotal: nextTurn.queueTotal,
-    });
-    showGrowthFeedback({
-      kind: "focus",
-      tone: "neutral",
-      title: `下一位 ${nextChild.name}`,
-      detail: "说成长",
-      childName: nextChild.name,
-    });
+  const returnMoralSpeakToIslandIdle = () => {
+    setMoralSpeak({ stage: "idle" });
     worldMapRef.current?.focusFullIsland();
     scheduleMoralSpeakTimer(() => worldMapRef.current?.focusFullIsland(), 140);
   };
@@ -1146,8 +1109,6 @@ export function App() {
     const transcript = moralSpeak.transcript ?? "孩子自助成长记录";
     const reviewId = moralSpeak.reviewId;
     const completedChild = childrenWithProgress.find((child) => child.id === moralSpeak.childId) ?? selectedChild;
-    const nextTurn = getNextSelfServiceChild(completedChild.id);
-    const nextChild = nextTurn?.child;
 
     try {
       await commitLedger({
@@ -1193,14 +1154,10 @@ export function App() {
       stage: "success",
       result,
       previousChildName: completedChild.name,
-      nextChildId: nextChild?.id,
-      nextChildName: nextChild?.name,
-      queueIndex: nextTurn?.queueIndex,
-      queueTotal: nextTurn?.queueTotal,
     }));
     scheduleMoralSpeakTimer(() => {
       moralSpeakApprovingRef.current = false;
-      readyNextMoralSpeakChild(completedChild.id, completedChild.name);
+      returnMoralSpeakToIslandIdle();
     }, 2400);
   };
 
@@ -1260,9 +1217,7 @@ export function App() {
     stopMoralSpeakRecording(true);
     moralSpeakApprovingRef.current = false;
     markCurrentMoralReviewRejected("跳过这位");
-    const childId = moralSpeak.childId ?? selectedChild.id;
-    const completedChild = childrenWithProgress.find((child) => child.id === childId) ?? selectedChild;
-    readyNextMoralSpeakChild(childId, completedChild.name);
+    returnMoralSpeakToIslandIdle();
   };
 
   const deferMoralSpeak = () => {
@@ -1735,7 +1690,6 @@ export function App() {
             childrenWithProgress={childrenWithProgress}
             spiritsById={spiritsById}
             selectedChildId={selectedChild.id}
-            nextTurnChildId={moralSpeak.stage === "ready" && moralSpeak.queueAutoReady ? moralSpeak.childId : undefined}
             onSelectChild={selectChildFromDock}
           />
         </section>

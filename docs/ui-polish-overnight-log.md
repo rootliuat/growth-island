@@ -258,7 +258,7 @@ P2:
 
 - `ux_researcher` and `ui_designer` completed read-only reviews before implementation.
 - Both reviews found that P4 made the home screen less crowded, but the next risk was child identity on the map: a child could tap or use the dock, yet the map did not give enough non-hover evidence that spirits and homes were tappable.
-- The selected direction was to reinforce the current/next child state and name anchors, keep the teacher card secondary, and avoid restoring large home information plaques.
+- The selected direction was to reinforce the current/next child state and name anchors, keep the teacher card secondary, and avoid restoring large home information plaques. The fixed next-child role was later superseded by P6.1 self-selection.
 
 ### Implementation Notes
 
@@ -266,7 +266,7 @@ P2:
 - `HomeLayer.ts` shows the selected home beacon in overview/focused community ranges, so the current child has a clearer map anchor before speaking.
 - `SpiritLayer.ts` slightly enlarges the spirit hit area for whiteboard taps.
 - `MoralSpeakOverlay.tsx` updates the child flow rhythm to `找 / 说 / 等 / 亮`, simplifies pending review to a short wait state, and changes success copy to `{能量}能量进精灵`.
-- `SpiritDock.tsx` separates `当前` and `下一位` roles, so the same selected child no longer reads like `当前 + 下一位`.
+- `SpiritDock.tsx` separated `当前` and `下一位` roles at this stage; P6.1 later removed the fixed next-child role entirely.
 - `WorldMapContainer.tsx` adds travel-button `aria-label`s and uses `等待点亮` during non-idle wait states.
 - `styles.css` adds P5 touch feedback, focus-visible coverage, 44px touch floors for remaining controls, compact non-idle energy board behavior, mobile teacher-card overlap containment, and quieter duplicate shell child-chip styling.
 - `scripts/qa-visual.mjs` was updated to validate the new `找 / 说 / 等 / 亮` rhythm labels.
@@ -330,3 +330,32 @@ P2:
   - Say-again and skip now also reject the current review through the existing online API when a review id exists, so pending server reviews do not reappear after the next snapshot.
   - Visual QA now asserts that say-again and skip leave no matching pending review and store the expected rejection reason.
   - Confirmation no longer overwrites a server snapshot's review result with the local pre-submit result.
+
+## P6.1 child self-selection loop
+
+### Scope
+
+- Changed the child self-service loop so every child chooses their own spirit from the map or bottom dock each time.
+- Kept backend, XP/ledger logic, service calls, seed data, generated assets, and map assets untouched.
+- Preserved teacher actions: confirm, correct, say again, skip, and defer.
+
+### Implementation Notes
+
+- `App.tsx` no longer computes or readies the next self-service child after confirmation or skip.
+- Confirmation still writes the approved self-service ledger record, plays the success/energy-arrival state, then returns to `idle` and focuses the full island.
+- Skip still rejects the pending review when present, writes no ledger record, then returns to `idle` and focuses the full island.
+- `MoralSpeakOverlay.tsx` removes the child-facing next-turn card and success next-child chip.
+- `SpiritDock.tsx` removes next-ready roles, halos, and labels; the dock remains a self-select entry for the current child and full roster.
+- `styles.css` removes the unused next-ready dock and next-turn overlay styling.
+- `scripts/qa-visual.mjs` now validates idle/full-island return after confirmation and skip instead of requiring a fixed next child.
+
+### Validation
+
+- `git diff --check`: passed.
+- `npm run build`: passed.
+- `npm run qa:visual`: passed.
+- Latest visual QA report: `qa-artifacts/latest/report.json`.
+- Latest visual QA generated at `2026-06-05T11:35:39.054Z`.
+- QA coverage: 32 checks, 0 issues, 1 warning.
+- Remaining warning: home wheel frame sample is low at 11.7 FPS; not introduced by the self-selection state change.
+- Code review follow-up: restored the QA helper's `moralSpeak` state read after removing queue checks, so moral-review safety assertions still inspect result intent/category/status.

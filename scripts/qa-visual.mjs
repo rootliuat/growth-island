@@ -900,37 +900,28 @@ async function exerciseSingleMoralSpeak(page, screenshots = {}) {
     pixiCurrentEnergyRegion: document.querySelector(".pixi-world-canvas")?.dataset.currentEnergyRegion ?? "",
     pixiSelectedActivityToken: document.querySelector(".pixi-world-canvas")?.dataset.selectedActivityToken ?? "",
     pixiSelectedActivityLabel: document.querySelector(".pixi-world-canvas")?.dataset.selectedActivityLabel ?? "",
-    nextChipText: document.querySelector(".moral-next-chip")?.textContent?.trim() ?? "",
   }));
   const successDetails = { ...successState, ...successExtra, flowStepCount: successState.flowStepLabels.length };
 
   await page.waitForFunction(
-    () => window.__growthIslandMoralSpeakStage === "ready" && window.__growthIslandMoralSpeak?.queueAutoReady === true,
+    () => window.__growthIslandMoralSpeakStage === "idle",
     null,
     { timeout: 5200 },
   );
   const finalDetails = await page.evaluate(({ completedChildId, initialSelfServiceCount }) => {
     const selectedChildId = window.__growthIslandSelectedChildId;
-    const speak = window.__growthIslandMoralSpeak ?? {};
     const selfServiceRecords = (window.__growthIslandLedger ?? []).filter(
       (record) => record.childId === completedChildId && record.reason?.startsWith("自助成长："),
     );
     const record = selfServiceRecords[0];
-    const nextTurnCardText = document.querySelector(".moral-next-turn-card")?.textContent?.replace(/\s+/g, "") ?? "";
-    const dockNextTurn = document.querySelector(".spirit-dock .dock-selected-summary.next-ready, .spirit-dock .dock-spirit.next-ready");
-    const dockSelectedText = dockNextTurn?.textContent?.replace(/\s+/g, "") ?? "";
     return {
       stage: window.__growthIslandMoralSpeakStage,
       completedChildId,
       selectedChildId,
-      nextChildId: speak.childId,
-      nextChildName: speak.nextChildName ?? "",
-      nextReady: speak.queueAutoReady === true && speak.childId === selectedChildId && selectedChildId !== completedChildId,
-      nextTurnCardText,
-      dockSelectedText,
-      hasNextTurnCard: Boolean(document.querySelector(".moral-next-turn-card")),
-      hasNextReadyDock: Boolean(dockNextTurn),
-      hasNextMicButton: Boolean(document.querySelector(".moral-mic-button")),
+      returnedToFullIsland: selectedChildId === completedChildId && !document.querySelector(".moral-mic-button"),
+      hasQueuedNextTurnUi: Boolean(
+        document.querySelector(".moral-next-turn-card, .moral-next-chip, .spirit-dock .dock-selected-summary.next-ready, .spirit-dock .dock-spirit.next-ready"),
+      ),
       selfServiceRecordCount: selfServiceRecords.length,
       singleLedgerWrite: selfServiceRecords.length === initialSelfServiceCount + 1,
       ledgerContract: record
@@ -1014,7 +1005,6 @@ async function inspectMoralReviewCard(page, transcript, childId) {
     const skip = document.querySelector(".teacher-review-corner-card .skip");
     const actionButtons = [...document.querySelectorAll(".teacher-review-actions button, .teacher-review-actions summary")];
     const speak = window.__growthIslandMoralSpeak ?? {};
-    const dockNextTurn = document.querySelector(".spirit-dock .dock-selected-summary.next-ready, .spirit-dock .dock-spirit.next-ready");
     const records = window.__growthIslandLedger ?? [];
     const reviews = window.__growthIslandReviews ?? [];
     const card = document.querySelector(".teacher-review-corner-card");
@@ -1058,9 +1048,9 @@ async function inspectMoralReviewCard(page, transcript, childId) {
           row: Math.round(rect.top),
         };
       }),
-      queueAutoReady: speak.queueAutoReady === true,
-      hasNextReadyDock: Boolean(dockNextTurn),
-      nextReadyDockText: dockNextTurn?.textContent?.replace(/\s+/g, "") ?? "",
+      hasQueuedNextTurnUi: Boolean(
+        document.querySelector(".moral-next-turn-card, .moral-next-chip, .spirit-dock .dock-selected-summary.next-ready, .spirit-dock .dock-spirit.next-ready"),
+      ),
       childBubbleText: document.querySelector(".spirit-speech-bubble")?.textContent?.replace(/\s+/g, "") ?? "",
       teacherMainText: document.querySelector(".teacher-review-main")?.textContent?.replace(/\s+/g, "") ?? "",
       energyBoardStateText: document.querySelector(".energy-constellation-head span")?.textContent?.replace(/\s+/g, "") ?? "",
@@ -1256,7 +1246,7 @@ async function exerciseMoralReviewSafety(page, pendingScreenshot, adjustedScreen
     };
   });
   await page.locator(".teacher-review-corner-card .skip").click();
-  await page.waitForFunction(() => window.__growthIslandMoralSpeakStage === "ready", null, { timeout: 3500 });
+  await page.waitForFunction(() => window.__growthIslandMoralSpeakStage === "idle", null, { timeout: 3500 });
 
   const lowConfidence = {
     childId: "child-07",
@@ -1286,7 +1276,7 @@ async function exerciseMoralReviewSafety(page, pendingScreenshot, adjustedScreen
   const lowBeforeSkip = await inspectMoralReviewCard(page, lowConfidence.transcript, lowConfidence.childId);
   await page.locator(".teacher-review-corner-card .skip").click();
   await page.waitForFunction(
-    ({ childId }) => window.__growthIslandMoralSpeakStage === "ready" && window.__growthIslandMoralSpeak?.childId !== childId,
+    () => window.__growthIslandMoralSpeakStage === "idle",
     { childId: lowConfidence.childId },
     { timeout: 3500 },
   );
@@ -1331,7 +1321,7 @@ async function exerciseMoralReviewSafety(page, pendingScreenshot, adjustedScreen
   await page.locator(".teacher-review-corner-card .approve").click();
   await page.waitForSelector(".spirit-speech-bubble.success", { timeout: 4000 });
   await page.waitForFunction(
-    () => window.__growthIslandMoralSpeakStage === "ready" && window.__growthIslandMoralSpeak?.queueAutoReady === true,
+    () => window.__growthIslandMoralSpeakStage === "idle",
     null,
     { timeout: 5200 },
   );
@@ -3579,7 +3569,6 @@ async function inspectPage(browser, check, viewport) {
         issues.push(`moral speak ${stateName} shows backend/review copy: ${flow.forbiddenVisibleCopy.join(", ")}`);
       }
     }
-    if (!moralFlowDetails?.success?.nextChipText.includes("下一位")) issues.push("moral speak success missing next child hint");
     if (!moralFlowDetails?.success?.hasEnergySparks) issues.push("moral speak success energy sparks missing");
     if (!moralFlowDetails?.success?.successBubble || moralFlowDetails.success.successBubble.includes("自助成长")) {
       issues.push("moral speak success bubble is missing or too verbose");
@@ -3626,15 +3615,9 @@ async function inspectPage(browser, check, viewport) {
     if (!moralFlowDetails?.success?.pixiEnergyRegionCount) issues.push("moral speak success did not light a pixi map region");
     if (!moralFlowDetails?.success?.pixiCurrentEnergyRegion) issues.push("moral speak success did not mark current pixi energy region");
     if (moralFlowDetails?.success?.hasTeacherCard) issues.push("moral speak teacher card did not close on success");
-    if (moralFlowDetails?.final?.stage !== "ready") issues.push("moral speak did not ready the next child");
-    if (!moralFlowDetails?.final?.nextReady) issues.push("moral speak did not auto-select next child");
-    if (!moralFlowDetails?.final?.hasNextTurnCard || !moralFlowDetails?.final?.nextTurnCardText.includes("下一位")) {
-      issues.push("moral speak next child card missing");
-    }
-    if (!moralFlowDetails?.final?.hasNextReadyDock || !moralFlowDetails?.final?.dockSelectedText.includes("下一位")) {
-      issues.push("moral speak next child dock highlight missing");
-    }
-    if (!moralFlowDetails?.final?.hasNextMicButton) issues.push("moral speak next child mic missing");
+    if (moralFlowDetails?.final?.stage !== "idle") issues.push("moral speak did not return to idle after confirmation");
+    if (!moralFlowDetails?.final?.returnedToFullIsland) issues.push("moral speak did not return to full-island self-select state");
+    if (moralFlowDetails?.final?.hasQueuedNextTurnUi) issues.push("moral speak still shows queued next-child UI");
     if (!moralFlowDetails?.final?.singleLedgerWrite) issues.push("moral speak duplicate or missing ledger write");
     const ledger = moralFlowDetails?.final?.ledgerContract;
     if (
@@ -3677,8 +3660,8 @@ async function inspectPage(browser, check, viewport) {
       }
       if (childFlow.success?.stage !== "success") issues.push(`moral speak child ${index + 1} success stage missing`);
       if (childFlow.success?.hasTeacherCard) issues.push(`moral speak child ${index + 1} teacher card stayed open`);
-      if (childFlow.final?.stage !== "ready") issues.push(`moral speak child ${index + 1} did not ready next child`);
-      if (!childFlow.final?.nextReady) issues.push(`moral speak child ${index + 1} did not auto-select next child`);
+      if (childFlow.final?.stage !== "idle") issues.push(`moral speak child ${index + 1} did not return idle`);
+      if (!childFlow.final?.returnedToFullIsland) issues.push(`moral speak child ${index + 1} did not return to self-select island`);
       if (!childFlow.final?.singleLedgerWrite) issues.push(`moral speak child ${index + 1} ledger write count mismatch`);
       const childLedger = childFlow.final?.ledgerContract;
       if (
@@ -3736,9 +3719,9 @@ async function inspectPage(browser, check, viewport) {
     if ((low?.afterRespeak?.pendingMatchingReviewCount ?? 1) !== 0) issues.push("low-confidence respeak left review pending");
     if (low?.afterRespeak?.latestReviewStatus !== "rejected") issues.push("low-confidence respeak did not reject the pending review");
     if (low?.afterRespeak?.latestReviewRejectionReason !== "补说") issues.push("low-confidence respeak rejection reason missing");
-    if (low?.afterSkip?.stage !== "ready") issues.push("low-confidence skip did not ready next child");
-    if (!low?.afterSkip?.queueAutoReady) issues.push("low-confidence skip did not mark next child auto-ready");
-    if (low?.afterSkip?.childId === low?.childId) issues.push("low-confidence skip stayed on current child");
+    if (low?.afterSkip?.stage !== "idle") issues.push("low-confidence skip did not return idle");
+    if (low?.afterSkip?.childId !== low?.childId) issues.push("low-confidence skip changed selected child");
+    if (low?.afterSkip?.hasQueuedNextTurnUi) issues.push("low-confidence skip still shows queued next-child UI");
     if ((low?.afterSkip?.pendingMatchingReviewCount ?? 1) !== 0) issues.push("low-confidence skip left review pending");
     if (low?.afterSkip?.latestReviewStatus !== "rejected") issues.push("low-confidence skip did not reject the pending review");
     if (low?.afterSkip?.latestReviewRejectionReason !== "跳过这位") issues.push("low-confidence skip rejection reason missing");
@@ -3779,7 +3762,7 @@ async function inspectPage(browser, check, viewport) {
     if (negative?.afterAdjust?.result?.category !== "开拓创新") issues.push("negative correction did not keep selected category");
     if (!negative?.final?.hasPositiveLedger) issues.push("adjusted review did not create an approved positive ledger record");
     if (negative?.final?.latestPositiveCategory !== "开拓创新") issues.push("adjusted review ledger used the wrong category");
-    if (negative?.final?.stage !== "ready") issues.push("adjusted review did not ready next child after approval");
+    if (negative?.final?.stage !== "idle") issues.push("adjusted review did not return idle after approval");
     if (!negative?.noNegativeLedger) issues.push("negative AI suggestion created a negative ledger record");
   }
 

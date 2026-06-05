@@ -15,11 +15,6 @@ export interface MoralSpeakViewState {
   adjusted?: boolean;
   error?: string;
   previousChildName?: string;
-  nextChildId?: string;
-  nextChildName?: string;
-  queueAutoReady?: boolean;
-  queueIndex?: number;
-  queueTotal?: number;
 }
 
 interface MoralSpeakOverlayProps {
@@ -79,13 +74,6 @@ export function MoralSpeakOverlay({ child, spirit, state, onStart, onStop, onRet
 
       {state.stage === "ready" ? (
         <>
-          {state.queueAutoReady ? (
-            <div className="moral-next-turn-card" data-next-turn="true">
-              <span>下一位</span>
-              <strong>{child.name}</strong>
-              {state.queueTotal ? <em>{state.queueIndex}/{state.queueTotal}</em> : null}
-            </div>
-          ) : null}
           <div className="moral-ready-child" aria-hidden="true">
             {child.name}
           </div>
@@ -138,7 +126,6 @@ export function MoralSpeakOverlay({ child, spirit, state, onStart, onStop, onRet
           <Sparkles size={24} />
           <strong>{energyLabel}能量进精灵</strong>
           <span className="moral-success-chip">已点亮</span>
-          {state.nextChildName ? <span className="moral-next-chip">下一位 {state.nextChildName}</span> : null}
         </div>
       ) : null}
 

@@ -2481,15 +2481,6 @@ button {
   box-shadow: inset 0 -4px 0 rgba(123, 128, 101, 0.1);
 }
 
-.dock-selected-summary.next-ready {
-  border-color: #fff3cb;
-  background: linear-gradient(180deg, #fff8ea 0%, #ffe6a9 100%);
-  box-shadow:
-    inset 0 -4px 0 rgba(122, 74, 50, 0.12),
-    0 0 0 4px rgba(246, 179, 82, 0.16);
-  animation: dockNextReadyPulse 1.7s cubic-bezier(0.22, 1, 0.36, 1) infinite;
-}
-
 .dock-search {
   border: 2px solid var(--game-border);
   border-radius: 15px;
@@ -2522,35 +2513,6 @@ button {
   border-color: #fff3cb;
   background: #2c8f99;
   box-shadow: inset 0 -7px 0 rgba(26, 74, 77, 0.24), 0 10px 0 rgba(53, 82, 74, 0.16);
-}
-
-.dock-spirit.next-ready {
-  border-color: #fff3cb;
-  box-shadow:
-    inset 0 -6px 0 rgba(26, 74, 77, 0.18),
-    0 0 0 4px rgba(246, 179, 82, 0.16),
-    0 8px 0 rgba(53, 82, 74, 0.12);
-}
-
-.next-child-halo {
-  position: absolute;
-  z-index: 0;
-  display: block;
-  background: url("/assets/ui/energy-constellation/next-child-halo.png") center / contain no-repeat;
-  filter: drop-shadow(0 0 10px rgba(246, 179, 82, 0.18));
-  opacity: 0;
-  pointer-events: none;
-  transform: scale(0.82);
-  animation: nextChildHaloCue 940ms cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-.dock-avatar .next-child-halo {
-  inset: -24px;
-}
-
-.dock-selected-summary > .next-child-halo,
-.dock-spirit > .next-child-halo {
-  inset: -18px;
 }
 
 .dock-avatar {
@@ -12594,10 +12556,6 @@ button {
   place-items: center;
 }
 
-.moral-speak-overlay.ready:has(.moral-next-turn-card) {
-  gap: 12px;
-}
-
 .moral-speak-overlay.success {
   place-items: center;
   padding: 78px 24px 118px;
@@ -12728,36 +12686,6 @@ button {
 .moral-mic-button:hover {
   transform: translateY(-3px) scale(1.03);
   filter: brightness(1.04);
-}
-
-.moral-next-turn-card {
-  display: grid;
-  min-width: 154px;
-  justify-items: center;
-  gap: 4px;
-  padding: 9px 14px;
-  border: 1px solid color-mix(in srgb, var(--moral-accent, #f6b352) 36%, #fff8ea);
-  border-radius: 18px;
-  color: #174c5a;
-  background: rgba(255, 248, 234, 0.94);
-  box-shadow: 0 10px 14px rgba(19, 51, 45, 0.13), inset 0 -3px 0 rgba(246, 179, 82, 0.16);
-  animation: moralNextTurnLift 0.46s cubic-bezier(0.22, 1, 0.36, 1) both;
-  pointer-events: none;
-}
-
-.moral-next-turn-card span,
-.moral-next-turn-card em {
-  color: color-mix(in srgb, var(--moral-accent, #f6b352) 76%, #174c5a);
-  font-size: 12px;
-  font-style: normal;
-  font-weight: 950;
-  line-height: 1;
-}
-
-.moral-next-turn-card strong {
-  font-size: 22px;
-  font-weight: 950;
-  line-height: 1.08;
 }
 
 .moral-wave-state,
@@ -12902,21 +12830,6 @@ button {
   border-radius: 999px;
   color: color-mix(in srgb, var(--moral-accent, #f6b352) 72%, #174c5a);
   background: color-mix(in srgb, var(--moral-accent, #f6b352) 12%, #fffdf4);
-  font-size: 13px;
-  font-weight: 950;
-  line-height: 1;
-  white-space: nowrap;
-}
-
-.moral-next-chip {
-  display: inline-flex;
-  align-items: center;
-  min-height: 28px;
-  padding: 0 9px;
-  border: 1px solid rgba(45, 159, 178, 0.22);
-  border-radius: 999px;
-  color: #174c5a;
-  background: rgba(226, 247, 243, 0.86);
   font-size: 13px;
   font-weight: 950;
   line-height: 1;
@@ -13401,51 +13314,6 @@ button {
   }
 }
 
-@keyframes moralNextTurnLift {
-  from {
-    opacity: 0;
-    transform: translateY(10px) scale(0.96);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes nextChildHaloCue {
-  0% {
-    opacity: 0;
-    transform: scale(0.72);
-  }
-
-  34% {
-    opacity: 0.9;
-  }
-
-  100% {
-    opacity: 0;
-    transform: scale(1.08);
-  }
-}
-
-@keyframes dockNextReadyPulse {
-  0%,
-  100% {
-    transform: translateY(0);
-    box-shadow:
-      inset 0 -4px 0 rgba(122, 74, 50, 0.12),
-      0 0 0 3px rgba(246, 179, 82, 0.12);
-  }
-
-  50% {
-    transform: translateY(-2px);
-    box-shadow:
-      inset 0 -4px 0 rgba(122, 74, 50, 0.12),
-      0 0 0 5px rgba(246, 179, 82, 0.2);
-  }
-}
-
 .home-screen-shell .hud-rail {
   position: absolute;
   right: 14px;
@@ -13614,17 +13482,6 @@ button {
   box-shadow: none;
 }
 
-.home-screen-shell .dock-selected-summary.next-ready {
-  border-color: rgba(246, 179, 82, 0.58);
-  background: #fff8ea;
-  box-shadow: 0 0 0 4px rgba(246, 179, 82, 0.16);
-}
-
-.home-screen-shell .spirit-dock.next-ready .dock-collapse {
-  color: #174c5a;
-  background: rgba(255, 248, 234, 0.94);
-}
-
 .home-screen-shell .dock-selected-summary .dock-avatar {
   width: 38px;
   height: 38px;
@@ -13735,12 +13592,8 @@ button {
   .energy-touch-halo,
   .energy-confirm-burst,
   .energy-arrival-orb,
-  .next-child-halo,
   .moral-energy-sparks,
   .moral-energy-trail,
-  .moral-next-turn-card,
-  .dock-selected-summary.next-ready,
-  .dock-spirit.next-ready,
   .map-energy-constellation.moral-success,
   .map-energy-constellation.moral-success::after,
   .world-map-shell.moral-stage-success .energy-slot-row button.current {
@@ -13751,7 +13604,6 @@ button {
   .energy-touch-halo,
   .energy-confirm-burst,
   .energy-arrival-orb,
-  .next-child-halo,
   .teacher-review-actions button,
   .review-edit-popover summary {
     transition: none;
@@ -13768,10 +13620,6 @@ button {
     transform: translate(-50%, -58%) scale(0.72);
   }
 
-  .next-child-halo {
-    opacity: 0.28;
-    transform: scale(0.96);
-  }
 }
 
 /* P0 module cleanup: compact workflow panels instead of landing-page feature blocks. */
@@ -20780,11 +20628,6 @@ button {
   white-space: nowrap;
 }
 
-.home-screen-shell .dock-selected-summary.next-ready > .dock-summary-status {
-  color: #fffdf4;
-  background: #f6b352;
-}
-
 .home-screen-shell .spirit-dock.collapsed .dock-collapse {
   display: inline-flex;
   min-width: 72px;
@@ -20841,7 +20684,6 @@ button {
 
 .home-screen-shell .dock-avatar,
 .home-screen-shell .dock-avatar img,
-.home-screen-shell .next-child-halo,
 .moral-flow-ribbon,
 .moral-energy-sparks,
 .moral-energy-trail,
@@ -20881,10 +20723,6 @@ button {
 
 .home-screen-shell .moral-speak-overlay.success {
   padding: 70px 24px 96px;
-}
-
-.home-screen-shell .moral-speak-overlay.ready:has(.moral-next-turn-card) {
-  align-content: center;
 }
 
 .moral-ready-child {
