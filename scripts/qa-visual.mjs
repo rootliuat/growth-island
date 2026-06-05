@@ -878,6 +878,21 @@ async function exerciseSingleMoralSpeak(page, screenshots = {}) {
     wrongMapSelection: listeningWrongMapSelection,
   };
 
+  await page.waitForFunction(() => typeof window.__growthIslandSetMoralRecognizingForQa === "function", null, {
+    timeout: 5000,
+  });
+  const recognizingStarted = await page.evaluate(
+    ({ childId }) => window.__growthIslandSetMoralRecognizingForQa(childId),
+    { childId: readyDetails.selectedChildId },
+  );
+  await page.waitForFunction(() => window.__growthIslandMoralSpeakStage === "recognizing", null, { timeout: 5000 });
+  const recognizingState = await inspectMoralSelfServiceState(page);
+  const recognizingDetails = {
+    ...recognizingState,
+    flowStepCount: recognizingState.flowStepLabels.length,
+    started: recognizingStarted,
+  };
+
   await page.waitForFunction(() => typeof window.__growthIslandStartMoralReviewForQa === "function", null, {
     timeout: 5000,
   });
@@ -992,6 +1007,7 @@ async function exerciseSingleMoralSpeak(page, screenshots = {}) {
     mapEntry,
     ready: { ...readyDetails, touchGeometry: readyTouch, expandedDockTouchGeometry: readyExpandedDockTouch },
     listening: listeningDetails,
+    recognizing: recognizingDetails,
     pending: {
       ...pendingDetails,
       touchGeometry: pendingTouch,
@@ -1026,6 +1042,7 @@ async function exerciseMoralSpeakFlow(page, readyScreenshot, pendingScreenshot, 
     selfServiceEntryCount: children.filter((child) => child.mapEntry.openedSelfService).length,
     ready: children[0]?.ready,
     listening: children[0]?.listening,
+    recognizing: children[0]?.recognizing,
     pending: children[0]?.pending,
     success: children[0]?.success,
     final: children[0]?.final,
@@ -1113,6 +1130,8 @@ async function inspectMoralReviewCard(page, transcript, childId) {
       hasQueuedNextTurnUi: Boolean(
         document.querySelector(".moral-next-turn-card, .moral-next-chip, .spirit-dock .dock-selected-summary.next-ready, .spirit-dock .dock-spirit.next-ready"),
       ),
+      turnChipText: document.querySelector(".moral-turn-chip")?.textContent?.replace(/\s+/g, "") ?? "",
+      turnChipStatusText: document.querySelector(".moral-turn-chip span")?.textContent?.trim() ?? "",
       childBubbleText: document.querySelector(".spirit-speech-bubble")?.textContent?.replace(/\s+/g, "") ?? "",
       teacherMainText: document.querySelector(".teacher-review-main")?.textContent?.replace(/\s+/g, "") ?? "",
       energyBoardStateText: document.querySelector(".energy-constellation-head span")?.textContent?.replace(/\s+/g, "") ?? "",
@@ -1317,6 +1336,8 @@ async function inspectMoralSelfServiceState(page) {
     const teacherRect = teacherCard?.getBoundingClientRect();
     const turnChip = document.querySelector(".moral-turn-chip");
     const turnChipRect = turnChip?.getBoundingClientRect();
+    const focusPlaque = document.querySelector(".map-focus-plaque");
+    const energyBoard = document.querySelector(".map-energy-constellation");
     const forbiddenVisibleCopy = [
       "后台",
       "管理后台",
@@ -1369,6 +1390,8 @@ async function inspectMoralSelfServiceState(page) {
           teacherRect.bottom <= innerHeight + 1
         : true,
       childBubbleText: document.querySelector(".spirit-speech-bubble")?.textContent?.replace(/\s+/g, "") ?? "",
+      focusPlaqueVisible: focusPlaque ? isVisible(focusPlaque) : false,
+      energyBoardVisible: energyBoard ? isVisible(energyBoard) : false,
       visibleTextLength: visibleText.length,
       forbiddenVisibleCopy,
     };
@@ -3715,6 +3738,7 @@ async function inspectPage(browser, check, viewport) {
     const flowStates = [
       ["ready", moralFlowDetails?.ready],
       ["listening", moralFlowDetails?.listening],
+      ["recognizing", moralFlowDetails?.recognizing],
       ["pending", moralFlowDetails?.pending],
       ["success", moralFlowDetails?.success],
     ];
@@ -3744,6 +3768,10 @@ async function inspectPage(browser, check, viewport) {
     if (!moralFlowDetails?.listening?.wrongMapSelection?.guarded) {
       issues.push("moral speak listening allowed wrong-child map selection");
     }
+    if (moralFlowDetails?.recognizing?.stage !== "recognizing") issues.push("moral speak recognizing stage missing");
+    if (!hasExactFlowSteps(moralFlowDetails?.recognizing) || moralFlowDetails?.recognizing?.activeFlowStep !== "等") {
+      issues.push("moral speak recognizing rhythm step missing");
+    }
     if (moralFlowDetails?.pending?.stage !== "pendingReview") issues.push("moral speak did not enter teacher review");
     if (!hasExactFlowSteps(moralFlowDetails?.pending) || moralFlowDetails?.pending?.activeFlowStep !== "等") {
       issues.push("moral speak teacher review rhythm step missing");
@@ -3754,9 +3782,9 @@ async function inspectPage(browser, check, viewport) {
       issues.push("moral speak entered ledger before teacher confirmation");
     }
     if (
-      (!moralFlowDetails?.pending?.teacherCardText.includes("老师确认") &&
-        !moralFlowDetails?.pending?.teacherCardText.includes("确认这位")) ||
-      !moralFlowDetails?.pending?.teacherCardText.includes("确认点亮") ||
+      (!moralFlowDetails?.pending?.teacherCardText.includes("等老师") &&
+        !moralFlowDetails?.pending?.teacherCardText.includes("请老师帮忙")) ||
+      !moralFlowDetails?.pending?.teacherCardText.includes("点亮") ||
       !moralFlowDetails?.pending?.teacherCardText.includes("修正")
     ) {
       issues.push("moral speak teacher card missing confirmation actions");
@@ -3786,6 +3814,12 @@ async function inspectPage(browser, check, viewport) {
       if (!flow?.turnChipVisible || !flow?.turnChipChildName) {
         issues.push(`moral speak ${stateName} missing visible child name`);
       }
+      if (flow?.focusPlaqueVisible) {
+        issues.push(`moral speak ${stateName} still shows duplicate map focus plaque`);
+      }
+      if ((stateName === "ready" || stateName === "listening" || stateName === "recognizing") && flow?.energyBoardVisible) {
+        issues.push(`moral speak ${stateName} still shows duplicate energy board`);
+      }
     }
     if (!moralFlowDetails?.success?.hasEnergySparks) issues.push("moral speak success energy sparks missing");
     if (!moralFlowDetails?.success?.successBubble || moralFlowDetails.success.successBubble.includes("自助成长")) {
@@ -3812,17 +3846,8 @@ async function inspectPage(browser, check, viewport) {
     if (/XP/i.test(moralFlowDetails?.success?.focusPlaqueText ?? "")) {
       issues.push("moral speak child-facing focus plaque still shows XP");
     }
-    if (moralFlowDetails?.success?.growthFeedbackKind !== "energy") {
-      issues.push("moral speak self-service feedback did not switch to energy kind");
-    }
-    if (
-      !moralFlowDetails?.success?.growthFeedbackText.includes("能量") ||
-      !moralFlowDetails.success.growthFeedbackText.includes("精灵")
-    ) {
-      issues.push("moral speak global feedback missing energy arrival copy");
-    }
-    if (/XP|[+＋]\d/.test(moralFlowDetails?.success?.growthFeedbackText ?? "")) {
-      issues.push("moral speak global feedback still looks like score text");
+    if (moralFlowDetails?.success?.growthFeedbackKind || moralFlowDetails?.success?.growthFeedbackText) {
+      issues.push("moral speak success still shows duplicate global feedback");
     }
     if (
       moralFlowDetails?.success?.pixiSelectedActivityToken !== "能量" ||
@@ -3881,6 +3906,7 @@ async function inspectPage(browser, check, viewport) {
       for (const [stateName, flow] of [
         ["ready", childFlow.ready],
         ["listening", childFlow.listening],
+        ["recognizing", childFlow.recognizing],
         ["pending", childFlow.pending],
         ["success", childFlow.success],
       ]) {
@@ -3988,6 +4014,7 @@ async function inspectPage(browser, check, viewport) {
     if (low?.pending?.result?.delta !== 0) issues.push("low-confidence review should not suggest XP");
     if (low?.pending?.hasApproveAction) issues.push("low-confidence review should route through adjust before approval");
     if (low?.pending?.childBubbleText !== "请老师帮忙") issues.push("low-confidence child bubble should only ask teacher for help");
+    if (low?.pending?.turnChipStatusText !== "请老师帮忙") issues.push("low-confidence turn chip should ask teacher for help");
     if (/XP|[+＋-]\d|%|嗯嗯|未分类|待判断/.test(low?.pending?.childBubbleText ?? "")) {
       issues.push("low-confidence child bubble leaked review details");
     }
@@ -3996,10 +4023,11 @@ async function inspectPage(browser, check, viewport) {
     if (!low?.pending?.hasRespeakAction) issues.push("low-confidence teacher card missing respeak action");
     if (!low?.pending?.hasSkipAction) issues.push("low-confidence teacher card missing skip action");
     if (low?.pending?.actionLayout?.some((action) => action.clipped)) issues.push("low-confidence teacher action text clipped");
-    if (low?.afterAdjust?.actionLayout?.some((action) => action.text.includes("确认点亮") && low.afterAdjust.actionLayout.some((other) => other !== action && other.row === action.row))) {
+    if (low?.afterAdjust?.actionLayout?.some((action) => action.text.includes("点亮") && low.afterAdjust.actionLayout.some((other) => other !== action && other.row === action.row))) {
       issues.push("adjusted low-confidence approve action did not occupy its own row");
     }
     if (low?.afterAdjust?.approveDisabled) issues.push("low-confidence adjusted review approve button stayed disabled");
+    if (low?.afterAdjust?.turnChipStatusText !== "等老师") issues.push("low-confidence adjusted turn chip should wait for teacher");
     if ((low?.afterAdjust?.result?.confidence ?? 0) < 0.6) issues.push("low-confidence adjusted review did not reach teacher approval threshold");
     if (low?.afterAdjust?.result?.category !== "开拓创新") issues.push("low-confidence correction did not keep selected category");
     if (/%|45|未分类|待判断/.test(low?.pending?.publicCardText ?? "")) {
@@ -4031,6 +4059,7 @@ async function inspectPage(browser, check, viewport) {
     if (negative?.pending?.result?.delta >= 0) issues.push("negative review should be detected as a negative suggestion");
     if (negative?.pending?.hasApproveAction) issues.push("negative review should route through adjust before approval");
     if (negative?.pending?.childBubbleText !== "请老师帮忙") issues.push("negative child bubble should only ask teacher for help");
+    if (negative?.pending?.turnChipStatusText !== "请老师帮忙") issues.push("negative turn chip should ask teacher for help");
     if (/XP|[+＋-]\d|%|推了同学|扣|友爱|规则/.test(negative?.pending?.childBubbleText ?? "")) {
       issues.push("negative child bubble leaked label or score details");
     }
@@ -4040,7 +4069,7 @@ async function inspectPage(browser, check, viewport) {
     if (!negative?.pending?.hasRespeakAction) issues.push("negative teacher card missing respeak action");
     if (!negative?.pending?.hasSkipAction) issues.push("negative teacher card missing skip action");
     if (negative?.pending?.actionLayout?.some((action) => action.clipped)) issues.push("negative teacher action text clipped");
-    if (negative?.afterAdjust?.actionLayout?.some((action) => action.text.includes("确认点亮") && negative.afterAdjust.actionLayout.some((other) => other !== action && other.row === action.row))) {
+    if (negative?.afterAdjust?.actionLayout?.some((action) => action.text.includes("点亮") && negative.afterAdjust.actionLayout.some((other) => other !== action && other.row === action.row))) {
       issues.push("adjusted negative approve action did not occupy its own row");
     }
     if (/%|80|友爱|规则|[+＋-]\d/.test(negative?.pending?.publicCardText ?? "")) {
@@ -4058,6 +4087,7 @@ async function inspectPage(browser, check, viewport) {
       issues.push("negative review adjustment did not set a positive teacher decision");
     }
     if (negative?.afterAdjust?.approveDisabled) issues.push("adjusted review approve button stayed disabled");
+    if (negative?.afterAdjust?.turnChipStatusText !== "等老师") issues.push("negative adjusted turn chip should wait for teacher");
     if (negative?.afterAdjust?.result?.category !== "开拓创新") issues.push("negative correction did not keep selected category");
     if (!negative?.final?.hasPositiveLedger) issues.push("adjusted review did not create an approved positive ledger record");
     if (negative?.final?.latestPositiveCategory !== "开拓创新") issues.push("adjusted review ledger used the wrong category");

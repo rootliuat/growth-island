@@ -49,7 +49,7 @@ export function TeacherMoralReviewCard({
     <aside className="teacher-review-corner-card" style={style} aria-label="老师确认">
       <span className="teacher-review-status">
         <Shell size={13} />
-        确认这位
+        {canApprove ? "等老师" : "请老师帮忙"}
       </span>
       <div className="teacher-review-main">
         <strong>{child.name}</strong>
@@ -64,10 +64,10 @@ export function TeacherMoralReviewCard({
             type="button"
             className="approve"
             onClick={onApprove}
-            aria-label={`${child.name} 确认点亮`}
+            aria-label={`${child.name} 点亮能量`}
           >
             <Check size={18} />
-            确认点亮
+            点亮
           </button>
         ) : null}
         <details className={canApprove ? "review-edit-popover" : "review-edit-popover primary"}>
@@ -99,7 +99,7 @@ export function TeacherMoralReviewCard({
         </button>
         <button type="button" className="skip" onClick={onSkip}>
           <SkipForward size={17} />
-          跳过这位
+          跳过
         </button>
       </div>
 

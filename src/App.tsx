@@ -459,6 +459,7 @@ export function App() {
     clearMoralSpeakTimers();
     stopMoralSpeakRecording(true);
     moralSpeakApprovingRef.current = false;
+    clearGrowthFeedback();
     setMoralSpeak({ stage: "ready", childId });
   };
 
@@ -467,13 +468,6 @@ export function App() {
     const activeChild = childrenWithProgress.find((item) => item.id === moralSpeakLockedChildId) ?? selectedChild;
     setSelectedChildId(activeChild.id);
     worldMapRef.current?.focusSelected();
-    showGrowthFeedback({
-      kind: "status",
-      tone: "neutral",
-      title: `先完成 ${activeChild.name}`,
-      detail: "老师点亮后下一位再点",
-      childName: activeChild.name,
-    });
     return true;
   };
 
@@ -488,46 +482,16 @@ export function App() {
     if (childId === selectedChild.id) {
       worldMapRef.current?.focusSelected();
       prepareMoralSpeakForChild(childId);
-      showGrowthFeedback({
-        kind: "focus",
-        tone: "neutral",
-        title: `${selectedChild.name} 准备说成长`,
-        detail: "点麦克风说成长",
-        childName: selectedChild.name,
-      });
       return;
     }
-    const child = childrenWithProgress.find((item) => item.id === childId);
     setSelectedChildId(childId);
     prepareMoralSpeakForChild(childId);
-    if (child) {
-      showGrowthFeedback({
-        kind: "focus",
-        tone: "neutral",
-        title: `${child.name} 准备说成长`,
-        detail: `点麦克风说成长`,
-        childName: child.name,
-      });
-    }
   };
 
   const selectChildFromMap = (childId: string) => {
     if (guardMoralSpeakChildSelection(childId)) return;
-    const child = childrenWithProgress.find((item) => item.id === childId);
-    const latestEnergyRecord = allRecentRecords.find((record) => record.childId === childId && record.delta > 0 && record.category);
     setSelectedChildId(childId);
     prepareMoralSpeakForChild(childId);
-    if (child) {
-      showGrowthFeedback({
-        kind: "status",
-        tone: "neutral",
-        title: `${child.name} 准备说成长`,
-        detail: latestEnergyRecord?.category
-          ? `${getChildEnergyLabel(latestEnergyRecord.category)}能量已点亮`
-          : "点麦克风说成长",
-        childName: child.name,
-      });
-    }
   };
 
   const applySnapshot = (snapshot: ClassroomSnapshot) => {
@@ -771,6 +735,7 @@ export function App() {
         summary?: string;
       }) => boolean;
       __growthIslandPrepareMoralSpeakForQa?: (childId?: string) => boolean;
+      __growthIslandSetMoralRecognizingForQa?: (childId?: string) => boolean;
       __growthIslandSelectMapChildForQa?: (childId: string) => boolean;
     };
     qaWindow.__growthIslandClearDemoDataForQa = clearLocalDemoData;
@@ -810,6 +775,19 @@ export function App() {
       prepareMoralSpeakForChild(child.id);
       return true;
     };
+    qaWindow.__growthIslandSetMoralRecognizingForQa = (childId) => {
+      const child =
+        childrenWithProgress.find((item) => item.id === childId) ??
+        childrenWithProgress.find((item) => item.id === selectedChild.id) ??
+        selectedChild;
+      clearMoralSpeakTimers();
+      stopMoralSpeakRecording(true);
+      moralSpeakApprovingRef.current = false;
+      clearGrowthFeedback();
+      setSelectedChildId(child.id);
+      setMoralSpeak({ stage: "recognizing", childId: child.id });
+      return true;
+    };
     qaWindow.__growthIslandSelectMapChildForQa = (childId) => {
       const child = childrenWithProgress.find((item) => item.id === childId);
       if (!child) return false;
@@ -831,17 +809,8 @@ export function App() {
   const commitLedger = async (input: LedgerRecordInput) => {
     const feedbackChild = childrenWithProgress.find((child) => child.id === input.childId);
     if (feedbackChild && input.delta !== 0) {
-      const nextXp = Math.max(0, feedbackChild.xp + input.delta);
       const isSelfServiceEnergy = input.delta > 0 && input.reason.startsWith("自助成长：");
-      if (isSelfServiceEnergy) {
-        showGrowthFeedback({
-          kind: "energy",
-          tone: "positive",
-          title: `${feedbackChild.name} 能量进精灵`,
-          detail: `${getChildEnergyLabel(input.category)}点亮 · 精灵能量 ${nextXp}`,
-          childName: feedbackChild.name,
-        });
-      } else {
+      if (!isSelfServiceEnergy) {
         showGrowthFeedback({
           kind: "xp",
           tone: input.delta > 0 ? "positive" : "watch",
@@ -1190,6 +1159,7 @@ export function App() {
       result,
       previousChildName: completedChild.name,
     }));
+    clearGrowthFeedback();
     scheduleMoralSpeakTimer(() => {
       moralSpeakApprovingRef.current = false;
       returnMoralSpeakToIslandIdle();

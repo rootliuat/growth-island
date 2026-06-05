@@ -20879,6 +20879,10 @@ button {
   display: none;
 }
 
+.home-screen-shell .world-map-shell:is(.moral-stage-ready, .moral-stage-listening, .moral-stage-recognizing) .map-energy-constellation {
+  display: none;
+}
+
 .map-travel-board button,
 .review-transcript summary,
 .dock-filters button {
@@ -21097,7 +21101,7 @@ button {
 }
 
 .home-screen-shell .world-map-shell:not(.moral-stage-idle) .map-focus-plaque {
-  display: flex;
+  display: none;
   top: 76px;
   left: 14px;
   right: auto;
@@ -21128,6 +21132,8 @@ button {
     gap: 10px;
     padding: 12px;
     border-radius: 20px;
+    background: rgba(255, 248, 234, 0.88);
+    box-shadow: 0 8px 18px rgba(19, 51, 45, 0.1);
   }
 
   .teacher-review-status {
@@ -21327,6 +21333,59 @@ button {
 
 .home-screen-shell .map-energy-constellation.moral-idle .energy-card b {
   display: none;
+}
+
+.home-screen-shell .world-map-shell:is(.moral-stage-pendingReview, .moral-stage-success) .map-energy-constellation {
+  top: 76px;
+  left: 14px;
+  width: min(232px, calc(100% - 420px));
+  gap: 6px;
+  padding: 7px;
+  border-width: 1px;
+  border-radius: 17px;
+  background: rgba(255, 248, 234, 0.8);
+  box-shadow: 0 8px 18px rgba(19, 51, 45, 0.1);
+}
+
+.home-screen-shell .world-map-shell:is(.moral-stage-pendingReview, .moral-stage-success) .energy-constellation-head {
+  gap: 5px;
+}
+
+.home-screen-shell .world-map-shell:is(.moral-stage-pendingReview, .moral-stage-success) .energy-constellation-head span,
+.home-screen-shell .world-map-shell:is(.moral-stage-pendingReview, .moral-stage-success) .energy-constellation-head strong {
+  min-height: 28px;
+  padding-inline: 9px;
+  font-size: 12px;
+}
+
+.home-screen-shell .world-map-shell:is(.moral-stage-pendingReview, .moral-stage-success) .energy-constellation-head strong {
+  max-width: 98px;
+}
+
+.home-screen-shell .world-map-shell:is(.moral-stage-pendingReview, .moral-stage-success) .energy-slot-row {
+  gap: 5px;
+}
+
+.home-screen-shell .world-map-shell:is(.moral-stage-pendingReview, .moral-stage-success) .energy-slot-row button.current {
+  flex-basis: 68px;
+  min-height: 54px;
+  padding: 4px;
+}
+
+.home-screen-shell .world-map-shell:is(.moral-stage-pendingReview, .moral-stage-success) .energy-slot-row button.current b {
+  display: none;
+}
+
+@media (max-width: 720px) {
+  .home-screen-shell .world-map-shell:is(.moral-stage-pendingReview, .moral-stage-success) .map-energy-constellation {
+    top: 54px;
+    left: 12px;
+    width: min(168px, calc(100% - 96px));
+  }
+
+  .home-screen-shell .world-map-shell:is(.moral-stage-pendingReview, .moral-stage-success) .energy-constellation-head strong {
+    max-width: 72px;
+  }
 }
 
 .home-screen-shell .map-scene-gate {

@@ -44,11 +44,11 @@ const flowStepOrder: Record<MoralSpeakStage, number> = {
   error: 1,
 };
 
-function getTurnStatusLabel(stage: MoralSpeakStage) {
-  if (stage === "ready") return "准备说成长";
+function getTurnStatusLabel(stage: MoralSpeakStage, hasSafePendingResult = true) {
+  if (stage === "ready") return "准备说";
   if (stage === "listening") return "正在说";
   if (stage === "recognizing") return "贝壳在听";
-  if (stage === "pendingReview") return "等老师确认";
+  if (stage === "pendingReview") return hasSafePendingResult ? "等老师" : "请老师帮忙";
   if (stage === "success") return "已点亮";
   if (stage === "error") return "请老师帮忙";
   return "";
@@ -62,6 +62,7 @@ export function MoralSpeakOverlay({ child, spirit, state, onStart, onStop, onRet
   const style = { "--moral-accent": accent, "--spirit-accent": spirit?.accent ?? accent } as CSSProperties;
   const energyLabel = getChildEnergyLabel(safeResult?.category);
   const currentStepIndex = flowStepOrder[state.stage];
+  const turnStatusLabel = getTurnStatusLabel(state.stage, Boolean(safeResult));
 
   return (
     <div
@@ -81,9 +82,9 @@ export function MoralSpeakOverlay({ child, spirit, state, onStart, onStop, onRet
           );
         })}
       </div>
-      <div className="moral-turn-chip" aria-label={`当前孩子：${child.name}，${getTurnStatusLabel(state.stage)}`}>
+      <div className="moral-turn-chip" aria-label={`当前孩子：${child.name}，${turnStatusLabel}`}>
         <strong>{child.name}</strong>
-        <span>{getTurnStatusLabel(state.stage)}</span>
+        <span>{turnStatusLabel}</span>
       </div>
 
       {state.stage === "ready" ? (
@@ -124,7 +125,7 @@ export function MoralSpeakOverlay({ child, spirit, state, onStart, onStop, onRet
       {state.stage === "pendingReview" ? (
         <div className="spirit-speech-bubble">
           <Sparkles size={22} />
-          {safeResult ? "等老师确认" : "请老师帮忙"}
+          {safeResult ? "等老师" : "请老师帮忙"}
         </div>
       ) : null}
 
@@ -135,8 +136,7 @@ export function MoralSpeakOverlay({ child, spirit, state, onStart, onStop, onRet
           <i className="energy-arrival-orb" aria-hidden="true" style={{ pointerEvents: "none" }} />
           <i className="moral-energy-sparks" aria-hidden="true" />
           <Sparkles size={24} />
-          <strong>{energyLabel}能量进精灵</strong>
-          <span className="moral-success-chip">已点亮</span>
+          <strong>{energyLabel}能量点亮精灵</strong>
         </div>
       ) : null}
 

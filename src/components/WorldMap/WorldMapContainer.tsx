@@ -24,7 +24,6 @@ import {
   canApproveMoralGrowth,
   getChildEnergyColor,
   getChildEnergyLabel,
-  getChildEnergyResultText,
 } from "../../domain/virtueEnergy";
 import { regions } from "../../game/regionConfig";
 import type { RegionId } from "../../game/types";
@@ -171,20 +170,22 @@ export const WorldMapContainer = forwardRef<PixiWorldMapHandle, WorldMapContaine
   const currentEnergyCategory = hasMoralResult ? safeMoralResult?.category : selectedRecord?.category;
   const currentEnergyColor = getChildEnergyColor(currentEnergyCategory);
   const currentEnergyLabel = getChildEnergyLabel(currentEnergyCategory);
-  const currentEnergyValue = moralSpeak.result
-    ? moralSpeak.stage === "success" && safeMoralResult
-      ? `${currentEnergyLabel}进精灵`
-      : getChildEnergyResultText(moralSpeak.result)
-    : selectedRecord?.category
-      ? selectedRecordIsSelfService
-        ? `${getChildEnergyLabel(selectedRecord.category)}能量`
-        : `${getChildEnergyLabel(selectedRecord.category)}能量`
-      : "等待点亮";
+  const currentEnergyValue = (() => {
+    if (moralSpeak.result) {
+      if (!safeMoralResult) return "请老师帮忙";
+      return `${currentEnergyLabel}能量`;
+    }
+    if (selectedRecord?.category) return `${getChildEnergyLabel(selectedRecord.category)}能量`;
+    return "准备点亮";
+  })();
   const currentEnergyState = (() => {
-    if (moralSpeak.stage === "pendingReview") return safeMoralResult ? "待点亮" : "需帮助";
-    if (moralSpeak.stage === "success") return "能量进精灵";
+    if (moralSpeak.stage === "ready") return "准备说";
+    if (moralSpeak.stage === "listening") return "正在说";
+    if (moralSpeak.stage === "recognizing") return "贝壳在听";
+    if (moralSpeak.stage === "pendingReview") return safeMoralResult ? "等老师" : "需帮助";
+    if (moralSpeak.stage === "success") return "已点亮";
     if (moralSpeak.stage === "error") return "需帮助";
-    if (moralSpeak.stage !== "idle") return "等待点亮";
+    if (moralSpeak.stage !== "idle") return "准备点亮";
     return selectedRecord ? "能量进精灵" : "能量地图";
   })();
 

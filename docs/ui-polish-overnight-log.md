@@ -525,3 +525,44 @@ P2:
   - `qa-artifacts/latest/home-whiteboard.png`
   - `qa-artifacts/latest/mobile-home-mobile.png`
   - `qa-artifacts/latest/moral-review-safety-mobile.png`
+
+## P10 HUD state unity slice
+
+### Scope
+
+- Continued P10.3 and P10.4: HUD information de-noise and key active-state consistency.
+- Kept the existing child self-service loop intact: child taps their own spirit, says growth, teacher confirms, energy feedback plays, and the next child self-selects.
+- Kept backend, server API, XP/ledger contracts, data files, generated assets, and PixiJS map structure unchanged.
+- Did not add parent, reviewer, kindergarten admin, PDF export, approval flow, accounts, permissions, cloud sync, or a fixed next-child queue.
+
+### UX/UI Review Notes
+
+- Read-only UX review found active moral flow had too many competing state surfaces: turn chip, map plaque, speech bubble, teacher card, energy board, and global feedback could all narrate the same state.
+- Read-only UI review recommended treating ready/listening/recognizing/pending/success as focus mode and making one active state read as one system.
+- Selected direction: standardize short state labels, hide duplicate map identity during active stages, make the active energy board stage-aware, and suppress global feedback until the post-success handoff.
+
+### Implementation Notes
+
+- `MoralSpeakOverlay.tsx` now uses the shared active-state vocabulary: `准备说`, `正在说`, `贝壳在听`, `等老师`, `请老师帮忙`, `已点亮`.
+- `TeacherMoralReviewCard.tsx` simplifies the safe approval action from `确认点亮` to `点亮`, shortens skip to `跳过`, and aligns the status chip with `等老师` / `请老师帮忙`.
+- `WorldMapContainer.tsx` aligns active energy-board state/value copy and removes the older `等待点亮` / `待点亮` mix.
+- `App.tsx` clears duplicate global feedback when a child enters active self-service, blocks wrong-child taps without creating a new global toast, and suppresses the immediate self-service success toast while preserving the final `下一位可以点精灵` handoff.
+- `styles.css` hides the map focus plaque for all non-idle moral stages, hides the energy board during ready/listening/recognizing, and keeps pending/success energy cues compact.
+- `scripts/qa-visual.mjs` now checks that active stages do not show a duplicate map focus plaque, ready/listening/recognizing do not show the energy board, unsafe pending states put `请老师帮忙` in the turn chip, and success does not show duplicate global feedback.
+- Design record written to `docs/superpowers/specs/2026-06-06-p10-hud-state-unity-design.md`.
+
+### Validation
+
+- `git diff --check`: passed.
+- `node --check scripts/qa-visual.mjs`: passed.
+- `npm run build`: passed.
+- `npm run qa:visual`: passed.
+- Latest visual QA report: `qa-artifacts/latest/report.json`.
+- Latest visual QA generated at `2026-06-05T17:53:37.569Z`.
+- QA coverage: 33 checks, 0 issues, 0 warnings.
+- Final read-only code review found no critical or high issues. Its medium note was addressed by making the pending turn chip result-aware, and its low QA note was addressed by adding recognizing-state coverage.
+- Manual screenshots inspected:
+  - `qa-artifacts/latest/moral-speak-flow-ready-whiteboard.png`
+  - `qa-artifacts/latest/moral-speak-flow-pending-whiteboard.png`
+  - `qa-artifacts/latest/moral-speak-flow-whiteboard.png`
+  - `qa-artifacts/latest/moral-review-safety-mobile.png`
