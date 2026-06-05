@@ -442,3 +442,45 @@ P2:
   - `qa-artifacts/latest/teacher-workbench-whiteboard.png`
   - `qa-artifacts/latest/mobile-voice-record-mobile.png`
   - `qa-artifacts/latest/mobile-organization-mobile.png`
+
+## P9 large-screen classroom touch loop
+
+### Scope
+
+- Hardened the existing child self-service classroom loop for whiteboard touch use.
+- Preserved child self-selection: after success, the screen returns to the full island and the next child chooses their own spirit.
+- Kept backend, server API, XP/ledger contracts, data files, generated assets, and PixiJS map structure unchanged.
+- Did not add parent, reviewer, kindergarten admin, PDF export, approval flow, accounts, permissions, cloud sync, or a fixed next-child queue.
+
+### UX/UI Review Notes
+
+- Read-only UX review identified the main classroom risk as accidental child switching once a turn is already in progress.
+- Read-only UI review identified the main visibility risk as weak real-name hierarchy during pending review and success, plus a teacher card that was too compact for whiteboard touch.
+- Selected direction: keep the simple island loop, lock the active child only during active stages, enlarge teacher confirmation, and prove the sequence with a 10-child QA loop.
+
+### Implementation Notes
+
+- `App.tsx` now ignores wrong-child map/dock selections during listening, recognition, pending review, and success.
+- `App.tsx` shows a short handoff feedback after success: `下一位可以点精灵`, without assigning a next child.
+- `WorldMapContainer.tsx` makes the real child name the primary identity in the map focus plaque.
+- `MoralSpeakOverlay.tsx` adds a visible turn chip for ready, listening, recognizing, pending review, success, and error states.
+- `TeacherMoralReviewCard.tsx` reframes the card as `确认这位`, puts the child name first, and changes `补说` to the clearer `重说`.
+- `styles.css` adds a P9 whiteboard layer for larger teacher confirmation controls, stronger child identity, larger expanded dock cards, and mobile active-flow minimums.
+- `scripts/qa-visual.mjs` adds `classroom-touch-loop`, a whiteboard QA pass that completes 10 unique child turns, probes wrong-child taps during active stages, and checks post-success handoff feedback.
+- Design record written to `docs/superpowers/specs/2026-06-05-p9-large-screen-classroom-loop-design.md`.
+
+### Validation
+
+- `git diff --check`: passed.
+- `node --check scripts/qa-visual.mjs`: passed.
+- `npm run build`: passed.
+- `npm run qa:visual`: passed.
+- Latest visual QA report: `qa-artifacts/latest/report.json`.
+- Latest visual QA generated at `2026-06-05T16:21:14.423Z`.
+- QA coverage: 33 checks, 0 issues, 0 warnings.
+- New P9 QA case: `classroom-touch-loop/whiteboard` completes 10 unique child self-service turns and checks both dock and map-callback wrong-child taps during active stages.
+- Final read-only code review found no blocking issues. Its low-priority notes were addressed by updating this validation section and adding the map-callback wrong-child guard probe.
+- Manual screenshots inspected:
+  - `qa-artifacts/latest/classroom-touch-loop-whiteboard.png`
+  - `qa-artifacts/latest/moral-speak-flow-whiteboard.png`
+  - `qa-artifacts/latest/moral-review-safety-mobile.png`

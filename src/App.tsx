@@ -447,11 +447,34 @@ export function App() {
     moralSpeakTimersRef.current.push(timer);
   };
 
+  const moralSpeakLockedChildId =
+    moralSpeak.stage === "listening" ||
+    moralSpeak.stage === "recognizing" ||
+    moralSpeak.stage === "pendingReview" ||
+    moralSpeak.stage === "success"
+      ? moralSpeak.childId
+      : undefined;
+
   const prepareMoralSpeakForChild = (childId: string) => {
     clearMoralSpeakTimers();
     stopMoralSpeakRecording(true);
     moralSpeakApprovingRef.current = false;
     setMoralSpeak({ stage: "ready", childId });
+  };
+
+  const guardMoralSpeakChildSelection = (childId: string) => {
+    if (!moralSpeakLockedChildId || childId === moralSpeakLockedChildId) return false;
+    const activeChild = childrenWithProgress.find((item) => item.id === moralSpeakLockedChildId) ?? selectedChild;
+    setSelectedChildId(activeChild.id);
+    worldMapRef.current?.focusSelected();
+    showGrowthFeedback({
+      kind: "status",
+      tone: "neutral",
+      title: `先完成 ${activeChild.name}`,
+      detail: "老师点亮后下一位再点",
+      childName: activeChild.name,
+    });
+    return true;
   };
 
   const returnMoralSpeakToIslandIdle = () => {
@@ -461,6 +484,7 @@ export function App() {
   };
 
   const selectChildFromDock = (childId: string) => {
+    if (guardMoralSpeakChildSelection(childId)) return;
     if (childId === selectedChild.id) {
       worldMapRef.current?.focusSelected();
       prepareMoralSpeakForChild(childId);
@@ -488,6 +512,7 @@ export function App() {
   };
 
   const selectChildFromMap = (childId: string) => {
+    if (guardMoralSpeakChildSelection(childId)) return;
     const child = childrenWithProgress.find((item) => item.id === childId);
     const latestEnergyRecord = allRecentRecords.find((record) => record.childId === childId && record.delta > 0 && record.category);
     setSelectedChildId(childId);
@@ -733,6 +758,7 @@ export function App() {
       __growthIslandRestoreBackupForQa?: (backup: ClassroomBackupSnapshot) => ClassroomBackupSummary;
       __growthIslandSettingsChanges?: SettingsChangeRecord[];
       __growthIslandShopRedemptions?: ShopRedemption[];
+      __growthIslandChildIds?: string[];
       __growthIslandSelectedChildId?: string;
       __growthIslandTeacherMode?: boolean;
       __growthIslandMoralSpeakStage?: MoralSpeakViewState["stage"];
@@ -745,6 +771,7 @@ export function App() {
         summary?: string;
       }) => boolean;
       __growthIslandPrepareMoralSpeakForQa?: (childId?: string) => boolean;
+      __growthIslandSelectMapChildForQa?: (childId: string) => boolean;
     };
     qaWindow.__growthIslandClearDemoDataForQa = clearLocalDemoData;
     qaWindow.__growthIslandCreateBackupForQa = createCurrentClassroomBackup;
@@ -756,6 +783,7 @@ export function App() {
     qaWindow.__growthIslandRestoreBackupForQa = restoreClassroomBackup;
     qaWindow.__growthIslandSettingsChanges = settingsChanges;
     qaWindow.__growthIslandShopRedemptions = shopRedemptions;
+    qaWindow.__growthIslandChildIds = childrenWithProgress.map((child) => child.id);
     qaWindow.__growthIslandSelectedChildId = selectedChild.id;
     qaWindow.__growthIslandTeacherMode = teacherMode;
     qaWindow.__growthIslandMoralSpeakStage = moralSpeak.stage;
@@ -780,6 +808,12 @@ export function App() {
         selectedChild;
       setSelectedChildId(child.id);
       prepareMoralSpeakForChild(child.id);
+      return true;
+    };
+    qaWindow.__growthIslandSelectMapChildForQa = (childId) => {
+      const child = childrenWithProgress.find((item) => item.id === childId);
+      if (!child) return false;
+      selectChildFromMap(child.id);
       return true;
     };
   }, [childrenWithProgress, growthFeedback, ledger, lotteryDraws, moralReviews, moralSpeak, organizationState, selectedChild, settingsChanges, shopRedemptions, teacherMode]);
@@ -1159,6 +1193,13 @@ export function App() {
     scheduleMoralSpeakTimer(() => {
       moralSpeakApprovingRef.current = false;
       returnMoralSpeakToIslandIdle();
+      showGrowthFeedback({
+        kind: "status",
+        tone: "neutral",
+        title: "下一位可以点精灵",
+        detail: "孩子自己选择精灵继续",
+        childName: completedChild.name,
+      });
     }, 2400);
   };
 

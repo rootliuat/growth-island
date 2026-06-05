@@ -49,13 +49,13 @@ export function TeacherMoralReviewCard({
     <aside className="teacher-review-corner-card" style={style} aria-label="老师确认">
       <span className="teacher-review-status">
         <Shell size={13} />
-        老师确认
+        确认这位
       </span>
       <div className="teacher-review-main">
+        <strong>{child.name}</strong>
         <span className={canApprove ? "energy-chip" : "energy-chip needs-help"}>
           {canApprove ? getChildEnergyResultText(result) : helpText}
         </span>
-        <strong>{child.name}</strong>
       </div>
 
       <div className="teacher-review-actions" data-mode={canApprove ? "approve" : "adjust"}>
@@ -95,7 +95,7 @@ export function TeacherMoralReviewCard({
         </details>
         <button type="button" className="respeak" onClick={onRespeak}>
           <Mic size={17} />
-          补说
+          重说
         </button>
         <button type="button" className="skip" onClick={onSkip}>
           <SkipForward size={17} />

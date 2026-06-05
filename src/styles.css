@@ -21053,3 +21053,232 @@ button {
     width: min(196px, calc(100vw - 24px));
   }
 }
+
+/* P9 classroom touch loop: keep the active child and teacher confirmation unmistakable on a whiteboard. */
+.moral-turn-chip {
+  position: absolute;
+  top: 58px;
+  left: 50%;
+  z-index: 12;
+  display: inline-flex;
+  max-width: min(320px, calc(100vw - 64px));
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  overflow: hidden;
+  padding: 0 13px;
+  border: 1px solid rgba(246, 179, 82, 0.48);
+  border-radius: 999px;
+  color: #174c5a;
+  background: rgba(255, 248, 234, 0.94);
+  box-shadow: 0 10px 22px rgba(19, 51, 45, 0.12);
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+.moral-turn-chip strong,
+.moral-turn-chip span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.moral-turn-chip strong {
+  font-size: 17px;
+  font-weight: 950;
+}
+
+.moral-turn-chip span {
+  color: rgba(23, 76, 90, 0.7);
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.home-screen-shell .world-map-shell:not(.moral-stage-idle) .map-focus-plaque {
+  display: flex;
+  top: 76px;
+  left: 14px;
+  right: auto;
+  z-index: 9;
+  max-width: min(310px, calc(100% - 420px));
+  pointer-events: none;
+}
+
+.home-screen-shell .world-map-shell:not(.moral-stage-idle) .map-focus-plaque .focus-copy strong {
+  max-width: 172px;
+  font-size: 20px;
+}
+
+.home-screen-shell .world-map-shell:not(.moral-stage-idle) .map-focus-plaque .focus-copy p {
+  max-width: 190px;
+}
+
+.spirit-speech-bubble.success strong {
+  max-width: 100%;
+  text-align: center;
+  white-space: normal;
+}
+
+@media (min-width: 721px) {
+  .home-screen-shell .teacher-review-corner-card {
+    top: 76px;
+    width: min(360px, calc(100% - 28px));
+    gap: 10px;
+    padding: 12px;
+    border-radius: 20px;
+  }
+
+  .teacher-review-status {
+    min-height: 28px;
+    padding-inline: 10px;
+    font-size: 12px;
+  }
+
+  .teacher-review-main {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: start;
+    gap: 7px;
+  }
+
+  .teacher-review-main strong {
+    max-width: 100%;
+    font-size: 22px;
+    text-align: left;
+  }
+
+  .energy-chip {
+    min-height: 38px;
+    font-size: 16px;
+  }
+
+  .teacher-review-actions button,
+  .review-edit-popover summary {
+    min-height: 54px;
+    font-size: 13px;
+  }
+
+  .teacher-review-actions .approve {
+    min-height: 64px;
+    font-size: 16px;
+  }
+
+  .home-screen-shell .dock-selected-summary {
+    min-height: 58px;
+  }
+
+  .home-screen-shell .spirit-dock.collapsed .dock-collapse {
+    min-width: 76px;
+    min-height: 50px;
+  }
+
+  .home-screen-shell .spirit-dock.expanded {
+    grid-template-columns: minmax(178px, 224px) minmax(0, 1fr);
+    grid-template-rows: auto 104px;
+    max-height: 198px;
+  }
+
+  .home-screen-shell .spirit-dock.expanded .dock-selected-summary.expanded {
+    min-height: 96px;
+  }
+
+  .home-screen-shell .spirit-dock.expanded .dock-scroll {
+    grid-auto-columns: 94px;
+    min-height: 96px;
+  }
+
+  .home-screen-shell .spirit-dock.expanded .dock-spirit {
+    grid-template-rows: 54px auto;
+    min-height: 92px;
+  }
+
+  .home-screen-shell .spirit-dock.expanded .dock-avatar {
+    width: 50px;
+    height: 50px;
+  }
+
+  .home-screen-shell .spirit-dock.expanded .dock-avatar img {
+    max-width: 60px;
+    max-height: 60px;
+  }
+}
+
+.home-screen-shell .home-module:has(.world-map-shell:is(.moral-stage-listening, .moral-stage-recognizing, .moral-stage-pendingReview, .moral-stage-success)) .spirit-dock.expanded .dock-spirit:not(.active) {
+  opacity: 0.52;
+}
+
+.home-screen-shell .home-module:has(.world-map-shell:is(.moral-stage-listening, .moral-stage-recognizing, .moral-stage-pendingReview, .moral-stage-success)) .spirit-dock.expanded .dock-spirit:not(.active):active {
+  transform: none;
+}
+
+@media (max-width: 720px) {
+  .moral-turn-chip {
+    top: 46px;
+    max-width: calc(100vw - 42px);
+    min-height: 34px;
+    gap: 6px;
+    padding-inline: 10px;
+  }
+
+  .moral-turn-chip strong {
+    font-size: 15px;
+  }
+
+  .home-screen-shell .world-map-shell:not(.moral-stage-idle) .map-focus-plaque {
+    display: none;
+  }
+
+  .home-screen-shell .teacher-review-corner-card {
+    max-height: min(270px, calc(100% - 160px));
+  }
+
+  .home-screen-shell .teacher-review-corner-card:has(.review-edit-popover[open]) {
+    top: auto;
+    right: 12px;
+    bottom: 92px;
+    left: 12px;
+    max-height: min(300px, calc(100% - 220px));
+    overflow: auto;
+    overscroll-behavior: contain;
+  }
+
+  .teacher-review-main {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: start;
+  }
+
+  .teacher-review-main strong {
+    max-width: 100%;
+    text-align: left;
+  }
+
+  .teacher-review-actions button,
+  .review-edit-popover summary {
+    min-height: 52px;
+  }
+
+  .home-screen-shell .home-module:has(.world-map-shell:is(.moral-stage-ready, .moral-stage-listening, .moral-stage-recognizing, .moral-stage-pendingReview, .moral-stage-success)) .spirit-dock.expanded {
+    grid-template-rows: 44px 64px;
+    max-height: 122px;
+  }
+
+  .home-screen-shell .home-module:has(.world-map-shell:is(.moral-stage-ready, .moral-stage-listening, .moral-stage-recognizing, .moral-stage-pendingReview, .moral-stage-success)) .spirit-dock.expanded .dock-scroll {
+    grid-auto-columns: 64px;
+    min-height: 62px;
+  }
+
+  .home-screen-shell .home-module:has(.world-map-shell:is(.moral-stage-ready, .moral-stage-listening, .moral-stage-recognizing, .moral-stage-pendingReview, .moral-stage-success)) .spirit-dock.expanded .dock-spirit {
+    min-height: 58px;
+  }
+
+  .home-screen-shell .home-module:has(.world-map-shell:is(.moral-stage-ready, .moral-stage-listening, .moral-stage-recognizing, .moral-stage-pendingReview, .moral-stage-success)) .spirit-dock.expanded .dock-avatar {
+    width: 38px;
+    height: 38px;
+  }
+
+  .home-screen-shell .home-module:has(.world-map-shell:is(.moral-stage-ready, .moral-stage-listening, .moral-stage-recognizing, .moral-stage-pendingReview, .moral-stage-success)) .spirit-dock.expanded .dock-avatar img {
+    max-width: 44px;
+    max-height: 44px;
+  }
+}

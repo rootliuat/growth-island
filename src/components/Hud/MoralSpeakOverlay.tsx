@@ -44,6 +44,16 @@ const flowStepOrder: Record<MoralSpeakStage, number> = {
   error: 1,
 };
 
+function getTurnStatusLabel(stage: MoralSpeakStage) {
+  if (stage === "ready") return "准备说成长";
+  if (stage === "listening") return "正在说";
+  if (stage === "recognizing") return "贝壳在听";
+  if (stage === "pendingReview") return "等老师确认";
+  if (stage === "success") return "已点亮";
+  if (stage === "error") return "请老师帮忙";
+  return "";
+}
+
 export function MoralSpeakOverlay({ child, spirit, state, onStart, onStop, onRetry, onClose }: MoralSpeakOverlayProps) {
   if (!child || state.stage === "idle") return null;
 
@@ -71,12 +81,13 @@ export function MoralSpeakOverlay({ child, spirit, state, onStart, onStop, onRet
           );
         })}
       </div>
+      <div className="moral-turn-chip" aria-label={`当前孩子：${child.name}，${getTurnStatusLabel(state.stage)}`}>
+        <strong>{child.name}</strong>
+        <span>{getTurnStatusLabel(state.stage)}</span>
+      </div>
 
       {state.stage === "ready" ? (
         <>
-          <div className="moral-ready-child" aria-hidden="true">
-            {child.name}
-          </div>
           <button type="button" className="moral-mic-button" onClick={() => onStart()} aria-label={`${child.name} 开始说成长`}>
             <span className="energy-touch-halo" aria-hidden="true" style={{ pointerEvents: "none" }} />
             <Mic size={42} />
@@ -113,7 +124,7 @@ export function MoralSpeakOverlay({ child, spirit, state, onStart, onStop, onRet
       {state.stage === "pendingReview" ? (
         <div className="spirit-speech-bubble">
           <Sparkles size={22} />
-          {safeResult ? "等老师点亮" : "请老师帮忙"}
+          {safeResult ? "等老师确认" : "请老师帮忙"}
         </div>
       ) : null}
 

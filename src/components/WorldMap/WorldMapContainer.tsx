@@ -218,12 +218,12 @@ export const WorldMapContainer = forwardRef<PixiWorldMapHandle, WorldMapContaine
         <div className="map-focus-plaque" style={{ "--focus-accent": selectedSpirit?.accent ?? "#59B97C" } as CSSProperties}>
           <span className="focus-home-badge">
             <Home size={17} />
-            {selectedChild.name}
+            当前
           </span>
           <div className="focus-copy">
-            <strong>{selectedChild.petName}</strong>
+            <strong>{selectedChild.name}</strong>
             <p>
-              点自己，说成长 · {selectedSpirit?.name ?? "精灵伙伴"}
+              {selectedChild.petName} · 点自己说成长
             </p>
           </div>
           {selectedRecord && (
