@@ -603,3 +603,137 @@ P2:
   - `qa-artifacts/latest/moral-speak-flow-final-whiteboard.png`
   - `qa-artifacts/latest/moral-speak-flow-recognizing-mobile.png`
   - `qa-artifacts/latest/moral-speak-flow-final-mobile.png`
+
+## P11 Three.js spirit showcase POC
+
+### Scope
+
+- Added an isolated 3D spirit showcase effect preview for selected children.
+- Kept the main island map on PixiJS and did not change backend, XP, ledger, moral review, data files, or classroom flow.
+- Kept child self-service intact: children still tap their own spirit, say growth, wait for teacher confirmation, receive energy feedback, and the next child self-selects.
+- Explicitly excluded weapon, skull, cannon, bomb, spike, saw, and other combat or hazard assets.
+
+### Implementation Notes
+
+- Added `three` and `@types/three`.
+- Copied selected CC0 Quaternius runtime assets into `public/assets/3d/`.
+- Added `SpiritShowcase3D.tsx`, a dynamically loaded Three.js preview modal with slow rotation, touch drag, model switching, growth chest prop, and PNG fallback when WebGL is unavailable.
+- Added lightweight `看3D` / `3D` entry points on the right spirit card and collapsed/expanded bottom dock.
+- Added `docs/3d-assets-license.md` to record runtime files, source files, CC0 license, and excluded asset categories.
+
+### Validation
+
+- `git diff --check`: passed.
+- `node --check scripts/qa-visual.mjs`: passed.
+- `npm run build`: passed.
+- `npm run qa:visual`: passed.
+- Latest visual QA report: `qa-artifacts/latest/report.json`.
+- Latest visual QA generated at `2026-06-06T03:12:26.248Z`.
+- QA coverage: 35 checks, 0 issues, 0 warnings.
+- New P11 screenshot artifacts:
+  - `qa-artifacts/latest/spirit-showcase-3d-whiteboard.png`
+  - `qa-artifacts/latest/spirit-showcase-3d-mobile.png`
+
+## P11 frontend performance and clarity pass
+
+### Scope
+
+- Responded to the classroom-facing feedback that the frontend felt laggy and blurry after the 3D showcase slice.
+- Kept the main map on PixiJS and kept the 3D showcase isolated from the child growth flow.
+- Did not change backend, API contracts, XP logic, ledger writes, generated data files, classroom flow, permissions, PDF, approval flow, parent, reviewer, or admin scope.
+
+### Diagnosis
+
+- The map canvas had a fixed Pixi renderer resolution below 1x, so the whiteboard overview could look soft even when idle.
+- The large whiteboard canvas could get expensive during wheel, drag, focus, and zoom interactions if it stayed at full backing resolution.
+- The static map layer texture cache added large GPU texture pressure and could soften the focused map after cache refresh.
+- The spirit layer attempted to load too many class spirit images up front, which made first-home rendering heavier than needed.
+- The new Three.js preview used more GPU work than necessary for a small optional effect room.
+
+### Implementation Notes
+
+- `PixiWorld.ts` now uses adaptive render resolution: idle restores to at least 1x for clarity, while active touch, wheel, zoom, and focus temporarily drop to a lower resolution on large canvases.
+- `PixiWorld.ts` exposes `data-render-resolution` on the map canvas so visual QA can prove whether blur is from an active performance state or an idle clarity bug.
+- `WorldScene.ts` no longer caches ocean, island, and path layers as static textures, reducing GPU pressure and avoiding cache-softened focus views.
+- `SpiritLayer.ts` now lazy-loads spirit artwork: the selected child loads immediately, the top few ranked children preload shortly after, and the rest stay on lightweight fallback art until selected.
+- `SpiritShowcase3D.tsx` reduces optional 3D cost by capping pixel ratio by stage size, disabling real-time shadow maps, and lowering decorative geometry segments.
+- `App.tsx` keeps moral-speak locked-child checks on the latest state ref so stale handlers and QA probes cannot interrupt the child self-service success handoff.
+- `scripts/qa-visual.mjs` adds `QA_CHECKS`, records Pixi backing/CSS ratios, treats low render resolution as acceptable only during active map interaction, and hardens the moral self-service and 3D showcase checks.
+
+### Validation
+
+- `npm run build`: passed.
+- `QA_CHECKS=home npm run qa:visual`: passed with 0 issues and 0 warnings.
+- `QA_CHECKS=home,roll-call npm run qa:visual`: passed with 0 issues and 0 warnings.
+- `QA_CHECKS=moral-speak-flow,classroom-touch-loop npm run qa:visual`: passed with 0 issues and 0 warnings.
+- `npm run qa:visual`: passed.
+- Latest visual QA report: `qa-artifacts/latest/report.json`.
+- Latest visual QA generated at `2026-06-06T05:07:17.192Z`.
+- QA coverage: 35 checks, 0 issues, 0 warnings.
+- Latest home whiteboard render state: idle resolution 1x, backing ratio 1x, 60.8 fps static sample, 25 fps headless wheel sample without warning.
+- Latest 3D showcase checks: whiteboard and mobile both open, render canvas, stay contained, show no forbidden combat copy, and report Pixi idle resolution 1x behind the modal.
+
+## P11 whiteboard blur and stutter hotfix
+
+### Scope
+
+- Responded to the whiteboard feedback that the focused child self-service screen still looked blurry and stuttered.
+- Kept the main map on PixiJS, kept the optional 3D showcase isolated, and did not change backend, API contracts, XP logic, ledger writes, data files, or classroom product scope.
+
+### Diagnosis
+
+- The main island surface asset is `1536x1024`, but the Pixi world scales it to roughly `2774px` wide before camera zoom. The previous child focus zoom near `1.88x` effectively enlarged map detail more than 3x, so the watercolor source art looked soft even with a 1x canvas backing store.
+- Entering moral self-service changed the home shell grid from `1fr + 74px dock` to `1fr + 0`, forcing the large map canvas to resize from about `2032x918` to `2032x992`. That resize caused the visible stutter right after opening `准备说`.
+- `focusChildOnHome` retried `focusSelected()` every 100ms even when the map ref was already available, repeatedly restarting the camera animation.
+- Interaction downsampling is still useful for wheel/drag, but it must not run for automatic child focus because it makes the focused classroom state look blurry.
+
+### Implementation Notes
+
+- Lowered focused camera zooms in `cameraConfig.ts` so child focus stays close enough for self-service while avoiding heavy over-enlargement of the 1536px island art.
+- Shortened the default focus animation duration.
+- `PixiWorld.ts` now keeps automatic focus, region focus, and zoom-button moves at the base 1x render resolution; only direct drag/wheel interaction temporarily drops resolution, then idle restores to 1x.
+- `App.tsx` now stops retrying `focusSelected()` once the map handle exists.
+- Moral self-service no longer resizes the whole home shell; the bottom module dock keeps its layout slot but is hidden with `visibility: hidden` during the child flow.
+- Increased growth handoff feedback duration so the `下一位可以点精灵` handoff remains visible after returning to island idle.
+- On mobile pending review, the auxiliary child bubble and energy board are hidden so the teacher confirmation card has a clean touch area.
+
+### Validation
+
+- `git diff --check`: passed.
+- `node --check scripts/qa-visual.mjs`: passed.
+- `npm run build`: passed.
+- `QA_CHECKS=home npm run qa:visual`: passed with 0 issues and 0 warnings.
+- `QA_CHECKS=moral-speak-flow npm run qa:visual`: passed with 0 issues and 0 warnings on whiteboard and mobile.
+- `QA_CHECKS=classroom-touch-loop npm run qa:visual`: passed with 0 issues and 0 warnings.
+- Latest classroom loop report: `qa-artifacts/latest/report.json`, generated at `2026-06-06T06:12:51.127Z`.
+- Manual screenshot inspected: `qa-artifacts/latest/home-ready-select-focus-clear.png`.
+
+## P11 hidpi map runtime pass
+
+### Scope
+
+- Continued the whiteboard clarity work after confirming the remaining softness came from source asset scale.
+- Kept product behavior unchanged and did not regenerate AI art, rewrite PixiJS, or change backend, XP, ledger, classroom flow, data files, permissions, PDF, approval flow, parent, reviewer, or admin scope.
+
+### Implementation Notes
+
+- Added `scripts/generate-map-hidpi.mjs` and `npm run assets:map-hidpi`.
+- Generated 8 targeted 2x WebP runtime assets under `public/assets/map/v4-runtime-hidpi/batch11/`:
+  - 4 main island layers: shadow, side, surface, shoreline foam.
+  - 4 large route layers: main loop, shell branch, stone branch, wood bridge network.
+- Updated `src/game/v4MapAssets.ts` so only those large base/path layers use the hidpi runtime directory; all other 286 map runtime assets still use the existing compact `v4-runtime` directory.
+- Runtime hidpi directory size is about `3.0 MB`.
+- Home whiteboard resource budget increased from about `4.7 MB` WebP to `6.41 MB` WebP, with no visual QA warnings.
+
+### Validation
+
+- `npm run assets:map-hidpi`: generated 8 assets.
+- `git diff --check`: passed.
+- `node --check scripts/generate-map-hidpi.mjs`: passed.
+- `node --check scripts/qa-visual.mjs`: passed.
+- `npm run build`: passed.
+- `QA_CHECKS=home,moral-speak-flow,classroom-touch-loop npm run qa:visual`: passed.
+- Latest visual QA report: `qa-artifacts/latest/report.json`.
+- Latest visual QA generated at `2026-06-06T07:13:06.602Z`.
+- QA coverage for this pass: 4 checks, 0 issues, 0 warnings.
+- Manual screenshot inspected: `qa-artifacts/latest/home-ready-select-focus-hidpi.png`.

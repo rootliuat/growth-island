@@ -4,6 +4,7 @@ import { DialogueModal } from "./components/DialogueModal";
 import { GameTopBar } from "./components/Hud/GameTopBar";
 import { SpiritDetailPanel } from "./components/Hud/SpiritDetailPanel";
 import { SpiritDock } from "./components/Hud/SpiritDock";
+import { SpiritShowcase3D } from "./components/Hud/SpiritShowcase3D";
 import { MathPkModal } from "./components/MathPkModal";
 import { ModulePlaceholder } from "./components/modules/ModulePlaceholder";
 import { ChildProfileModule } from "./components/modules/ChildProfileModule";
@@ -345,6 +346,8 @@ export function App() {
   const [moralReviews, setMoralReviews] = useState<MoralReviewItem[]>(() => initialClassroomBackup?.moralReviews ?? seededMoralReviews);
   const [selectedChildId, setSelectedChildId] = useState(initialClassroomBackup?.children[0]?.id ?? initialChildren[0].id);
   const [moralSpeak, setMoralSpeak] = useState<MoralSpeakViewState>({ stage: "idle" });
+  const moralSpeakRef = useRef<MoralSpeakViewState>(moralSpeak);
+  moralSpeakRef.current = moralSpeak;
   const [teacherMode, setTeacherMode] = useState(() => initialClassroomBackup?.settings.teacherMode ?? getInitialTeacherMode());
   const [settingsChanges, setSettingsChanges] = useState<SettingsChangeRecord[]>(() => initialClassroomBackup?.settings.settingsChanges ?? getInitialSettingsChanges());
   const [activeModule, setActiveModule] = useState<AppModuleId>(() => getInitialActiveModule());
@@ -360,6 +363,7 @@ export function App() {
   const [syncStatus, setSyncStatus] = useState<SyncStatus>(() => (initialClassroomBackup ? "offline" : "connecting"));
   const [assetVersion, setAssetVersion] = useState(0);
   const [growthFeedback, setGrowthFeedback] = useState<GrowthFeedback | undefined>();
+  const [showcaseChildId, setShowcaseChildId] = useState<string | undefined>();
 
   const spiritsById = useMemo(() => new Map(spirits.map((spirit) => [spirit.id, spirit])), []);
   const childrenWithProgress = useMemo(() => enrichChildren(children, ledger), [children, ledger]);
@@ -368,6 +372,14 @@ export function App() {
   const selectedSpiritAsset = useMemo(
     () => getSpiritAsset(selectedSpirit, selectedChild.state),
     [assetVersion, selectedChild.state, selectedSpirit],
+  );
+  const showcaseChild = showcaseChildId
+    ? childrenWithProgress.find((child) => child.id === showcaseChildId)
+    : undefined;
+  const showcaseSpirit = showcaseChild ? spiritsById.get(showcaseChild.spiritId) ?? spirits[0] : undefined;
+  const showcaseSpiritAsset = useMemo(
+    () => (showcaseChild && showcaseSpirit ? getSpiritAsset(showcaseSpirit, showcaseChild.state) : undefined),
+    [assetVersion, showcaseChild, showcaseSpirit],
   );
   const allRecentRecords = useMemo(
     () =>
@@ -399,7 +411,7 @@ export function App() {
     growthFeedbackTimerRef.current = window.setTimeout(() => {
       setGrowthFeedback(undefined);
       growthFeedbackTimerRef.current = undefined;
-    }, 2600);
+    }, 4800);
   };
 
   const clearGrowthFeedback = () => {
@@ -447,13 +459,15 @@ export function App() {
     moralSpeakTimersRef.current.push(timer);
   };
 
-  const moralSpeakLockedChildId =
-    moralSpeak.stage === "listening" ||
-    moralSpeak.stage === "recognizing" ||
-    moralSpeak.stage === "pendingReview" ||
-    moralSpeak.stage === "success"
-      ? moralSpeak.childId
+  const getMoralSpeakLockedChildId = () => {
+    const current = moralSpeakRef.current;
+    return current.stage === "listening" ||
+      current.stage === "recognizing" ||
+      current.stage === "pendingReview" ||
+      current.stage === "success"
+      ? current.childId
       : undefined;
+  };
 
   const prepareMoralSpeakForChild = (childId: string) => {
     clearMoralSpeakTimers();
@@ -464,8 +478,9 @@ export function App() {
   };
 
   const guardMoralSpeakChildSelection = (childId: string) => {
-    if (!moralSpeakLockedChildId || childId === moralSpeakLockedChildId) return false;
-    const activeChild = childrenWithProgress.find((item) => item.id === moralSpeakLockedChildId) ?? selectedChild;
+    const lockedChildId = getMoralSpeakLockedChildId();
+    if (!lockedChildId || childId === lockedChildId) return false;
+    const activeChild = childrenWithProgress.find((item) => item.id === lockedChildId) ?? selectedChild;
     setSelectedChildId(activeChild.id);
     worldMapRef.current?.focusSelected();
     return true;
@@ -737,6 +752,7 @@ export function App() {
       __growthIslandPrepareMoralSpeakForQa?: (childId?: string) => boolean;
       __growthIslandSetMoralRecognizingForQa?: (childId?: string) => boolean;
       __growthIslandSelectMapChildForQa?: (childId: string) => boolean;
+      __growthIslandOpen3dShowcaseForQa?: (childId?: string) => boolean;
     };
     qaWindow.__growthIslandClearDemoDataForQa = clearLocalDemoData;
     qaWindow.__growthIslandCreateBackupForQa = createCurrentClassroomBackup;
@@ -792,6 +808,15 @@ export function App() {
       const child = childrenWithProgress.find((item) => item.id === childId);
       if (!child) return false;
       selectChildFromMap(child.id);
+      return true;
+    };
+    qaWindow.__growthIslandOpen3dShowcaseForQa = (childId) => {
+      const child =
+        childrenWithProgress.find((item) => item.id === childId) ??
+        childrenWithProgress.find((item) => item.id === selectedChild.id) ??
+        selectedChild;
+      setActiveModule("home");
+      openSpiritShowcase(child.id);
       return true;
     };
   }, [childrenWithProgress, growthFeedback, ledger, lotteryDraws, moralReviews, moralSpeak, organizationState, selectedChild, settingsChanges, shopRedemptions, teacherMode]);
@@ -1369,7 +1394,11 @@ export function App() {
     let attempts = 0;
     const focusWhenReady = () => {
       attempts += 1;
-      worldMapRef.current?.focusSelected();
+      const worldMap = worldMapRef.current;
+      if (worldMap) {
+        worldMap.focusSelected();
+        return;
+      }
       if (attempts < 12) scheduleHomeFocusTimer(focusWhenReady, 100);
     };
     scheduleHomeFocusTimer(focusWhenReady, 120);
@@ -1386,6 +1415,13 @@ export function App() {
       detail: "查看精灵能量",
       childName: child.name,
     });
+  };
+
+  const openSpiritShowcase = (childId = selectedChild.id) => {
+    const child = childrenWithProgress.find((item) => item.id === childId) ?? selectedChild;
+    setSelectedChildId(child.id);
+    setShowcaseChildId(child.id);
+    clearGrowthFeedback();
   };
 
   const drawRollCallChild = (eligibleChildIds?: string[]) => {
@@ -1694,6 +1730,7 @@ export function App() {
                 recentRecords={recentRecords.filter((record) => record.delta > 0)}
                 onOpenProfile={openChildProfile}
                 onStartSelfService={(childId) => focusChildOnHome(childId, { prepareMoralSpeak: true })}
+                onOpenShowcase={openSpiritShowcase}
               />
             </aside>
           </section>
@@ -1703,6 +1740,7 @@ export function App() {
             spiritsById={spiritsById}
             selectedChildId={selectedChild.id}
             onSelectChild={selectChildFromDock}
+            onOpenShowcase={openSpiritShowcase}
           />
         </section>
       ) : activeModule === "roll-call" ? (
@@ -1862,6 +1900,15 @@ export function App() {
           onWin={recordMathPkWin}
         />
       )}
+
+      {showcaseChild && showcaseSpirit ? (
+        <SpiritShowcase3D
+          child={showcaseChild}
+          spirit={showcaseSpirit}
+          spiritAssetUrl={showcaseSpiritAsset?.url}
+          onClose={() => setShowcaseChildId(undefined)}
+        />
+      ) : null}
 
       <GrowthFeedbackOverlay feedback={growthFeedback} />
     </AppShell>

@@ -16,22 +16,31 @@ import {
 } from "./mapPlacementConfig";
 
 const base = "/assets/map/v4-runtime";
+const hidpiBase = "/assets/map/v4-runtime-hidpi";
+
+function assetFrom(root: string, batch: string, fileName: string) {
+  return encodeURI(`${root}/${batch}/${fileName.replace(/\.png$/i, ".webp")}`);
+}
 
 function asset(batch: string, fileName: string) {
-  return encodeURI(`${base}/${batch}/${fileName.replace(/\.png$/i, ".webp")}`);
+  return assetFrom(base, batch, fileName);
+}
+
+function hidpiAsset(batch: string, fileName: string) {
+  return assetFrom(hidpiBase, batch, fileName);
 }
 
 export const v4MapAssets = {
   oceanBase: asset("batch11", "v4-ocean-base-tile.png"),
   oceanWaveOverlay: asset("batch11", "v4-ocean-wave-overlay.png"),
-  islandShadow: asset("batch11", "v4-island-shadow-full.png"),
-  islandSide: asset("batch11", "v4-island-side-full.png"),
-  islandSurface: asset("batch11", "v4-island-surface-full.png"),
-  shorelineFoam: asset("batch11", "v4-shoreline-foam-ring.png"),
-  routeMainLoop: asset("batch11", "v4-route-main-loop.png"),
-  routeShellBranch: asset("batch11", "v4-route-shell-branch.png"),
-  routeStoneBranch: asset("batch11", "v4-route-stone-branch.png"),
-  routeWoodBridgeNetwork: asset("batch11", "v4-route-wood-bridge-network.png"),
+  islandShadow: hidpiAsset("batch11", "v4-island-shadow-full.png"),
+  islandSide: hidpiAsset("batch11", "v4-island-side-full.png"),
+  islandSurface: hidpiAsset("batch11", "v4-island-surface-full.png"),
+  shorelineFoam: hidpiAsset("batch11", "v4-shoreline-foam-ring.png"),
+  routeMainLoop: hidpiAsset("batch11", "v4-route-main-loop.png"),
+  routeShellBranch: hidpiAsset("batch11", "v4-route-shell-branch.png"),
+  routeStoneBranch: hidpiAsset("batch11", "v4-route-stone-branch.png"),
+  routeWoodBridgeNetwork: hidpiAsset("batch11", "v4-route-wood-bridge-network.png"),
   cliffStairLarge: asset("batch11", "v4-cliff-stair-large.png"),
   growthTreeRing: asset("batch12", "v4-landmark-growth-tree-ring.png"),
   growthTreeLarge: asset("batch12", "v4-landmark-growth-tree-large.png"),

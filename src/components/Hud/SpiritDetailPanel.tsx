@@ -1,4 +1,4 @@
-import { BookOpenText, Clock3, Mic } from "lucide-react";
+import { BookOpenText, Box, Clock3, Mic } from "lucide-react";
 import type { CSSProperties } from "react";
 import type { ChildWithProgress, LedgerRecord, SpiritDefinition } from "../../types";
 import { xpProgressPercent } from "../../domain/progression";
@@ -11,6 +11,7 @@ interface SpiritDetailPanelProps {
   recentRecords: LedgerRecord[];
   onOpenProfile?: (childId: string) => void;
   onStartSelfService?: (childId: string) => void;
+  onOpenShowcase?: (childId: string) => void;
 }
 
 function getBigScreenRecordLabel(reason: string) {
@@ -46,6 +47,7 @@ export function SpiritDetailPanel({
   recentRecords,
   onOpenProfile,
   onStartSelfService,
+  onOpenShowcase,
 }: SpiritDetailPanelProps) {
   const progress = xpProgressPercent(child.xp);
   const displayRecords = recentRecords
@@ -74,6 +76,12 @@ export function SpiritDetailPanel({
             <button type="button" className="spirit-profile-button" onClick={() => onOpenProfile(child.id)}>
               <BookOpenText size={15} />
               小屋
+            </button>
+          ) : null}
+          {onOpenShowcase ? (
+            <button type="button" className="spirit-showcase-button" onClick={() => onOpenShowcase(child.id)}>
+              <Box size={15} />
+              看3D
             </button>
           ) : null}
         </div>

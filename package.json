@@ -14,6 +14,7 @@
     "qa:visual": "node scripts/qa-visual.mjs",
     "qa:p0-trace": "node scripts/qa-p0-trace.mjs",
     "qa:p4-providers": "node scripts/qa-p4-provider-smoke.mjs",
+    "assets:map-hidpi": "node scripts/generate-map-hidpi.mjs",
     "assets:map-webp": "node scripts/generate-map-webp.mjs",
     "assets:thumbs": "node scripts/generate-spirit-thumbnails.mjs",
     "preview": "vite preview --host 0.0.0.0"
@@ -25,12 +26,14 @@
     "pixi.js": "^8.18.1",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
+    "three": "^0.184.0",
     "vite": "^7.3.1"
   },
   "devDependencies": {
     "@types/node": "^22.19.19",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
+    "@types/three": "^0.184.1",
     "playwright": "^1.60.0",
     "sharp": "^0.34.5",
     "typescript": "^5.9.3",

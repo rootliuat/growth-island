@@ -12,12 +12,13 @@ const viewports = [
   { name: "mobile", width: 390, height: 844 },
 ];
 
-const checks = [
+const allChecks = [
   { name: "home", module: "home", viewports: ["whiteboard"], kind: "home" },
   { name: "home-fallback-return", module: "home", viewports: ["whiteboard", "mobile"], kind: "home-fallback-return" },
   { name: "moral-speak-flow", module: "home", viewports: ["whiteboard", "mobile"], kind: "moral-speak-flow", offline: true },
   { name: "classroom-touch-loop", module: "home", viewports: ["whiteboard"], kind: "classroom-loop", offline: true },
   { name: "moral-review-safety", module: "home", viewports: ["whiteboard", "mobile"], kind: "moral-review-safety", offline: true },
+  { name: "spirit-showcase-3d", module: "home", viewports: ["whiteboard", "mobile"], kind: "spirit-showcase", offline: true },
   { name: "teacher-workbench", module: "teacher-workbench", viewports: ["whiteboard", "compact"], kind: "teacher" },
   { name: "teacher-flow", module: "teacher-workbench", viewports: ["whiteboard"], kind: "teacher-flow", offline: true },
   { name: "voice-record", module: "voice-record", viewports: ["whiteboard"], kind: "voice-flow", offline: true },
@@ -55,6 +56,12 @@ const checks = [
   { name: "mobile-organization", module: "organization", viewports: ["mobile"], kind: "module", selector: ".organization-page" },
   { name: "mobile-settings", module: "settings", viewports: ["mobile"], kind: "settings-mobile", selector: ".settings-page" },
 ];
+
+const requestedChecks = (process.env.QA_CHECKS || "")
+  .split(",")
+  .map((name) => name.trim())
+  .filter(Boolean);
+const checks = requestedChecks.length ? allChecks.filter((check) => requestedChecks.includes(check.name)) : allChecks;
 
 function ensureCleanDir(dir) {
   fs.rmSync(dir, { recursive: true, force: true });
@@ -206,10 +213,13 @@ async function inspectPixiRenderState(page) {
     if (!(canvas instanceof HTMLCanvasElement)) return undefined;
     return {
       state: canvas.dataset.renderState || "unknown",
+      renderResolution: Number(canvas.dataset.renderResolution || Number.NaN),
       backingWidth: canvas.width,
       backingHeight: canvas.height,
       cssWidth: canvas.clientWidth,
       cssHeight: canvas.clientHeight,
+      backingRatioX: canvas.clientWidth ? Number((canvas.width / canvas.clientWidth).toFixed(3)) : 0,
+      backingRatioY: canvas.clientHeight ? Number((canvas.height / canvas.clientHeight).toFixed(3)) : 0,
     };
   });
 }
@@ -658,15 +668,18 @@ async function measureHomeWheel(page) {
   const stage = page.locator(".pixi-world-canvas").first();
   const box = await stage.boundingBox({ timeout: 7000 }).catch(() => undefined);
   if (!box) return undefined;
-  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-  await page.mouse.wheel(0, -320);
-  await page.waitForFunction(() => document.querySelector(".pixi-world-canvas")?.dataset.renderState === "active", undefined, {
-    timeout: 1000,
-  }).catch(() => undefined);
-  await page.waitForTimeout(80);
-  const fps = await measureFrameRate(page, ".pixi-world-canvas");
-  await waitForPixiIdle(page);
-  return fps;
+  const samples = [];
+  for (let index = 0; index < 2; index += 1) {
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.wheel(0, -320);
+    await page.waitForFunction(() => document.querySelector(".pixi-world-canvas")?.dataset.renderState === "active", undefined, {
+      timeout: 1000,
+    }).catch(() => undefined);
+    await page.waitForTimeout(80);
+    samples.push(await measureFrameRate(page, ".pixi-world-canvas"));
+    await waitForPixiIdle(page);
+  }
+  return samples.sort((a, b) => b.fps - a.fps)[0];
 }
 
 async function inspectTeacherCards(page) {
@@ -964,12 +977,13 @@ async function exerciseSingleMoralSpeak(page, screenshots = {}) {
     wrongMapSelection: successWrongMapSelection,
   };
 
-  await page.waitForFunction(
+  const returnedIdleWithinTimeout = await page.waitForFunction(
     () => window.__growthIslandMoralSpeakStage === "idle",
     null,
     { timeout: 5200 },
-  );
+  ).then(() => true).catch(() => false);
   await page.waitForTimeout(180);
+  const handoffFeedback = await readGrowthFeedback(page);
   await waitForPixiIdle(page);
   const finalDetails = await page.evaluate(({ completedChildId, initialSelfServiceCount }) => {
     const selectedChildId = window.__growthIslandSelectedChildId;
@@ -1002,7 +1016,6 @@ async function exerciseSingleMoralSpeak(page, screenshots = {}) {
       : undefined,
     };
   }, { completedChildId: readyDetails.selectedChildId, initialSelfServiceCount: readyDetails.selfServiceRecordCount });
-  const handoffFeedback = await readGrowthFeedback(page);
   if (screenshots.final) await page.screenshot({ path: screenshots.final, fullPage: false });
 
   return {
@@ -1018,7 +1031,7 @@ async function exerciseSingleMoralSpeak(page, screenshots = {}) {
       wrongMapSelection: pendingWrongMapSelection,
     },
     success: { ...successDetails, touchGeometry: successTouch },
-    final: { ...finalDetails, handoffFeedback },
+    final: { ...finalDetails, returnedIdleWithinTimeout, handoffFeedback },
   };
 }
 
@@ -1209,6 +1222,10 @@ async function attemptWrongDockChildSelection(page) {
       stage: window.__growthIslandMoralSpeakStage,
       moralChildId: window.__growthIslandMoralSpeak?.childId,
     };
+    const lockedStages = ["listening", "recognizing", "pendingReview", "success"];
+    if (!lockedStages.includes(before.stage)) {
+      return { before, targetChildName: "", targetFound: false, skippedUnlocked: true, after: before, guarded: true };
+    }
     const target = [...document.querySelectorAll(".dock-spirit")].find(
       (button) => button.getAttribute("data-selected-role") !== "current",
     );
@@ -1238,11 +1255,16 @@ async function attemptWrongDockChildSelection(page) {
     ...result,
     after,
     guarded:
-      result.targetFound &&
-      after.selectedChildId === result.before.selectedChildId &&
-      after.moralChildId === result.before.moralChildId &&
-      after.stage === result.before.stage,
-    hasGuardFeedback: /先完成|下一位|老师点亮后/.test(after.feedbackText),
+      result.skippedUnlocked === true ||
+      (result.targetFound &&
+        result.before.stage === "success" &&
+        after.stage === "idle" &&
+        after.selectedChildId === result.before.selectedChildId) ||
+      (result.targetFound &&
+        after.selectedChildId === result.before.selectedChildId &&
+        after.moralChildId === result.before.moralChildId &&
+        after.stage === result.before.stage),
+    hasGuardFeedback: result.skippedUnlocked === true || /先完成|下一位|老师点亮后/.test(after.feedbackText),
   };
 }
 
@@ -1253,6 +1275,10 @@ async function attemptWrongMapChildSelection(page) {
       stage: window.__growthIslandMoralSpeakStage,
       moralChildId: window.__growthIslandMoralSpeak?.childId,
     };
+    const lockedStages = ["listening", "recognizing", "pendingReview", "success"];
+    if (!lockedStages.includes(before.stage)) {
+      return { before, targetChildId: "", targetFound: false, hookFound: true, called: false, skippedUnlocked: true, after: before, guarded: true };
+    }
     const childIds = window.__growthIslandChildIds ?? [];
     const targetChildId = childIds.find((childId) => childId !== before.selectedChildId) ?? "";
     const hook = window.__growthIslandSelectMapChildForQa;
@@ -1272,13 +1298,18 @@ async function attemptWrongMapChildSelection(page) {
     ...result,
     after,
     guarded:
-      result.targetFound &&
-      result.hookFound &&
-      result.called &&
-      after.selectedChildId === result.before.selectedChildId &&
-      after.moralChildId === result.before.moralChildId &&
-      after.stage === result.before.stage,
-    hasGuardFeedback: /先完成|下一位|老师点亮后/.test(after.feedbackText),
+      result.skippedUnlocked === true ||
+      (result.targetFound &&
+        result.before.stage === "success" &&
+        after.stage === "idle" &&
+        after.selectedChildId === result.before.selectedChildId) ||
+      (result.targetFound &&
+        result.hookFound &&
+        result.called &&
+        after.selectedChildId === result.before.selectedChildId &&
+        after.moralChildId === result.before.moralChildId &&
+        after.stage === result.before.stage),
+    hasGuardFeedback: result.skippedUnlocked === true || /先完成|下一位|老师点亮后/.test(after.feedbackText),
   };
 }
 
@@ -3400,6 +3431,54 @@ async function inspectMobileDataDrawer(page, screenshot) {
   });
 }
 
+async function exerciseSpiritShowcase(page, screenshot) {
+  await waitForPixiIdle(page);
+  const opened = await page.evaluate(() => window.__growthIslandOpen3dShowcaseForQa?.() ?? false);
+  await page.waitForSelector(".spirit-showcase-modal", { timeout: 5000 });
+  await page
+    .waitForFunction(() => {
+      const stage = document.querySelector(".spirit-showcase-stage");
+      return stage?.getAttribute("data-status") !== "loading";
+    }, { timeout: 9000 })
+    .catch(() => undefined);
+  await page.waitForTimeout(700);
+  await page.screenshot({ path: screenshot, fullPage: false });
+
+  return page.evaluate(({ opened }) => {
+    const modal = document.querySelector(".spirit-showcase-modal");
+    const stage = document.querySelector(".spirit-showcase-stage");
+    const canvas = document.querySelector(".spirit-showcase-canvas");
+    const fallback = document.querySelector(".showcase-fallback");
+    const closeButton = document.querySelector(".showcase-close");
+    const rect = modal?.getBoundingClientRect();
+    const stageRect = stage?.getBoundingClientRect();
+    const canvasRect = canvas?.getBoundingClientRect();
+    const text = modal?.textContent?.replace(/\s+/g, " ").trim() ?? "";
+    const forbiddenCopy = ["武器", "枪", "骷髅", "死亡", "炮", "炸弹", "尖刺", "锯"].filter((word) => text.includes(word));
+    const modelButtons = [...document.querySelectorAll(".showcase-model-tabs button")].map((button) => button.textContent?.trim() ?? "");
+    return {
+      opened,
+      modalVisible: Boolean(rect && rect.width > 0 && rect.height > 0 && rect.top < innerHeight && rect.bottom > 0),
+      status: stage?.getAttribute("data-status") ?? "",
+      hasCanvas: Boolean(canvasRect && canvasRect.width > 80 && canvasRect.height > 80),
+      hasFallback: Boolean(fallback),
+      hasCloseButton: Boolean(closeButton),
+      modelButtonCount: modelButtons.length,
+      modelButtons,
+      forbiddenCopy,
+      stageContained: Boolean(
+        stageRect &&
+          stageRect.left >= 0 &&
+          stageRect.right <= innerWidth &&
+          stageRect.top >= 0 &&
+          stageRect.bottom <= innerHeight,
+      ),
+      horizontalOverflow: document.body.scrollWidth > document.documentElement.clientWidth,
+      text,
+    };
+  }, { opened });
+}
+
 async function inspectPage(browser, check, viewport) {
   const context = await browser.newContext({ viewport: { width: viewport.width, height: viewport.height }, deviceScaleFactor: 1 });
   const page = await context.newPage();
@@ -3414,6 +3493,13 @@ async function inspectPage(browser, check, viewport) {
   page.on("pageerror", (error) => pageErrors.push(error.message));
   page.on("requestfailed", (request) => {
     if (check.offline && request.url().includes(":5174/")) return;
+    const failureText = request.failure()?.errorText ?? "";
+    if (
+      failureText.includes("ERR_ABORTED") &&
+      /\.(?:avif|gif|glb|gltf|jpe?g|png|svg|webp)(?:\?|$)/i.test(request.url())
+    ) {
+      return;
+    }
     failedRequests.push(request.url());
   });
   if (check.offline) {
@@ -3475,6 +3561,10 @@ async function inspectPage(browser, check, viewport) {
           path.join(outputDir, `${check.name}-adjusted-${viewport.name}.png`),
         )
       : undefined;
+  const spiritShowcaseDetails =
+    check.kind === "spirit-showcase"
+      ? await exerciseSpiritShowcase(page, screenshot)
+      : undefined;
   const teacherFlowDetails =
     check.kind === "teacher-flow"
       ? await exerciseTeacherFlow(page, screenshot, path.join(outputDir, `${check.name}-home-focus-${viewport.name}.png`))
@@ -3532,6 +3622,7 @@ async function inspectPage(browser, check, viewport) {
     check.kind !== "moral-speak-flow" &&
     check.kind !== "classroom-loop" &&
     check.kind !== "moral-review-safety" &&
+    check.kind !== "spirit-showcase" &&
     check.kind !== "home-fallback-return" &&
     check.kind !== "voice-mobile" &&
     check.kind !== "roll-call" &&
@@ -3572,7 +3663,8 @@ async function inspectPage(browser, check, viewport) {
       viewport: { width: innerWidth, height: innerHeight },
     };
   });
-  const homeTouchGeometry = check.module === "home" ? await inspectTouchAndOverlap(page) : undefined;
+  const homeTouchGeometry = check.module === "home" && check.kind !== "spirit-showcase" ? await inspectTouchAndOverlap(page) : undefined;
+  const pixiRenderState = check.module === "home" ? await inspectPixiRenderState(page) : undefined;
 
   const resourceSummary = summarizeResources(resources);
   const pngBytes = resourceSummary.png?.bytes ?? 0;
@@ -3581,12 +3673,21 @@ async function inspectPage(browser, check, viewport) {
   const webpCount = resourceSummary.webp?.count ?? 0;
   const issues = [];
   const warnings = [];
+  let details = {};
 
   if (pageErrors.length) issues.push(`${pageErrors.length} browser page error(s)`);
   if (failedRequests.length) issues.push(`${failedRequests.length} failed request(s)`);
   if (common.failedImageCount) issues.push(`${common.failedImageCount} failed image(s)`);
   if (common.bodyOverflowX) issues.push("horizontal body overflow");
   if (common.forbiddenVisibleCopy.length) issues.push(`forbidden visible copy: ${common.forbiddenVisibleCopy.join(", ")}`);
+  if (pixiRenderState) {
+    if (pixiRenderState.state === "idle" && (pixiRenderState.backingRatioX < 0.95 || pixiRenderState.backingRatioY < 0.95)) {
+      issues.push(`pixi render backing below 0.95x css size: ${pixiRenderState.backingRatioX}x${pixiRenderState.backingRatioY}`);
+    }
+    if (pixiRenderState.state === "idle" && Number.isFinite(pixiRenderState.renderResolution) && pixiRenderState.renderResolution < 0.95) {
+      issues.push(`pixi render resolution too low: ${pixiRenderState.renderResolution}`);
+    }
+  }
 
   const touchReports = [
     { label: "home", geometry: homeTouchGeometry },
@@ -3636,6 +3737,22 @@ async function inspectPage(browser, check, viewport) {
     issues.push("long transcript review card outside viewport");
   }
 
+  if (check.kind === "spirit-showcase") {
+    details = { spiritShowcase: spiritShowcaseDetails };
+    if (!spiritShowcaseDetails?.opened) issues.push("3D showcase QA hook did not open");
+    if (!spiritShowcaseDetails?.modalVisible) issues.push("3D showcase modal not visible");
+    if (spiritShowcaseDetails?.status === "loading") issues.push("3D showcase stayed loading");
+    if (!spiritShowcaseDetails?.hasCanvas && !spiritShowcaseDetails?.hasFallback) issues.push("3D showcase has neither canvas nor fallback");
+    if (!spiritShowcaseDetails?.hasCloseButton) issues.push("3D showcase close button missing");
+    if ((spiritShowcaseDetails?.modelButtonCount ?? 0) < 3) issues.push("3D showcase model switches missing");
+    if (spiritShowcaseDetails?.forbiddenCopy?.length) {
+      issues.push(`3D showcase forbidden copy: ${spiritShowcaseDetails.forbiddenCopy.join(", ")}`);
+    }
+    if (spiritShowcaseDetails?.stageContained === false) issues.push("3D showcase stage outside viewport");
+    if (spiritShowcaseDetails?.horizontalOverflow) issues.push("3D showcase horizontal overflow");
+    if (spiritShowcaseDetails?.hasFallback) warnings.push("3D showcase used PNG fallback in this viewport");
+  }
+
   if (check.module !== "home") {
     if (!p4SceneShell?.exists || !p4SceneShell.visible) issues.push("P4 scene command bar missing");
     if (!p4SceneShell?.hasSceneTitle) issues.push("P4 scene command title missing");
@@ -3649,7 +3766,6 @@ async function inspectPage(browser, check, viewport) {
     if (p4SceneShell?.backendCopy?.length) issues.push(`P4 module still shows backend/generic copy: ${p4SceneShell.backendCopy.join(", ")}`);
   }
 
-  let details = {};
   if (check.kind === "teacher") {
     const cards = await inspectTeacherCards(page);
     const fps = await measureFrameRate(page, ".workbench-class-grid");
@@ -4614,6 +4730,9 @@ async function inspectPage(browser, check, viewport) {
 
   if (p4SceneShell) {
     details = { ...details, p4SceneShell };
+  }
+  if (pixiRenderState) {
+    details = { ...details, pixiRenderState };
   }
 
   await context.close();

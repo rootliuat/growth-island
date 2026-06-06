@@ -34,7 +34,6 @@ export class WorldScene {
   private animationElapsed = 0;
   private lastZoom = Number.NaN;
   private readonly animationStepMs = 1000 / 30;
-  private readonly staticCacheTimers: number[] = [];
 
   constructor(
     private readonly camera: CameraController,
@@ -55,9 +54,6 @@ export class WorldScene {
     this.labels = new LabelLayer(this.layers.get("labels"));
     this.camera.viewport.addChild(this.layers.root);
     this.root.addChild(this.camera.viewport);
-    [1800, 3600].forEach((delay) => {
-      this.staticCacheTimers.push(window.setTimeout(() => this.cacheStaticMapLayers(), delay));
-    });
   }
 
   updateData(data: WorldMapData) {
@@ -170,20 +166,7 @@ export class WorldScene {
     if (this.data) this.labels.updateZoom(zoom, this.data.selectedChildId);
   }
 
-  private cacheStaticMapLayers() {
-    (["ocean", "island", "paths"] as const).forEach((name) => {
-      const layer = this.layers.get(name);
-      if (layer.destroyed || layer.children.length === 0) return;
-      if (layer.isCachedAsTexture) {
-        layer.updateCacheTexture();
-        return;
-      }
-      layer.cacheAsTexture({ resolution: 1, antialias: false });
-    });
-  }
-
   destroy() {
-    this.staticCacheTimers.forEach((timer) => window.clearTimeout(timer));
     this.layers.destroy();
     this.root.destroy({ children: true });
   }

@@ -1,4 +1,4 @@
-import { ChevronDown, Search, Users } from "lucide-react";
+import { Box, ChevronDown, Search, Users } from "lucide-react";
 import type { CSSProperties } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ChildWithProgress, SpiritDefinition } from "../../types";
@@ -9,11 +9,12 @@ interface SpiritDockProps {
   spiritsById: Map<string, SpiritDefinition>;
   selectedChildId: string;
   onSelectChild: (childId: string) => void;
+  onOpenShowcase?: (childId: string) => void;
 }
 
 const regionFilters = ["全部", "红树林", "贝壳湾", "珍珠湾", "小镇", "老街", "算术湾"];
 
-export function SpiritDock({ childrenWithProgress, spiritsById, selectedChildId, onSelectChild }: SpiritDockProps) {
+export function SpiritDock({ childrenWithProgress, spiritsById, selectedChildId, onSelectChild, onOpenShowcase }: SpiritDockProps) {
   const dockScrollRef = useRef<HTMLDivElement | null>(null);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("全部");
@@ -77,6 +78,17 @@ export function SpiritDock({ childrenWithProgress, spiritsById, selectedChildId,
           </span>
           <em className="dock-summary-status">{selectedStatus}</em>
         </button>
+        {onOpenShowcase ? (
+          <button
+            type="button"
+            className="dock-showcase-button spirit-showcase-button"
+            aria-label={`查看${selectedChild.name}的3D精灵`}
+            onClick={() => onOpenShowcase(selectedChild.id)}
+          >
+            <Box size={16} />
+            3D
+          </button>
+        ) : null}
         <button
           className="dock-collapse"
           type="button"
@@ -144,6 +156,17 @@ export function SpiritDock({ childrenWithProgress, spiritsById, selectedChildId,
           <em>{selectedStatus}</em>
           <small>全班 {childrenWithProgress.length}</small>
         </span>
+        {onOpenShowcase ? (
+          <button
+            type="button"
+            className="dock-showcase-button spirit-showcase-button"
+            aria-label={`查看${selectedChild.name}的3D精灵`}
+            onClick={() => onOpenShowcase(selectedChild.id)}
+          >
+            <Box size={15} />
+            3D
+          </button>
+        ) : null}
       </div>
       <div className="dock-scroll" ref={dockScrollRef}>
         {filtered.map((child) => {
