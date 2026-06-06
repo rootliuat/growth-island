@@ -1,6 +1,7 @@
 import { Flag, Home, MapPinned, Sparkles, Trophy } from "lucide-react";
 import { getSpiritThumbnailAsset } from "../../domain/spiritAssets";
 import type { ChildWithProgress, SpiritDefinition } from "../../types";
+import { RewardModelPreview3D } from "../Hud/SpiritModelStage3D";
 
 interface LeaderboardModuleProps {
   childrenWithProgress: ChildWithProgress[];
@@ -71,6 +72,13 @@ export function LeaderboardModule({
               })}
             </div>
             <div className="leaderboard-selected-token">
+              <RewardModelPreview3D
+                modelKey="growth-star"
+                label="荣誉星光"
+                accent="#f6b352"
+                className="leaderboard-reward-preview-3d"
+                size="compact"
+              />
               <span className="leaderboard-selected-avatar">
                 {selectedAsset?.url ? <img src={selectedAsset.url} alt={`${selectedChild.name} 精灵`} width={62} height={62} loading="lazy" decoding="async" /> : selectedChild.name.slice(0, 1)}
               </span>

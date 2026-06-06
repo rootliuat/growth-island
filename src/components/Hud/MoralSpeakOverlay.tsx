@@ -2,6 +2,7 @@ import { AudioLines, Mic, Shell, Sparkles } from "lucide-react";
 import type { CSSProperties } from "react";
 import { canApproveMoralGrowth, getChildEnergyColor, getChildEnergyLabel } from "../../domain/virtueEnergy";
 import type { ChildWithProgress, MoralEvaluationResult, SpiritDefinition } from "../../types";
+import { RewardModelPreview3D } from "./SpiritModelStage3D";
 
 export type MoralSpeakStage = "idle" | "ready" | "listening" | "recognizing" | "pendingReview" | "success" | "error";
 
@@ -135,6 +136,15 @@ export function MoralSpeakOverlay({ child, spirit, state, onStart, onStop, onRet
           <i className="energy-confirm-burst" aria-hidden="true" style={{ pointerEvents: "none" }} />
           <i className="energy-arrival-orb" aria-hidden="true" style={{ pointerEvents: "none" }} />
           <i className="moral-energy-sparks" aria-hidden="true" />
+          <RewardModelPreview3D
+            modelKey="growth-star"
+            label="成长星光"
+            accent={accent}
+            className="moral-success-reward-3d"
+            motion="success"
+            hideFallback
+            size="compact"
+          />
           <Sparkles size={24} />
           <strong>{energyLabel}能量点亮精灵</strong>
         </div>

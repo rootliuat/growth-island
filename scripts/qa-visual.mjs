@@ -207,6 +207,18 @@ async function waitForPixiIdle(page) {
   await page.waitForSelector(".pixi-world-canvas[data-render-state='idle']", { timeout: 7000 }).catch(() => undefined);
 }
 
+async function waitForModelStageSettled(page, selector, timeout = 3500) {
+  await page.waitForFunction(
+    (stageSelector) => {
+      const stage = document.querySelector(stageSelector);
+      const status = stage?.getAttribute("data-status");
+      return status === "ready" || status === "fallback";
+    },
+    selector,
+    { timeout },
+  ).catch(() => undefined);
+}
+
 async function inspectPixiRenderState(page) {
   return page.evaluate(() => {
     const canvas = document.querySelector(".pixi-world-canvas");
@@ -949,22 +961,36 @@ async function exerciseSingleMoralSpeak(page, screenshots = {}) {
   });
   await page.waitForSelector(".spirit-speech-bubble.success", { timeout: 4000 });
   const successState = await inspectMoralSelfServiceState(page);
-  const successExtra = await page.evaluate(() => ({
-    successBubble: document.querySelector(".spirit-speech-bubble.success")?.textContent?.trim() ?? "",
-    energyBoardText: document.querySelector(".map-energy-constellation")?.textContent ?? "",
-    focusPlaqueText: document.querySelector(".map-focus-plaque")?.textContent ?? "",
-    growthFeedbackKind: document.querySelector(".growth-feedback-overlay")?.getAttribute("data-kind") ?? "",
-    growthFeedbackText: document.querySelector(".growth-feedback-overlay")?.textContent?.replace(/\s+/g, "") ?? "",
-    currentEnergySlots: document.querySelectorAll(".energy-slot-row button.current").length,
-    currentEnergySlotText: document.querySelector(".energy-slot-row button.current")?.textContent ?? "",
-    hasEnergySparks: Boolean(document.querySelector(".moral-energy-sparks")),
-    hasEnergyTrail: Boolean(document.querySelector(".moral-energy-trail")),
-    hasEnergyArrivalSlot: Boolean(document.querySelector('.energy-slot-row button.current[data-energy-arrival="arriving"]')),
-    pixiEnergyRegionCount: Number(document.querySelector(".pixi-world-canvas")?.dataset.energyRegionCount ?? 0),
-    pixiCurrentEnergyRegion: document.querySelector(".pixi-world-canvas")?.dataset.currentEnergyRegion ?? "",
-    pixiSelectedActivityToken: document.querySelector(".pixi-world-canvas")?.dataset.selectedActivityToken ?? "",
-    pixiSelectedActivityLabel: document.querySelector(".pixi-world-canvas")?.dataset.selectedActivityLabel ?? "",
-  }));
+  const successExtra = await page.evaluate(() => {
+    const rewardStage = document.querySelector(".moral-success-reward-3d");
+    const rewardStageRect = rewardStage?.getBoundingClientRect();
+    const rewardStageStyle = rewardStage ? getComputedStyle(rewardStage) : undefined;
+    return {
+      successBubble: document.querySelector(".spirit-speech-bubble.success")?.textContent?.trim() ?? "",
+      energyBoardText: document.querySelector(".map-energy-constellation")?.textContent ?? "",
+      focusPlaqueText: document.querySelector(".map-focus-plaque")?.textContent ?? "",
+      growthFeedbackKind: document.querySelector(".growth-feedback-overlay")?.getAttribute("data-kind") ?? "",
+      growthFeedbackText: document.querySelector(".growth-feedback-overlay")?.textContent?.replace(/\s+/g, "") ?? "",
+      currentEnergySlots: document.querySelectorAll(".energy-slot-row button.current").length,
+      currentEnergySlotText: document.querySelector(".energy-slot-row button.current")?.textContent ?? "",
+      hasEnergySparks: Boolean(document.querySelector(".moral-energy-sparks")),
+      hasEnergyTrail: Boolean(document.querySelector(".moral-energy-trail")),
+      hasEnergyArrivalSlot: Boolean(document.querySelector('.energy-slot-row button.current[data-energy-arrival="arriving"]')),
+      hasSuccessReward3dStage: Boolean(rewardStageRect && rewardStageRect.width >= 40 && rewardStageRect.height >= 40),
+      successReward3dPassive: Boolean(rewardStageStyle && rewardStageStyle.pointerEvents === "none"),
+      successReward3dContained: Boolean(
+        rewardStageRect &&
+          rewardStageRect.left >= 0 &&
+          rewardStageRect.right <= window.innerWidth &&
+          rewardStageRect.top >= 0 &&
+          rewardStageRect.bottom <= window.innerHeight,
+      ),
+      pixiEnergyRegionCount: Number(document.querySelector(".pixi-world-canvas")?.dataset.energyRegionCount ?? 0),
+      pixiCurrentEnergyRegion: document.querySelector(".pixi-world-canvas")?.dataset.currentEnergyRegion ?? "",
+      pixiSelectedActivityToken: document.querySelector(".pixi-world-canvas")?.dataset.selectedActivityToken ?? "",
+      pixiSelectedActivityLabel: document.querySelector(".pixi-world-canvas")?.dataset.selectedActivityLabel ?? "",
+    };
+  });
   if (screenshots.success) await page.screenshot({ path: screenshots.success, fullPage: false });
   const successTouch = await inspectTouchAndOverlap(page);
   const successWrongSelection = await attemptWrongDockChildSelection(page);
@@ -2212,6 +2238,8 @@ async function inspectCurrentProfile(page) {
     const rosterRect = roster?.getBoundingClientRect();
     const cabinRect = cabin?.getBoundingClientRect();
     const heroRect = hero?.getBoundingClientRect();
+    const cabin3dStage = document.querySelector(".profile-3d-cabin-stage");
+    const cabin3dRect = cabin3dStage?.getBoundingClientRect();
     const timelineRowMaxHeight = timelineRows.reduce((max, row) => Math.max(max, Math.round(row.getBoundingClientRect().height)), 0);
     const firstTimelineRow = timelineRows[0];
     const firstTimelineStyle = firstTimelineRow ? getComputedStyle(firstTimelineRow) : undefined;
@@ -2227,7 +2255,9 @@ async function inspectCurrentProfile(page) {
         heroText.includes("能量槽") &&
         pageText.includes("点亮能量") &&
         !/XP|Lv\.|PK|积分|加分|扣分|减分/.test(pageText),
-      hasSpirit: Boolean(document.querySelector(".profile-portrait img, .profile-portrait")),
+      hasSpirit: Boolean(document.querySelector(".profile-portrait img, .profile-portrait, .profile-3d-cabin-stage")),
+      has3dCabinStage: Boolean(cabin3dRect && cabin3dRect.width >= 120 && cabin3dRect.height >= 120),
+      has3dCabinSurface: Boolean(cabin3dStage?.querySelector(".model-stage-canvas, .model-stage-loader, .model-stage-fallback")),
       hasTimelineRecord: /课堂成长点亮|能量进精灵|数学光路点亮|已有成长|成长贝壳/.test(timelineText),
       hasAnyTimelineRecord: records.length === 0 || timelineRows.length > 0,
       evidenceHasRecordCount: evidenceText.includes(`${records.length} 条`),
@@ -2278,6 +2308,7 @@ async function exerciseProfileFlow(page, workbenchProfileScreenshot, homeProfile
         .filter((record) => record.childId === selectedChildId && !record.undone)
         .reduce((sum, record) => sum + record.delta, 0);
     });
+    await waitForModelStageSettled(page, ".profile-3d-cabin-stage");
     const profile = await inspectCurrentProfile(page);
     await page.screenshot({ path: workbenchProfileScreenshot, fullPage: false });
 
@@ -2288,6 +2319,7 @@ async function exerciseProfileFlow(page, workbenchProfileScreenshot, homeProfile
     const homeText = await page.locator(".hud-rail").innerText();
     await page.getByRole("button", { name: /精灵小屋|小屋/ }).click();
     await page.waitForSelector(".profile-page");
+    await waitForModelStageSettled(page, ".profile-3d-cabin-stage");
     const fromHome = await inspectCurrentProfile(page);
     await page.screenshot({ path: homeProfileScreenshot, fullPage: false });
 
@@ -2322,6 +2354,7 @@ async function exerciseProfileFlow(page, workbenchProfileScreenshot, homeProfile
 
   await page.getByRole("button", { name: /小屋/ }).first().click();
   await page.waitForSelector(".profile-page");
+  await waitForModelStageSettled(page, ".profile-3d-cabin-stage");
   const fromWorkbench = await inspectCurrentProfile(page);
   await page.screenshot({ path: workbenchProfileScreenshot, fullPage: false });
 
@@ -2332,6 +2365,7 @@ async function exerciseProfileFlow(page, workbenchProfileScreenshot, homeProfile
   const homeText = await page.locator(".hud-rail").innerText();
   await page.getByRole("button", { name: /精灵小屋|小屋/ }).click();
   await page.waitForSelector(".profile-page");
+  await waitForModelStageSettled(page, ".profile-3d-cabin-stage");
   const fromHome = await inspectCurrentProfile(page);
   await page.screenshot({ path: homeProfileScreenshot, fullPage: false });
 
@@ -2348,6 +2382,7 @@ async function exerciseProfileFlow(page, workbenchProfileScreenshot, homeProfile
 
 async function exerciseLeaderboardFlow(page, leaderboardScreenshot, homeScreenshot) {
   await page.waitForSelector(".leaderboard-page");
+  await waitForModelStageSettled(page, ".leaderboard-reward-preview-3d", 2500);
   const leaderboardDetails = await page.evaluate(() => {
     const isPlainWhite = (color) => ["rgb(255, 255, 255)", "rgba(255, 255, 255, 1)", "#ffffff"].includes(color);
     const rows = [...document.querySelectorAll(".leaderboard-list li button")].map((button) => {
@@ -2375,6 +2410,7 @@ async function exerciseLeaderboardFlow(page, leaderboardScreenshot, homeScreensh
     const firstRowStyle = firstRow ? getComputedStyle(firstRow) : undefined;
     const selectedRow = document.querySelector(".leaderboard-list li.is-selected button");
     const selectedToken = document.querySelector(".leaderboard-selected-token");
+    const selectedRewardStage = document.querySelector(".leaderboard-reward-preview-3d");
     const honorTokens = [...document.querySelectorAll(".leaderboard-honor-token")];
     const honorEnergyClippedCount = honorTokens.filter((token) => {
       const energy = token.querySelector("em");
@@ -2398,6 +2434,8 @@ async function exerciseLeaderboardFlow(page, leaderboardScreenshot, homeScreensh
     const plazaRect = plaza?.getBoundingClientRect();
     const selectedRect = selectedRow?.getBoundingClientRect();
     const selectedTokenRect = selectedToken?.getBoundingClientRect();
+    const selectedRewardRect = selectedRewardStage?.getBoundingClientRect();
+    const selectedRewardStyle = selectedRewardStage ? getComputedStyle(selectedRewardStage) : undefined;
     return {
       rowCount: rows.length,
       topThreeCount: podium.length,
@@ -2429,6 +2467,10 @@ async function exerciseLeaderboardFlow(page, leaderboardScreenshot, homeScreensh
           selectedTokenRect.bottom > 0 &&
           selectedTokenRect.top < window.innerHeight,
       ),
+      hasSelectedReward3d:
+        Boolean(selectedRewardRect && selectedRewardRect.width >= 48 && selectedRewardRect.height >= 48) &&
+        Boolean(selectedRewardStage?.querySelector(".model-stage-canvas, .model-stage-loader, .model-stage-fallback")),
+      selectedRewardPassive: Boolean(selectedRewardStyle && selectedRewardStyle.pointerEvents === "none"),
       listNotTableLike: document.querySelectorAll(".leaderboard-page table, .leaderboard-page th, .leaderboard-column-header").length === 0,
       horizontalOverflow: document.body.scrollWidth > document.documentElement.clientWidth,
       sortedByRank,
@@ -2556,6 +2598,7 @@ async function exerciseLotteryFlow(page, lotteryScreenshot, homeScreenshot) {
 
 async function exerciseShopFlow(page, shopScreenshot, insufficientScreenshot, homeScreenshot) {
   await page.waitForSelector(".shop-page");
+  await waitForModelStageSettled(page, ".shop-reward-preview-3d", 2500);
   const initialShopScene = await page.evaluate(() => {
     const isPlainWhite = (color) => ["rgb(255, 255, 255)", "rgba(255, 255, 255, 1)", "#ffffff"].includes(color);
     const page = document.querySelector(".shop-page");
@@ -2588,6 +2631,9 @@ async function exerciseShopFlow(page, shopScreenshot, insufficientScreenshot, ho
     });
     const rewardStates = rewardCards.map((card) => card.getAttribute("data-shop-state") ?? "");
     const statusStrip = document.querySelector(".shop-status-strip");
+    const rewardPreview = document.querySelector(".shop-reward-preview-3d");
+    const rewardPreviewRect = rewardPreview?.getBoundingClientRect();
+    const rewardPreviewStyle = rewardPreview ? getComputedStyle(rewardPreview) : undefined;
     return {
       hasShopIdentity: pageText.includes("海岛小铺") && pageText.includes("小铺"),
       hasCounter: Boolean(statusStrip) && pageText.includes("给谁换") && pageText.includes("可用能量"),
@@ -2599,6 +2645,10 @@ async function exerciseShopFlow(page, shopScreenshot, insufficientScreenshot, ho
       availableStateCount: rewardStates.filter((state) => state === "available").length,
       lockedStateCount: rewardStates.filter((state) => state === "locked").length,
       rewardMeterCount: document.querySelectorAll(".shop-reward-meter").length,
+      hasRewardPreview3d:
+        Boolean(rewardPreviewRect && rewardPreviewRect.width >= 48 && rewardPreviewRect.height >= 48) &&
+        Boolean(rewardPreview?.querySelector(".model-stage-canvas, .model-stage-loader, .model-stage-fallback")),
+      rewardPreviewPassive: Boolean(rewardPreviewStyle && rewardPreviewStyle.pointerEvents === "none"),
       hasShelfScene:
         Boolean(shelfStyle) &&
         shelfStyle.backgroundImage !== "none" &&
@@ -2627,6 +2677,7 @@ async function exerciseShopFlow(page, shopScreenshot, insufficientScreenshot, ho
   if (!insufficientChild.id) throw new Error("Could not find a shop child with locked rewards");
   await page.locator(".shop-reward-card.locked button").last().click();
   await page.waitForFunction(() => (document.querySelector(".shop-intent-card")?.textContent ?? "").includes("能量不够"));
+  await waitForModelStageSettled(page, ".shop-reward-preview-3d", 2500);
   const insufficientText = await page.locator(".shop-intent-card").innerText();
   await page.screenshot({ path: insufficientScreenshot, fullPage: false });
 
@@ -2650,6 +2701,7 @@ async function exerciseShopFlow(page, shopScreenshot, insufficientScreenshot, ho
   await page.waitForFunction(() => (document.querySelector(".shop-intent-card")?.textContent ?? "").includes("已选小奖励"));
   await page.getByRole("button", { name: /^兑换$/ }).click();
   await page.waitForFunction(() => (document.querySelector(".shop-intent-card")?.textContent ?? "").includes("兑换成功"));
+  await waitForModelStageSettled(page, ".shop-reward-preview-3d", 2500);
   const redeemGlobalFeedback = await readGrowthFeedback(page);
   const availableText = await page.locator(".shop-intent-card").innerText();
   const balanceText = await page.locator(".shop-balance-card").innerText();
@@ -3958,6 +4010,9 @@ async function inspectPage(browser, check, viewport) {
       }
     }
     if (!moralFlowDetails?.success?.hasEnergySparks) issues.push("moral speak success energy sparks missing");
+    if (!moralFlowDetails?.success?.hasSuccessReward3dStage) issues.push("moral speak success reward 3d stage missing");
+    if (!moralFlowDetails?.success?.successReward3dPassive) issues.push("moral speak success reward 3d stage should not intercept input");
+    if (!moralFlowDetails?.success?.successReward3dContained) issues.push("moral speak success reward 3d stage is outside viewport");
     if (!moralFlowDetails?.success?.successBubble || moralFlowDetails.success.successBubble.includes("自助成长")) {
       issues.push("moral speak success bubble is missing or too verbose");
     }
@@ -4335,6 +4390,8 @@ async function inspectPage(browser, check, viewport) {
       if (!profile?.hasRoomLabels) issues.push(`profile flow ${source} room labels missing`);
       if (!profile?.heroHasEnergyCopy) issues.push(`profile flow ${source} energy copy mismatch`);
       if (!profile?.hasSpirit) issues.push(`profile flow ${source} spirit missing`);
+      if (!profile?.has3dCabinStage) issues.push(`profile flow ${source} 3d cabin stage missing`);
+      if (!profile?.has3dCabinSurface) issues.push(`profile flow ${source} 3d cabin render surface missing`);
       if (!profile?.hasCabinStage) issues.push(`profile flow ${source} cabin stage missing`);
       if (!profile?.storyPanelNotWhiteWorkbench) issues.push(`profile flow ${source} still reads as white workbench`);
       if (!profile?.pageHasCoastalScene) issues.push(`profile flow ${source} coastal scene background missing`);
@@ -4483,6 +4540,8 @@ async function inspectPage(browser, check, viewport) {
     }
     if (common.viewport.width > 720 && !leaderboardFlowDetails?.selectedRowVisible) issues.push("leaderboard selected child row is not visible");
     if (!leaderboardFlowDetails?.selectedTokenVisible) issues.push("leaderboard selected child token is not visible");
+    if (!leaderboardFlowDetails?.hasSelectedReward3d) issues.push("leaderboard selected reward 3d preview missing");
+    if (!leaderboardFlowDetails?.selectedRewardPassive) issues.push("leaderboard selected reward 3d preview should not intercept input");
     if (!leaderboardFlowDetails?.listNotTableLike) issues.push("leaderboard uses table-like structure");
     if (leaderboardFlowDetails?.horizontalOverflow) issues.push("leaderboard horizontal overflow");
     if (leaderboardFlowDetails?.decorativePanelCount !== 0) issues.push("leaderboard decorative side panels should be removed");
@@ -4533,6 +4592,8 @@ async function inspectPage(browser, check, viewport) {
     if ((shopFlowDetails?.initialShopScene?.rewardMeterCount ?? 0) < (shopFlowDetails?.initialShopScene?.rewardCardCount ?? 0)) {
       issues.push("shop reward progress meters missing");
     }
+    if (!shopFlowDetails?.initialShopScene?.hasRewardPreview3d) issues.push("shop reward 3d preview missing");
+    if (!shopFlowDetails?.initialShopScene?.rewardPreviewPassive) issues.push("shop reward 3d preview should not intercept input");
     if ((shopFlowDetails?.initialShopScene?.availableStateCount ?? 0) < 1) issues.push("shop available reward state missing");
     if ((shopFlowDetails?.initialShopScene?.lockedStateCount ?? 0) < 1) issues.push("shop locked reward state missing");
     if (!shopFlowDetails?.initialShopScene?.firstRewardActionVisibleInitially) issues.push("shop first reward action not visible in first viewport");

@@ -21714,6 +21714,303 @@ button {
   filter: brightness(0.98);
 }
 
+/* P13 3D product surfaces: model assets stay off the main classroom map and render in bounded stages. */
+.model-stage-3d {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid rgba(45, 159, 178, 0.22);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 50% 78%, rgba(255, 253, 244, 0.72), transparent 38%),
+    linear-gradient(180deg, rgba(135, 216, 208, 0.28), rgba(244, 217, 155, 0.28)),
+    #fffdf4;
+  contain: layout paint style;
+}
+
+.model-stage-3d::after {
+  position: absolute;
+  right: 12%;
+  bottom: 9%;
+  left: 12%;
+  z-index: 0;
+  height: 18%;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--model-accent, #f6b352) 20%, transparent);
+  content: "";
+  filter: blur(10px);
+  opacity: 0.78;
+  pointer-events: none;
+}
+
+.model-stage-canvas-mount {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+}
+
+.model-stage-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.model-stage-spirit .model-stage-canvas {
+  cursor: grab;
+  touch-action: none;
+}
+
+.model-stage-spirit .model-stage-canvas:active {
+  cursor: grabbing;
+}
+
+.model-stage-reward,
+.model-stage-reward .model-stage-canvas {
+  pointer-events: none;
+}
+
+.model-stage-loader,
+.model-stage-fallback {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  color: #174c5a;
+  font-size: 13px;
+  font-weight: 950;
+  pointer-events: none;
+}
+
+.model-stage-loader {
+  background: rgba(255, 253, 244, 0.58);
+}
+
+.model-stage-fallback {
+  align-content: center;
+  gap: 7px;
+  padding: 16px;
+  text-align: center;
+  background: rgba(255, 253, 244, 0.86);
+}
+
+.model-stage-fallback img,
+.model-stage-fallback > span {
+  display: grid;
+  width: 108px;
+  height: 108px;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(255, 248, 234, 0.92);
+  filter: drop-shadow(0 10px 14px rgba(23, 76, 90, 0.16));
+  object-fit: contain;
+}
+
+.model-stage-fallback > span {
+  color: #174c5a;
+  font-size: 40px;
+  font-weight: 950;
+}
+
+.model-stage-fallback strong {
+  color: #174c5a;
+  font-size: 13px;
+  line-height: 1.15;
+}
+
+.model-stage-fallback em {
+  color: rgba(23, 76, 90, 0.66);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.model-stage-compact {
+  min-height: 76px;
+}
+
+.model-stage-medium {
+  min-height: 178px;
+}
+
+.model-stage-large {
+  min-height: 360px;
+}
+
+.model-stage-reward .model-stage-fallback {
+  gap: 0;
+  padding: 6px;
+}
+
+.model-stage-reward .model-stage-fallback img,
+.model-stage-reward .model-stage-fallback > span {
+  width: 42px;
+  height: 42px;
+  font-size: 22px;
+}
+
+.model-stage-reward .model-stage-fallback strong,
+.model-stage-reward .model-stage-fallback em {
+  display: none;
+}
+
+.profile-page .profile-3d-cabin-stage {
+  z-index: 2;
+  width: min(92%, 268px);
+  height: 198px;
+  min-height: 198px;
+  border-color: rgba(255, 253, 244, 0.72);
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at 50% 84%, rgba(255, 253, 244, 0.78), transparent 44%),
+    linear-gradient(180deg, rgba(135, 216, 208, 0.24), rgba(255, 240, 191, 0.2));
+  box-shadow: 0 14px 0 rgba(214, 177, 106, 0.14);
+}
+
+.shop-page .shop-intent-card {
+  grid-template-columns: 84px 28px minmax(0, 1fr) auto;
+  min-height: 98px;
+}
+
+.shop-reward-preview-3d {
+  grid-column: 1;
+  width: 84px;
+  height: 78px;
+  min-height: 78px;
+  border-radius: 18px;
+  border-color: rgba(214, 177, 106, 0.36);
+  background:
+    radial-gradient(circle at 50% 80%, rgba(255, 253, 244, 0.8), transparent 42%),
+    #fffdf4;
+}
+
+.shop-page .shop-intent-card > svg {
+  grid-column: 2;
+  justify-self: center;
+}
+
+.shop-page .shop-intent-card .shop-intent-copy {
+  grid-column: 3;
+}
+
+.shop-page .shop-intent-card .shop-redeem-button,
+.shop-page .shop-intent-card .shop-return-action {
+  grid-column: 4;
+  white-space: nowrap;
+}
+
+.shop-page .shop-intent-card.is-redeemed::after {
+  z-index: 0;
+}
+
+.shop-reward-preview-3d,
+.shop-page .shop-intent-card > svg,
+.shop-page .shop-intent-card .shop-intent-copy,
+.shop-page .shop-intent-card .shop-redeem-button,
+.shop-page .shop-intent-card .shop-return-action {
+  position: relative;
+  z-index: 1;
+}
+
+.leaderboard-page .leaderboard-selected-token {
+  grid-template-columns: 86px 56px minmax(0, 1fr);
+  align-items: center;
+}
+
+.leaderboard-reward-preview-3d {
+  width: 86px;
+  height: 76px;
+  min-height: 76px;
+  border-radius: 18px;
+  border-color: rgba(246, 179, 82, 0.34);
+  background:
+    radial-gradient(circle at 50% 80%, rgba(255, 240, 191, 0.72), transparent 46%),
+    rgba(255, 253, 244, 0.72);
+}
+
+.leaderboard-page .leaderboard-selected-token .leaderboard-selected-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 17px;
+}
+
+.moral-success-reward-3d {
+  flex: 0 0 58px;
+  width: 58px;
+  height: 58px;
+  min-height: 58px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  pointer-events: none;
+}
+
+.moral-success-reward-3d::after,
+.moral-success-reward-3d .model-stage-loader {
+  display: none;
+}
+
+.spirit-speech-bubble.success strong {
+  max-width: min(270px, calc(100vw - 210px));
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 720px) {
+  .profile-page .profile-3d-cabin-stage {
+    width: min(94%, 224px);
+    height: 164px;
+    min-height: 164px;
+  }
+
+  .shop-page .shop-intent-card {
+    grid-template-columns: 60px 28px minmax(0, 1fr);
+    min-height: 82px;
+  }
+
+  .shop-reward-preview-3d {
+    width: 60px;
+    height: 58px;
+    min-height: 58px;
+    border-radius: 16px;
+  }
+
+  .shop-page .shop-intent-card .shop-redeem-button,
+  .shop-page .shop-intent-card .shop-return-action {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .leaderboard-page .leaderboard-selected-token {
+    grid-template-columns: 66px minmax(0, 1fr);
+    gap: 9px;
+  }
+
+  .leaderboard-reward-preview-3d {
+    width: 66px;
+    height: 62px;
+    min-height: 62px;
+  }
+
+  .leaderboard-page .leaderboard-selected-token .leaderboard-selected-avatar {
+    display: none;
+  }
+
+  .moral-success-reward-3d {
+    flex-basis: 46px;
+    width: 46px;
+    height: 46px;
+    min-height: 46px;
+  }
+
+  .spirit-speech-bubble.success strong {
+    max-width: calc(100vw - 188px);
+    font-size: 18px;
+  }
+}
+
 .spirit-showcase-stage {
   position: relative;
   min-height: 360px;
@@ -21962,8 +22259,14 @@ button {
 @media (prefers-reduced-motion: reduce) {
   .spirit-card-actions .spirit-showcase-button,
   .dock-showcase-button,
+  .model-stage-canvas,
+  .model-stage-reward,
   .spirit-showcase-canvas,
   .showcase-model-tabs button {
     transition-duration: 1ms;
+  }
+
+  .model-stage-reward.is-success {
+    animation: none;
   }
 }

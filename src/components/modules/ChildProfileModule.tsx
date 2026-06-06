@@ -5,6 +5,7 @@ import { getSpiritAsset } from "../../domain/spiritAssets";
 import { getChildSpiritVoiceType, getSpiritVoiceOption, spiritVoiceOptions } from "../../domain/spiritVoice";
 import { virtueCategories } from "../../data/spirits";
 import type { ChildProfile, ChildWithProgress, LedgerRecord, SpiritDefinition } from "../../types";
+import { SpiritModelStage3D } from "../Hud/SpiritModelStage3D";
 
 interface ChildProfileModuleProps {
   childrenWithProgress: ChildWithProgress[];
@@ -163,9 +164,22 @@ export function ChildProfileModule({
                 <span>已进入 {selectedChild.name} 小屋</span>
                 <strong>{stageLabel}</strong>
               </div>
-              <div className="profile-portrait">
-                {selectedAsset?.url ? <img src={selectedAsset.url} alt={`${selectedChild.petName} 精灵`} width={168} height={168} /> : selectedChild.name.slice(0, 1)}
-              </div>
+              {selectedSpirit ? (
+                <SpiritModelStage3D
+                  child={selectedChild}
+                  spirit={selectedSpirit}
+                  accent={selectedSpirit.accent}
+                  className="profile-3d-cabin-stage"
+                  fallbackImageUrl={selectedAsset?.url}
+                  fallbackInitial={selectedChild.name.slice(0, 1)}
+                  interactive
+                  size="medium"
+                />
+              ) : (
+                <div className="profile-portrait">
+                  {selectedAsset?.url ? <img src={selectedAsset.url} alt={`${selectedChild.petName} 精灵`} width={168} height={168} /> : selectedChild.name.slice(0, 1)}
+                </div>
+              )}
               <div className="profile-cabin-floor" aria-hidden="true" />
             </div>
             <div className="profile-cabin-info">

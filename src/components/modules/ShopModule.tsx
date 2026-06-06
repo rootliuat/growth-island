@@ -3,6 +3,7 @@ import { Check, Home, Lock, ShoppingBag, Sparkles } from "lucide-react";
 import { shopRewards, type ShopReward } from "../../data/rewards";
 import { getSpiritAsset } from "../../domain/spiritAssets";
 import type { ChildWithProgress, ShopRedemption, SpiritDefinition } from "../../types";
+import { getReward3DModelKeyForReward, RewardModelPreview3D } from "../Hud/SpiritModelStage3D";
 
 interface ShopModuleProps {
   childrenWithProgress: ChildWithProgress[];
@@ -48,6 +49,8 @@ export function ShopModule({
   const activeChildRedemptions = redemptions.filter((item) => item.childId === activeChild.id);
   const activeRedemptions = activeChildRedemptions.slice(0, 4);
   const pendingRewardIds = new Set(activeChildRedemptions.map((item) => item.rewardId));
+  const previewReward = lastIntent?.reward;
+  const previewModelKey = getReward3DModelKeyForReward(previewReward?.id, previewReward?.category);
 
   useEffect(() => {
     if (childrenWithProgress.some((child) => child.id === selectedChildId)) return;
@@ -121,6 +124,13 @@ export function ShopModule({
           </section>
 
           <section className={`shop-intent-card ${lastIntent?.redeemed ? "is-redeemed" : lastIntent ? "has-intent" : "is-empty"}`}>
+            <RewardModelPreview3D
+              modelKey={previewModelKey}
+              label={previewReward?.name ?? "小铺奖励"}
+              accent={lastIntent?.redeemed ? "#3b7d53" : lastIntent ? "#f6b352" : "#2d9fb2"}
+              className="shop-reward-preview-3d"
+              size="compact"
+            />
             {lastIntent ? (
               <>
                 {lastIntent.affordable ? <Check size={22} aria-hidden="true" /> : <Lock size={22} aria-hidden="true" />}
