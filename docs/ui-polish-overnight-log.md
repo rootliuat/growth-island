@@ -856,3 +856,38 @@ P2:
 - Home QA loaded P15 props `25/25`; home WebP budget stayed at `6.37 MB`.
 - Latest trial asset report: `qa-artifacts/latest/trial-assets-report.json`, hidpi runtime 8 files, `2.97 MB`, no failures.
 - Manual screenshots inspected: `qa-artifacts/latest/home-whiteboard.png` and `assets/generated/map-3d-props/p15/p15-map-3d-props-qa.png`.
+
+## P16 baked village prop density pass
+
+### Scope
+
+- Added a second baked map-prop layer so the main island has clearer house, shop, honor, and path scenery.
+- Kept product scope unchanged: no backend, XP, ledger, data file, parent, reviewer, kindergarten admin, PDF export, approval flow, accounts, permissions, cloud sync, or PixiJS map rewrite.
+- Continued to exclude weapons, monsters, skulls, bombs, cannons, spikes, saws, traps, fire/smoke props, and other combat or hazard language.
+
+### Implementation Notes
+
+- Added `scripts/bake-map-3d-props-p16.mjs` to render `ultimateplatformer` glTF and `medievalvillage` OBJ/MTL assets into transparent WebP props.
+- Rejected `Inn.obj`, `Mill.obj`, and `Well.obj` after QA contact-sheet review because their first bake read as too wireframe-like.
+- Accepted 31 props and generated runtime assets under `public/assets/map/3d-props/p16/`; QA/source files and manifest live under `assets/generated/map-3d-props/p16/`.
+- Added P16 prop URLs to `v4MapAssets` and placed all 31 props through the existing map placement pipeline.
+- Covered growth plaza, mangrove, shell bay, pearl bay, sun town, honor plaza, and old-street shop with visible model-derived scenery.
+- Made only a few semantic hotspots interactive: growth heart opens `child-profile`, shop stands open `shop`, honor bell tower/bell open `leaderboard`.
+- Extended map hotspot types to support `child-profile` without adding a new module or changing existing module routing.
+- P16 props bypass delayed decoration loading like P15, while runtime size stays small.
+- Brightened OBJ materials during baking so village props do not appear as black blocks on the soft island map.
+- Extended visual QA and trial asset QA to assert P16 map props load on home whiteboard/ultra and stay under the P16 WebP budget.
+
+### Validation
+
+- `P16_FORCE=1 node scripts/bake-map-3d-props-p16.mjs`: generated 31 runtime props, total about `0.19 MB`.
+- `node --check scripts/bake-map-3d-props-p16.mjs`: passed.
+- `node --check scripts/qa-visual.mjs`: passed.
+- `node --check scripts/check-trial-assets.mjs`: passed.
+- `npm run build`: passed.
+- `npm run qa:trial`: passed.
+- Latest visual QA report: `qa-artifacts/latest/report.json`, generated at `2026-06-06T15:44:46.669Z`.
+- Trial QA coverage: home whiteboard/ultra, moral-speak whiteboard/mobile, classroom-touch-loop whiteboard, spirit-showcase whiteboard/mobile; all reported 0 issues and 0 warnings.
+- Home QA loaded P16 props `31/31`; P16 prop size was `0.19 MB`; home WebP budget stayed at `6.56 MB`.
+- Latest trial asset report: `qa-artifacts/latest/trial-assets-report.json`, P16 prop budget passed and hidpi runtime remained `2.97 MB`.
+- Manual screenshots inspected: `qa-artifacts/latest/home-whiteboard.png` and `assets/generated/map-3d-props/p16/p16-map-3d-props-qa.png`.

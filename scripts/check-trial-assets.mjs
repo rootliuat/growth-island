@@ -24,6 +24,8 @@ const budgets = {
   homeWebpMb: Number(process.env.TRIAL_HOME_WEBP_MB_LIMIT || 7),
   hidpiFileCount: Number(process.env.TRIAL_HIDPI_FILE_COUNT || 8),
   hidpiTotalMb: Number(process.env.TRIAL_HIDPI_MB_LIMIT || 3.5),
+  p16MapPropMin: Number(process.env.TRIAL_P16_MAP_PROP_MIN || 30),
+  p16MapPropMb: Number(process.env.TRIAL_P16_MAP_PROP_MB_LIMIT || 0.45),
 };
 
 function fail(message, failures) {
@@ -69,6 +71,7 @@ function summarizeHidpiRuntime() {
 function inspectReport(report) {
   const failures = [];
   const results = Array.isArray(report.results) ? report.results : [];
+  let p16MapProps = null;
 
   if (report.issueCount !== 0) fail(`visual QA issueCount must be 0, got ${report.issueCount}`, failures);
   if (report.warningCount !== 0) fail(`visual QA warningCount must be 0, got ${report.warningCount}`, failures);
@@ -89,9 +92,16 @@ function inspectReport(report) {
     const png = home.resources?.png ?? { count: 0, mb: 0 };
     const webp = home.resources?.webp ?? { count: 0, mb: 0 };
     const pixi = home.details?.pixiRenderState;
+    p16MapProps = home.details?.p16MapProps ?? null;
     if (png.count > budgets.homePngCount) fail(`home PNG count ${png.count} exceeds ${budgets.homePngCount}`, failures);
     if (png.mb > budgets.homePngMb) fail(`home PNG budget ${png.mb} MB exceeds ${budgets.homePngMb} MB`, failures);
     if (webp.mb > budgets.homeWebpMb) fail(`home WebP budget ${webp.mb} MB exceeds ${budgets.homeWebpMb} MB`, failures);
+    if (!p16MapProps || p16MapProps.uniqueCount < budgets.p16MapPropMin) {
+      fail(`home P16 map prop count ${p16MapProps?.uniqueCount ?? 0} below ${budgets.p16MapPropMin}`, failures);
+    }
+    if ((p16MapProps?.mb ?? 0) > budgets.p16MapPropMb) {
+      fail(`home P16 map prop budget ${p16MapProps.mb} MB exceeds ${budgets.p16MapPropMb} MB`, failures);
+    }
     if (pixi?.state === "idle" && pixi.renderResolution < 0.95) {
       fail(`home idle render resolution is too low: ${pixi.renderResolution}`, failures);
     }
@@ -113,18 +123,19 @@ function inspectReport(report) {
     fail(`hidpi map runtime budget ${hidpi.mb} MB exceeds ${budgets.hidpiTotalMb} MB`, failures);
   }
 
-  return { failures, hidpi };
+  return { failures, hidpi, p16MapProps };
 }
 
 try {
   const report = readReport();
-  const { failures, hidpi } = inspectReport(report);
+  const { failures, hidpi, p16MapProps } = inspectReport(report);
   const summary = {
     generatedAt: new Date().toISOString(),
     visualReportGeneratedAt: report.generatedAt,
     requiredResults,
     budgets,
     hidpi,
+    p16MapProps,
     ok: failures.length === 0,
     failures,
   };

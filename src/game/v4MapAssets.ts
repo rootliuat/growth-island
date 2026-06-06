@@ -34,6 +34,10 @@ function p15Prop(fileName: string) {
   return encodeURI(`/assets/map/3d-props/p15/${fileName}`);
 }
 
+function p16Prop(fileName: string) {
+  return encodeURI(`/assets/map/3d-props/p16/${fileName}`);
+}
+
 export const v4MapAssets = {
   oceanBase: asset("batch11", "v4-ocean-base-tile.png"),
   oceanWaveOverlay: asset("batch11", "v4-ocean-wave-overlay.png"),
@@ -118,6 +122,37 @@ export const v4MapAssets = {
   p15PropGemPink: p15Prop("p15-prop-gem-pink.webp"),
   p15PropKey: p15Prop("p15-prop-key.webp"),
   p15PropStar: p15Prop("p15-prop-star.webp"),
+  p16PropHouse1: p16Prop("p16-prop-house-1.webp"),
+  p16PropHouse2: p16Prop("p16-prop-house-2.webp"),
+  p16PropHouse3: p16Prop("p16-prop-house-3.webp"),
+  p16PropHouse4: p16Prop("p16-prop-house-4.webp"),
+  p16PropStable: p16Prop("p16-prop-stable.webp"),
+  p16PropBellTower: p16Prop("p16-prop-bell-tower.webp"),
+  p16PropMarketStand1: p16Prop("p16-prop-market-stand-1.webp"),
+  p16PropMarketStand2: p16Prop("p16-prop-market-stand-2.webp"),
+  p16PropCart: p16Prop("p16-prop-cart.webp"),
+  p16PropGazebo: p16Prop("p16-prop-gazebo.webp"),
+  p16PropBell: p16Prop("p16-prop-bell.webp"),
+  p16PropBench1: p16Prop("p16-prop-bench-1.webp"),
+  p16PropBench2: p16Prop("p16-prop-bench-2.webp"),
+  p16PropFence: p16Prop("p16-prop-fence.webp"),
+  p16PropStairs: p16Prop("p16-prop-stairs.webp"),
+  p16PropBarrel: p16Prop("p16-prop-barrel.webp"),
+  p16PropCrate: p16Prop("p16-prop-crate.webp"),
+  p16PropBags: p16Prop("p16-prop-bags.webp"),
+  p16PropBagOpen: p16Prop("p16-prop-bag-open.webp"),
+  p16PropPackage1: p16Prop("p16-prop-package-1.webp"),
+  p16PropPackage2: p16Prop("p16-prop-package-2.webp"),
+  p16PropGrass3: p16Prop("p16-prop-grass-3.webp"),
+  p16PropFruit: p16Prop("p16-prop-fruit.webp"),
+  p16PropStarOutline: p16Prop("p16-prop-star-outline.webp"),
+  p16PropHeart: p16Prop("p16-prop-heart.webp"),
+  p16PropHeartOutline: p16Prop("p16-prop-heart-outline.webp"),
+  p16PropRockPlatform1: p16Prop("p16-prop-rock-platform-1.webp"),
+  p16PropRockPlatform2: p16Prop("p16-prop-rock-platform-2.webp"),
+  p16PropRockPlatformLarge: p16Prop("p16-prop-rock-platform-large.webp"),
+  p16PropTower: p16Prop("p16-prop-tower.webp"),
+  p16PropStairsModularStart: p16Prop("p16-prop-stairs-modular-start.webp"),
 };
 
 export const v4RegionAssets: Record<RegionId, string> = {

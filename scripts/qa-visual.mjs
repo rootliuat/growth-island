@@ -97,6 +97,18 @@ function summarizeP15MapProps(resources) {
   };
 }
 
+function summarizeP16MapProps(resources) {
+  const props = resources.filter((resource) => resource.url.includes("/assets/map/3d-props/p16/"));
+  const uniqueUrls = [...new Set(props.map((resource) => resource.url))];
+  const bytes = props.reduce((sum, resource) => sum + resource.bytes, 0);
+  return {
+    count: props.length,
+    uniqueCount: uniqueUrls.length,
+    mb: Number((bytes / oneMb).toFixed(2)),
+    urls: uniqueUrls.map((url) => new URL(url).pathname),
+  };
+}
+
 function extractSelectedChildName(text) {
   return (
     text
@@ -4446,7 +4458,8 @@ async function inspectPage(browser, check, viewport) {
     const renderState = await inspectPixiRenderState(page);
     const bigScreen = await inspectHomeBigScreen(page);
     const p15MapProps = summarizeP15MapProps(resources);
-    details = { fps, wheelFps, renderState, bigScreen, p15MapProps };
+    const p16MapProps = summarizeP16MapProps(resources);
+    details = { fps, wheelFps, renderState, bigScreen, p15MapProps, p16MapProps };
     if (!bigScreen.hasSelectedChild) issues.push("home selected child is not visible");
     if (bigScreen.mapShare < 0.75) issues.push(`home map does not dominate workspace: ${bigScreen.mapShare}`);
     if (!bigScreen.energyBoard) issues.push("home map energy board missing");
@@ -4497,6 +4510,8 @@ async function inspectPage(browser, check, viewport) {
     if (hasIdleEnergyHistory && !bigScreen.pixiCurrentEnergyRegion) issues.push("home pixi map has no current lit virtue region");
     if (p15MapProps.uniqueCount < 25) issues.push(`home P15 map 3d props missing: ${p15MapProps.uniqueCount}/25 loaded`);
     if (p15MapProps.mb > 0.45) warnings.push(`home P15 map 3d props are heavy: ${p15MapProps.mb} MB`);
+    if (p16MapProps.uniqueCount < 30) issues.push(`home P16 map 3d props missing: ${p16MapProps.uniqueCount}/31 loaded`);
+    if (p16MapProps.mb > 0.45) warnings.push(`home P16 map 3d props are heavy: ${p16MapProps.mb} MB`);
     if (bigScreen.largeHeadings.length) issues.push("home contains oversized heading(s)");
     if (bigScreen.noisyCopy.length) issues.push(`home contains noisy explanatory copy: ${bigScreen.noisyCopy.join(", ")}`);
     if (bigScreen.horizontalOverflow) issues.push("home horizontal overflow");

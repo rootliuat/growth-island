@@ -61,3 +61,33 @@ P15 runtime placement:
 - Self-service success adds a lightweight Pixi star arrival effect into the child's home.
 
 The scope guard remains unchanged: weapon, skull, bomb, cannon, spike, saw, and other combat or hazard assets are not used.
+
+## P16 baked village prop layer
+
+P16 keeps the same runtime strategy as P15, but expands the source set:
+
+- Ultimate Platformer Pack source files under `model/ultimateplatformer/**/glTF/`.
+- Medieval Village source files under `model/medievalvillage/**/OBJ/`.
+- Both packs include `License.txt` files with CC0 1.0 Universal Public Domain Dedication.
+- Runtime files are baked transparent WebP props under `public/assets/map/3d-props/p16/`.
+- QA/source PNGs and the manifest are under `assets/generated/map-3d-props/p16/`.
+- The main island still loads these as PixiJS sprites, not live Three.js models.
+
+P16 accepted source model groups:
+
+- Home/cabin props: four village houses, stable, gazebo, benches, grass, fruit, and rock platforms.
+- Shop props: two market stands, cart, barrel, crate, bags, open bag, and packages.
+- Honor props: bell tower, bell, star outline, heart outline, and tower.
+- Path props: fence, stairs, modular starting stair, and rock platforms.
+
+P16 rejected source assets:
+
+- `Inn.obj`, `Mill.obj`, and `Well.obj`, because the initial bake read as wireframe-like and too visually noisy against the soft island skin.
+- Bonfire, smoke, cauldron, sawmill, sawmill saw, weapons, monsters, skulls, bombs, cannons, spikes, saws, traps, and other combat or hazard props.
+
+P16 runtime placement:
+
+- All 31 accepted props are placed through `v4MapAssets` and `mapPlacementConfig`.
+- P16 props are initial-load map sprites like P15 props, so they are visible when the island appears.
+- Only the growth heart, shop market stands, honor bell tower, and honor bell are interactive; decorative props do not intercept input.
+- OBJ materials are brightened during baking so village props fit the shell/sand/sea/coral classroom palette.

@@ -1667,7 +1667,7 @@ export function App() {
     focusChildOnHome();
   };
 
-  const openSceneFromHome = (moduleId: "roll-call" | "math-arena" | "shop" | "leaderboard") => {
+  const openSceneFromHome = (moduleId: "roll-call" | "math-arena" | "shop" | "leaderboard" | "child-profile") => {
     const module = moduleConfigById.get(moduleId);
     setActiveModule(moduleId);
     showGrowthFeedback({

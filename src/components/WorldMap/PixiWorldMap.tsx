@@ -21,7 +21,7 @@ interface PixiWorldMapProps {
   onSelectChild: (childId: string) => void;
   onOpenDialogue?: () => void;
   onOpenPk?: () => void;
-  onOpenModule?: (moduleId: "shop" | "leaderboard") => void;
+  onOpenModule?: (moduleId: "shop" | "leaderboard" | "child-profile") => void;
 }
 
 export const PixiWorldMap = forwardRef<PixiWorldMapHandle, PixiWorldMapProps>(function PixiWorldMap(

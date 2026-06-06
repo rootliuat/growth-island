@@ -37,7 +37,7 @@ interface WorldMapContainerProps {
   recentLedger: LedgerRecord[];
   assetVersion: number;
   onSelectChild: (childId: string) => void;
-  onOpenModule?: (moduleId: "roll-call" | "math-arena" | "shop" | "leaderboard") => void;
+  onOpenModule?: (moduleId: "roll-call" | "math-arena" | "shop" | "leaderboard" | "child-profile") => void;
   onPrepareMoralSpeak?: (childId: string) => void;
   onOpenDialogue?: () => void;
   onOpenPk?: () => void;
