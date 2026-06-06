@@ -22270,3 +22270,50 @@ button {
     animation: none;
   }
 }
+
+/* P14 whiteboard clarity pass: keep the child loop crisp and single-task. */
+.home-screen-shell .home-module:has(.world-map-shell:not(.moral-stage-idle)) .dock-showcase-button {
+  display: none;
+}
+
+.home-screen-shell .world-map-shell.moral-stage-pendingReview .map-energy-constellation {
+  display: none;
+}
+
+.moral-success-reward-3d[data-status="loading"],
+.moral-success-reward-3d[data-status="fallback"] {
+  display: none;
+}
+
+.moral-success-reward-3d .model-stage-loader,
+.moral-success-reward-3d .model-stage-fallback {
+  display: none;
+}
+
+.home-screen-shell .spirit-speech-bubble.success {
+  gap: 8px;
+}
+
+.home-screen-shell .spirit-speech-bubble.success .moral-success-reward-3d {
+  flex: 0 0 52px;
+  width: 52px;
+  height: 52px;
+  min-height: 52px;
+}
+
+.home-screen-shell .spirit-speech-bubble.success strong {
+  max-width: min(300px, calc(100vw - 156px));
+}
+
+@media (max-width: 720px) {
+  .home-screen-shell .spirit-speech-bubble.success .moral-success-reward-3d {
+    flex-basis: 44px;
+    width: 44px;
+    height: 44px;
+    min-height: 44px;
+  }
+
+  .home-screen-shell .spirit-speech-bubble.success strong {
+    max-width: calc(100vw - 118px);
+  }
+}

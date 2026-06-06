@@ -143,6 +143,7 @@ export function MoralSpeakOverlay({ child, spirit, state, onStart, onStop, onRet
             className="moral-success-reward-3d"
             motion="success"
             hideFallback
+            hideLoading
             size="compact"
           />
           <Sparkles size={24} />

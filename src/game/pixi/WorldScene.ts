@@ -46,6 +46,7 @@ export class WorldScene {
     new DecorationLayer(this.layers.get("decorations"), {
       onFocusPoint: this.focusPoint,
       onOpenDialogue: this.callbacks.onOpenDialogue,
+      onOpenModule: this.callbacks.onOpenModule,
       onOpenPk: this.callbacks.onOpenPk,
     });
     this.effects = new EffectLayer(this.layers.get("effects"));
@@ -88,7 +89,10 @@ export class WorldScene {
         const previousTarget = previousData.spirits.find((spirit) => spirit.id === target.id);
         const changedStage = !!previousTarget && (previousTarget.child.level !== target.child.level || previousTarget.child.state !== target.child.state);
         const upgraded = !!previousTarget && target.child.xp >= previousTarget.child.xp;
-        if (!isSelfServiceEnergyReason(data.lastLedger.reason)) {
+        const selfServiceEnergy = isSelfServiceEnergyReason(data.lastLedger.reason) && data.lastLedger.delta > 0;
+        if (selfServiceEnergy) {
+          this.effects.emitEnergyArrival(target.spritePosition, target.homePosition, target.accent);
+        } else {
           this.effects.emitXp(target.spritePosition, data.lastLedger.delta);
         }
         if (changedStage) this.spirits.evolve(target.id, upgraded);

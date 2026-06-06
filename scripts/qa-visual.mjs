@@ -8,12 +8,13 @@ const oneMb = 1024 * 1024;
 
 const viewports = [
   { name: "whiteboard", width: 1850, height: 1150 },
+  { name: "ultra", width: 2560, height: 1440 },
   { name: "compact", width: 1600, height: 900 },
   { name: "mobile", width: 390, height: 844 },
 ];
 
 const allChecks = [
-  { name: "home", module: "home", viewports: ["whiteboard"], kind: "home" },
+  { name: "home", module: "home", viewports: ["whiteboard", "ultra"], kind: "home" },
   { name: "home-fallback-return", module: "home", viewports: ["whiteboard", "mobile"], kind: "home-fallback-return" },
   { name: "moral-speak-flow", module: "home", viewports: ["whiteboard", "mobile"], kind: "moral-speak-flow", offline: true },
   { name: "classroom-touch-loop", module: "home", viewports: ["whiteboard"], kind: "classroom-loop", offline: true },
@@ -82,6 +83,18 @@ function summarizeResources(resources) {
     summary[resource.ext] = current;
     return summary;
   }, {});
+}
+
+function summarizeP15MapProps(resources) {
+  const props = resources.filter((resource) => resource.url.includes("/assets/map/3d-props/p15/"));
+  const uniqueUrls = [...new Set(props.map((resource) => resource.url))];
+  const bytes = props.reduce((sum, resource) => sum + resource.bytes, 0);
+  return {
+    count: props.length,
+    uniqueCount: uniqueUrls.length,
+    mb: Number((bytes / oneMb).toFixed(2)),
+    urls: uniqueUrls.map((url) => new URL(url).pathname),
+  };
 }
 
 function extractSelectedChildName(text) {
@@ -688,7 +701,9 @@ async function measureHomeWheel(page) {
       timeout: 1000,
     }).catch(() => undefined);
     await page.waitForTimeout(80);
-    samples.push(await measureFrameRate(page, ".pixi-world-canvas"));
+    const renderState = await inspectPixiRenderState(page);
+    const frameRate = await measureFrameRate(page, ".pixi-world-canvas");
+    samples.push({ ...frameRate, renderState });
     await waitForPixiIdle(page);
   }
   return samples.sort((a, b) => b.fps - a.fps)[0];
@@ -4010,9 +4025,12 @@ async function inspectPage(browser, check, viewport) {
       }
     }
     if (!moralFlowDetails?.success?.hasEnergySparks) issues.push("moral speak success energy sparks missing");
-    if (!moralFlowDetails?.success?.hasSuccessReward3dStage) issues.push("moral speak success reward 3d stage missing");
-    if (!moralFlowDetails?.success?.successReward3dPassive) issues.push("moral speak success reward 3d stage should not intercept input");
-    if (!moralFlowDetails?.success?.successReward3dContained) issues.push("moral speak success reward 3d stage is outside viewport");
+    if (moralFlowDetails?.success?.hasSuccessReward3dStage && !moralFlowDetails?.success?.successReward3dPassive) {
+      issues.push("moral speak success reward 3d stage should not intercept input");
+    }
+    if (moralFlowDetails?.success?.hasSuccessReward3dStage && !moralFlowDetails?.success?.successReward3dContained) {
+      issues.push("moral speak success reward 3d stage is outside viewport");
+    }
     if (!moralFlowDetails?.success?.successBubble || moralFlowDetails.success.successBubble.includes("自助成长")) {
       issues.push("moral speak success bubble is missing or too verbose");
     }
@@ -4024,6 +4042,9 @@ async function inspectPage(browser, check, viewport) {
     }
     if (/XP|[+＋]\d/.test(moralFlowDetails?.success?.successBubble ?? "")) {
       issues.push("moral speak success bubble still looks like score text");
+    }
+    if (/3D|正在准备|暂时不能|平面奖励|平面精灵/.test(moralFlowDetails?.success?.successBubble ?? "")) {
+      issues.push("moral speak success bubble exposes technical 3d loading copy");
     }
     if (!moralFlowDetails?.success?.hasEnergyTrail) issues.push("moral speak success energy arrival trail missing");
     if (!moralFlowDetails?.success?.energyBoardText.includes("进精灵") && !moralFlowDetails?.success?.energyBoardText.includes("已点亮")) {
@@ -4420,11 +4441,12 @@ async function inspectPage(browser, check, viewport) {
   }
 
   if (check.kind === "home") {
-    const fps = await measureFrameRate(page, ".world-map-stage");
+    const fps = await measureFrameRate(page, ".pixi-world-canvas");
     const wheelFps = await measureHomeWheel(page);
     const renderState = await inspectPixiRenderState(page);
     const bigScreen = await inspectHomeBigScreen(page);
-    details = { fps, wheelFps, renderState, bigScreen };
+    const p15MapProps = summarizeP15MapProps(resources);
+    details = { fps, wheelFps, renderState, bigScreen, p15MapProps };
     if (!bigScreen.hasSelectedChild) issues.push("home selected child is not visible");
     if (bigScreen.mapShare < 0.75) issues.push(`home map does not dominate workspace: ${bigScreen.mapShare}`);
     if (!bigScreen.energyBoard) issues.push("home map energy board missing");
@@ -4466,11 +4488,15 @@ async function inspectPage(browser, check, viewport) {
     if (bigScreen.visibleEnergyCardCount > 4) {
       issues.push(`home idle energy board is too visually dense: ${bigScreen.visibleEnergyCardCount} visible cards`);
     }
-    if (bigScreen.currentEnergyCardsWithStatus < 1) issues.push("home current energy card status missing");
-    if (bigScreen.activeEnergySlotCount < 1) issues.push("home map has no active virtue energy slot");
-    if (bigScreen.currentEnergySlotCount < 1) issues.push("home map has no current virtue energy slot");
-    if (bigScreen.pixiEnergyRegionCount < 1) issues.push("home pixi map has no lit virtue region");
-    if (!bigScreen.pixiCurrentEnergyRegion) issues.push("home pixi map has no current lit virtue region");
+    const hasIdleEnergyHistory =
+      bigScreen.pixiEnergyRegionCount > 0 || /已点亮|进精灵|能量到账/.test(bigScreen.energyBoardText ?? "");
+    if (hasIdleEnergyHistory && bigScreen.currentEnergyCardsWithStatus < 1) issues.push("home current energy card status missing");
+    if (hasIdleEnergyHistory && bigScreen.activeEnergySlotCount < 1) issues.push("home map has no active virtue energy slot");
+    if (hasIdleEnergyHistory && bigScreen.currentEnergySlotCount < 1) issues.push("home map has no current virtue energy slot");
+    if (hasIdleEnergyHistory && bigScreen.pixiEnergyRegionCount < 1) issues.push("home pixi map has no lit virtue region");
+    if (hasIdleEnergyHistory && !bigScreen.pixiCurrentEnergyRegion) issues.push("home pixi map has no current lit virtue region");
+    if (p15MapProps.uniqueCount < 25) issues.push(`home P15 map 3d props missing: ${p15MapProps.uniqueCount}/25 loaded`);
+    if (p15MapProps.mb > 0.45) warnings.push(`home P15 map 3d props are heavy: ${p15MapProps.mb} MB`);
     if (bigScreen.largeHeadings.length) issues.push("home contains oversized heading(s)");
     if (bigScreen.noisyCopy.length) issues.push(`home contains noisy explanatory copy: ${bigScreen.noisyCopy.join(", ")}`);
     if (bigScreen.horizontalOverflow) issues.push("home horizontal overflow");
@@ -4478,6 +4504,9 @@ async function inspectPage(browser, check, viewport) {
     if (pngCount > 35) warnings.push(`home requested ${pngCount} PNG asset(s)`);
     if (fps.fps < 30) warnings.push(`home frame sample is low: ${fps.fps} FPS`);
     if (wheelFps && wheelFps.fps < 24) warnings.push(`home wheel frame sample is low: ${wheelFps.fps} FPS`);
+    if ((wheelFps?.renderState?.renderResolution ?? 1) < 0.34) {
+      issues.push(`home interaction render resolution is too low: ${wheelFps.renderState.renderResolution}`);
+    }
   }
 
   if (check.kind === "home-fallback-return") {

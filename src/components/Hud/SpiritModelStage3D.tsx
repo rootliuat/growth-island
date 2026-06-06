@@ -45,6 +45,7 @@ interface BaseStageProps {
   fallbackTitle?: string;
   fallbackDetail?: string;
   hideFallback?: boolean;
+  hideLoading?: boolean;
   interactive?: boolean;
   size?: "compact" | "medium" | "large";
 }
@@ -234,6 +235,7 @@ export function SpiritModelStage3D({
   fallbackTitle = "这台设备暂时不能打开3D",
   fallbackDetail = "先用平面精灵预览",
   hideFallback = false,
+  hideLoading = false,
   interactive = true,
   size = "large",
 }: SpiritModelStage3DProps) {
@@ -288,6 +290,7 @@ export function SpiritModelStage3D({
         detail: fallbackDetail,
         hide: hideFallback,
       }}
+      hideLoading={hideLoading}
       setupScene={setupScene}
     />
   );
@@ -305,6 +308,7 @@ export function RewardModelPreview3D({
   fallbackTitle,
   fallbackDetail = "用平面奖励预览",
   hideFallback = false,
+  hideLoading = false,
   interactive = false,
   size = "compact",
 }: RewardModelPreview3DProps) {
@@ -343,6 +347,7 @@ export function RewardModelPreview3D({
         detail: fallbackDetail,
         hide: hideFallback,
       }}
+      hideLoading={hideLoading}
       setupScene={setupScene}
     />
   );
@@ -360,6 +365,7 @@ interface ThreeStageProps {
   canvasClassName?: string;
   accent: string;
   interactive: boolean;
+  hideLoading: boolean;
   fallback: {
     imageUrl?: string;
     initial?: string;
@@ -370,7 +376,7 @@ interface ThreeStageProps {
   setupScene: (context: ThreeStageContext) => Promise<void>;
 }
 
-function ThreeStage({ stageClassName, canvasClassName, accent, interactive, fallback, setupScene }: ThreeStageProps) {
+function ThreeStage({ stageClassName, canvasClassName, accent, interactive, hideLoading, fallback, setupScene }: ThreeStageProps) {
   const mountRef = useRef<HTMLDivElement | null>(null);
   const [status, setStatus] = useState<StageStatus>("loading");
 
@@ -544,7 +550,7 @@ function ThreeStage({ stageClassName, canvasClassName, accent, interactive, fall
   return (
     <div className={stageClassName} data-status={status} style={{ "--model-accent": accent } as CSSProperties}>
       <div ref={mountRef} className="model-stage-canvas-mount spirit-showcase-canvas-mount" />
-      {status === "loading" ? <div className="model-stage-loader showcase-loader">3D 正在准备</div> : null}
+      {status === "loading" && !hideLoading ? <div className="model-stage-loader showcase-loader">3D 正在准备</div> : null}
       {status === "fallback" && !fallback.hide ? (
         <StageFallback
           imageUrl={fallback.imageUrl}

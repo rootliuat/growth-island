@@ -63,6 +63,20 @@ interface GrowthWave {
   accent: number;
 }
 
+interface EnergyArrival {
+  root: Container;
+  aura: Graphics;
+  core: Graphics;
+  trail: Graphics[];
+  from: WorldPoint;
+  control: WorldPoint;
+  to: WorldPoint;
+  accent: number;
+  elapsed: number;
+  duration: number;
+  reducedMotion: boolean;
+}
+
 function quadraticPoint(from: WorldPoint, control: WorldPoint, to: WorldPoint, t: number) {
   const inverse = 1 - t;
   return {
@@ -112,6 +126,10 @@ function drawPetal(graphics: Graphics, width: number, height: number, color: num
   graphics.stroke({ width: 0.8, color: 0xffffff, alpha: alpha * 0.18, cap: "round" });
 }
 
+function prefersReducedMotion() {
+  return typeof globalThis.matchMedia === "function" && globalThis.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
 export class EffectLayer {
   readonly xpParticles: XpParticleSystem;
   private readonly selectedGuide = new Container();
@@ -119,6 +137,7 @@ export class EffectLayer {
   private readonly selectedGuideDots: Graphics[] = [];
   private readonly treeGlow = new Graphics();
   private readonly growthWaves: GrowthWave[] = [];
+  private readonly energyArrivals: EnergyArrival[] = [];
   private selectedGuideFrom?: WorldPoint;
   private selectedGuideAccent = palette.accent;
   private time = 0;
@@ -147,6 +166,42 @@ export class EffectLayer {
 
   emitXp(from: WorldPoint, delta: number) {
     this.xpParticles.burst(from, growthTreePosition, delta);
+  }
+
+  emitEnergyArrival(from: WorldPoint, to: WorldPoint, accent = palette.accent) {
+    const reducedMotion = prefersReducedMotion();
+    const start = reducedMotion ? { x: to.x, y: to.y - 58 } : { x: from.x, y: from.y - 34 };
+    const destination = { x: to.x, y: to.y - 58 };
+    const control = {
+      x: (start.x + destination.x) / 2,
+      y: Math.min(start.y, destination.y) - 126,
+    };
+    const root = new Container();
+    const aura = new Graphics();
+    const core = new Graphics();
+    const trail = Array.from({ length: reducedMotion ? 0 : 7 }, () => {
+      const dot = new Graphics();
+      dot.blendMode = "add";
+      root.addChild(dot);
+      return dot;
+    });
+    aura.blendMode = "add";
+    core.blendMode = "add";
+    root.addChild(aura, core);
+    this.layer.addChild(root);
+    this.energyArrivals.push({
+      root,
+      aura,
+      core,
+      trail,
+      from: start,
+      control,
+      to: destination,
+      accent,
+      elapsed: 0,
+      duration: reducedMotion ? 900 : 1580,
+      reducedMotion,
+    });
   }
 
   emitGrowthChange(position: WorldPoint, upgraded: boolean, accent = palette.accent) {
@@ -244,6 +299,7 @@ export class EffectLayer {
     this.treeGlow.circle(0, 0, 116).stroke({ width: 1.5, color: 0xfff5c8, alpha: 0.18 + pulse * 0.14 });
     this.updateSelectedGuide();
     this.xpParticles.update(ticker);
+    this.updateEnergyArrivals(ticker);
     this.updateGrowthWaves(ticker);
   }
 
@@ -347,6 +403,51 @@ export class EffectLayer {
       if (t >= 1) {
         wave.root.destroy({ children: true });
         this.growthWaves.splice(i, 1);
+      }
+    }
+  }
+
+  private updateEnergyArrivals(ticker: Ticker) {
+    for (let i = this.energyArrivals.length - 1; i >= 0; i -= 1) {
+      const arrival = this.energyArrivals[i];
+      arrival.elapsed += ticker.deltaMS;
+      const t = clamp01(arrival.elapsed / arrival.duration);
+      const fly = arrival.reducedMotion ? 1 : easeInOutSine(t / 0.78);
+      const point = quadraticPoint(arrival.from, arrival.control, arrival.to, fly);
+      const settle = clamp01((t - 0.64) / 0.28);
+      const fade = clamp01((t - 0.76) / 0.24);
+
+      arrival.root.alpha = 1 - fade * 0.72;
+      arrival.trail.forEach((dot, index) => {
+        const sample = clamp01(fly - (index + 1) * 0.055);
+        const tail = quadraticPoint(arrival.from, arrival.control, arrival.to, sample);
+        const alpha = (0.28 - index * 0.022) * (1 - fade);
+        const size = 6.4 - index * 0.42;
+        dot.clear();
+        dot.circle(tail.x, tail.y, size).fill({ color: index % 2 === 0 ? 0xfff2b3 : arrival.accent, alpha });
+        dot.circle(tail.x - size * 0.18, tail.y - size * 0.18, size * 0.32).fill({ color: 0xffffff, alpha: alpha * 0.8 });
+      });
+
+      arrival.aura.clear();
+      arrival.core.clear();
+      arrival.aura.circle(point.x, point.y, 24 + Math.sin(t * Math.PI) * 10).fill({ color: arrival.accent, alpha: 0.12 * (1 - fade) });
+      arrival.aura.circle(point.x, point.y, 13).fill({ color: 0xfff2b3, alpha: 0.28 * (1 - fade) });
+      arrival.core.moveTo(point.x - 12, point.y);
+      arrival.core.lineTo(point.x + 12, point.y);
+      arrival.core.moveTo(point.x, point.y - 12);
+      arrival.core.lineTo(point.x, point.y + 12);
+      arrival.core.stroke({ width: 2.2, color: 0xffffff, alpha: 0.78 * (1 - fade), cap: "round" });
+      arrival.core.circle(point.x, point.y, 6.6).fill({ color: 0xfff2b3, alpha: 0.84 * (1 - fade) });
+
+      if (settle > 0) {
+        const ring = easeOutCubic(settle);
+        arrival.aura.circle(arrival.to.x, arrival.to.y, 22 + ring * 42).stroke({ width: 2.4, color: arrival.accent, alpha: 0.32 * (1 - ring) });
+        arrival.aura.circle(arrival.to.x, arrival.to.y, 14 + ring * 24).stroke({ width: 1.4, color: 0xffffff, alpha: 0.28 * (1 - ring) });
+      }
+
+      if (t >= 1) {
+        arrival.root.destroy({ children: true });
+        this.energyArrivals.splice(i, 1);
       }
     }
   }

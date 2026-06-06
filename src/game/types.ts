@@ -95,6 +95,7 @@ export interface WorldMapCallbacks {
   onSelectChild: (childId: string) => void;
   onOpenPk?: () => void;
   onOpenDialogue?: () => void;
+  onOpenModule?: (moduleId: "shop" | "leaderboard") => void;
 }
 
 export interface CameraTarget {

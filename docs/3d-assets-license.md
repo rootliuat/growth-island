@@ -37,3 +37,27 @@ The Three.js surfaces do not make the main island a 3D map. The PixiJS map remai
 - The profile cabin uses the spirit stage with small decorative chest/star props.
 - The moral success bubble, shop counter, and leaderboard selected child token use compact reward previews.
 - Reward previews are `pointer-events: none`; the profile and showcase spirit stages are the only interactive drag surfaces.
+
+## P15 baked island prop layer
+
+P15 uses the same Ultimate Platformer Pack source license, but the runtime form is different:
+
+- Source files remain under `model/ultimateplatformer/**/glTF/`.
+- Runtime files are baked transparent WebP props under `public/assets/map/3d-props/p15/`.
+- QA/source PNGs and the manifest are under `assets/generated/map-3d-props/p15/`.
+- The main island still does not load these as live Three.js models. They are PixiJS map sprites.
+
+P15 source model groups:
+
+- Nature/home props: tree, fruit tree, bush, fruit bush, grass, rocks, large/small plants.
+- Path props: small bridge, modular bridge, fences, door, small stairs.
+- Reward/honor props: chest, coin, blue/green/pink gems, key, star, goal flag.
+
+P15 runtime placement:
+
+- The baked props are placed through the existing `v4MapAssets` and `mapPlacementConfig` pipeline.
+- Home, path, shop, and honor areas get visible model-derived props.
+- Only the shop chest and honor star/flag are interactive; decorative props do not intercept input.
+- Self-service success adds a lightweight Pixi star arrival effect into the child's home.
+
+The scope guard remains unchanged: weapon, skull, bomb, cannon, spike, saw, and other combat or hazard assets are not used.

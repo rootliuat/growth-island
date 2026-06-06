@@ -7,6 +7,7 @@ import { WorldScene } from "./WorldScene";
 
 const minRenderResolution = 1;
 const maxRenderResolution = 1.5;
+const minInteractiveRenderResolution = 0.34;
 const activeMaxFps = 45;
 
 function getAdaptiveRenderResolution(width: number, height: number) {
@@ -18,8 +19,8 @@ function getAdaptiveRenderResolution(width: number, height: number) {
 
 function getInteractiveRenderResolution(width: number, height: number, baseResolution: number) {
   const area = width * height;
-  const interactionCap = area >= 1_700_000 ? 0.32 : area >= 900_000 ? 0.5 : 0.72;
-  return Math.min(baseResolution, interactionCap);
+  const interactionCap = area >= 3_200_000 ? 0.34 : area >= 1_700_000 ? 0.46 : area >= 900_000 ? 0.62 : maxRenderResolution;
+  return Math.min(baseResolution, Math.max(minInteractiveRenderResolution, interactionCap));
 }
 
 export class PixiWorld {

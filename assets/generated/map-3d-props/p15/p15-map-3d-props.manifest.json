@@ -1,0 +1,257 @@
+{
+  "generatedAt": "2026-06-06T14:53:07.100Z",
+  "count": 25,
+  "totalBytes": 114676,
+  "records": [
+    {
+      "id": "p15-prop-tree",
+      "label": "树",
+      "source": "model/ultimateplatformer/Nature/glTF/Tree.gltf",
+      "output": "/assets/map/3d-props/p15/p15-prop-tree.webp",
+      "qaSource": "assets/generated/map-3d-props/p15/source/p15-prop-tree.png",
+      "width": 240,
+      "usage": "home-grove",
+      "bytes": 6534
+    },
+    {
+      "id": "p15-prop-tree-fruit",
+      "label": "果树",
+      "source": "model/ultimateplatformer/Nature/glTF/Tree_Fruit.gltf",
+      "output": "/assets/map/3d-props/p15/p15-prop-tree-fruit.webp",
+      "qaSource": "assets/generated/map-3d-props/p15/source/p15-prop-tree-fruit.png",
+      "width": 250,
+      "usage": "home-grove",
+      "bytes": 7294
+    },
+    {
+      "id": "p15-prop-bush",
+      "label": "灌木",
+      "source": "model/ultimateplatformer/Nature/glTF/Bush.gltf",
+      "output": "/assets/map/3d-props/p15/p15-prop-bush.webp",
+      "qaSource": "assets/generated/map-3d-props/p15/source/p15-prop-bush.png",
+      "width": 190,
+      "usage": "home-grove",
+      "bytes": 4384
+    },
+    {
+      "id": "p15-prop-bush-fruit",
+      "label": "果灌木",
+      "source": "model/ultimateplatformer/Nature/glTF/Bush_Fruit.gltf",
+      "output": "/assets/map/3d-props/p15/p15-prop-bush-fruit.webp",
+      "qaSource": "assets/generated/map-3d-props/p15/source/p15-prop-bush-fruit.png",
+      "width": 190,
+      "usage": "home-grove",
+      "bytes": 4884
+    },
+    {
+      "id": "p15-prop-grass-1",
+      "label": "草丛1",
+      "source": "model/ultimateplatformer/Nature/glTF/Grass_1.gltf",
+      "output": "/assets/map/3d-props/p15/p15-prop-grass-1.webp",
+      "qaSource": "assets/generated/map-3d-props/p15/source/p15-prop-grass-1.png",
+      "width": 150,
+      "usage": "path-edge",
+      "bytes": 3966
+    },
+    {
+      "id": "p15-prop-grass-2",
+      "label": "草丛2",
+      "source": "model/ultimateplatformer/Nature/glTF/Grass_2.gltf",
+      "output": "/assets/map/3d-props/p15/p15-prop-grass-2.webp",
+      "qaSource": "assets/generated/map-3d-props/p15/source/p15-prop-grass-2.png",
+      "width": 150,
+      "usage": "path-edge",
+      "bytes": 3658
+    },
+    {
+      "id": "p15-prop-rock-1",
+      "label": "石头1",
+      "source": "model/ultimateplatformer/Nature/glTF/Rock_1.gltf",
+      "output": "/assets/map/3d-props/p15/p15-prop-rock-1.webp",
+      "qaSource": "assets/generated/map-3d-props/p15/source/p15-prop-rock-1.png",
+      "width": 145,
+      "usage": "path-edge",
+      "bytes": 3266
+    },
+    {
+      "id": "p15-prop-rock-2",
+      "label": "石头2",
+      "source": "model/ultimateplatformer/Nature/glTF/Rock_2.gltf",
+      "output": "/assets/map/3d-props/p15/p15-prop-rock-2.webp",
+      "qaSource": "assets/generated/map-3d-props/p15/source/p15-prop-rock-2.png",
+      "width": 145,
+      "usage": "path-edge",
+      "bytes": 3314
+    },
+    {
+      "id": "p15-prop-plant-large",
+      "label": "大植物",
+      "source": "model/ultimateplatformer/Level and Mechanics/glTF/Plant_Large.gltf",
+      "output": "/assets/map/3d-props/p15/p15-prop-plant-large.webp",
+      "qaSource": "assets/generated/map-3d-props/p15/source/p15-prop-plant-large.png",
+      "width": 170,
+      "usage": "path-edge",
+      "bytes": 5260
+    },
+    {
+      "id": "p15-prop-plant-small",
+      "label": "小植物",
+      "source": "model/ultimateplatformer/Level and Mechanics/glTF/Plant_Small.gltf",
+      "output": "/assets/map/3d-props/p15/p15-prop-plant-small.webp",
+      "qaSource": "assets/generated/map-3d-props/p15/source/p15-prop-plant-small.png",
+      "width": 140,
+      "usage": "path-edge",
+      "bytes": 3226
+    },
+    {
+      "id": "p15-prop-bridge-small",
+      "label": "小桥",
+      "source": "model/ultimateplatformer/Level and Mechanics/glTF/Bridge_Small.gltf",
+      "output": "/assets/map/3d-props/p15/p15-prop-bridge-small.webp",
+      "qaSource": "assets/generated/map-3d-props/p15/source/p15-prop-bridge-small.png",
+      "width": 270,
+      "usage": "path-landmark",
+      "bytes": 9296
+    },
+    {
+      "id": "p15-prop-bridge-modular",
+      "label": "木桥",
+      "source": "model/ultimateplatformer/Level and Mechanics/glTF/Bridge_Modular.gltf",
+      "output": "/assets/map/3d-props/p15/p15-prop-bridge-modular.webp",
+      "qaSource": "assets/generated/map-3d-props/p15/source/p15-prop-bridge-modular.png",
+      "width": 300,
+      "usage": "path-landmark",
+      "bytes": 10622
+    },
+    {
+      "id": "p15-prop-fence-1",
+      "label": "栅栏",
+      "source": "model/ultimateplatformer/Level and Mechanics/glTF/Fence_1.gltf",
+      "output": "/assets/map/3d-props/p15/p15-prop-fence-1.webp",
+      "qaSource": "assets/generated/map-3d-props/p15/source/p15-prop-fence-1.png",
+      "width": 200,
+      "usage": "path-edge",
+      "bytes": 2392
+    },
+    {
+      "id": "p15-prop-fence-corner",
+      "label": "转角栅栏",
+      "source": "model/ultimateplatformer/Level and Mechanics/glTF/Fence_Corner.gltf",
+      "output": "/assets/map/3d-props/p15/p15-prop-fence-corner.webp",
+      "qaSource": "assets/generated/map-3d-props/p15/source/p15-prop-fence-corner.png",
+      "width": 190,
+      "usage": "path-edge",
+      "bytes": 3578
+    },
+    {
+      "id": "p15-prop-fence-middle",
+      "label": "长栅栏",
+      "source": "model/ultimateplatformer/Level and Mechanics/glTF/Fence_Middle.gltf",
+      "output": "/assets/map/3d-props/p15/p15-prop-fence-middle.webp",
+      "qaSource": "assets/generated/map-3d-props/p15/source/p15-prop-fence-middle.png",
+      "width": 215,
+      "usage": "path-edge",
+      "bytes": 6096
+    },
+    {
+      "id": "p15-prop-door",
+      "label": "小门",
+      "source": "model/ultimateplatformer/Level and Mechanics/glTF/Door.gltf",
+      "output": "/assets/map/3d-props/p15/p15-prop-door.webp",
+      "qaSource": "assets/generated/map-3d-props/p15/source/p15-prop-door.png",
+      "width": 155,
+      "usage": "home-gate",
+      "bytes": 3388
+    },
+    {
+      "id": "p15-prop-stairs-small",
+      "label": "石阶",
+      "source": "model/ultimateplatformer/Level and Mechanics/glTF/Stairs_Small.gltf",
+      "output": "/assets/map/3d-props/p15/p15-prop-stairs-small.webp",
+      "qaSource": "assets/generated/map-3d-props/p15/source/p15-prop-stairs-small.png",
+      "width": 195,
+      "usage": "path-landmark",
+      "bytes": 7112
+    },
+    {
+      "id": "p15-prop-goal-flag",
+      "label": "旗帜",
+      "source": "model/ultimateplatformer/Level and Mechanics/glTF/Goal_Flag.gltf",
+      "output": "/assets/map/3d-props/p15/p15-prop-goal-flag.webp",
+      "qaSource": "assets/generated/map-3d-props/p15/source/p15-prop-goal-flag.png",
+      "width": 160,
+      "usage": "honor",
+      "bytes": 2520
+    },
+    {
+      "id": "p15-prop-chest",
+      "label": "宝箱",
+      "source": "model/ultimateplatformer/Level and Mechanics/glTF/Chest.gltf",
+      "output": "/assets/map/3d-props/p15/p15-prop-chest.webp",
+      "qaSource": "assets/generated/map-3d-props/p15/source/p15-prop-chest.png",
+      "width": 175,
+      "usage": "shop",
+      "bytes": 5332
+    },
+    {
+      "id": "p15-prop-coin",
+      "label": "金币",
+      "source": "model/ultimateplatformer/Powerups and Pickups/glTF/Coin.gltf",
+      "output": "/assets/map/3d-props/p15/p15-prop-coin.webp",
+      "qaSource": "assets/generated/map-3d-props/p15/source/p15-prop-coin.png",
+      "width": 110,
+      "usage": "shop",
+      "bytes": 3168
+    },
+    {
+      "id": "p15-prop-gem-blue",
+      "label": "蓝宝石",
+      "source": "model/ultimateplatformer/Powerups and Pickups/glTF/Gem_Blue.gltf",
+      "output": "/assets/map/3d-props/p15/p15-prop-gem-blue.webp",
+      "qaSource": "assets/generated/map-3d-props/p15/source/p15-prop-gem-blue.png",
+      "width": 120,
+      "usage": "shop",
+      "bytes": 1854
+    },
+    {
+      "id": "p15-prop-gem-green",
+      "label": "绿宝石",
+      "source": "model/ultimateplatformer/Powerups and Pickups/glTF/Gem_Green.gltf",
+      "output": "/assets/map/3d-props/p15/p15-prop-gem-green.webp",
+      "qaSource": "assets/generated/map-3d-props/p15/source/p15-prop-gem-green.png",
+      "width": 120,
+      "usage": "shop",
+      "bytes": 3318
+    },
+    {
+      "id": "p15-prop-gem-pink",
+      "label": "粉宝石",
+      "source": "model/ultimateplatformer/Powerups and Pickups/glTF/Gem_Pink.gltf",
+      "output": "/assets/map/3d-props/p15/p15-prop-gem-pink.webp",
+      "qaSource": "assets/generated/map-3d-props/p15/source/p15-prop-gem-pink.png",
+      "width": 120,
+      "usage": "shop",
+      "bytes": 2900
+    },
+    {
+      "id": "p15-prop-key",
+      "label": "钥匙",
+      "source": "model/ultimateplatformer/Powerups and Pickups/glTF/Key.gltf",
+      "output": "/assets/map/3d-props/p15/p15-prop-key.webp",
+      "qaSource": "assets/generated/map-3d-props/p15/source/p15-prop-key.png",
+      "width": 125,
+      "usage": "shop",
+      "bytes": 3984
+    },
+    {
+      "id": "p15-prop-star",
+      "label": "星光",
+      "source": "model/ultimateplatformer/Powerups and Pickups/glTF/Star.gltf",
+      "output": "/assets/map/3d-props/p15/p15-prop-star.webp",
+      "qaSource": "assets/generated/map-3d-props/p15/source/p15-prop-star.png",
+      "width": 130,
+      "usage": "honor",
+      "bytes": 3330
+    }
+  ]
+}

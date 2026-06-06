@@ -78,17 +78,6 @@ export function SpiritDock({ childrenWithProgress, spiritsById, selectedChildId,
           </span>
           <em className="dock-summary-status">{selectedStatus}</em>
         </button>
-        {onOpenShowcase ? (
-          <button
-            type="button"
-            className="dock-showcase-button spirit-showcase-button"
-            aria-label={`查看${selectedChild.name}的3D精灵`}
-            onClick={() => onOpenShowcase(selectedChild.id)}
-          >
-            <Box size={16} />
-            3D
-          </button>
-        ) : null}
         <button
           className="dock-collapse"
           type="button"

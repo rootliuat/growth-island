@@ -10,6 +10,7 @@ const decorationAssetDelayMs = 8500;
 
 interface DecorationLayerActions {
   onOpenDialogue?: () => void;
+  onOpenModule?: (moduleId: "shop" | "leaderboard") => void;
   onOpenPk?: () => void;
   onFocusPoint: (x: number, y: number, zoom: number) => void;
 }
@@ -28,6 +29,7 @@ export class DecorationLayer {
 
   private drawPlacements(placements: V4Placement[]) {
     placements.forEach((placement) => {
+      const isP15Prop = placement.id.startsWith("p15-");
       const root = addAssetSprite(this.layer, {
         id: placement.id,
         url: placement.url,
@@ -39,7 +41,7 @@ export class DecorationLayer {
         anchorX: placement.anchor?.x,
         anchorY: placement.anchor?.y,
         zIndex: placement.zIndex,
-        loadDelayMs: placement.layer === "decoration" ? decorationAssetDelayMs : 0,
+        loadDelayMs: placement.layer === "decoration" && !isP15Prop ? decorationAssetDelayMs : 0,
       });
       if (!placement.interactive) return;
       root.eventMode = "static";
@@ -67,6 +69,11 @@ export class DecorationLayer {
         cameraConfig.detailZoom,
       );
       this.actions.onOpenPk?.();
+      return;
+    }
+    if (placement.interactive === "shop" || placement.interactive === "leaderboard") {
+      this.actions.onFocusPoint(placement.x, placement.y, cameraConfig.detailZoom);
+      this.actions.onOpenModule?.(placement.interactive);
       return;
     }
     this.actions.onFocusPoint(placement.x || oldStreetPosition.x, placement.y || oldStreetPosition.y, cameraConfig.detailZoom);

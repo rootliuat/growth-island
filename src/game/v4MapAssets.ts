@@ -30,6 +30,10 @@ function hidpiAsset(batch: string, fileName: string) {
   return assetFrom(hidpiBase, batch, fileName);
 }
 
+function p15Prop(fileName: string) {
+  return encodeURI(`/assets/map/3d-props/p15/${fileName}`);
+}
+
 export const v4MapAssets = {
   oceanBase: asset("batch11", "v4-ocean-base-tile.png"),
   oceanWaveOverlay: asset("batch11", "v4-ocean-wave-overlay.png"),
@@ -89,6 +93,31 @@ export const v4MapAssets = {
   reedCluster: asset("batch15", "batch15-024-reed-cluster.png"),
   edgeBush: asset("batch15", "batch15-025-edge-mini-bush.png"),
   areaArchBlank: asset("batch15", "batch15-026-area-arch-blank.png"),
+  p15PropTree: p15Prop("p15-prop-tree.webp"),
+  p15PropTreeFruit: p15Prop("p15-prop-tree-fruit.webp"),
+  p15PropBush: p15Prop("p15-prop-bush.webp"),
+  p15PropBushFruit: p15Prop("p15-prop-bush-fruit.webp"),
+  p15PropGrass1: p15Prop("p15-prop-grass-1.webp"),
+  p15PropGrass2: p15Prop("p15-prop-grass-2.webp"),
+  p15PropRock1: p15Prop("p15-prop-rock-1.webp"),
+  p15PropRock2: p15Prop("p15-prop-rock-2.webp"),
+  p15PropPlantLarge: p15Prop("p15-prop-plant-large.webp"),
+  p15PropPlantSmall: p15Prop("p15-prop-plant-small.webp"),
+  p15PropBridgeSmall: p15Prop("p15-prop-bridge-small.webp"),
+  p15PropBridgeModular: p15Prop("p15-prop-bridge-modular.webp"),
+  p15PropFence1: p15Prop("p15-prop-fence-1.webp"),
+  p15PropFenceCorner: p15Prop("p15-prop-fence-corner.webp"),
+  p15PropFenceMiddle: p15Prop("p15-prop-fence-middle.webp"),
+  p15PropDoor: p15Prop("p15-prop-door.webp"),
+  p15PropStairsSmall: p15Prop("p15-prop-stairs-small.webp"),
+  p15PropGoalFlag: p15Prop("p15-prop-goal-flag.webp"),
+  p15PropChest: p15Prop("p15-prop-chest.webp"),
+  p15PropCoin: p15Prop("p15-prop-coin.webp"),
+  p15PropGemBlue: p15Prop("p15-prop-gem-blue.webp"),
+  p15PropGemGreen: p15Prop("p15-prop-gem-green.webp"),
+  p15PropGemPink: p15Prop("p15-prop-gem-pink.webp"),
+  p15PropKey: p15Prop("p15-prop-key.webp"),
+  p15PropStar: p15Prop("p15-prop-star.webp"),
 };
 
 export const v4RegionAssets: Record<RegionId, string> = {
