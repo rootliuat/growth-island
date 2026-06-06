@@ -737,3 +737,37 @@ P2:
 - Latest visual QA generated at `2026-06-06T07:13:06.602Z`.
 - QA coverage for this pass: 4 checks, 0 issues, 0 warnings.
 - Manual screenshot inspected: `qa-artifacts/latest/home-ready-select-focus-hidpi.png`.
+
+## P12 trial release stability gate
+
+### Scope
+
+- Added a trial-release gate for the current child self-service classroom flow.
+- Kept product scope unchanged: no parent, reviewer, kindergarten admin, PDF export, approval flow, accounts, permissions, cloud sync, backend changes, data changes, XP changes, or PixiJS map rewrite.
+- Did not change frontend behavior; this slice adds release commands, production preview smoke coverage, asset budget checks, and trial documentation.
+
+### Implementation Notes
+
+- Added `npm run qa:trial` to build the app, start local API/Vite services when needed, run only the trial-critical visual checks, and then enforce trial asset budgets.
+- Added `npm run qa:trial:fast` for a shorter home and moral-speak regression pass.
+- Added `scripts/check-trial-assets.mjs` to fail on visual QA warnings, missing trial results, failed images, home resource budget regressions, 3D fallback/forbidden copy, or hidpi runtime drift.
+- Added `scripts/qa-preview-smoke.mjs` to start local API/preview services when needed, open the production preview with Playwright, capture a whiteboard screenshot, and fail on missing root, shell, Pixi canvas, current child entry, horizontal overflow, console errors, or resource failures.
+- Updated `docs/trial-classroom-checklist.md` from P10 to P12 with exact trial commands, production preview checks, screenshot artifacts, and common failure triage.
+
+### Validation
+
+- `git diff --check`: passed.
+- `node --check scripts/check-trial-assets.mjs`: passed.
+- `node --check scripts/qa-trial.mjs`: passed.
+- `node --check scripts/qa-preview-smoke.mjs`: passed.
+- `node --check scripts/qa-visual.mjs`: passed.
+- `npm run build`: passed.
+- `QA_CHECKS=classroom-touch-loop npm run qa:visual`: passed with 0 issues and 0 warnings.
+- `npm run qa:trial`: passed.
+- `npm run qa:preview-smoke`: passed.
+- Latest visual QA report: `qa-artifacts/latest/report.json`.
+- Latest visual QA generated at `2026-06-06T10:33:44.083Z`.
+- P12 trial coverage: 6 checks, 0 issues, 0 warnings.
+- Trial asset report: `qa-artifacts/latest/trial-assets-report.json`, hidpi runtime 8 files, `2.97 MB`.
+- Preview smoke report: `qa-artifacts/latest/preview-smoke-report.json`, no failures.
+- Preview screenshot: `qa-artifacts/latest/preview-smoke-home-whiteboard.png`.

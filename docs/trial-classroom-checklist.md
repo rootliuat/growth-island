@@ -1,16 +1,22 @@
 # 试教版课堂验收清单
 
-适用版本：P10 试教版产品收口
+适用版本：P12 试教发布稳定性收口
 
 目标：验证当前版本能拿到班级电子白板上完成一轮真实课堂试用。试教只看孩子和老师两类用户，不验证家长、评审、园所管理者、PDF、审批流、账号权限或云同步。
 
 ## 1. 课前准备
 
+- 安装依赖：`npm ci`
+- 生成白板清晰版地图资源：`npm run assets:map-hidpi`
+- 跑试教自动验收：`npm run qa:trial`
+- 跑生产预览 smoke：`npm run qa:preview-smoke`
 - 启动本地项目：`npm run dev`
-- 打开首页，使用白板或触控大屏模式。
+- 打开首页：`http://localhost:5173/`
+- 生产预览地址：`http://localhost:4173/`
 - 确认浏览器允许麦克风；没有真实麦克风时，只能用 QA hook 验证 UI 流程，不能证明真实 ASR 可用。
 - 确认白板触摸、拖拽和缩放正常。
 - 确认首页第一眼是成长岛地图，不是后台、表格或营销页。
+- Windows 访问 WSL 项目时，如果 `localhost` 打不开，先确认 `npm run dev` 正在运行；仍失败时改用 WSL IP 地址加端口访问。
 
 ## 2. 核心试教流程
 
@@ -47,17 +53,30 @@
 
 ```bash
 git diff --check
+node --check scripts/check-trial-assets.mjs
+node --check scripts/qa-trial.mjs
+node --check scripts/qa-preview-smoke.mjs
 node --check scripts/qa-visual.mjs
 npm run build
-npm run qa:visual
+npm run qa:trial
+npm run qa:preview-smoke
 ```
 
-`npm run qa:visual` 通过标准：
+`npm run qa:trial` 通过标准：
 
-- 33 checks
+- 核心 checks：`home,moral-speak-flow,classroom-touch-loop,spirit-showcase-3d`
 - 0 issues
 - 0 warnings
 - 报告路径：`qa-artifacts/latest/report.json`
+- 资源预算路径：`qa-artifacts/latest/trial-assets-report.json`
+
+`npm run qa:preview-smoke` 通过标准：
+
+- 生产预览能打开首页。
+- React root、首页 shell、Pixi canvas、当前幼儿入口可见。
+- 没有图片、地图或 3D 模型资源加载失败。
+- 没有浏览器 console/page error。
+- 报告路径：`qa-artifacts/latest/preview-smoke-report.json`
 
 ## 6. 必看截图
 
@@ -82,6 +101,15 @@ npm run qa:visual
 - `qa-artifacts/latest/classroom-touch-loop-whiteboard.png`
 - `qa-artifacts/latest/moral-review-safety-whiteboard.png`
 - `qa-artifacts/latest/moral-review-safety-mobile.png`
+
+3D 展示隔离验证：
+
+- `qa-artifacts/latest/spirit-showcase-3d-whiteboard.png`
+- `qa-artifacts/latest/spirit-showcase-3d-mobile.png`
+
+生产预览：
+
+- `qa-artifacts/latest/preview-smoke-home-whiteboard.png`
 
 课堂活动回岛：
 
@@ -116,3 +144,10 @@ npm run qa:visual
 - 账号、权限、云同步。
 - 固定排队系统或自动指定下一位。
 - 后台报表完整性。
+
+## 9. 常见失败定位
+
+- 打不开：确认 `npm run dev` 或 `npm run preview` 正在运行；Chrome 报 `ERR_CONNECTION_REFUSED` 说明对应端口没有服务。
+- 画面糊：先跑 `npm run assets:map-hidpi`，再看 `qa-artifacts/latest/report.json` 里的 `pixiRenderState.renderResolution` 是否在 idle 时低于 `0.95`。
+- 画面卡：先看 `home/whiteboard` 的 `fps` 和 `wheelFps`，再检查是否有异常大图或资源请求失败。
+- 3D 空白：先看 `spirit-showcase-3d-*` 截图和 `preview-smoke-report.json`；3D 是隔离展示能力，不影响孩子说成长主流程。

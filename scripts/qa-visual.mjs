@@ -948,8 +948,6 @@ async function exerciseSingleMoralSpeak(page, screenshots = {}) {
     approveButton.click();
   });
   await page.waitForSelector(".spirit-speech-bubble.success", { timeout: 4000 });
-  if (screenshots.success) await page.screenshot({ path: screenshots.success, fullPage: false });
-  const successTouch = await inspectTouchAndOverlap(page);
   const successState = await inspectMoralSelfServiceState(page);
   const successExtra = await page.evaluate(() => ({
     successBubble: document.querySelector(".spirit-speech-bubble.success")?.textContent?.trim() ?? "",
@@ -967,6 +965,8 @@ async function exerciseSingleMoralSpeak(page, screenshots = {}) {
     pixiSelectedActivityToken: document.querySelector(".pixi-world-canvas")?.dataset.selectedActivityToken ?? "",
     pixiSelectedActivityLabel: document.querySelector(".pixi-world-canvas")?.dataset.selectedActivityLabel ?? "",
   }));
+  if (screenshots.success) await page.screenshot({ path: screenshots.success, fullPage: false });
+  const successTouch = await inspectTouchAndOverlap(page);
   const successWrongSelection = await attemptWrongDockChildSelection(page);
   const successWrongMapSelection = await attemptWrongMapChildSelection(page);
   const successDetails = {
@@ -1217,9 +1217,11 @@ async function attemptWrongDockChildSelection(page) {
   }
 
   const result = await page.evaluate(() => {
+    const visibleStage = document.querySelector(".moral-speak-overlay")?.getAttribute("data-moral-stage") ?? "idle";
     const before = {
       selectedChildId: window.__growthIslandSelectedChildId,
-      stage: window.__growthIslandMoralSpeakStage,
+      stage: visibleStage,
+      windowStage: window.__growthIslandMoralSpeakStage,
       moralChildId: window.__growthIslandMoralSpeak?.childId,
     };
     const lockedStages = ["listening", "recognizing", "pendingReview", "success"];
@@ -1240,7 +1242,8 @@ async function attemptWrongDockChildSelection(page) {
   await page.waitForTimeout(220);
   const after = await page.evaluate(() => ({
     selectedChildId: window.__growthIslandSelectedChildId,
-    stage: window.__growthIslandMoralSpeakStage,
+    stage: document.querySelector(".moral-speak-overlay")?.getAttribute("data-moral-stage") ?? "idle",
+    windowStage: window.__growthIslandMoralSpeakStage,
     moralChildId: window.__growthIslandMoralSpeak?.childId,
     feedbackText: document.querySelector(".growth-feedback-overlay")?.textContent?.replace(/\s+/g, "") ?? "",
   }));
@@ -1270,9 +1273,11 @@ async function attemptWrongDockChildSelection(page) {
 
 async function attemptWrongMapChildSelection(page) {
   const result = await page.evaluate(() => {
+    const visibleStage = document.querySelector(".moral-speak-overlay")?.getAttribute("data-moral-stage") ?? "idle";
     const before = {
       selectedChildId: window.__growthIslandSelectedChildId,
-      stage: window.__growthIslandMoralSpeakStage,
+      stage: visibleStage,
+      windowStage: window.__growthIslandMoralSpeakStage,
       moralChildId: window.__growthIslandMoralSpeak?.childId,
     };
     const lockedStages = ["listening", "recognizing", "pendingReview", "success"];
@@ -1289,7 +1294,8 @@ async function attemptWrongMapChildSelection(page) {
   await page.waitForTimeout(220);
   const after = await page.evaluate(() => ({
     selectedChildId: window.__growthIslandSelectedChildId,
-    stage: window.__growthIslandMoralSpeakStage,
+    stage: document.querySelector(".moral-speak-overlay")?.getAttribute("data-moral-stage") ?? "idle",
+    windowStage: window.__growthIslandMoralSpeakStage,
     moralChildId: window.__growthIslandMoralSpeak?.childId,
     feedbackText: document.querySelector(".growth-feedback-overlay")?.textContent?.replace(/\s+/g, "") ?? "",
   }));
