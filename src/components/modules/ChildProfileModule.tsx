@@ -5,6 +5,7 @@ import { getSpiritStageLabel } from "../../domain/progression";
 import { getSpiritAsset } from "../../domain/spiritAssets";
 import { getChildSpiritVoiceType, getSpiritVoiceOption, spiritVoiceOptions } from "../../domain/spiritVoice";
 import { virtueCategories } from "../../data/spirits";
+import { v4MapAssets } from "../../game/v4MapAssets";
 import type { ChildProfile, ChildWithProgress, LedgerRecord, SpiritDefinition } from "../../types";
 import { RewardModelPreview3D } from "../Hud/SpiritModelStage3D";
 
@@ -59,6 +60,28 @@ function getChildRecordLabel(record: LedgerRecord) {
   return reason.replace(/\s*[+＋-]\d+\s*XP?$/i, "").slice(0, 18) || "成长贝壳";
 }
 
+function getCabinRoomProps(child: ChildWithProgress) {
+  const propPairs = [
+    [
+      { id: "chest", label: "小屋宝箱", url: v4MapAssets.p15PropChest },
+      { id: "star", label: "星光台", url: v4MapAssets.p15PropStar },
+    ],
+    [
+      { id: "fruit", label: "成长果", url: v4MapAssets.p16PropFruit },
+      { id: "bench", label: "小屋长椅", url: v4MapAssets.p16PropBench1 },
+    ],
+    [
+      { id: "bell", label: "荣誉铃", url: v4MapAssets.p16PropBell },
+      { id: "heart", label: "成长心", url: v4MapAssets.p16PropHeart },
+    ],
+    [
+      { id: "gem", label: "能量石", url: v4MapAssets.p15PropGemGreen },
+      { id: "plant", label: "小屋花草", url: v4MapAssets.p15PropPlantSmall },
+    ],
+  ];
+  return propPairs[(child.rank + child.level) % propPairs.length];
+}
+
 export function ChildProfileModule({
   childrenWithProgress,
   spiritsById,
@@ -99,6 +122,7 @@ export function ChildProfileModule({
   const selectedVoice = getSpiritVoiceOption(selectedVoiceType) ?? spiritVoiceOptions[0];
   const spiritAccent = selectedSpirit?.accent ?? "#f6b352";
   const spiritShowcaseStyle = { "--profile-spirit-accent": spiritAccent } as CSSProperties;
+  const cabinRoomProps = useMemo(() => getCabinRoomProps(selectedChild), [selectedChild.id, selectedChild.level, selectedChild.rank]);
   const updateVoiceType = (voiceType: number) => {
     const nextVoice = getSpiritVoiceOption(voiceType);
     onUpdateChild({ voiceType });
@@ -197,6 +221,19 @@ export function ChildProfileModule({
                     size="compact"
                   />
                 </div>
+              </div>
+              <div className="profile-cabin-room-props" aria-hidden="true">
+                {cabinRoomProps.map((prop, index) => (
+                  <img
+                    key={prop.id}
+                    className={`profile-cabin-room-prop ${index === 0 ? "is-left" : "is-right"}`}
+                    src={prop.url}
+                    alt=""
+                    width={72}
+                    height={72}
+                    loading="lazy"
+                  />
+                ))}
               </div>
               <div className="profile-cabin-floor" aria-hidden="true" />
             </div>

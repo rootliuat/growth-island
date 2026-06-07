@@ -20,12 +20,14 @@ const hiddenBakedMapPropIds = new Set([
   "p16-honor-bell-tower",
   "p16-honor-tower",
 ]);
-const hintedHotspotIds = new Set(["p15-growth-tree", "p16-growth-heart", "p15-shop-chest", "p16-honor-bell"]);
+const hintedHotspotIds = new Set(["p15-growth-tree", "p16-growth-heart", "p15-shop-chest", "p16-shop-market-stand-1", "p15-honor-star", "p16-honor-bell"]);
 const priorityBakedMapPropIds = new Set([
   "p15-growth-tree",
   "p16-growth-heart",
+  "p19-growth-star-pad",
   "p15-shop-chest",
   "p16-shop-market-stand-1",
+  "p15-honor-star",
   "p16-honor-bell",
 ]);
 

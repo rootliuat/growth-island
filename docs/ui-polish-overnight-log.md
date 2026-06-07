@@ -1186,3 +1186,30 @@ P2:
 - `npm run build`: passed with the existing `three.module` large chunk warning.
 - `QA_CHECKS=child-profile,mobile-child-profile npm run qa:visual`: whiteboard and mobile passed with 0 issues and 0 warnings.
 - Screenshot inspected: `qa-artifacts/latest/child-profile-whiteboard.png`.
+
+## P19 model asset usage pass
+
+### Scope
+
+- Continued the model-asset utilization plan across five product surfaces: child home surroundings, shop area, honor area, growth feedback landing, and the spirit cabin interior.
+- Kept classroom performance constraints unchanged: no PixiJS map rewrite, no live Three.js main island, no backend, XP, ledger, data, account, permission, PDF, parent/reviewer/admin, or approval-flow changes.
+
+### Implementation Notes
+
+- `HomeLayer.ts` now gives each child home one or two model-derived props, such as fruit trees, bushes, benches, fences, crates, gems, hearts, fruit, and star pads.
+- Home props render through the existing baked WebP asset pipeline and are only visible for the selected home or close zoom. A first attempt kept them always visible, but a 30-second drag soak dropped to `14.5 FPS`; moving them into the close/selected decor layer restored the soak to 0 warnings.
+- `mapPlacementConfig.ts` makes shop and honor props more legible: shop chest, coins, gems, and market stands are larger; honor star, flag, and bell are larger; growth plaza gets an additional star-pad landing prop.
+- `DecorationLayer.ts` treats the new growth star pad, shop stand, and honor star as priority/hinted map props where appropriate.
+- `ChildProfileModule.tsx` adds two model-derived room props beside the 2D spirit. These are decorative WebP room pieces, while the child's unique 2D spirit remains the main identity.
+- Profile visual QA now asserts that the spirit cabin includes model-derived room props.
+
+### Validation
+
+- `npm run typecheck`: passed.
+- `node --check scripts/qa-visual.mjs`: passed.
+- `git diff --check`: passed.
+- `npm run build`: passed with the existing `three.module` large chunk warning.
+- `QA_CHECKS=home,child-profile,mobile-child-profile npm run qa:visual`: home whiteboard, profile whiteboard, and mobile profile passed with 0 issues and 0 warnings. Ultra still has the existing headless active-drag warning.
+- `QA_CHECKS=home-performance-soak QA_SOAK_MS=30000 npm run qa:visual`: passed with 0 issues and 0 warnings after moving home props into the selected/close decor layer.
+- `QA_CHECKS=classroom-touch-loop npm run qa:visual`: passed with 0 issues and 0 warnings.
+- Manual close-focus screenshot inspected: `qa-artifacts/latest/p19-home-props-close-whiteboard.png`.

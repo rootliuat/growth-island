@@ -2527,6 +2527,8 @@ async function inspectCurrentProfile(page) {
     const cabin3dStage = document.querySelector(".profile-cabin-reward-stage");
     const cabin3dRect = cabin3dStage?.getBoundingClientRect();
     const cabin3dStyle = cabin3dStage ? getComputedStyle(cabin3dStage) : undefined;
+    const cabinRoomProps = [...document.querySelectorAll(".profile-cabin-room-prop")];
+    const cabinRoomPropSources = cabinRoomProps.map((prop) => prop.getAttribute("src") ?? "");
     const timelineRowMaxHeight = timelineRows.reduce((max, row) => Math.max(max, Math.round(row.getBoundingClientRect().height)), 0);
     const firstTimelineRow = timelineRows[0];
     const firstTimelineStyle = firstTimelineRow ? getComputedStyle(firstTimelineRow) : undefined;
@@ -2553,6 +2555,9 @@ async function inspectCurrentProfile(page) {
       hasCabinAtmosphere3dStage: Boolean(cabin3dRect && cabin3dRect.width >= 44 && cabin3dRect.height >= 44),
       hasCabinAtmosphere3dSurface: Boolean(cabin3dStage?.querySelector(".model-stage-canvas, .model-stage-fallback")),
       cabinAtmosphere3dPassive: cabin3dStyle?.pointerEvents === "none",
+      hasCabinRoomModelProps:
+        cabinRoomProps.length >= 2 &&
+        cabinRoomPropSources.every((src) => src.includes("/assets/map/3d-props/")),
       hasTimelineRecord: /课堂成长点亮|能量进精灵|数学光路点亮|已有成长|成长贝壳/.test(timelineText),
       hasAnyTimelineRecord: records.length === 0 || timelineRows.length > 0,
       evidenceHasRecordCount: evidenceText.includes(`${records.length} 条`),
@@ -4742,6 +4747,7 @@ async function inspectPage(browser, check, viewport) {
       if (!profile?.hasCabinAtmosphere3dStage) issues.push(`profile flow ${source} cabin atmosphere 3d prop missing`);
       if (!profile?.hasCabinAtmosphere3dSurface) issues.push(`profile flow ${source} cabin atmosphere 3d surface missing`);
       if (!profile?.cabinAtmosphere3dPassive) issues.push(`profile flow ${source} cabin atmosphere 3d should not intercept input`);
+      if (!profile?.hasCabinRoomModelProps) issues.push(`profile flow ${source} cabin model room props missing`);
       if (!profile?.hasCabinStage) issues.push(`profile flow ${source} cabin stage missing`);
       if (!profile?.storyPanelNotWhiteWorkbench) issues.push(`profile flow ${source} still reads as white workbench`);
       if (!profile?.pageHasCoastalScene) issues.push(`profile flow ${source} coastal scene background missing`);

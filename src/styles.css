@@ -17079,6 +17079,33 @@ button {
   display: none;
 }
 
+.profile-cabin-room-props {
+  position: absolute;
+  inset: auto 9% 26px;
+  z-index: 1;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.profile-cabin-room-prop {
+  display: block;
+  width: 62px;
+  height: 62px;
+  object-fit: contain;
+  opacity: 0.78;
+  filter: drop-shadow(0 9px 5px rgba(23, 76, 90, 0.14));
+}
+
+.profile-cabin-room-prop.is-left {
+  transform: rotate(-4deg);
+}
+
+.profile-cabin-room-prop.is-right {
+  transform: rotate(5deg);
+}
+
 @keyframes profile-spirit-float {
   0%,
   100% {
@@ -17115,6 +17142,7 @@ button {
   left: 16%;
   right: 16%;
   bottom: 28px;
+  z-index: 0;
   height: 40px;
   border-radius: 999px;
   background: rgba(214, 177, 106, 0.34);
@@ -17401,6 +17429,16 @@ button {
 
   .profile-cabin-prop-3d {
     bottom: 4px;
+  }
+
+  .profile-cabin-room-props {
+    inset: auto 7% 24px;
+  }
+
+  .profile-cabin-room-prop {
+    width: 46px;
+    height: 46px;
+    opacity: 0.68;
   }
 
   .profile-page .profile-hero-card h2 {
