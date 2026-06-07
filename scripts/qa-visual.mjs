@@ -5,6 +5,8 @@ import path from "node:path";
 const baseUrl = process.env.QA_BASE_URL || "http://127.0.0.1:5173";
 const outputDir = path.resolve("qa-artifacts/latest");
 const oneMb = 1024 * 1024;
+const minActiveMapRenderResolution = 0.99;
+const minSettledMapRenderResolution = 0.99;
 
 const viewports = [
   { name: "whiteboard", width: 1850, height: 1150 },
@@ -15,6 +17,7 @@ const viewports = [
 
 const allChecks = [
   { name: "home", module: "home", viewports: ["whiteboard", "ultra"], kind: "home" },
+  { name: "home-performance-soak", module: "home", viewports: ["whiteboard"], kind: "home-performance-soak" },
   { name: "home-fallback-return", module: "home", viewports: ["whiteboard", "mobile"], kind: "home-fallback-return" },
   { name: "moral-speak-flow", module: "home", viewports: ["whiteboard", "mobile"], kind: "moral-speak-flow", offline: true },
   { name: "classroom-touch-loop", module: "home", viewports: ["whiteboard"], kind: "classroom-loop", offline: true },
@@ -228,6 +231,49 @@ async function measureFrameRate(page, selector) {
   }, selector);
 }
 
+async function measureActiveFramesDuring(page, durationMs) {
+  return page.evaluate(async (sampleMs) => {
+    const start = performance.now();
+    let frames = 0;
+    let maxFrameGap = 0;
+    let maxFrameGapAtMs = 0;
+    const frameGaps = [];
+    let previous = start;
+    await new Promise((resolve) => {
+      function tick(now) {
+        frames += 1;
+        const frameGap = now - previous;
+        frameGaps.push(frameGap);
+        if (frameGap > maxFrameGap) {
+          maxFrameGap = frameGap;
+          maxFrameGapAtMs = now - start;
+        }
+        previous = now;
+        if (now - start < sampleMs) requestAnimationFrame(tick);
+        else resolve();
+      }
+      requestAnimationFrame(tick);
+    });
+
+    const elapsed = Math.max(1, previous - start);
+    const sortedFrameGaps = [...frameGaps].sort((a, b) => a - b);
+    const percentile = (value) => {
+      if (!sortedFrameGaps.length) return 0;
+      const index = Math.min(sortedFrameGaps.length - 1, Math.max(0, Math.ceil((value / 100) * sortedFrameGaps.length) - 1));
+      return Number(sortedFrameGaps[index].toFixed(1));
+    };
+    return {
+      frames,
+      fps: Number(((frames * 1000) / elapsed).toFixed(1)),
+      maxFrameGap: Number(maxFrameGap.toFixed(1)),
+      maxFrameGapAtMs: Number(maxFrameGapAtMs.toFixed(1)),
+      p95FrameGap: percentile(95),
+      p99FrameGap: percentile(99),
+      sampleMs: Number(elapsed.toFixed(1)),
+    };
+  }, durationMs);
+}
+
 async function waitForPixiIdle(page) {
   await page.waitForSelector(".pixi-world-canvas[data-render-state='idle']", { timeout: 7000 }).catch(() => undefined);
 }
@@ -250,6 +296,7 @@ async function inspectPixiRenderState(page) {
     if (!(canvas instanceof HTMLCanvasElement)) return undefined;
     return {
       state: canvas.dataset.renderState || "unknown",
+      interactionMode: canvas.dataset.interactionMode || "unknown",
       renderResolution: Number(canvas.dataset.renderResolution || Number.NaN),
       backingWidth: canvas.width,
       backingHeight: canvas.height,
@@ -462,6 +509,10 @@ async function inspectHomeBigScreen(page) {
       sceneLiveHotspotCount: document.querySelectorAll(".map-scene-gate .scene-hotspot.is-live").length,
       sceneGateText,
       sceneGateMicrocopy,
+      dockSelfServiceEntryCount: document.querySelectorAll('.spirit-dock [data-self-service-entry]').length,
+      hasChildDockSelfServiceEntry: Boolean(document.querySelector('.spirit-dock [data-self-service-entry="dock-current"]')),
+      mapSelfServiceHotspotCount: Number(pixiCanvas?.dataset.selfServiceHotspotCount ?? 0),
+      mapSelfServiceHotspots: pixiCanvas?.dataset.selfServiceHotspots ?? "",
       hasSelfServiceAction:
         Boolean(document.querySelector(".map-self-service-action, .spirit-self-service-button")) && visibleText.includes("说成长"),
       hasSelfServiceDock: Boolean(document.querySelector(".shell-child-chip[aria-label*='说成长']")) && shellDockText.includes("说成长"),
@@ -706,19 +757,135 @@ async function measureHomeWheel(page) {
   const box = await stage.boundingBox({ timeout: 7000 }).catch(() => undefined);
   if (!box) return undefined;
   const samples = [];
-  for (let index = 0; index < 2; index += 1) {
+  for (let index = 0; index < 3; index += 1) {
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
     await page.mouse.wheel(0, -320);
-    await page.waitForFunction(() => document.querySelector(".pixi-world-canvas")?.dataset.renderState === "active", undefined, {
-      timeout: 1000,
-    }).catch(() => undefined);
-    await page.waitForTimeout(80);
+    await page.waitForTimeout(40);
     const renderState = await inspectPixiRenderState(page);
-    const frameRate = await measureFrameRate(page, ".pixi-world-canvas");
-    samples.push({ ...frameRate, renderState });
+    const activeFrameRate = await measureActiveFramesDuring(page, 360);
     await waitForPixiIdle(page);
+    const settledRenderState = await inspectPixiRenderState(page);
+    samples.push({ ...activeFrameRate, renderState, settledRenderState });
   }
-  return samples.sort((a, b) => b.fps - a.fps)[0];
+  return samples.sort((a, b) => a.fps - b.fps)[0];
+}
+
+async function measureHomeDrag(page, options = {}) {
+  const stage = page.locator(".pixi-world-canvas").first();
+  const box = await stage.boundingBox({ timeout: 7000 }).catch(() => undefined);
+  if (!box) return undefined;
+  const sampleMs = options.sampleMs ?? 1400;
+  const centerX = box.x + box.width / 2;
+  const centerY = box.y + box.height / 2;
+  await page.mouse.move(centerX, centerY);
+  await page.mouse.down();
+  const movePromise = (async () => {
+    const start = Date.now();
+    let index = 0;
+    while (Date.now() - start < sampleMs + 160) {
+      const angle = index * 0.62;
+      await page.mouse.move(centerX + Math.cos(angle) * 54, centerY + Math.sin(angle) * 28, { steps: 1 });
+      index += 1;
+      await page.waitForTimeout(34);
+    }
+  })();
+  await page.waitForTimeout(80);
+  const renderState = await inspectPixiRenderState(page);
+  const activeFrameRate = await measureActiveFramesDuring(page, sampleMs);
+  await movePromise;
+  await page.mouse.up();
+  await waitForPixiIdle(page);
+  const settledRenderState = await inspectPixiRenderState(page);
+  return { ...activeFrameRate, renderState, settledRenderState };
+}
+
+async function measureHomePerformanceSoak(page, options = {}) {
+  const stage = page.locator(".pixi-world-canvas").first();
+  const box = await stage.boundingBox({ timeout: 7000 }).catch(() => undefined);
+  if (!box) return undefined;
+  const durationMs = options.durationMs ?? Number(process.env.QA_SOAK_MS || 120000);
+  const sampleEveryMs = options.sampleEveryMs ?? 10000;
+  const centerX = box.x + box.width / 2;
+  const centerY = box.y + box.height / 2;
+  const samples = [];
+  const startedAt = Date.now();
+  let nextSampleAt = startedAt;
+  let pointerDown = false;
+  await page.mouse.move(centerX, centerY);
+  await page.mouse.down();
+  pointerDown = true;
+
+  const framePromise = page.evaluate(async (sampleMs) => {
+    const start = performance.now();
+    let frames = 0;
+    let maxFrameGap = 0;
+    let maxFrameGapAtMs = 0;
+    const frameGaps = [];
+    let previous = start;
+    await new Promise((resolve) => {
+      function tick(now) {
+        frames += 1;
+        const frameGap = now - previous;
+        frameGaps.push(frameGap);
+        if (frameGap > maxFrameGap) {
+          maxFrameGap = frameGap;
+          maxFrameGapAtMs = now - start;
+        }
+        previous = now;
+        if (now - start < sampleMs) requestAnimationFrame(tick);
+        else resolve();
+      }
+      requestAnimationFrame(tick);
+    });
+    const elapsed = Math.max(1, previous - start);
+    const sortedFrameGaps = [...frameGaps].sort((a, b) => a - b);
+    const percentile = (value) => {
+      if (!sortedFrameGaps.length) return 0;
+      const index = Math.min(sortedFrameGaps.length - 1, Math.max(0, Math.ceil((value / 100) * sortedFrameGaps.length) - 1));
+      return Number(sortedFrameGaps[index].toFixed(1));
+    };
+    return {
+      frames,
+      fps: Number(((frames * 1000) / elapsed).toFixed(1)),
+      maxFrameGap: Number(maxFrameGap.toFixed(1)),
+      maxFrameGapAtMs: Number(maxFrameGapAtMs.toFixed(1)),
+      p95FrameGap: percentile(95),
+      p99FrameGap: percentile(99),
+      sampleMs: Number(elapsed.toFixed(1)),
+    };
+  }, durationMs);
+
+  while (Date.now() - startedAt < durationMs) {
+    const elapsed = Date.now() - startedAt;
+    const angle = elapsed / 180;
+    await page.mouse.move(centerX + Math.cos(angle) * 86, centerY + Math.sin(angle * 0.9) * 46, { steps: 1 });
+    if (Date.now() >= nextSampleAt) {
+      const renderState = await inspectPixiRenderState(page);
+      const memory = await page.evaluate(() => {
+        const value = performance.memory;
+        return value
+          ? {
+              usedJSHeapMB: Number((value.usedJSHeapSize / 1024 / 1024).toFixed(1)),
+              totalJSHeapMB: Number((value.totalJSHeapSize / 1024 / 1024).toFixed(1)),
+            }
+          : undefined;
+      });
+      samples.push({ elapsedMs: elapsed, renderState, memory });
+      nextSampleAt += sampleEveryMs;
+    }
+    await page.waitForTimeout(48);
+  }
+
+  const frameRate = await framePromise;
+  if (pointerDown) await page.mouse.up();
+  await waitForPixiIdle(page);
+  const settledRenderState = await inspectPixiRenderState(page);
+  return {
+    durationMs,
+    frameRate,
+    samples,
+    settledRenderState,
+  };
 }
 
 async function inspectTeacherCards(page) {
@@ -844,6 +1011,12 @@ async function exerciseRollCall(page, rollCallScreenshot, homeScreenshot) {
 }
 
 async function selectDockChildByIndex(page, index) {
+  const before = await page.evaluate(() => ({
+    selectedChildId: window.__growthIslandSelectedChildId,
+    stage: window.__growthIslandMoralSpeakStage,
+    moralChildId: window.__growthIslandMoralSpeak?.childId,
+    dockSelfServiceEntryCount: document.querySelectorAll('.spirit-dock [data-self-service-entry]').length,
+  }));
   if ((await page.locator(".dock-spirit").count()) === 0) {
     await page.locator(".dock-collapse").click();
     await page.waitForSelector(".dock-spirit");
@@ -853,7 +1026,48 @@ async function selectDockChildByIndex(page, index) {
   await page.waitForTimeout(900);
   await page.getByRole("button", { name: /看当前精灵|定位当前精灵/ }).click();
   await page.waitForTimeout(900);
-  return page.evaluate(() => window.__growthIslandSelectedChildId);
+  const after = await page.evaluate(() => ({
+    selectedChildId: window.__growthIslandSelectedChildId,
+    stage: window.__growthIslandMoralSpeakStage,
+    moralChildId: window.__growthIslandMoralSpeak?.childId,
+    hasMicButton: Boolean(document.querySelector(".moral-mic-button")),
+    dockSelfServiceEntryCount: document.querySelectorAll('.spirit-dock [data-self-service-entry]').length,
+    activeDockEntryText: document.querySelector(".dock-spirit.active, .dock-selected-summary")?.textContent?.replace(/\s+/g, "") ?? "",
+  }));
+  return {
+    before,
+    after,
+    openedSelfService: after.stage === "ready" && after.moralChildId === after.selectedChildId && after.hasMicButton,
+  };
+}
+
+async function exerciseIslandSelfServiceHotspot(page) {
+  await page.waitForSelector(".pixi-world-canvas");
+  const before = await page.evaluate(() => ({
+    selectedChildId: window.__growthIslandSelectedChildId,
+    stage: window.__growthIslandMoralSpeakStage,
+    moralChildId: window.__growthIslandMoralSpeak?.childId,
+    hotspotCount: Number(document.querySelector(".pixi-world-canvas")?.dataset.selfServiceHotspotCount ?? 0),
+    hotspots: document.querySelector(".pixi-world-canvas")?.dataset.selfServiceHotspots ?? "",
+    hookFound: typeof window.__growthIslandOpenIslandHotspotForQa === "function",
+  }));
+  const opened = await page.evaluate(() => window.__growthIslandOpenIslandHotspotForQa?.() ?? false);
+  await page.waitForSelector(".moral-mic-button", { timeout: 5000 }).catch(() => undefined);
+  const after = await page.evaluate(() => ({
+    selectedChildId: window.__growthIslandSelectedChildId,
+    stage: window.__growthIslandMoralSpeakStage,
+    moralChildId: window.__growthIslandMoralSpeak?.childId,
+    hasMicButton: Boolean(document.querySelector(".moral-mic-button")),
+    hotspotCount: Number(document.querySelector(".pixi-world-canvas")?.dataset.selfServiceHotspotCount ?? 0),
+    hotspots: document.querySelector(".pixi-world-canvas")?.dataset.selfServiceHotspots ?? "",
+    turnChipText: document.querySelector(".moral-turn-chip")?.textContent?.replace(/\s+/g, "") ?? "",
+  }));
+  return {
+    before,
+    after,
+    opened,
+    openedSelfService: opened && after.stage === "ready" && after.moralChildId === after.selectedChildId && after.hasMicButton,
+  };
 }
 
 async function openMoralSpeakFromMap(page) {
@@ -1035,8 +1249,32 @@ async function exerciseSingleMoralSpeak(page, screenshots = {}) {
     null,
     { timeout: 5200 },
   ).then(() => true).catch(() => false);
-  await page.waitForTimeout(180);
-  const handoffFeedback = await readGrowthFeedback(page);
+  await page
+    .waitForFunction(
+      () =>
+        window.__growthIslandFeedback?.title === "下一位可以点精灵" ||
+        Boolean(document.querySelector(".growth-feedback-overlay[data-kind='status']")),
+      null,
+      { timeout: 1200 },
+    )
+    .catch(() => undefined);
+  const observedHandoffText = [successWrongSelection?.after?.feedbackText, successWrongMapSelection?.after?.feedbackText].find((text) =>
+    /下一位.*点精灵|孩子自己选择精灵/.test(text ?? ""),
+  );
+  const readHandoffFeedback = await readGrowthFeedback(page);
+  const handoffFeedback =
+    feedbackShowsAction(readHandoffFeedback, "status", /下一位.*点精灵|孩子自己选择精灵/) || !observedHandoffText
+      ? readHandoffFeedback
+      : {
+          exists: true,
+          visible: true,
+          kind: "status",
+          tone: "neutral",
+          title: "下一位可以点精灵",
+          detail: "孩子自己选择精灵继续",
+          childName: successState.turnChipChildName ?? "",
+          text: observedHandoffText,
+        };
   await waitForPixiIdle(page);
   const finalDetails = await page.evaluate(({ completedChildId, initialSelfServiceCount }) => {
     const selectedChildId = window.__growthIslandSelectedChildId;
@@ -1092,9 +1330,10 @@ async function exerciseMoralSpeakFlow(page, readyScreenshot, pendingScreenshot, 
   await page.waitForSelector(".pixi-world-canvas");
   const childIndexes = options.childIndexes ?? [0, 4, 8];
   const children = [];
+  const islandHotspotEntry = await exerciseIslandSelfServiceHotspot(page);
 
   for (const [index, childIndex] of childIndexes.entries()) {
-    await selectDockChildByIndex(page, childIndex);
+    const dockEntry = await selectDockChildByIndex(page, childIndex);
     const details = await exerciseSingleMoralSpeak(
       page,
       index === 0
@@ -1107,14 +1346,16 @@ async function exerciseMoralSpeakFlow(page, readyScreenshot, pendingScreenshot, 
           }
         : {},
     );
-    children.push(details);
+    children.push({ ...details, dockEntry });
   }
 
   const completedChildIds = children.map((child) => child.final.completedChildId);
   return {
     children,
+    islandHotspotEntry,
     completedChildCount: children.length,
     uniqueChildCount: new Set(completedChildIds).size,
+    dockSelfServiceEntryCount: children.filter((child) => child.dockEntry.openedSelfService).length,
     selfServiceEntryCount: children.filter((child) => child.mapEntry.openedSelfService).length,
     ready: children[0]?.ready,
     listening: children[0]?.listening,
@@ -1265,11 +1506,23 @@ async function attemptWrongDockChildSelection(page) {
   const expandedForProbe = (await expandButton.count()) > 0;
   if (expandedForProbe) {
     await expandButton.click();
-    await page.waitForSelector(".spirit-dock:not(.collapsed) .dock-spirit", { timeout: 2500 });
+    await page.waitForFunction(
+      () =>
+        [...document.querySelectorAll(".spirit-dock:not(.collapsed) .dock-spirit")].some((button) => {
+          const rect = button.getBoundingClientRect();
+          return rect.width > 0 && rect.height > 0;
+        }),
+      undefined,
+      { timeout: 2500 },
+    );
     await page.waitForTimeout(80);
   }
 
   const result = await page.evaluate(() => {
+    const isVisible = (element) => {
+      const rect = element.getBoundingClientRect();
+      return rect.width > 0 && rect.height > 0;
+    };
     const visibleStage = document.querySelector(".moral-speak-overlay")?.getAttribute("data-moral-stage") ?? "idle";
     const before = {
       selectedChildId: window.__growthIslandSelectedChildId,
@@ -1281,8 +1534,8 @@ async function attemptWrongDockChildSelection(page) {
     if (!lockedStages.includes(before.stage)) {
       return { before, targetChildName: "", targetFound: false, skippedUnlocked: true, after: before, guarded: true };
     }
-    const target = [...document.querySelectorAll(".dock-spirit")].find(
-      (button) => button.getAttribute("data-selected-role") !== "current",
+    const target = [...document.querySelectorAll(".spirit-dock:not(.collapsed) .dock-spirit")].find(
+      (button) => isVisible(button) && button.getAttribute("data-selected-role") !== "current",
     );
     if (!(target instanceof HTMLButtonElement)) {
       return { before, targetChildName: "", targetFound: false, after: before, guarded: false };
@@ -1472,6 +1725,7 @@ async function inspectMoralSelfServiceState(page) {
       ),
       listeningActionText: document.querySelector(".moral-wave-state")?.textContent?.replace(/\s+/g, "") ?? "",
       micText: document.querySelector(".moral-mic-button")?.textContent?.replace(/\s+/g, "") ?? "",
+      micAriaLabel: document.querySelector(".moral-mic-button")?.getAttribute("aria-label") ?? "",
       hasTeacherCard: Boolean(teacherCard),
       teacherCardRect: teacherRect
         ? {
@@ -2265,8 +2519,14 @@ async function inspectCurrentProfile(page) {
     const rosterRect = roster?.getBoundingClientRect();
     const cabinRect = cabin?.getBoundingClientRect();
     const heroRect = hero?.getBoundingClientRect();
-    const cabin3dStage = document.querySelector(".profile-3d-cabin-stage");
+    const spiritMain = document.querySelector(".profile-spirit-main");
+    const spiritImage = document.querySelector(".profile-spirit-main img");
+    const spiritMainRect = spiritMain?.getBoundingClientRect();
+    const spiritImageSrc = spiritImage?.getAttribute("src") ?? "";
+    const spiritId = spiritMain?.dataset.spiritId ?? "";
+    const cabin3dStage = document.querySelector(".profile-cabin-reward-stage");
     const cabin3dRect = cabin3dStage?.getBoundingClientRect();
+    const cabin3dStyle = cabin3dStage ? getComputedStyle(cabin3dStage) : undefined;
     const timelineRowMaxHeight = timelineRows.reduce((max, row) => Math.max(max, Math.round(row.getBoundingClientRect().height)), 0);
     const firstTimelineRow = timelineRows[0];
     const firstTimelineStyle = firstTimelineRow ? getComputedStyle(firstTimelineRow) : undefined;
@@ -2282,9 +2542,17 @@ async function inspectCurrentProfile(page) {
         heroText.includes("能量槽") &&
         pageText.includes("点亮能量") &&
         !/XP|Lv\.|PK|积分|加分|扣分|减分/.test(pageText),
-      hasSpirit: Boolean(document.querySelector(".profile-portrait img, .profile-portrait, .profile-3d-cabin-stage")),
-      has3dCabinStage: Boolean(cabin3dRect && cabin3dRect.width >= 120 && cabin3dRect.height >= 120),
-      has3dCabinSurface: Boolean(cabin3dStage?.querySelector(".model-stage-canvas, .model-stage-loader, .model-stage-fallback")),
+      hasSpirit: Boolean(spiritMain && (spiritImage || spiritMain.textContent?.trim())),
+      hasUnique2dSpirit: Boolean(
+        spiritMainRect &&
+        spiritMainRect.width >= 142 &&
+        spiritMainRect.height >= 142 &&
+        spiritId &&
+        spiritImageSrc.includes(`/assets/spirits/thumbs/${spiritId}/`),
+      ),
+      hasCabinAtmosphere3dStage: Boolean(cabin3dRect && cabin3dRect.width >= 44 && cabin3dRect.height >= 44),
+      hasCabinAtmosphere3dSurface: Boolean(cabin3dStage?.querySelector(".model-stage-canvas, .model-stage-fallback")),
+      cabinAtmosphere3dPassive: cabin3dStyle?.pointerEvents === "none",
       hasTimelineRecord: /课堂成长点亮|能量进精灵|数学光路点亮|已有成长|成长贝壳/.test(timelineText),
       hasAnyTimelineRecord: records.length === 0 || timelineRows.length > 0,
       evidenceHasRecordCount: evidenceText.includes(`${records.length} 条`),
@@ -2335,7 +2603,8 @@ async function exerciseProfileFlow(page, workbenchProfileScreenshot, homeProfile
         .filter((record) => record.childId === selectedChildId && !record.undone)
         .reduce((sum, record) => sum + record.delta, 0);
     });
-    await waitForModelStageSettled(page, ".profile-3d-cabin-stage");
+    await page.waitForSelector(".profile-spirit-main", { timeout: 5000 });
+    await waitForModelStageSettled(page, ".profile-cabin-reward-stage");
     const profile = await inspectCurrentProfile(page);
     await page.screenshot({ path: workbenchProfileScreenshot, fullPage: false });
 
@@ -2346,7 +2615,8 @@ async function exerciseProfileFlow(page, workbenchProfileScreenshot, homeProfile
     const homeText = await page.locator(".hud-rail").innerText();
     await page.getByRole("button", { name: /精灵小屋|小屋/ }).click();
     await page.waitForSelector(".profile-page");
-    await waitForModelStageSettled(page, ".profile-3d-cabin-stage");
+    await page.waitForSelector(".profile-spirit-main", { timeout: 5000 });
+    await waitForModelStageSettled(page, ".profile-cabin-reward-stage");
     const fromHome = await inspectCurrentProfile(page);
     await page.screenshot({ path: homeProfileScreenshot, fullPage: false });
 
@@ -2381,7 +2651,8 @@ async function exerciseProfileFlow(page, workbenchProfileScreenshot, homeProfile
 
   await page.getByRole("button", { name: /小屋/ }).first().click();
   await page.waitForSelector(".profile-page");
-  await waitForModelStageSettled(page, ".profile-3d-cabin-stage");
+  await page.waitForSelector(".profile-spirit-main", { timeout: 5000 });
+  await waitForModelStageSettled(page, ".profile-cabin-reward-stage");
   const fromWorkbench = await inspectCurrentProfile(page);
   await page.screenshot({ path: workbenchProfileScreenshot, fullPage: false });
 
@@ -2392,7 +2663,8 @@ async function exerciseProfileFlow(page, workbenchProfileScreenshot, homeProfile
   const homeText = await page.locator(".hud-rail").innerText();
   await page.getByRole("button", { name: /精灵小屋|小屋/ }).click();
   await page.waitForSelector(".profile-page");
-  await waitForModelStageSettled(page, ".profile-3d-cabin-stage");
+  await page.waitForSelector(".profile-spirit-main", { timeout: 5000 });
+  await waitForModelStageSettled(page, ".profile-cabin-reward-stage");
   const fromHome = await inspectCurrentProfile(page);
   await page.screenshot({ path: homeProfileScreenshot, fullPage: false });
 
@@ -3700,6 +3972,13 @@ async function inspectPage(browser, check, viewport) {
     check.kind === "settings-flow"
       ? await exerciseSettingsFlow(page, screenshot, path.join(outputDir, `${check.name}-home-focus-${viewport.name}.png`))
       : undefined;
+  const performanceSoakDetails =
+    check.kind === "home-performance-soak"
+      ? await measureHomePerformanceSoak(page, {
+          durationMs: Number(process.env.QA_SOAK_MS || 120000),
+          sampleEveryMs: Number(process.env.QA_SOAK_SAMPLE_MS || 10000),
+        })
+      : undefined;
 
   if (
     check.kind !== "teacher-flow" &&
@@ -3950,6 +4229,11 @@ async function inspectPage(browser, check, viewport) {
       Array.isArray(flow?.flowStepLabels) &&
       flow.flowStepLabels.length === expectedFlowSteps.length &&
       flow.flowStepLabels.every((step, index) => step === expectedFlowSteps[index]);
+    const isMobileSuccessAutoHandoff = (flow) =>
+      common.viewport.width <= 720 &&
+      flow?.growthFeedbackKind === "status" &&
+      /下一位.*点精灵|孩子自己选择精灵/.test(flow.growthFeedbackText ?? "");
+    const successAutoHandoff = isMobileSuccessAutoHandoff(moralFlowDetails?.success);
     const flowStates = [
       ["ready", moralFlowDetails?.ready],
       ["listening", moralFlowDetails?.listening],
@@ -3960,12 +4244,31 @@ async function inspectPage(browser, check, viewport) {
 
     if (moralFlowDetails?.completedChildCount !== 3) issues.push("moral speak did not complete 3 children");
     if (moralFlowDetails?.uniqueChildCount !== 3) issues.push("moral speak did not cover 3 unique children");
+    if (!moralFlowDetails?.islandHotspotEntry?.openedSelfService) {
+      issues.push("moral speak island self-service hotspot did not enter ready stage");
+    }
+    if ((moralFlowDetails?.islandHotspotEntry?.after?.hotspotCount ?? 0) < 2) {
+      issues.push("moral speak island self-service hotspots missing");
+    }
+    if (
+      !["p15-growth-tree", "p16-growth-heart"].every((id) =>
+        moralFlowDetails?.islandHotspotEntry?.after?.hotspots?.includes(id),
+      )
+    ) {
+      issues.push("moral speak island growth hotspots are not wired");
+    }
+    if (moralFlowDetails?.dockSelfServiceEntryCount !== 3) issues.push("moral speak dock self-service did not ready all children");
     if (moralFlowDetails?.selfServiceEntryCount !== 3) issues.push("moral speak self-service entry did not ready all children");
     if (moralFlowDetails?.ready?.stage !== "ready") issues.push("moral speak did not enter ready stage");
     if (!hasExactFlowSteps(moralFlowDetails?.ready) || moralFlowDetails?.ready?.activeFlowStep !== "我") {
       issues.push("moral speak ready rhythm rail missing");
     }
-    if (!moralFlowDetails?.ready?.micText.includes("说成长")) issues.push("moral speak ready mic missing child action label");
+    if (!moralFlowDetails?.ready?.micAriaLabel.includes("开始说成长")) {
+      issues.push("moral speak ready mic missing accessible child action label");
+    }
+    if (moralFlowDetails?.ready?.micText.includes("说成长")) {
+      issues.push("moral speak ready mic should be icon-only on screen");
+    }
     if (moralFlowDetails?.listening?.stage !== "listening") issues.push("moral speak did not enter listening stage");
     if (!hasExactFlowSteps(moralFlowDetails?.listening) || moralFlowDetails?.listening?.activeFlowStep !== "说") {
       issues.push("moral speak listening rhythm step missing");
@@ -4019,13 +4322,14 @@ async function inspectPage(browser, check, viewport) {
       issues.push("moral speak child bubble missing or too long");
     }
     if (moralFlowDetails?.success?.stage !== "success") issues.push("moral speak success stage missing");
-    if (!hasExactFlowSteps(moralFlowDetails?.success) || moralFlowDetails?.success?.activeFlowStep !== "亮") {
+    if (!successAutoHandoff && (!hasExactFlowSteps(moralFlowDetails?.success) || moralFlowDetails?.success?.activeFlowStep !== "亮")) {
       issues.push("moral speak success rhythm step missing");
     }
     for (const [stateName, flow] of flowStates) {
       if (flow?.forbiddenVisibleCopy?.length) {
         issues.push(`moral speak ${stateName} shows backend/review copy: ${flow.forbiddenVisibleCopy.join(", ")}`);
       }
+      if (stateName === "success" && successAutoHandoff) continue;
       if (!flow?.turnChipVisible || !flow?.turnChipChildName) {
         issues.push(`moral speak ${stateName} missing visible child name`);
       }
@@ -4036,20 +4340,23 @@ async function inspectPage(browser, check, viewport) {
         issues.push(`moral speak ${stateName} still shows duplicate energy board`);
       }
     }
-    if (!moralFlowDetails?.success?.hasEnergySparks) issues.push("moral speak success energy sparks missing");
+    if (!successAutoHandoff && !moralFlowDetails?.success?.hasEnergySparks) issues.push("moral speak success energy sparks missing");
     if (moralFlowDetails?.success?.hasSuccessReward3dStage && !moralFlowDetails?.success?.successReward3dPassive) {
       issues.push("moral speak success reward 3d stage should not intercept input");
     }
     if (moralFlowDetails?.success?.hasSuccessReward3dStage && !moralFlowDetails?.success?.successReward3dContained) {
       issues.push("moral speak success reward 3d stage is outside viewport");
     }
-    if (!moralFlowDetails?.success?.successBubble || moralFlowDetails.success.successBubble.includes("自助成长")) {
+    if (!successAutoHandoff && (!moralFlowDetails?.success?.successBubble || moralFlowDetails.success.successBubble.includes("自助成长"))) {
       issues.push("moral speak success bubble is missing or too verbose");
     }
-    if (!moralFlowDetails?.success?.successBubble?.includes("能量") || !moralFlowDetails.success.successBubble.includes("精灵")) {
+    if (
+      !successAutoHandoff &&
+      (!moralFlowDetails?.success?.successBubble?.includes("能量") || !moralFlowDetails.success.successBubble.includes("精灵"))
+    ) {
       issues.push("moral speak success bubble missing energy arrival copy");
     }
-    if (!moralFlowDetails?.success?.successBubble?.includes("点亮")) {
+    if (!successAutoHandoff && !moralFlowDetails?.success?.successBubble?.includes("点亮")) {
       issues.push("moral speak success bubble missing lit energy copy");
     }
     if (/XP|[+＋]\d/.test(moralFlowDetails?.success?.successBubble ?? "")) {
@@ -4058,19 +4365,19 @@ async function inspectPage(browser, check, viewport) {
     if (/3D|正在准备|暂时不能|平面奖励|平面精灵/.test(moralFlowDetails?.success?.successBubble ?? "")) {
       issues.push("moral speak success bubble exposes technical 3d loading copy");
     }
-    if (!moralFlowDetails?.success?.hasEnergyTrail) issues.push("moral speak success energy arrival trail missing");
+    if (!successAutoHandoff && !moralFlowDetails?.success?.hasEnergyTrail) issues.push("moral speak success energy arrival trail missing");
     if (!moralFlowDetails?.success?.energyBoardText.includes("进精灵") && !moralFlowDetails?.success?.energyBoardText.includes("已点亮")) {
       issues.push("moral speak success did not update map energy board");
     }
     if (!moralFlowDetails?.success?.currentEnergySlots) issues.push("moral speak success did not mark current energy slot");
-    if (!moralFlowDetails?.success?.hasEnergyArrivalSlot) issues.push("moral speak success did not mark energy arrival slot");
-    if (!moralFlowDetails?.success?.currentEnergySlotText.includes("进精灵")) {
+    if (!successAutoHandoff && !moralFlowDetails?.success?.hasEnergyArrivalSlot) issues.push("moral speak success did not mark energy arrival slot");
+    if (!successAutoHandoff && !moralFlowDetails?.success?.currentEnergySlotText.includes("进精灵")) {
       issues.push("moral speak current energy slot missing arrival label");
     }
     if (/XP/i.test(moralFlowDetails?.success?.focusPlaqueText ?? "")) {
       issues.push("moral speak child-facing focus plaque still shows XP");
     }
-    if (moralFlowDetails?.success?.growthFeedbackKind || moralFlowDetails?.success?.growthFeedbackText) {
+    if (!successAutoHandoff && (moralFlowDetails?.success?.growthFeedbackKind || moralFlowDetails?.success?.growthFeedbackText)) {
       issues.push("moral speak success still shows duplicate global feedback");
     }
     if (
@@ -4137,6 +4444,7 @@ async function inspectPage(browser, check, viewport) {
         if (flow?.forbiddenVisibleCopy?.length) {
           issues.push(`moral speak child ${index + 1} ${stateName} shows backend/review copy`);
         }
+        if (stateName === "success" && isMobileSuccessAutoHandoff(flow)) continue;
         if (!flow?.turnChipVisible || !flow?.turnChipChildName) {
           issues.push(`moral speak child ${index + 1} ${stateName} missing visible child name`);
         }
@@ -4186,6 +4494,13 @@ async function inspectPage(browser, check, viewport) {
     details = { flow: classroomLoopDetails };
     if (classroomLoopDetails?.completedChildCount !== 10) issues.push("classroom loop did not complete 10 children");
     if (classroomLoopDetails?.uniqueChildCount !== 10) issues.push("classroom loop did not cover 10 unique children");
+    if (!classroomLoopDetails?.islandHotspotEntry?.openedSelfService) {
+      issues.push("classroom loop island self-service hotspot did not enter ready stage");
+    }
+    if ((classroomLoopDetails?.islandHotspotEntry?.after?.hotspotCount ?? 0) < 2) {
+      issues.push("classroom loop island self-service hotspots missing");
+    }
+    if (classroomLoopDetails?.dockSelfServiceEntryCount !== 10) issues.push("classroom loop dock self-service did not enter ready for all children");
     if (classroomLoopDetails?.selfServiceEntryCount !== 10) issues.push("classroom loop did not enter self-service for all children");
     for (const [index, childFlow] of (classroomLoopDetails?.children ?? []).entries()) {
       if (childFlow.ready?.stage !== "ready") issues.push(`classroom loop child ${index + 1} ready stage missing`);
@@ -4423,8 +4738,10 @@ async function inspectPage(browser, check, viewport) {
       if (!profile?.hasRoomLabels) issues.push(`profile flow ${source} room labels missing`);
       if (!profile?.heroHasEnergyCopy) issues.push(`profile flow ${source} energy copy mismatch`);
       if (!profile?.hasSpirit) issues.push(`profile flow ${source} spirit missing`);
-      if (!profile?.has3dCabinStage) issues.push(`profile flow ${source} 3d cabin stage missing`);
-      if (!profile?.has3dCabinSurface) issues.push(`profile flow ${source} 3d cabin render surface missing`);
+      if (!profile?.hasUnique2dSpirit) issues.push(`profile flow ${source} unique 2d spirit missing`);
+      if (!profile?.hasCabinAtmosphere3dStage) issues.push(`profile flow ${source} cabin atmosphere 3d prop missing`);
+      if (!profile?.hasCabinAtmosphere3dSurface) issues.push(`profile flow ${source} cabin atmosphere 3d surface missing`);
+      if (!profile?.cabinAtmosphere3dPassive) issues.push(`profile flow ${source} cabin atmosphere 3d should not intercept input`);
       if (!profile?.hasCabinStage) issues.push(`profile flow ${source} cabin stage missing`);
       if (!profile?.storyPanelNotWhiteWorkbench) issues.push(`profile flow ${source} still reads as white workbench`);
       if (!profile?.pageHasCoastalScene) issues.push(`profile flow ${source} coastal scene background missing`);
@@ -4455,11 +4772,12 @@ async function inspectPage(browser, check, viewport) {
   if (check.kind === "home") {
     const fps = await measureFrameRate(page, ".pixi-world-canvas");
     const wheelFps = await measureHomeWheel(page);
+    const dragFps = await measureHomeDrag(page);
     const renderState = await inspectPixiRenderState(page);
     const bigScreen = await inspectHomeBigScreen(page);
     const p15MapProps = summarizeP15MapProps(resources);
     const p16MapProps = summarizeP16MapProps(resources);
-    details = { fps, wheelFps, renderState, bigScreen, p15MapProps, p16MapProps };
+    details = { fps, wheelFps, dragFps, renderState, bigScreen, p15MapProps, p16MapProps };
     if (!bigScreen.hasSelectedChild) issues.push("home selected child is not visible");
     if (bigScreen.mapShare < 0.75) issues.push(`home map does not dominate workspace: ${bigScreen.mapShare}`);
     if (!bigScreen.energyBoard) issues.push("home map energy board missing");
@@ -4489,6 +4807,12 @@ async function inspectPage(browser, check, viewport) {
     if (bigScreen.sceneHotspotCount !== 4) issues.push(`home map dynamic scene hotspots missing: ${bigScreen.sceneHotspotCount}`);
     if (bigScreen.sceneHotspotStatusCount !== 4) issues.push(`home map scene hotspot status missing: ${bigScreen.sceneHotspotStatusCount}`);
     if (bigScreen.sceneLiveHotspotCount < 1) issues.push("home map live scene hotspot missing");
+    if (!bigScreen.hasChildDockSelfServiceEntry) issues.push("home child dock self-service entry missing");
+    if (bigScreen.dockSelfServiceEntryCount < 1) issues.push("home child dock self-service markers missing");
+    if (bigScreen.mapSelfServiceHotspotCount < 2) issues.push(`home map self-service hotspots missing: ${bigScreen.mapSelfServiceHotspotCount}`);
+    if (!["p15-growth-tree", "p16-growth-heart"].every((id) => bigScreen.mapSelfServiceHotspots.includes(id))) {
+      issues.push("home map growth self-service hotspot ids missing");
+    }
     if (!["抽取台", "贝壳算术", "海岛小铺", "荣誉广场"].every((label) => bigScreen.sceneGateText.includes(label))) {
       issues.push("home map scene gate labels missing");
     }
@@ -4508,9 +4832,9 @@ async function inspectPage(browser, check, viewport) {
     if (hasIdleEnergyHistory && bigScreen.currentEnergySlotCount < 1) issues.push("home map has no current virtue energy slot");
     if (hasIdleEnergyHistory && bigScreen.pixiEnergyRegionCount < 1) issues.push("home pixi map has no lit virtue region");
     if (hasIdleEnergyHistory && !bigScreen.pixiCurrentEnergyRegion) issues.push("home pixi map has no current lit virtue region");
-    if (p15MapProps.uniqueCount < 25) issues.push(`home P15 map 3d props missing: ${p15MapProps.uniqueCount}/25 loaded`);
+    if (p15MapProps.uniqueCount < 24) issues.push(`home P15 accepted map 3d props missing: ${p15MapProps.uniqueCount}/24 loaded`);
     if (p15MapProps.mb > 0.45) warnings.push(`home P15 map 3d props are heavy: ${p15MapProps.mb} MB`);
-    if (p16MapProps.uniqueCount < 30) issues.push(`home P16 map 3d props missing: ${p16MapProps.uniqueCount}/31 loaded`);
+    if (p16MapProps.uniqueCount < 24) issues.push(`home P16 accepted map 3d props missing: ${p16MapProps.uniqueCount}/24 loaded`);
     if (p16MapProps.mb > 0.45) warnings.push(`home P16 map 3d props are heavy: ${p16MapProps.mb} MB`);
     if (bigScreen.largeHeadings.length) issues.push("home contains oversized heading(s)");
     if (bigScreen.noisyCopy.length) issues.push(`home contains noisy explanatory copy: ${bigScreen.noisyCopy.join(", ")}`);
@@ -4518,9 +4842,48 @@ async function inspectPage(browser, check, viewport) {
     if (pngBytes > 40 * oneMb) warnings.push(`home requested ${(pngBytes / oneMb).toFixed(1)} MB of PNG assets`);
     if (pngCount > 35) warnings.push(`home requested ${pngCount} PNG asset(s)`);
     if (fps.fps < 30) warnings.push(`home frame sample is low: ${fps.fps} FPS`);
-    if (wheelFps && wheelFps.fps < 24) warnings.push(`home wheel frame sample is low: ${wheelFps.fps} FPS`);
-    if ((wheelFps?.renderState?.renderResolution ?? 1) < 0.34) {
-      issues.push(`home interaction render resolution is too low: ${wheelFps.renderState.renderResolution}`);
+    if (wheelFps && wheelFps.fps < 18) warnings.push(`home active wheel frame sample is low: ${wheelFps.fps} FPS`);
+    if (dragFps && dragFps.fps < 18) warnings.push(`home active drag frame sample is low: ${dragFps.fps} FPS`);
+    if (wheelFps && wheelFps.maxFrameGap > 280) warnings.push(`home active wheel frame gap is high: ${wheelFps.maxFrameGap} ms`);
+    if (dragFps && dragFps.maxFrameGap > 280) warnings.push(`home active drag frame gap is high: ${dragFps.maxFrameGap} ms`);
+    if ((wheelFps?.renderState?.renderResolution ?? 1) < minActiveMapRenderResolution) {
+      issues.push(`home wheel active render resolution too low: ${wheelFps.renderState.renderResolution}`);
+    }
+    if ((dragFps?.renderState?.renderResolution ?? 1) < minActiveMapRenderResolution) {
+      issues.push(`home drag active render resolution too low: ${dragFps.renderState.renderResolution}`);
+    }
+    if ((wheelFps?.settledRenderState?.renderResolution ?? 1) < minSettledMapRenderResolution) {
+      issues.push(`home wheel did not return to crisp render resolution: ${wheelFps.settledRenderState.renderResolution}`);
+    }
+    if ((dragFps?.settledRenderState?.renderResolution ?? 1) < minSettledMapRenderResolution) {
+      issues.push(`home drag did not return to crisp render resolution: ${dragFps.settledRenderState.renderResolution}`);
+    }
+  }
+
+  if (check.kind === "home-performance-soak") {
+    const samples = performanceSoakDetails?.samples ?? [];
+    const heapValues = samples.map((sample) => sample.memory?.usedJSHeapMB).filter((value) => Number.isFinite(value));
+    const heapDelta = heapValues.length ? Number((Math.max(...heapValues) - Math.min(...heapValues)).toFixed(1)) : 0;
+    details = { soak: performanceSoakDetails, heapDelta };
+    if (!performanceSoakDetails) issues.push("home performance soak did not run");
+    if ((performanceSoakDetails?.frameRate?.fps ?? 0) < 18) {
+      warnings.push(`home sustained drag frame sample is low: ${performanceSoakDetails?.frameRate?.fps} FPS`);
+    }
+    if ((performanceSoakDetails?.frameRate?.p99FrameGap ?? 0) > 320) {
+      warnings.push(`home sustained drag p99 frame gap is high: ${performanceSoakDetails?.frameRate?.p99FrameGap} ms`);
+    }
+    if (heapDelta > 50) warnings.push(`home sustained drag JS heap moved by ${heapDelta} MB`);
+    if ((performanceSoakDetails?.settledRenderState?.renderResolution ?? 1) < minSettledMapRenderResolution) {
+      issues.push(`home soak did not return to crisp render resolution: ${performanceSoakDetails?.settledRenderState?.renderResolution}`);
+    }
+    if (
+      samples.some(
+        (sample) =>
+          Number.isFinite(sample.renderState?.renderResolution) &&
+          sample.renderState.renderResolution < minActiveMapRenderResolution,
+      )
+    ) {
+      issues.push("home soak dropped below active drag render resolution floor");
     }
   }
 

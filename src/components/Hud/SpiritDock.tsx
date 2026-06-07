@@ -47,7 +47,7 @@ export function SpiritDock({ childrenWithProgress, spiritsById, selectedChildId,
   const selectedAsset = selectedSpirit ? getSpiritAsset(selectedSpirit, selectedChild.state) : undefined;
   const selectedRoleLabel = "找我";
   const selectedAriaLabel = "已选孩子";
-  const selectedStatus = "点精灵";
+  const selectedStatus = "点我说";
   const dockClasses = [
     "spirit-dock",
     collapsed ? "collapsed is-collapsed" : "expanded is-expanded",
@@ -66,7 +66,8 @@ export function SpiritDock({ childrenWithProgress, spiritsById, selectedChildId,
           className="dock-selected-summary"
           style={{ "--dock-accent": selectedSpirit?.accent ?? "#6ebf8b" } as CSSProperties}
           data-selected-role="current"
-          aria-label={`${selectedAriaLabel}：${selectedChild.name}，查看自己的精灵`}
+          data-self-service-entry="dock-current"
+          aria-label={`${selectedAriaLabel}：${selectedChild.name}，点自己的精灵说成长`}
           onClick={() => onSelectChild(selectedChild.id)}
         >
           <span className="dock-avatar">
@@ -166,15 +167,16 @@ export function SpiritDock({ childrenWithProgress, spiritsById, selectedChildId,
               key={child.id}
               className={child.id === selectedChildId ? "dock-spirit active" : "dock-spirit"}
               aria-current={child.id === selectedChildId ? "true" : undefined}
-              aria-label={`${child.id === selectedChildId ? "已选孩子" : "选择孩子"}：${child.name}`}
+              aria-label={`${child.id === selectedChildId ? "已选孩子" : "选择孩子"}：${child.name}，点自己的精灵说成长`}
               data-selected-role={child.id === selectedChildId ? "current" : undefined}
+              data-self-service-entry="dock-roster"
               onClick={() => selectChildFromRoster(child.id)}
             >
               <span className="dock-avatar" style={{ "--dock-accent": spirit?.accent ?? "#6ebf8b" } as CSSProperties}>
                 {asset?.url ? <img src={asset.url} alt="" /> : <span className="dock-avatar-label">{child.name.slice(0, 1)}</span>}
               </span>
               <strong>{child.name}</strong>
-              <em>点我</em>
+              <em>点我说</em>
             </button>
           );
         })}

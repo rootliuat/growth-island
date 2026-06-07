@@ -24,7 +24,7 @@ const budgets = {
   homeWebpMb: Number(process.env.TRIAL_HOME_WEBP_MB_LIMIT || 7),
   hidpiFileCount: Number(process.env.TRIAL_HIDPI_FILE_COUNT || 8),
   hidpiTotalMb: Number(process.env.TRIAL_HIDPI_MB_LIMIT || 3.5),
-  p16MapPropMin: Number(process.env.TRIAL_P16_MAP_PROP_MIN || 30),
+  p16MapPropMin: Number(process.env.TRIAL_P16_MAP_PROP_MIN || 24),
   p16MapPropMb: Number(process.env.TRIAL_P16_MAP_PROP_MB_LIMIT || 0.45),
 };
 

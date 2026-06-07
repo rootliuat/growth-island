@@ -20,6 +20,12 @@ function isSelfServiceEnergyReason(reason?: string) {
   return Boolean(reason?.startsWith("自助成长："));
 }
 
+function regionEnergyCacheKey(items: WorldMapData["regionEnergy"]) {
+  return items
+    .map((item) => `${item.regionId}:${item.count}:${item.current ? 1 : 0}:${item.color}:${item.displayText}`)
+    .join("|");
+}
+
 export class WorldScene {
   readonly root = new Container();
   readonly layers = new LayerManager();
@@ -29,11 +35,14 @@ export class WorldScene {
   readonly homes: HomeLayer;
   readonly spirits: SpiritLayer;
   readonly labels: LabelLayer;
+  private readonly cachedStaticLayers: Container[];
   private data?: WorldMapData;
   private lastLedgerId?: string;
+  private regionEnergyKey = "";
   private animationElapsed = 0;
   private lastZoom = Number.NaN;
   private readonly animationStepMs = 1000 / 30;
+  private readonly staticCacheResolution = 1;
 
   constructor(
     private readonly camera: CameraController,
@@ -47,12 +56,15 @@ export class WorldScene {
       onFocusPoint: this.focusPoint,
       onOpenDialogue: this.callbacks.onOpenDialogue,
       onOpenModule: this.callbacks.onOpenModule,
+      onPrepareMoralSpeak: this.callbacks.onPrepareMoralSpeak,
       onOpenPk: this.callbacks.onOpenPk,
     });
     this.effects = new EffectLayer(this.layers.get("effects"));
     this.homes = new HomeLayer(this.layers.get("homes"), this.selectChild, this.focusPoint);
     this.spirits = new SpiritLayer(this.layers.get("spirits"), this.selectChild, this.focusPoint);
     this.labels = new LabelLayer(this.layers.get("labels"));
+    this.cachedStaticLayers = [this.layers.staticRoot];
+    this.enableStaticLayerCache();
     this.camera.viewport.addChild(this.layers.root);
     this.root.addChild(this.camera.viewport);
   }
@@ -64,7 +76,12 @@ export class WorldScene {
     this.homes.update(data);
     this.spirits.update(data);
     this.labels.update(data);
-    this.regions.setEnergy(data.regionEnergy);
+    const nextRegionEnergyKey = regionEnergyCacheKey(data.regionEnergy);
+    if (nextRegionEnergyKey !== this.regionEnergyKey) {
+      this.regionEnergyKey = nextRegionEnergyKey;
+      this.regions.setEnergy(data.regionEnergy);
+      this.refreshStaticLayerCache();
+    }
     const selected = data.spirits.find((spirit) => spirit.id === data.selectedChildId);
     const selectedSelfServiceEnergy = isSelfServiceEnergyReason(selected?.lastActivity) && (selected?.lastActivityDelta ?? 0) > 0;
     this.effects.setSelectedGuide(
@@ -103,7 +120,8 @@ export class WorldScene {
     }
   }
 
-  update(ticker: Ticker, interactionActive = false) {
+  update(ticker: Ticker, interactionActive = false, selectedIdleOnly = false) {
+    this.setInteractionVisualMode(interactionActive);
     this.animationElapsed += ticker.deltaMS;
     if (this.animationElapsed < this.animationStepMs) return;
 
@@ -114,12 +132,29 @@ export class WorldScene {
     this.animationElapsed = 0;
 
     this.updateZoomState();
-    if (interactionActive) return;
+    if (interactionActive || selectedIdleOnly) {
+      this.spirits.updateFrame(frame, { selectedOnly: true });
+      return;
+    }
 
     this.regions.update(frame, this.camera.zoom);
     this.effects.update(frame);
     this.homes.updateFrame(frame.deltaMS);
     this.spirits.updateFrame(frame);
+  }
+
+  getSelectedSpiritAnimationSnapshot() {
+    return this.spirits.getSelectedAnimationSnapshot();
+  }
+
+  refreshStaticLayerCache() {
+    this.cachedStaticLayers.forEach((layer) => layer.updateCacheTexture());
+  }
+
+  setInteractionVisualMode(_interactionActive: boolean) {
+    this.layers.get("decorations").renderable = true;
+    this.layers.get("labels").renderable = true;
+    this.layers.get("effects").renderable = true;
   }
 
   focusFullIsland() {
@@ -158,6 +193,7 @@ export class WorldScene {
   private focusRegionPoint = (regionId: RegionId, x: number, y: number, zoom: number) => {
     const region = regionsById.get(regionId);
     this.regions.setActive(regionId);
+    this.refreshStaticLayerCache();
     this.camera.focus({ x, y, zoom: region?.id === "growth-plaza" ? 1.05 : zoom });
   };
 
@@ -168,6 +204,12 @@ export class WorldScene {
     this.homes.updateZoom(zoom);
     this.spirits.updateZoom(zoom);
     if (this.data) this.labels.updateZoom(zoom, this.data.selectedChildId);
+  }
+
+  private enableStaticLayerCache() {
+    this.cachedStaticLayers.forEach((layer) => {
+      layer.cacheAsTexture({ resolution: this.staticCacheResolution, antialias: false });
+    });
   }
 
   destroy() {

@@ -112,14 +112,7 @@ export class RegionLayer {
       node.energyGlow.visible = Boolean(energy);
       if (!energy) return;
 
-      const glowAlpha = energy.current ? 0.18 : 0.1;
-      const strokeAlpha = energy.current ? 0.72 : 0.42;
-      drawOrganicPolygon(node.energyGlow, node.region.shape, energy.color, energy.color, {
-        fillAlpha: glowAlpha,
-        strokeAlpha,
-        strokeWidth: energy.current ? 13 : 8,
-      });
-      this.drawEnergySparks(node.energyGlow, node.region, energy);
+      this.drawEnergyAura(node.energyGlow, node.region, energy);
       this.paintEnergyBadge(node, energy);
     });
   }
@@ -143,8 +136,8 @@ export class RegionLayer {
     this.nodes.forEach((node) => {
       if (!node.energy) return;
       node.energyElapsed += ticker.deltaMS;
-      const currentPulse = node.energy.current ? Math.sin(node.energyElapsed / 260) * 0.1 : Math.sin(node.energyElapsed / 420) * 0.04;
-      node.energyGlow.alpha = node.energy.current ? 0.62 + currentPulse : 0.34 + currentPulse;
+      const currentPulse = node.energy.current ? Math.sin(node.energyElapsed / 340) * 0.06 : Math.sin(node.energyElapsed / 520) * 0.03;
+      node.energyGlow.alpha = node.energy.current ? 0.76 + currentPulse : 0.42 + currentPulse;
       node.energyBadge.alpha = zoom >= 1.48 && !node.energy.current ? 0.72 : 1;
       node.energyBadge.scale.set(node.energy.current ? 1 + Math.sin(node.energyElapsed / 300) * 0.03 : 0.96);
     });
@@ -160,15 +153,18 @@ export class RegionLayer {
     node.banner.scale.set(0.96 + Math.min(this.activeElapsed / 420, 1) * 0.04);
   }
 
-  private drawEnergySparks(g: Graphics, region: MapRegion, energy: VirtueRegionEnergy) {
-    const count = Math.min(6, energy.count + 2);
+  private drawEnergyAura(g: Graphics, region: MapRegion, energy: VirtueRegionEnergy) {
+    const x = region.signPosition.x;
+    const y = region.signPosition.y + 72;
+    g.ellipse(x, y + 6, 74, 22).fill({ color: energy.color, alpha: energy.current ? 0.09 : 0.045 });
+    g.ellipse(x, y + 6, 94, 29).stroke({ width: energy.current ? 2.5 : 1.5, color: 0xfff6c9, alpha: energy.current ? 0.28 : 0.16 });
+    const count = Math.min(3, energy.count + 1);
     for (let index = 0; index < count; index += 1) {
-      const angle = (Math.PI * 2 * index) / count + region.center.x * 0.001;
-      const x = region.center.x + Math.cos(angle) * region.radiusX * (0.18 + (index % 3) * 0.07);
-      const y = region.center.y + Math.sin(angle) * region.radiusY * (0.18 + (index % 2) * 0.08);
-      const radius = energy.current ? 7 + (index % 2) * 2 : 5 + (index % 2);
-      g.circle(x, y, radius + 5).fill({ color: 0xffffff, alpha: energy.current ? 0.2 : 0.12 });
-      g.circle(x, y, radius).fill({ color: energy.color, alpha: energy.current ? 0.72 : 0.48 });
+      const offset = index - (count - 1) / 2;
+      const dotX = x - 34 + index * 34;
+      const dotY = y + 28 + Math.abs(offset) * 4;
+      g.circle(dotX, dotY, energy.current ? 4.2 : 3.2).fill({ color: energy.color, alpha: energy.current ? 0.48 : 0.26 });
+      g.circle(dotX - 1.2, dotY - 1.2, 1.4).fill({ color: 0xffffff, alpha: 0.58 });
     }
   }
 

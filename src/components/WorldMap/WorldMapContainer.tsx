@@ -369,7 +369,21 @@ export const WorldMapContainer = forwardRef<PixiWorldMapHandle, WorldMapContaine
           </div>
         }
       >
-        <PixiWorldMap ref={pixiMapRef} {...props} />
+        <PixiWorldMap
+          ref={pixiMapRef}
+          childrenWithProgress={props.childrenWithProgress}
+          spiritsById={props.spiritsById}
+          selectedChildId={props.selectedChildId}
+          recentLedger={props.recentLedger}
+          assetVersion={props.assetVersion}
+          onSelectChild={props.onSelectChild}
+          onOpenDialogue={props.onOpenDialogue}
+          onOpenPk={props.onOpenPk}
+          onOpenModule={props.onOpenModule}
+          onPrepareMoralSpeak={
+            props.onPrepareMoralSpeak && selectedChild ? () => props.onPrepareMoralSpeak?.(selectedChild.id) : undefined
+          }
+        />
       </Suspense>
       <MoralSpeakOverlay
         child={moralSpeakChild}

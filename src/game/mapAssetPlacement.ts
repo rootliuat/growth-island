@@ -2,7 +2,7 @@ import type { RegionId } from "./types";
 import { spreadPoint } from "./mapLayout";
 
 export type MapSceneLayer = "path" | "landmark" | "decoration";
-export type MapSceneInteraction = "pk" | "dialogue" | "shop" | "leaderboard" | "child-profile";
+export type MapSceneInteraction = "pk" | "dialogue" | "shop" | "leaderboard" | "child-profile" | "self-service";
 
 export interface PlacementAnchor {
   x: number;

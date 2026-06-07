@@ -126,23 +126,38 @@ export class SpiritLayer {
     node.body.rotation = upgraded ? -0.035 : 0;
   }
 
-  updateFrame(ticker: Ticker) {
+  updateFrame(ticker: Ticker, options: { selectedOnly?: boolean } = {}) {
     this.elapsed += ticker.deltaMS / 1000;
     this.nodes.forEach((node, childId) => {
       if (!node.root.visible) return;
+      if (options.selectedOnly && childId !== this.selectedChildId) return;
+      const selected = childId === this.selectedChildId;
       const breath = 1 + Math.sin(this.elapsed * 2.2 + node.root.x * 0.004) * 0.028;
       const targetRoot = this.getTargetScale(childId);
       const rootScale = node.root.scale.x + (targetRoot - node.root.scale.x) * Math.min(1, ticker.deltaMS / 160);
       node.root.scale.set(rootScale);
       const pulse = this.updateEvolvePulse(node, childId, ticker.deltaMS);
       node.body.scale.set(node.body.scale.x + (breath * pulse.scale - node.body.scale.x) * pulse.lerp);
-      node.body.y = -Math.abs(Math.sin(this.elapsed * 1.6 + node.root.x * 0.01)) * 5 + pulse.y;
+      const floatPhase = this.elapsed * (selected ? 1.85 : 1.6) + node.root.x * 0.01;
+      const closeFocusFloat = selected && this.zoom >= 1.08;
+      const floatY = closeFocusFloat ? -5 - Math.sin(floatPhase) * 5 : -Math.abs(Math.sin(floatPhase)) * 5;
+      node.body.y = floatY + pulse.y;
       node.body.rotation += (pulse.rotation - node.body.rotation) * 0.12;
       node.halo.rotation += 0.006 * ticker.deltaTime;
       node.halo.visible = pulse.haloVisible;
       node.halo.alpha = pulse.haloAlpha;
       this.updateArtworkReveal(node, ticker.deltaMS);
     });
+  }
+
+  getSelectedAnimationSnapshot() {
+    const node = this.nodes.get(this.selectedChildId);
+    if (!node) return undefined;
+    return {
+      visible: node.root.visible,
+      bodyY: Number(node.body.y.toFixed(2)),
+      scale: Number(node.body.scale.x.toFixed(3)),
+    };
   }
 
   updateZoom(zoom: number) {
@@ -270,6 +285,7 @@ export class SpiritLayer {
           targetY: 10,
         };
         node.artworkLoaded = true;
+        window.dispatchEvent(new CustomEvent("growth-island-asset-loaded"));
       }).catch(() => undefined);
     };
 
@@ -433,7 +449,7 @@ export class SpiritLayer {
 
   private shouldShowSpirit(childId: string, node: SpiritNode) {
     if (childId === this.selectedChildId) return true;
-    if (this.zoom >= 1.32) return false;
+    if (this.zoom >= 1.08) return false;
     if (this.zoom < 0.72) return true;
     return this.zoomScale >= 0.9 || node.rank <= 3 || node.level >= 7;
   }

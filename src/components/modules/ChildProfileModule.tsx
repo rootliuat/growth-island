@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { useMemo, useState } from "react";
 import { BadgeCheck, BookOpenText, History, Home, Search, Sparkles, Star, Trophy, Volume2 } from "lucide-react";
 import { getSpiritStageLabel } from "../../domain/progression";
@@ -5,7 +6,7 @@ import { getSpiritAsset } from "../../domain/spiritAssets";
 import { getChildSpiritVoiceType, getSpiritVoiceOption, spiritVoiceOptions } from "../../domain/spiritVoice";
 import { virtueCategories } from "../../data/spirits";
 import type { ChildProfile, ChildWithProgress, LedgerRecord, SpiritDefinition } from "../../types";
-import { SpiritModelStage3D } from "../Hud/SpiritModelStage3D";
+import { RewardModelPreview3D } from "../Hud/SpiritModelStage3D";
 
 interface ChildProfileModuleProps {
   childrenWithProgress: ChildWithProgress[];
@@ -96,6 +97,8 @@ export function ChildProfileModule({
   const stageLabel = getSpiritStageLabel(selectedChild.state);
   const selectedVoiceType = getChildSpiritVoiceType(selectedChild);
   const selectedVoice = getSpiritVoiceOption(selectedVoiceType) ?? spiritVoiceOptions[0];
+  const spiritAccent = selectedSpirit?.accent ?? "#f6b352";
+  const spiritShowcaseStyle = { "--profile-spirit-accent": spiritAccent } as CSSProperties;
   const updateVoiceType = (voiceType: number) => {
     const nextVoice = getSpiritVoiceOption(voiceType);
     onUpdateChild({ voiceType });
@@ -164,22 +167,37 @@ export function ChildProfileModule({
                 <span>已进入 {selectedChild.name} 小屋</span>
                 <strong>{stageLabel}</strong>
               </div>
-              {selectedSpirit ? (
-                <SpiritModelStage3D
-                  child={selectedChild}
-                  spirit={selectedSpirit}
-                  accent={selectedSpirit.accent}
-                  className="profile-3d-cabin-stage"
-                  fallbackImageUrl={selectedAsset?.url}
-                  fallbackInitial={selectedChild.name.slice(0, 1)}
-                  interactive
-                  size="medium"
-                />
-              ) : (
-                <div className="profile-portrait">
-                  {selectedAsset?.url ? <img src={selectedAsset.url} alt={`${selectedChild.petName} 精灵`} width={168} height={168} /> : selectedChild.name.slice(0, 1)}
+              <div className="profile-spirit-showcase" style={spiritShowcaseStyle}>
+                <div className="profile-spirit-aura" aria-hidden="true" />
+                <div
+                  className="profile-portrait profile-spirit-main"
+                  data-spirit-id={selectedSpirit?.id ?? selectedChild.spiritId}
+                  data-spirit-state={selectedChild.state}
+                >
+                  {selectedAsset?.url ? (
+                    <img
+                      src={selectedAsset.url}
+                      alt={`${selectedChild.name} 的${selectedChild.petName}精灵`}
+                      width={220}
+                      height={220}
+                    />
+                  ) : (
+                    <span>{selectedChild.name.slice(0, 1)}</span>
+                  )}
                 </div>
-              )}
+                <div className="profile-spirit-shadow" aria-hidden="true" />
+                <div className="profile-cabin-prop-3d" aria-hidden="true">
+                  <RewardModelPreview3D
+                    modelKey="growth-star"
+                    label="小屋星光"
+                    accent={spiritAccent}
+                    className="profile-cabin-reward-stage"
+                    hideLoading
+                    interactive={false}
+                    size="compact"
+                  />
+                </div>
+              </div>
               <div className="profile-cabin-floor" aria-hidden="true" />
             </div>
             <div className="profile-cabin-info">

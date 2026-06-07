@@ -455,7 +455,10 @@ export function App() {
   };
 
   const scheduleMoralSpeakTimer = (callback: () => void, delay: number) => {
-    const timer = window.setTimeout(callback, delay);
+    const timer = window.setTimeout(() => {
+      moralSpeakTimersRef.current = moralSpeakTimersRef.current.filter((item) => item !== timer);
+      callback();
+    }, delay);
     moralSpeakTimersRef.current.push(timer);
   };
 
@@ -750,6 +753,7 @@ export function App() {
         summary?: string;
       }) => boolean;
       __growthIslandPrepareMoralSpeakForQa?: (childId?: string) => boolean;
+      __growthIslandOpenIslandHotspotForQa?: (childId?: string) => boolean;
       __growthIslandSetMoralRecognizingForQa?: (childId?: string) => boolean;
       __growthIslandSelectMapChildForQa?: (childId: string) => boolean;
       __growthIslandOpen3dShowcaseForQa?: (childId?: string) => boolean;
@@ -789,6 +793,14 @@ export function App() {
         selectedChild;
       setSelectedChildId(child.id);
       prepareMoralSpeakForChild(child.id);
+      return true;
+    };
+    qaWindow.__growthIslandOpenIslandHotspotForQa = (childId) => {
+      const child =
+        childrenWithProgress.find((item) => item.id === childId) ??
+        childrenWithProgress.find((item) => item.id === selectedChild.id) ??
+        selectedChild;
+      focusChildOnHome(child.id, { prepareMoralSpeak: true });
       return true;
     };
     qaWindow.__growthIslandSetMoralRecognizingForQa = (childId) => {

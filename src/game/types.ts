@@ -96,6 +96,7 @@ export interface WorldMapCallbacks {
   onOpenPk?: () => void;
   onOpenDialogue?: () => void;
   onOpenModule?: (moduleId: "shop" | "leaderboard" | "child-profile") => void;
+  onPrepareMoralSpeak?: () => void;
 }
 
 export interface CameraTarget {

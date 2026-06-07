@@ -103,6 +103,8 @@ export function createRawV4PlacementGroups(assets: V4MapAssetUrls): RawPlacement
         x: 962,
         y: 710,
         width: 72,
+        interactive: "self-service",
+        collision: { widthRatio: 1.36, heightRatio: 1.24 },
       },
       {
         id: "p15-growth-rock",
@@ -156,7 +158,7 @@ export function createRawV4PlacementGroups(assets: V4MapAssetUrls): RawPlacement
         x: 1116,
         y: 790,
         width: 46,
-        interactive: "child-profile",
+        interactive: "self-service",
         collision: { widthRatio: 1.45, heightRatio: 1.32 },
       },
       {

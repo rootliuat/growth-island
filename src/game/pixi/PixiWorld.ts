@@ -1,26 +1,30 @@
-import { Application, Ticker } from "pixi.js";
+import { Application, Culler, Ticker } from "pixi.js";
 import { WORLD_HEIGHT, WORLD_WIDTH } from "../mapConfig";
 import type { RegionId, WorldMapCallbacks, WorldMapData } from "../types";
+import { v4DecorPlacements, v4LandmarkPlacements } from "../v4MapAssets";
 import { CameraController } from "./CameraController";
 import { InteractionManager } from "./InteractionManager";
 import { WorldScene } from "./WorldScene";
 
 const minRenderResolution = 1;
 const maxRenderResolution = 1.5;
-const minInteractiveRenderResolution = 0.34;
-const activeMaxFps = 45;
+const activeMaxFps = 30;
+const selectedIdleMaxFps = 24;
+const pointerWakeMs = 560;
+const pointerWakeThrottleMs = 96;
+const qaSelectedDatasetWriteMs = 120;
+const selfServiceHotspotIds = [...v4DecorPlacements, ...v4LandmarkPlacements]
+  .filter((placement) => placement.interactive === "self-service")
+  .map((placement) => placement.id);
+type GrowthIslandWindow = Window & {
+  __growthIslandMapInteractionActive?: boolean;
+};
 
 function getAdaptiveRenderResolution(width: number, height: number) {
   const pixelRatio = typeof window === "undefined" ? 1 : window.devicePixelRatio || 1;
   const area = width * height;
-  const areaCap = area >= 3_200_000 ? 1 : area >= 1_700_000 ? 1.15 : area >= 900_000 ? 1.3 : maxRenderResolution;
+  const areaCap = area >= 1_700_000 ? 1 : area >= 900_000 ? 1.18 : maxRenderResolution;
   return Math.max(minRenderResolution, Math.min(pixelRatio, areaCap, maxRenderResolution));
-}
-
-function getInteractiveRenderResolution(width: number, height: number, baseResolution: number) {
-  const area = width * height;
-  const interactionCap = area >= 3_200_000 ? 0.34 : area >= 1_700_000 ? 0.46 : area >= 900_000 ? 0.62 : maxRenderResolution;
-  return Math.min(baseResolution, Math.max(minInteractiveRenderResolution, interactionCap));
 }
 
 export class PixiWorld {
@@ -33,32 +37,62 @@ export class PixiWorld {
   private lastData?: WorldMapData;
   private idleTimer?: number;
   private interactionTimer?: number;
+  private staticCacheRefreshTimer?: number;
   private interactionActive = false;
   private disposed = false;
+  private pendingStaticCacheRefresh = false;
+  private selectedIdleAnimation = false;
   private renderResolution = minRenderResolution;
   private baseRenderResolution = minRenderResolution;
   private lastWidth = 1280;
   private lastHeight = 720;
+  private pointerDragging = false;
+  private exposeQaMetrics = false;
+  private lastPointerWakeAt = 0;
+  private lastCullAt = 0;
+  private lastSelectedDatasetWriteAt = 0;
   private viewMode: "overview" | "focused" | "manual" = "overview";
   private readonly tick = (ticker: Ticker) => {
+    const selectedIdleOnly = this.selectedIdleAnimation && !this.interactionActive && !this.pointerDragging;
     this.camera?.update(ticker);
-    this.scene?.update(ticker, this.interactionActive);
+    this.scene?.update(ticker, this.interactionActive, selectedIdleOnly);
+    this.updateSelectedAnimationDataset();
+    if (!selectedIdleOnly) this.cullVisibleScene();
   };
-  private readonly wakeFromInteraction = () => {
+  private readonly wakeFromPointerInteraction = (interactionMode: "touch" | "drag" | "wheel" = "touch") => {
     this.interactionActive = true;
+    this.setGlobalInteractionActive(true);
     if (this.app) this.app.ticker.maxFPS = activeMaxFps;
-    this.useInteractiveResolution();
-    window.clearTimeout(this.interactionTimer);
-    this.interactionTimer = window.setTimeout(() => {
-      this.interactionActive = false;
-    }, 220);
-    this.wake(1800);
+    if (this.app?.canvas) this.app.canvas.dataset.interactionMode = interactionMode;
+    this.lastPointerWakeAt = performance.now();
+    this.scheduleInteractionSettle(220);
+    this.wake(pointerWakeMs);
+  };
+  private readonly handlePointerDown = () => {
+    this.pointerDragging = true;
+    this.wakeFromPointerInteraction("touch");
+  };
+  private readonly handlePointerMove = (event: PointerEvent) => {
+    if (!this.pointerDragging && event.buttons !== 1) return;
+    this.pointerDragging = true;
+    const now = performance.now();
+    if (now - this.lastPointerWakeAt < pointerWakeThrottleMs) return;
+    this.wakeFromPointerInteraction("drag");
+  };
+  private readonly finishPointerInteraction = () => {
+    this.pointerDragging = false;
+    this.lastPointerWakeAt = 0;
+    this.scheduleInteractionSettle(120);
+    this.wake(180);
   };
   private readonly handleWheelInteraction = (event: WheelEvent) => {
     event.preventDefault();
-    this.wakeFromInteraction();
   };
-  private readonly wakeFromAssetLoad = () => this.wake(900);
+  private readonly wakeFromAssetLoad = () => {
+    this.pendingStaticCacheRefresh = true;
+    if (this.interactionActive || this.pointerDragging) return;
+    this.scheduleStaticCacheRefresh();
+  };
 
   constructor(private readonly callbacks: WorldMapCallbacks) {}
 
@@ -70,6 +104,7 @@ export class PixiWorld {
     const app = new Application();
     this.lastWidth = host.clientWidth || 1280;
     this.lastHeight = host.clientHeight || 720;
+    this.exposeQaMetrics = new URLSearchParams(window.location.search).has("qa");
     this.baseRenderResolution = getAdaptiveRenderResolution(this.lastWidth, this.lastHeight);
     this.renderResolution = this.baseRenderResolution;
     await app.init({
@@ -93,6 +128,8 @@ export class PixiWorld {
     app.canvas.className = "pixi-world-canvas";
     app.canvas.dataset.renderState = "active";
     app.canvas.dataset.renderResolution = this.renderResolution.toFixed(2);
+    app.canvas.dataset.selfServiceHotspotCount = String(selfServiceHotspotIds.length);
+    app.canvas.dataset.selfServiceHotspots = selfServiceHotspotIds.join(",");
     host.appendChild(app.canvas);
 
     this.app = app;
@@ -111,13 +148,19 @@ export class PixiWorld {
     });
     this.resizeObserver.observe(host);
     this.interactions.add(() => this.resizeObserver?.disconnect());
-    app.canvas.addEventListener("pointerdown", this.wakeFromInteraction);
-    app.canvas.addEventListener("pointermove", this.wakeFromInteraction);
+    app.canvas.addEventListener("pointerdown", this.handlePointerDown);
+    app.canvas.addEventListener("pointermove", this.handlePointerMove);
+    app.canvas.addEventListener("pointerup", this.finishPointerInteraction);
+    app.canvas.addEventListener("pointercancel", this.finishPointerInteraction);
+    app.canvas.addEventListener("pointerleave", this.finishPointerInteraction);
     app.canvas.addEventListener("wheel", this.handleWheelInteraction, { passive: false });
     window.addEventListener("growth-island-asset-loaded", this.wakeFromAssetLoad);
     this.interactions.add(() => {
-      app.canvas.removeEventListener("pointerdown", this.wakeFromInteraction);
-      app.canvas.removeEventListener("pointermove", this.wakeFromInteraction);
+      app.canvas.removeEventListener("pointerdown", this.handlePointerDown);
+      app.canvas.removeEventListener("pointermove", this.handlePointerMove);
+      app.canvas.removeEventListener("pointerup", this.finishPointerInteraction);
+      app.canvas.removeEventListener("pointercancel", this.finishPointerInteraction);
+      app.canvas.removeEventListener("pointerleave", this.finishPointerInteraction);
       app.canvas.removeEventListener("wheel", this.handleWheelInteraction);
       window.removeEventListener("growth-island-asset-loaded", this.wakeFromAssetLoad);
     });
@@ -201,28 +244,113 @@ export class PixiWorld {
     if (!this.app || this.disposed) return;
     window.clearTimeout(this.idleTimer);
     if (durationMs <= 0) this.interactionActive = false;
+    this.selectedIdleAnimation = false;
+    this.app.ticker.maxFPS = activeMaxFps;
     const wasIdle = !this.app.ticker.started;
     this.app.canvas.dataset.renderState = "active";
+    this.app.canvas.dataset.selectedIdleAnimation = "false";
     if (!this.app.ticker.started) this.app.ticker.start();
-    if (wasIdle) this.app.render();
+    if (wasIdle) {
+      this.cullVisibleScene(true);
+      this.app.render();
+    }
     this.idleTimer = window.setTimeout(() => this.sleep(), durationMs);
   }
 
   private sleep() {
     if (!this.app || this.disposed) return;
+    this.scene?.setInteractionVisualMode(false);
+    this.setGlobalInteractionActive(false);
+    this.refreshPendingStaticCache();
     this.restoreBaseResolution();
+    this.cullVisibleScene(true);
     this.app.render();
+    if (this.shouldKeepSelectedIdleAnimation()) {
+      this.selectedIdleAnimation = true;
+      this.app.ticker.maxFPS = selectedIdleMaxFps;
+      this.app.canvas.dataset.renderState = "idle-animating";
+      this.app.canvas.dataset.interactionMode = "selected-idle";
+      this.app.canvas.dataset.selectedIdleAnimation = "true";
+      if (!this.app.ticker.started) this.app.ticker.start();
+      return;
+    }
+    this.selectedIdleAnimation = false;
+    this.app.canvas.dataset.selectedIdleAnimation = "false";
     this.app.canvas.dataset.renderState = "idle";
     this.app.ticker.stop();
   }
 
-  private useInteractiveResolution() {
-    const resolution = getInteractiveRenderResolution(this.lastWidth, this.lastHeight, this.baseRenderResolution);
-    this.setRenderResolution(resolution);
-  }
-
   private restoreBaseResolution() {
     this.setRenderResolution(this.baseRenderResolution);
+    if (this.app?.canvas) this.app.canvas.dataset.interactionMode = "idle";
+  }
+
+  private cullVisibleScene(force = false) {
+    if (!this.app) return;
+    const now = performance.now();
+    const interval = this.interactionActive || this.pointerDragging ? 180 : 260;
+    if (!force && now - this.lastCullAt < interval) return;
+    this.lastCullAt = now;
+    Culler.shared.cull(this.app.stage, this.app.renderer.screen, false);
+  }
+
+  private scheduleInteractionSettle(delayMs: number) {
+    window.clearTimeout(this.interactionTimer);
+    this.interactionTimer = window.setTimeout(() => {
+      if (this.pointerDragging) {
+        this.scheduleInteractionSettle(180);
+        return;
+      }
+      this.interactionActive = false;
+      this.scene?.setInteractionVisualMode(false);
+      this.setGlobalInteractionActive(false);
+      this.refreshPendingStaticCache();
+      this.restoreBaseResolution();
+      this.app?.render();
+    }, delayMs);
+  }
+
+  private refreshStaticCache() {
+    window.clearTimeout(this.staticCacheRefreshTimer);
+    this.staticCacheRefreshTimer = undefined;
+    this.pendingStaticCacheRefresh = false;
+    this.scene?.refreshStaticLayerCache();
+  }
+
+  private refreshPendingStaticCache() {
+    if (!this.pendingStaticCacheRefresh) return;
+    this.refreshStaticCache();
+  }
+
+  private shouldKeepSelectedIdleAnimation() {
+    return this.viewMode === "focused" && Boolean(this.lastData?.selectedChildId);
+  }
+
+  private updateSelectedAnimationDataset() {
+    if (!this.app) return;
+    if (!this.exposeQaMetrics) return;
+    const now = performance.now();
+    if (now - this.lastSelectedDatasetWriteAt < qaSelectedDatasetWriteMs) return;
+    const snapshot = this.scene?.getSelectedSpiritAnimationSnapshot();
+    if (!snapshot) return;
+    this.lastSelectedDatasetWriteAt = now;
+    this.app.canvas.dataset.selectedSpiritVisible = snapshot.visible ? "true" : "false";
+    this.app.canvas.dataset.selectedSpiritBodyY = String(snapshot.bodyY);
+    this.app.canvas.dataset.selectedSpiritScale = String(snapshot.scale);
+  }
+
+  private scheduleStaticCacheRefresh() {
+    window.clearTimeout(this.staticCacheRefreshTimer);
+    this.staticCacheRefreshTimer = window.setTimeout(() => {
+      if (this.interactionActive || this.pointerDragging) return;
+      this.refreshPendingStaticCache();
+      this.app?.render();
+    }, 520);
+  }
+
+  private setGlobalInteractionActive(active: boolean) {
+    (window as GrowthIslandWindow).__growthIslandMapInteractionActive = active;
+    if (!active) window.dispatchEvent(new CustomEvent("growth-island-interaction-idle"));
   }
 
   private setRenderResolution(resolution: number, force = false) {
@@ -234,8 +362,10 @@ export class PixiWorld {
 
   destroy() {
     this.disposed = true;
+    this.setGlobalInteractionActive(false);
     window.clearTimeout(this.idleTimer);
     window.clearTimeout(this.interactionTimer);
+    window.clearTimeout(this.staticCacheRefreshTimer);
     this.interactions.destroy();
     this.app?.ticker.remove(this.tick);
     this.scene?.destroy();

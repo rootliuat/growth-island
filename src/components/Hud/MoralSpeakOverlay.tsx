@@ -93,7 +93,6 @@ export function MoralSpeakOverlay({ child, spirit, state, onStart, onStop, onRet
           <button type="button" className="moral-mic-button" onClick={() => onStart()} aria-label={`${child.name} 开始说成长`}>
             <span className="energy-touch-halo" aria-hidden="true" style={{ pointerEvents: "none" }} />
             <Mic size={42} />
-            <span>说成长</span>
           </button>
         </>
       ) : null}

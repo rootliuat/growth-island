@@ -891,3 +891,279 @@ P2:
 - Home QA loaded P16 props `31/31`; P16 prop size was `0.19 MB`; home WebP budget stayed at `6.56 MB`.
 - Latest trial asset report: `qa-artifacts/latest/trial-assets-report.json`, P16 prop budget passed and hidpi runtime remained `2.97 MB`.
 - Manual screenshots inspected: `qa-artifacts/latest/home-whiteboard.png` and `assets/generated/map-3d-props/p16/p16-map-3d-props-qa.png`.
+
+## P17 child self-selection and island hotspot closure
+
+### Scope
+
+- Made the main island props participate in the child self-service loop instead of only adding more scenery.
+- Kept product scope unchanged: no backend, XP, ledger, data file, parent, reviewer, kindergarten admin, PDF export, approval flow, accounts, permissions, cloud sync, queue algorithm, or PixiJS map rewrite.
+- Kept children in control: the next child still self-selects their own spirit after the prior confirmation returns to idle.
+
+### Implementation Notes
+
+- Added a focused map interaction type, `self-service`, for props that should start the current child's growth-speaking loop.
+- Wired only two growth-area props as self-service hotspots: `p15-growth-tree` and `p16-growth-heart`.
+- Left shop and honor props on their existing routes, so shop props still open `shop` and honor props still open `leaderboard`.
+- Added small non-text Pixi hotspot dots only to four representative props, `p15-growth-tree`, `p16-growth-heart`, `p15-shop-chest`, and `p16-honor-bell-tower`, so the island reads as touchable without adding another text panel or cluttering every prop.
+- Connected Pixi `self-service` taps back to the existing `focusChildOnHome(childId, { prepareMoralSpeak: true })` path, so the same ready/listening/review/success state machine is reused.
+- Tightened bottom spirit dock language to `点我说` and added QA data markers for dock self-service entries.
+- Added runtime canvas metadata for self-service hotspot count and ids, which lets visual QA prove the map is wired.
+- Added a QA-only island hotspot hook that reuses the same self-service function and does not change production data or business logic.
+
+### Validation
+
+- `node --check scripts/qa-visual.mjs`: passed.
+- `git diff --check`: passed.
+- `npm run build`: passed.
+- `QA_CHECKS=home,moral-speak-flow,classroom-touch-loop npm run qa:visual`: passed.
+- Latest visual QA report: `qa-artifacts/latest/report.json`.
+- P17 QA coverage: home whiteboard/ultra, moral-speak whiteboard/mobile, classroom-touch-loop whiteboard; all reported 0 issues and 0 warnings.
+- Home QA confirmed dock self-service entry exists and runtime map self-service hotspots are `p16-growth-heart,p15-growth-tree`.
+- Moral-flow QA confirmed the island hotspot enters `ready`, dock selection enters `ready` for 3 children, and the classroom loop enters `ready` for 10 children.
+- Manual screenshots inspected: `qa-artifacts/latest/home-whiteboard.png`, `qa-artifacts/latest/moral-speak-flow-ready-whiteboard.png`, and `qa-artifacts/latest/moral-speak-flow-whiteboard.png`.
+
+## P17 runtime clarity and touch performance patch
+
+### Scope
+
+- Responded to large-screen feedback that the home map looked blurry and felt laggy after zooming or dragging.
+- Kept product scope unchanged: no backend, XP, data, queue, parent, reviewer, kindergarten admin, PDF, account, permission, or PixiJS map rewrite.
+- Preserved the P15/P16 model-derived island props and the P17 child self-service hotspot loop.
+
+### Implementation Notes
+
+- Confirmed the blur was caused by interactive Pixi render resolution dropping to `0.46x` on a whiteboard-size canvas.
+- Raised interaction render quality so whiteboard drag/wheel states stay around `0.78x` instead of `0.46x`, then return to `1.00x` after the interaction settles.
+- Shortened post-interaction wake time so one wheel/touch event no longer keeps the full whiteboard canvas rendering for about two seconds.
+- Lowered active Pixi ticker cap to reduce main-thread pressure during large-canvas interaction.
+- Changed baked P15/P16 map props from all-at-once loading to staged loading: key growth/shop/honor props appear first, remaining decorative props load in a short stagger.
+- Strengthened visual QA to fail if interaction render resolution drops back toward the old low-resolution path.
+
+### Validation
+
+- Reproduced the issue with a whiteboard viewport: drag render backing was `0.46x` before the patch.
+- After the patch, wheel/touch interaction backing is `0.78x` and idle backing returns to `1.00x`.
+- Targeted wheel/stillness sample improved from about `8.3 FPS` to about `49-50 FPS` in the headless whiteboard check.
+- Continuous drag remains heavier in headless software rendering, about `13 FPS`; it should be rechecked on the physical classroom display/GPU before adding more main-map effects.
+- `node --check scripts/qa-visual.mjs`: passed.
+- `git diff --check`: passed.
+- `npm run build`: passed.
+- `QA_CHECKS=home npm run qa:visual`: passed with 0 issues and 0 warnings on home whiteboard/ultra.
+- Memory check, development home page: JS heap about `25-34 MB`; Vite dev server about `370 MB RSS`; local API about `67 MB RSS`.
+- Memory check, production preview home page: JS heap about `18-20 MB`; headless Chrome process tree about `1.79 GB RSS`, dominated by software GPU/renderer processes.
+
+## P17.1 active interaction QA and low-power drag patch
+
+### Scope
+
+- Tightened the performance validation for the previously reported blurry and laggy large-screen map.
+- Kept product scope unchanged: no backend, XP, data, queue, parent, reviewer, kindergarten admin, PDF, account, permission, or PixiJS map rewrite.
+- Preserved the child self-service loop, map hotspots, dock behavior, teacher confirmation card, and 3D prop scenery.
+
+### Implementation Notes
+
+- Replaced optimistic wheel FPS sampling with a true short active-window metric, so QA no longer reports only the post-idle recovery state.
+- Added active drag FPS measurement to home QA.
+- Added `home-performance-soak` visual QA for sustained whiteboard dragging, with configurable `QA_SOAK_MS` and `QA_SOAK_SAMPLE_MS`.
+- Changed Pixi pointer handling so hover movement no longer wakes the full map renderer.
+- Changed mouse wheel over the map to only prevent page scrolling; it no longer resizes or wakes Pixi because zoom is controlled by the map buttons.
+- Added sustained drag low-power mode: active drag uses `drag-low-power` render resolution, then returns to `1.00x` after release.
+- Exposed `data-interaction-mode` on the Pixi canvas so QA can distinguish idle, wheel, touch, and low-power drag states.
+
+### Validation
+
+- New active home QA first reproduced the hidden issue:
+  - Before low-power drag: whiteboard active drag about `8.3 FPS`, ultra active drag about `6.4 FPS`.
+  - Before wheel simplification: whiteboard active wheel about `10.3 FPS`.
+- After low-power drag and wheel simplification:
+  - `QA_CHECKS=home npm run qa:visual`: home whiteboard reported 0 issues and 0 warnings.
+  - Home ultra still reports headless warnings near the extreme viewport: wheel about `17.5 FPS`, drag about `16.2 FPS`; idle returns to `1.00x`.
+- `QA_CHECKS=home-performance-soak QA_SOAK_MS=120000 QA_SOAK_SAMPLE_MS=10000 npm run qa:visual`: passed with 0 issues and 0 warnings.
+- Two-minute soak result: sustained whiteboard drag about `18 FPS`, max frame gap about `183.4 ms`, JS heap delta `0 MB`, low-power drag resolution `0.60x`, release returns to `1.00x`.
+- `QA_CHECKS=moral-speak-flow,classroom-touch-loop npm run qa:visual`: passed with 0 issues and 0 warnings across moral-speak whiteboard/mobile and classroom-touch-loop whiteboard.
+- `node --check scripts/qa-visual.mjs`: passed.
+- `git diff --check`: passed.
+- `npm run build`: passed with the existing `three.module` large chunk warning.
+
+## P17.2 drag flicker and sustained touch stability patch
+
+### Scope
+
+- Responded to the observed issue that moving around the island could flash during touch/drag.
+- Kept product scope unchanged: no backend, XP, data, queue, parent, reviewer, kindergarten admin, PDF, account, permission, or PixiJS map rewrite.
+- Preserved all P15/P16 island model props and the P17 child self-service loop.
+
+### Implementation Notes
+
+- Removed dynamic drag-time renderer resolution switching. The canvas no longer jumps between crisp and low-power backing sizes while a child or teacher drags the map.
+- Changed large-screen base render resolution to a stable `0.95-0.96x` range instead of switching down during drag; this keeps the map visually close to crisp while reducing large whiteboard pixel pressure.
+- Cached static Pixi layers: ocean, island, regions, paths, decorations, and labels. Homes, spirits, effects, and stateful interaction remain dynamic.
+- During drag, the label cache is temporarily not rendered, then restored after idle, reducing text-layer cost without hiding the dock or DOM controls.
+- Delayed async asset loading, sprite mounting, and static-cache refresh while the map is actively being dragged. This prevents delayed WebP decode/mount work from causing visible drag-time flashes.
+- Added QA metrics for active drag/wheel, sustained soak, render-resolution stability, interaction mode, P95/P99 frame gaps, heap delta, and dock/map self-service markers.
+- Fixed a repeated moral-speak timer cleanup issue where executed timer ids stayed in the ref and could affect later children in a long classroom loop.
+- Hardened visual QA around dock visibility and handoff feedback so it reads the actual visible dock entry and does not miss a feedback message that was already observed during success-to-idle handoff.
+
+### Validation
+
+- `node --check scripts/qa-visual.mjs`: passed.
+- `git diff --check`: passed.
+- `npm run build`: passed with the existing `three.module` large chunk warning.
+- `QA_CHECKS=home npm run qa:visual`: home whiteboard reported 0 issues; latest run had one headless warning, active drag about `16.6 FPS`. Home ultra remains a headless stress viewport with drag warnings.
+- `QA_CHECKS=moral-speak-flow npm run qa:visual`: whiteboard and mobile passed with 0 issues and 0 warnings.
+- `QA_CHECKS=classroom-touch-loop npm run qa:visual`: whiteboard passed with 0 issues and 0 warnings after the timer cleanup fix.
+- `QA_CHECKS=home-performance-soak QA_SOAK_MS=120000 QA_SOAK_SAMPLE_MS=10000 npm run qa:visual`: passed with 0 issues and one average-FPS warning.
+- Final two-minute soak result: average `15.9 FPS` in headless, P95 frame gap `83.3 ms`, P99 frame gap `116.7 ms`, max single outlier `866.7 ms`, JS heap delta `0 MB`, render resolution stable at `0.96x`, and release returned to idle.
+- The remaining warning is a headless/software-rendering average FPS warning, not a render-resolution drop or memory leak. Recheck on the physical classroom display/GPU before adding more live main-map effects.
+
+## P17.3 icon-only mic and touch drag detail shedding patch
+
+### Scope
+
+- Responded to three latest whiteboard observations: map movement still feels laggy, the bottom module dock disappeared during the prepared speaking state, and the microphone button should not show text inside the circle.
+- Kept product scope unchanged: no backend, XP, data, queue, parent, reviewer, kindergarten admin, PDF, account, permission, or PixiJS map rewrite.
+- Preserved the P15/P16 island props and P17 child self-service loop.
+
+### Implementation Notes
+
+- Kept the AppShell bottom module dock visible through ready/listening/review/success moral-speak stages, so zooming or preparing to speak no longer leaves an empty bottom strip.
+- Removed the visible `说成长` text from the circular microphone button while keeping its accessible `aria-label` as the action label.
+- Updated moral-flow QA so it now expects an icon-only mic on screen and verifies the accessible label instead of visible button copy.
+- Added drag-time detail shedding: while the map is actively being dragged, Pixi pauses decoration props, labels, and effects, then restores them when interaction returns to idle.
+- Kept render resolution stable at `0.95-0.96x`; this patch does not reintroduce drag-time canvas resize, avoiding the earlier flash path.
+- Tested disabling static layer caching entirely; it made drag performance worse, so the static cache remains enabled for ocean, island, regions, paths, and decorations.
+
+### Validation
+
+- `npm run typecheck`: passed.
+- `npm run build`: passed with the existing `three.module` large chunk warning.
+- `git diff --check`: passed.
+- `QA_CHECKS=home npm run qa:visual`: passed with 0 issues. Whiteboard active drag improved to about `19 FPS`; ultra active drag remains a headless stress warning at about `11 FPS`.
+- `QA_CHECKS=moral-speak-flow npm run qa:visual`: whiteboard and mobile passed with 0 issues and 0 warnings.
+- Ready-state screenshot inspected: `qa-artifacts/latest/moral-speak-flow-ready-whiteboard.png`; the bottom module dock is visible and the mic circle is icon-only.
+
+## P17.4 whiteboard drag stability and cache-thrash patch
+
+### Scope
+
+- Responded to the latest classroom-readiness concern: the island still felt too laggy for normal use, moving around the island could flash, and the selected spirit appeared frozen during drag.
+- Kept product scope unchanged: no backend, XP, data, queue, parent, reviewer, kindergarten admin, PDF, account, permission, or PixiJS map rewrite.
+- Preserved P15/P16 island props while reducing their runtime loading/cache impact.
+
+### Implementation Notes
+
+- Reverted the drag-time hiding of decorations, labels, and effects. The map no longer flashes because visual layers stay renderable during movement.
+- Kept the selected spirit breathing/floating during active drag with a lightweight selected-only update path, so it no longer looks stuck while the map is moving.
+- Added medium active-interaction render resolution: large screens temporarily render at about `0.78x`, ultra at about `0.72x`, then return to `0.95-0.96x` after release. This avoids the old severe blur while restoring touch smoothness.
+- Changed static cache refresh after asset loads from immediate per-asset rebuilds to a `520ms` debounce. Multiple delayed image loads now collapse into one cache refresh instead of repeatedly rebuilding the large static map texture.
+- Changed legacy decoration loading from one `8.5s` burst to a staggered queue starting at `5.2s`, stepping by `220ms`, reducing late decode/cache spikes.
+- Kept JS heap monitoring in QA. Latest samples show the issue is not memory growth; heap stays stable around `30MB` with `0MB` delta in the soak run.
+- Tried enabling Pixi viewport wheel zoom, but it worsened active wheel and ultra drag. That experiment was reverted; right-side zoom buttons remain the intended classroom zoom control.
+
+### Validation
+
+- `npm run typecheck`: passed.
+- `node --check scripts/qa-visual.mjs`: passed.
+- `QA_CHECKS=home npm run qa:visual`: whiteboard passed with 0 issues; idle and drag warnings cleared. One synthetic wheel warning remains.
+- `QA_CHECKS=home-performance-soak QA_SOAK_MS=30000 npm run qa:visual`: whiteboard sustained drag passed with 0 issues and 0 warnings.
+- `QA_CHECKS=moral-speak-flow,classroom-touch-loop npm run qa:visual`: whiteboard/mobile moral-speak and classroom touch loop passed with 0 issues and 0 warnings.
+- Remaining risk: ultra `2560x1440` headless stress viewport still reports active drag/wheel warnings. Treat it as a stress case until tested on the actual classroom display/GPU.
+
+## P17.5 map overlay and prop readability cleanup
+
+### Scope
+
+- Responded to the latest visual review screenshots where close zoom showed debug-like blue region outlines/dots and non-current spirit fallback faces crowding nearby homes.
+- Also removed the most out-of-style baked 3D props from the main classroom island: high-saturation blue/orange village houses, the black tower, and the stray pearl-bay blue gem.
+- Kept product scope unchanged: no backend, XP, data, queue, parent, reviewer, kindergarten admin, PDF, account, permission, or PixiJS map rewrite.
+
+### Implementation Notes
+
+- Changed virtue region energy feedback from full-region polygon strokes and scattered dots to a small badge-local aura. It now reads as growth energy feedback instead of a debug selection layer.
+- Hidden non-selected spirits once the camera is in close home focus, so only the selected child's spirit stays visible and floating.
+- Added a baked-prop rejection list in `DecorationLayer.ts` so problematic model-derived props are not requested or mounted at runtime.
+- Updated visual QA thresholds from "all generated props must load" to "accepted visible map props must be present": at least 24 P15 and 24 P16 props.
+- Kept the semantic hotspots that matter for the child self-service loop, shop, and honor routes.
+
+### Validation
+
+- `npm run typecheck`: passed.
+- `node --check scripts/qa-visual.mjs`: passed.
+- `node --check scripts/check-trial-assets.mjs`: passed.
+- `npm run build`: passed with the existing `three.module` large chunk warning.
+- `QA_CHECKS=home npm run qa:visual`: whiteboard/ultra passed with 0 issues; home whiteboard kept 24 P15 and 24 P16 accepted map props, whiteboard drag sampled about `20.7 FPS`, and idle render resolution returned to `0.96x`.
+- `QA_CHECKS=moral-speak-flow,classroom-touch-loop npm run qa:visual`: whiteboard/mobile moral-speak and classroom touch loop passed with 0 issues and 0 warnings.
+- Close-zoom screenshots inspected: `qa-artifacts/latest/home-close-anan-after-cleanup.png` and `qa-artifacts/latest/home-close-qingqing-after-cleanup.png`.
+- Remaining risk: synthetic headless wheel still reports low FPS/frame-gap warnings. The visible close-zoom artifacts are removed; physical whiteboard testing is still needed for final touch-smoothness acceptance.
+
+## P17.6 selected spirit idle motion patch
+
+### Scope
+
+- Responded to the latest close-zoom observation that the selected spirit looked stuck and no longer had a clear up/down floating effect.
+- Kept product scope unchanged: no backend, XP, data, queue, parent, reviewer, kindergarten admin, PDF, account, permission, or PixiJS map rewrite.
+
+### Implementation Notes
+
+- Added a focused-view idle animation mode in `PixiWorld.ts`: after the map settles on a selected child, Pixi keeps a low-cost `24fps` loop running only for the selected spirit.
+- `WorldScene.ts` now supports a selected-idle update path that skips region, home, decoration, and effect animation work.
+- Increased close-focus selected spirit floating amplitude in `SpiritLayer.ts`, so the selected spirit visibly breathes/floats while waiting for the child to speak.
+- Exposed lightweight canvas QA markers: `data-selected-idle-animation`, `data-selected-spirit-body-y`, and `data-selected-spirit-visible`.
+
+### Validation
+
+- Manual Playwright sampling after focused idle showed `data-render-state="idle-animating"` and selected spirit `bodyY` changing over time, for example `-7.93 -> -0.07 -> -3.45`.
+- `npm run typecheck`: passed.
+- `npm run build`: passed with the existing `three.module` large chunk warning.
+- `QA_CHECKS=home npm run qa:visual`: whiteboard/ultra passed with 0 issues; remaining warnings are the existing headless wheel/FPS warnings.
+- `QA_CHECKS=moral-speak-flow,classroom-touch-loop npm run qa:visual`: whiteboard/mobile moral-speak and classroom touch loop passed with 0 issues and 0 warnings.
+
+## P17.7 crisp touch performance patch
+
+### Scope
+
+- Responded to the agent review and classroom feedback that the map still felt carded during island movement, while the fix must not rely on lowering render clarity.
+- Kept product scope unchanged: no backend, XP, data, queue, parent, reviewer, kindergarten admin, PDF, account, permission, or PixiJS map rewrite.
+
+### Implementation Notes
+
+- Removed the remaining active drag/wheel render downsampling path. Home map active and settled states now keep `1x` render/backing resolution.
+- Raised home visual QA render-resolution gates to `0.99` for both active interaction and settled idle states so future patches cannot silently trade clarity for FPS.
+- Changed mouse wheel over the map to only prevent page scrolling. Wheel no longer wakes Pixi or resizes the renderer; classroom zoom remains on the map zoom buttons.
+- Throttled pointer-move wake work and capped active Pixi ticking at `30fps`, reducing input-loop pressure without lowering canvas resolution.
+- Stopped delayed asset loads from repeatedly waking the full map ticker. Asset loads now only mark the static cache dirty, then merge cache refreshes and render once when idle.
+- Merged ocean, island, region, path, and decoration layers under one `staticRoot` cache at `1x`, reducing large static texture draw count while keeping native clarity.
+- Changed region-energy cache refresh to run only when region energy content changes, rather than on every selected-child/data update.
+- Limited selected-spirit body position dataset writes to QA URLs and at most every `120ms`; production no longer writes those animation metrics every frame.
+
+### Validation
+
+- `npm run typecheck`: passed.
+- `npm run build`: passed with the existing `three.module` large chunk warning.
+- `QA_CHECKS=home npm run qa:visual`: whiteboard and ultra passed with 0 issues. Whiteboard passed with 0 warnings; active drag sampled `23 FPS`, wheel sampled `61.8 FPS`, and active/settled backing stayed at `1x`. Ultra remains a headless stress viewport with active drag warning at `17.1 FPS`.
+- `QA_CHECKS=home-performance-soak QA_SOAK_MS=120000 QA_SOAK_SAMPLE_MS=10000 npm run qa:visual`: passed with 0 issues and 0 warnings. Two-minute sustained drag averaged `25.5 FPS`, P95/P99 frame gap `50.1 ms`, JS heap delta `0 MB`, and all samples stayed at `1x` render/backing resolution.
+- `QA_CHECKS=moral-speak-flow,classroom-touch-loop npm run qa:visual`: whiteboard/mobile moral-speak and classroom touch loop passed with 0 issues and 0 warnings.
+- Manual Playwright selected-idle sampling after focusing the current spirit showed `data-render-state="idle-animating"` and bodyY changing over time, for example `-4.45 -> -9.69 -> -0.05`.
+
+## P18.1 profile cabin unique 2D spirit stage
+
+### Scope
+
+- Changed the spirit cabin main stage so each child is represented by their own generated 2D spirit thumbnail, rather than one of the shared safe 3D spirit models.
+- Kept the cabin product scope unchanged: no backend, XP, ledger, data, moral-speak, microphone chat, account, permission, PDF, approval, or parent/reviewer/admin work.
+
+### Implementation Notes
+
+- `ChildProfileModule.tsx` now renders the selected child's `getSpiritAsset(...)` result as the cabin's primary spirit, with `data-spirit-id` and `data-spirit-state` markers for QA.
+- The 3D layer is reduced to a small passive star prop in the cabin corner. It uses the existing reward 3D preview, does not intercept pointer input, and no longer reads as the child's identity.
+- Added a small floating motion, aura, and floor shadow around the 2D spirit, with `prefers-reduced-motion` disabling the animation.
+- Fixed the mobile profile layout so the cabin stage stays within the viewport instead of centering the spirit inside an oversized grid track.
+- Updated profile visual QA to require a unique 2D spirit main visual and passive cabin atmosphere prop, replacing the old "3D cabin stage" requirement.
+
+### Validation
+
+- `npm run typecheck`: passed.
+- `npm run build`: passed with the existing `three.module` large chunk warning.
+- `QA_CHECKS=child-profile,mobile-child-profile npm run qa:visual`: whiteboard and mobile passed with 0 issues and 0 warnings.
+- Screenshots inspected: `qa-artifacts/latest/child-profile-whiteboard.png` and `qa-artifacts/latest/mobile-child-profile-mobile.png`.

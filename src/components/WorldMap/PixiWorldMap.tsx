@@ -22,10 +22,22 @@ interface PixiWorldMapProps {
   onOpenDialogue?: () => void;
   onOpenPk?: () => void;
   onOpenModule?: (moduleId: "shop" | "leaderboard" | "child-profile") => void;
+  onPrepareMoralSpeak?: () => void;
 }
 
 export const PixiWorldMap = forwardRef<PixiWorldMapHandle, PixiWorldMapProps>(function PixiWorldMap(
-  { childrenWithProgress, spiritsById, selectedChildId, recentLedger, assetVersion, onSelectChild, onOpenDialogue, onOpenPk, onOpenModule },
+  {
+    childrenWithProgress,
+    spiritsById,
+    selectedChildId,
+    recentLedger,
+    assetVersion,
+    onSelectChild,
+    onOpenDialogue,
+    onOpenPk,
+    onOpenModule,
+    onPrepareMoralSpeak,
+  },
   ref,
 ) {
   const hostRef = useRef<HTMLDivElement | null>(null);
@@ -34,6 +46,7 @@ export const PixiWorldMap = forwardRef<PixiWorldMapHandle, PixiWorldMapProps>(fu
   const onOpenDialogueRef = useRef(onOpenDialogue);
   const onOpenPkRef = useRef(onOpenPk);
   const onOpenModuleRef = useRef(onOpenModule);
+  const onPrepareMoralSpeakRef = useRef(onPrepareMoralSpeak);
   const previousSelectedChildIdRef = useRef(selectedChildId);
 
   useEffect(() => {
@@ -41,7 +54,8 @@ export const PixiWorldMap = forwardRef<PixiWorldMapHandle, PixiWorldMapProps>(fu
     onOpenDialogueRef.current = onOpenDialogue;
     onOpenPkRef.current = onOpenPk;
     onOpenModuleRef.current = onOpenModule;
-  }, [onOpenDialogue, onOpenModule, onOpenPk, onSelectChild]);
+    onPrepareMoralSpeakRef.current = onPrepareMoralSpeak;
+  }, [onOpenDialogue, onOpenModule, onOpenPk, onPrepareMoralSpeak, onSelectChild]);
 
   const mapData = useMemo(
     () => buildWorldMapData({ childrenWithProgress, spiritsById, selectedChildId, recentLedger }),
@@ -63,6 +77,7 @@ export const PixiWorldMap = forwardRef<PixiWorldMapHandle, PixiWorldMapProps>(fu
       onOpenDialogue: () => onOpenDialogueRef.current?.(),
       onOpenPk: () => onOpenPkRef.current?.(),
       onOpenModule: (moduleId) => onOpenModuleRef.current?.(moduleId),
+      onPrepareMoralSpeak: () => onPrepareMoralSpeakRef.current?.(),
     });
     worldRef.current = world;
     let cancelled = false;

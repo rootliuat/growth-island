@@ -13,10 +13,14 @@ export type LayerName =
 
 export class LayerManager {
   readonly root = new Container();
+  readonly staticRoot = new Container();
   readonly layers = new Map<LayerName, Container>();
 
   constructor() {
     let actorLayer: Container | undefined;
+    const staticLayerNames = new Set<LayerName>(["ocean", "island", "regions", "paths", "decorations"]);
+    this.staticRoot.label = "static-map";
+    this.root.addChild(this.staticRoot);
     ([
       "ocean",
       "island",
@@ -39,7 +43,8 @@ export class LayerManager {
         actorLayer = layer;
       }
       this.layers.set(name, layer);
-      this.root.addChild(layer);
+      if (staticLayerNames.has(name)) this.staticRoot.addChild(layer);
+      else this.root.addChild(layer);
     });
   }
 

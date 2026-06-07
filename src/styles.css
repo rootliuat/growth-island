@@ -12666,10 +12666,8 @@ button {
   display: grid;
   width: 114px;
   height: 114px;
-  grid-template-rows: 1fr auto;
   place-items: center;
-  gap: 2px;
-  padding: 18px 0 14px;
+  padding: 0;
   border: 2px solid rgba(24, 35, 31, 0.16);
   border-radius: 50%;
   color: #18231f;
@@ -12693,6 +12691,8 @@ button {
 .moral-mic-button svg {
   position: relative;
   z-index: 1;
+  width: 48px;
+  height: 48px;
 }
 
 .energy-touch-halo {
@@ -16975,6 +16975,28 @@ button {
   background: #dff2ea;
 }
 
+.profile-spirit-showcase {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  width: min(92%, 318px);
+  min-height: 204px;
+  place-items: center;
+  isolation: isolate;
+}
+
+.profile-spirit-aura {
+  position: absolute;
+  width: 178px;
+  height: 178px;
+  border: 1px solid color-mix(in srgb, var(--profile-spirit-accent, #f6b352) 44%, #fffdf4);
+  border-radius: 999px;
+  background:
+    radial-gradient(circle, rgba(255, 253, 244, 0.78) 0 42%, transparent 64%),
+    radial-gradient(circle, color-mix(in srgb, var(--profile-spirit-accent, #f6b352) 28%, transparent) 0 48%, transparent 70%);
+  opacity: 0.86;
+}
+
 .profile-page .profile-portrait {
   position: relative;
   z-index: 2;
@@ -16983,6 +17005,107 @@ button {
   border-width: 1px;
   border-radius: 38px;
   box-shadow: 0 14px 0 rgba(214, 177, 106, 0.16);
+}
+
+.profile-page .profile-spirit-main {
+  display: grid;
+  width: clamp(178px, 18vw, 232px);
+  height: clamp(178px, 18vw, 232px);
+  place-items: center;
+  overflow: visible;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  animation: profile-spirit-float 3.2s ease-in-out infinite;
+}
+
+.profile-page .profile-spirit-main img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 16px 10px rgba(23, 76, 90, 0.14));
+}
+
+.profile-page .profile-spirit-main span {
+  display: grid;
+  width: 118px;
+  height: 118px;
+  place-items: center;
+  border-radius: 32px;
+  color: #174c5a;
+  background: #fffdf4;
+  font-size: 46px;
+  font-weight: 950;
+}
+
+.profile-spirit-shadow {
+  position: absolute;
+  z-index: 1;
+  bottom: 26px;
+  width: 150px;
+  height: 28px;
+  border-radius: 999px;
+  background: rgba(122, 91, 50, 0.18);
+  filter: blur(1px);
+  transform: scaleX(1);
+  animation: profile-spirit-shadow 3.2s ease-in-out infinite;
+}
+
+.profile-cabin-prop-3d {
+  position: absolute;
+  z-index: 3;
+  right: 12px;
+  bottom: 30px;
+  width: 62px;
+  height: 62px;
+  pointer-events: none;
+}
+
+.profile-cabin-reward-stage {
+  width: 62px;
+  height: 62px;
+  min-height: 62px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  pointer-events: none;
+}
+
+.profile-cabin-reward-stage::after,
+.profile-cabin-reward-stage .model-stage-loader {
+  display: none;
+}
+
+@keyframes profile-spirit-float {
+  0%,
+  100% {
+    transform: translate3d(0, 2px, 0);
+  }
+
+  50% {
+    transform: translate3d(0, -8px, 0);
+  }
+}
+
+@keyframes profile-spirit-shadow {
+  0%,
+  100% {
+    opacity: 0.2;
+    transform: scaleX(1);
+  }
+
+  50% {
+    opacity: 0.12;
+    transform: scaleX(0.84);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .profile-page .profile-spirit-main,
+  .profile-spirit-shadow {
+    animation: none;
+  }
 }
 
 .profile-cabin-floor {
@@ -17186,6 +17309,8 @@ button {
 
 @media (max-width: 720px) {
   .profile-page {
+    display: flex;
+    flex-direction: column;
     align-content: start;
     overflow: auto;
     padding-bottom: 96px;
@@ -17203,12 +17328,17 @@ button {
     display: flex;
     flex-direction: column;
     align-items: stretch;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
   }
 
   .profile-page .profile-story-panel,
   .profile-page .profile-roster-panel,
   .profile-page .profile-insight-panel {
+    box-sizing: border-box;
     flex: 0 0 auto;
+    min-width: 0;
     width: 100%;
     max-width: 100%;
   }
@@ -17219,6 +17349,7 @@ button {
     align-content: start;
     flex: 0 0 auto;
     min-height: 430px;
+    min-width: 0;
     width: 100%;
     max-width: 100%;
     overflow: visible;
@@ -17226,15 +17357,44 @@ button {
   }
 
   .profile-cabin-stage {
+    box-sizing: border-box;
+    min-width: 0;
     width: 100%;
     max-width: 100%;
     min-height: 218px;
+  }
+
+  .profile-spirit-showcase {
+    width: min(100%, 280px);
+    min-height: 188px;
   }
 
   .profile-page .profile-portrait {
     width: 142px;
     height: 142px;
     border-radius: 32px;
+  }
+
+  .profile-page .profile-spirit-main {
+    width: 178px;
+    height: 178px;
+  }
+
+  .profile-spirit-aura {
+    width: 148px;
+    height: 148px;
+  }
+
+  .profile-spirit-shadow {
+    bottom: 24px;
+    width: 124px;
+  }
+
+  .profile-cabin-prop-3d,
+  .profile-cabin-reward-stage {
+    width: 52px;
+    height: 52px;
+    min-height: 52px;
   }
 
   .profile-page .profile-hero-card h2 {
@@ -20688,10 +20848,10 @@ button {
 }
 
 .home-screen-shell:has(.world-map-shell:is(.moral-stage-ready, .moral-stage-listening, .moral-stage-recognizing, .moral-stage-pendingReview, .moral-stage-success)) .shell-module-dock {
-  opacity: 0;
-  pointer-events: none;
-  transform: translateY(8px);
-  visibility: hidden;
+  opacity: 1;
+  pointer-events: auto;
+  transform: none;
+  visibility: visible;
 }
 
 .home-screen-shell .world-map-shell:is(.moral-stage-ready, .moral-stage-listening, .moral-stage-recognizing, .moral-stage-pendingReview, .moral-stage-success) .map-companion-actions,
@@ -21856,19 +22016,6 @@ button {
   display: none;
 }
 
-.profile-page .profile-3d-cabin-stage {
-  z-index: 2;
-  width: min(92%, 268px);
-  height: 198px;
-  min-height: 198px;
-  border-color: rgba(255, 253, 244, 0.72);
-  border-radius: 22px;
-  background:
-    radial-gradient(circle at 50% 84%, rgba(255, 253, 244, 0.78), transparent 44%),
-    linear-gradient(180deg, rgba(135, 216, 208, 0.24), rgba(255, 240, 191, 0.2));
-  box-shadow: 0 14px 0 rgba(214, 177, 106, 0.14);
-}
-
 .shop-page .shop-intent-card {
   grid-template-columns: 84px 28px minmax(0, 1fr) auto;
   min-height: 98px;
@@ -21959,12 +22106,6 @@ button {
 }
 
 @media (max-width: 720px) {
-  .profile-page .profile-3d-cabin-stage {
-    width: min(94%, 224px);
-    height: 164px;
-    min-height: 164px;
-  }
-
   .shop-page .shop-intent-card {
     grid-template-columns: 60px 28px minmax(0, 1fr);
     min-height: 82px;
