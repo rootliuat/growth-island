@@ -17054,18 +17054,20 @@ button {
 
 .profile-cabin-prop-3d {
   position: absolute;
-  z-index: 3;
-  right: 12px;
-  bottom: 30px;
-  width: 62px;
-  height: 62px;
+  z-index: 1;
+  left: 54%;
+  bottom: 2px;
+  width: 150px;
+  height: 116px;
+  opacity: 0.48;
+  transform: translateX(-50%);
   pointer-events: none;
 }
 
 .profile-cabin-reward-stage {
-  width: 62px;
-  height: 62px;
-  min-height: 62px;
+  width: 150px;
+  height: 116px;
+  min-height: 116px;
   border: 0;
   background: transparent;
   box-shadow: none;
@@ -17392,9 +17394,13 @@ button {
 
   .profile-cabin-prop-3d,
   .profile-cabin-reward-stage {
-    width: 52px;
-    height: 52px;
-    min-height: 52px;
+    width: 118px;
+    height: 94px;
+    min-height: 94px;
+  }
+
+  .profile-cabin-prop-3d {
+    bottom: 4px;
   }
 
   .profile-page .profile-hero-card h2 {

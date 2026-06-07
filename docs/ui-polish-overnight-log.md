@@ -1167,3 +1167,22 @@ P2:
 - `npm run build`: passed with the existing `three.module` large chunk warning.
 - `QA_CHECKS=child-profile,mobile-child-profile npm run qa:visual`: whiteboard and mobile passed with 0 issues and 0 warnings.
 - Screenshots inspected: `qa-artifacts/latest/child-profile-whiteboard.png` and `qa-artifacts/latest/mobile-child-profile-mobile.png`.
+
+## P18.2 profile cabin stage atmosphere cleanup
+
+### Scope
+
+- Responded to the visual review that the red-boxed cabin star prop looked like an unclear tiny object beside the child's spirit.
+- Kept the product scope unchanged: no backend, XP, ledger, data, moral-speak, microphone chat, account, permission, PDF, approval, or parent/reviewer/admin work.
+
+### Implementation Notes
+
+- Kept the selected child's unique 2D spirit as the cabin's main identity and largest visual object.
+- Changed the passive 3D reward prop from a small right-corner object into a soft floor-level atmosphere accent behind the spirit.
+- The 3D prop remains non-interactive and hidden from accessibility semantics, so children should read the stage as one spirit with energy glow rather than two competing characters.
+
+### Validation
+
+- `npm run build`: passed with the existing `three.module` large chunk warning.
+- `QA_CHECKS=child-profile,mobile-child-profile npm run qa:visual`: whiteboard and mobile passed with 0 issues and 0 warnings.
+- Screenshot inspected: `qa-artifacts/latest/child-profile-whiteboard.png`.
