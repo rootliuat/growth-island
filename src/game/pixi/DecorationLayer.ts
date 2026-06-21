@@ -30,6 +30,7 @@ const priorityBakedMapPropIds = new Set([
   "p15-honor-star",
   "p16-honor-bell",
 ]);
+const detailPropZoomThreshold = 1.08;
 
 interface DecorationLayerActions {
   onOpenDialogue?: () => void;
@@ -42,6 +43,8 @@ interface DecorationLayerActions {
 export class DecorationLayer {
   private delayedBakedMapPropCount = 0;
   private delayedDecorationCount = 0;
+  private detailPropMode = false;
+  private readonly bakedMapPropRoots: { root: Container; detailOnly: boolean }[] = [];
 
   constructor(
     private readonly layer: Container,
@@ -56,8 +59,9 @@ export class DecorationLayer {
 
   private drawPlacements(placements: V4Placement[]) {
     placements.forEach((placement) => {
-      const isBakedMapProp = placement.id.startsWith("p15-") || placement.id.startsWith("p16-");
+      const isBakedMapProp = placement.id.startsWith("p15-") || placement.id.startsWith("p16-") || placement.id.startsWith("p19-");
       if (isBakedMapProp && hiddenBakedMapPropIds.has(placement.id)) return;
+      const detailOnly = isBakedMapProp && !placement.interactive && !priorityBakedMapPropIds.has(placement.id);
       const root = addAssetSprite(this.layer, {
         id: placement.id,
         url: placement.url,
@@ -71,6 +75,10 @@ export class DecorationLayer {
         zIndex: placement.zIndex,
         loadDelayMs: this.getLoadDelayMs(placement, isBakedMapProp),
       });
+      if (isBakedMapProp) {
+        root.visible = !detailOnly || this.detailPropMode;
+        this.bakedMapPropRoots.push({ root, detailOnly });
+      }
       if (!placement.interactive) return;
       this.addInteractiveHint(root, placement);
       root.eventMode = "static";
@@ -78,6 +86,28 @@ export class DecorationLayer {
       root.hitArea = this.hitAreaFor(placement);
       root.on("pointertap", () => this.activatePlacement(placement));
     });
+  }
+
+  updateZoom(zoom: number) {
+    const nextDetailMode = zoom >= detailPropZoomThreshold;
+    if (nextDetailMode === this.detailPropMode) return false;
+    this.detailPropMode = nextDetailMode;
+    this.bakedMapPropRoots.forEach(({ root, detailOnly }) => {
+      if (!detailOnly) return;
+      root.visible = nextDetailMode;
+    });
+    return true;
+  }
+
+  getLodSnapshot() {
+    const visibleCount = this.bakedMapPropRoots.filter(({ root }) => root.visible).length;
+    const detailOnlyCount = this.bakedMapPropRoots.filter(({ detailOnly }) => detailOnly).length;
+    return {
+      mode: this.detailPropMode ? "detail" : "overview",
+      visibleCount,
+      detailOnlyCount,
+      totalCount: this.bakedMapPropRoots.length,
+    };
   }
 
   private getLoadDelayMs(placement: V4Placement, isBakedMapProp: boolean) {

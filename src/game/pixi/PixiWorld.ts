@@ -65,8 +65,8 @@ export class PixiWorld {
     if (this.app) this.app.ticker.maxFPS = activeMaxFps;
     if (this.app?.canvas) this.app.canvas.dataset.interactionMode = interactionMode;
     this.lastPointerWakeAt = performance.now();
-    this.scheduleInteractionSettle(220);
-    this.wake(pointerWakeMs);
+    this.scheduleInteractionSettle(interactionMode === "wheel" ? 820 : 220);
+    this.wake(interactionMode === "wheel" ? 1180 : pointerWakeMs);
   };
   private readonly handlePointerDown = () => {
     this.pointerDragging = true;
@@ -87,6 +87,14 @@ export class PixiWorld {
   };
   private readonly handleWheelInteraction = (event: WheelEvent) => {
     event.preventDefault();
+    if (!this.camera) return;
+    const wheelDelta = event.deltaMode === WheelEvent.DOM_DELTA_LINE ? event.deltaY * 16 : event.deltaY;
+    const direction = wheelDelta < 0 ? 1 : -1;
+    const magnitude = Math.min(0.18, Math.max(0.04, Math.abs(wheelDelta) / 720));
+    this.viewMode = "manual";
+    this.restoreBaseResolution();
+    this.camera.zoomBy(direction * magnitude);
+    this.wakeFromPointerInteraction("wheel");
   };
   private readonly wakeFromAssetLoad = () => {
     this.pendingStaticCacheRefresh = true;
@@ -333,10 +341,17 @@ export class PixiWorld {
     if (now - this.lastSelectedDatasetWriteAt < qaSelectedDatasetWriteMs) return;
     const snapshot = this.scene?.getSelectedSpiritAnimationSnapshot();
     if (!snapshot) return;
+    const decorationLod = this.scene?.getDecorationLodSnapshot();
     this.lastSelectedDatasetWriteAt = now;
     this.app.canvas.dataset.selectedSpiritVisible = snapshot.visible ? "true" : "false";
     this.app.canvas.dataset.selectedSpiritBodyY = String(snapshot.bodyY);
     this.app.canvas.dataset.selectedSpiritScale = String(snapshot.scale);
+    if (decorationLod) {
+      this.app.canvas.dataset.mapPropLodMode = decorationLod.mode;
+      this.app.canvas.dataset.mapPropVisibleCount = String(decorationLod.visibleCount);
+      this.app.canvas.dataset.mapPropDetailOnlyCount = String(decorationLod.detailOnlyCount);
+      this.app.canvas.dataset.mapPropTotalCount = String(decorationLod.totalCount);
+    }
   }
 
   private scheduleStaticCacheRefresh() {

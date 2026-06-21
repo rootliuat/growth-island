@@ -31,6 +31,7 @@ export class WorldScene {
   readonly layers = new LayerManager();
   readonly ocean: OceanLayer;
   readonly regions: RegionLayer;
+  readonly decorations: DecorationLayer;
   readonly effects: EffectLayer;
   readonly homes: HomeLayer;
   readonly spirits: SpiritLayer;
@@ -43,6 +44,7 @@ export class WorldScene {
   private lastZoom = Number.NaN;
   private readonly animationStepMs = 1000 / 30;
   private readonly staticCacheResolution = 1;
+  private pendingDecorationCacheRefresh = false;
 
   constructor(
     private readonly camera: CameraController,
@@ -52,7 +54,7 @@ export class WorldScene {
     new IslandLayer(this.layers.get("island"));
     this.regions = new RegionLayer(this.layers.get("regions"), this.layers.get("labels"), this.focusRegionPoint);
     new PathLayer(this.layers.get("paths"));
-    new DecorationLayer(this.layers.get("decorations"), {
+    this.decorations = new DecorationLayer(this.layers.get("decorations"), {
       onFocusPoint: this.focusPoint,
       onOpenDialogue: this.callbacks.onOpenDialogue,
       onOpenModule: this.callbacks.onOpenModule,
@@ -131,7 +133,8 @@ export class WorldScene {
     } as Ticker;
     this.animationElapsed = 0;
 
-    this.updateZoomState();
+    this.updateZoomState(false, interactionActive);
+    if (!interactionActive) this.flushPendingDecorationCacheRefresh();
     if (interactionActive || selectedIdleOnly) {
       this.spirits.updateFrame(frame, { selectedOnly: true });
       return;
@@ -145,6 +148,10 @@ export class WorldScene {
 
   getSelectedSpiritAnimationSnapshot() {
     return this.spirits.getSelectedAnimationSnapshot();
+  }
+
+  getDecorationLodSnapshot() {
+    return this.decorations.getLodSnapshot();
   }
 
   refreshStaticLayerCache() {
@@ -197,13 +204,29 @@ export class WorldScene {
     this.camera.focus({ x, y, zoom: region?.id === "growth-plaza" ? 1.05 : zoom });
   };
 
-  private updateZoomState(force = false) {
+  private updateZoomState(force = false, interactionActive = false) {
     const zoom = this.camera.zoom;
-    if (!force && Math.abs(zoom - this.lastZoom) < 0.002) return;
-    this.lastZoom = zoom;
-    this.homes.updateZoom(zoom);
-    this.spirits.updateZoom(zoom);
-    if (this.data) this.labels.updateZoom(zoom, this.data.selectedChildId);
+    const zoomChanged = force || Math.abs(zoom - this.lastZoom) >= 0.002;
+    if (zoomChanged) {
+      this.lastZoom = zoom;
+      this.homes.updateZoom(zoom);
+      this.spirits.updateZoom(zoom);
+      if (this.data) this.labels.updateZoom(zoom, this.data.selectedChildId);
+    }
+    if (interactionActive && !force) return;
+    const decorationsChanged = this.decorations.updateZoom(zoom);
+    if (!decorationsChanged) return;
+    if (interactionActive) {
+      this.pendingDecorationCacheRefresh = true;
+      return;
+    }
+    this.refreshStaticLayerCache();
+  }
+
+  private flushPendingDecorationCacheRefresh() {
+    if (!this.pendingDecorationCacheRefresh) return;
+    this.pendingDecorationCacheRefresh = false;
+    this.refreshStaticLayerCache();
   }
 
   private enableStaticLayerCache() {

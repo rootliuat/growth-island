@@ -17091,10 +17091,10 @@ button {
 
 .profile-cabin-room-prop {
   display: block;
-  width: 62px;
-  height: 62px;
+  width: 72px;
+  height: 72px;
   object-fit: contain;
-  opacity: 0.78;
+  opacity: 0.84;
   filter: drop-shadow(0 9px 5px rgba(23, 76, 90, 0.14));
 }
 
@@ -17436,8 +17436,8 @@ button {
   }
 
   .profile-cabin-room-prop {
-    width: 46px;
-    height: 46px;
+    width: 54px;
+    height: 54px;
     opacity: 0.68;
   }
 

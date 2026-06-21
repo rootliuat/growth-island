@@ -88,7 +88,7 @@ export class HomeLayer {
       const selected = node.root.label === this.selectedChildId;
       node.halo.visible = selected && zoom < 1.32;
       node.plaque.visible = false;
-      node.decor.visible = selected || (zoom >= 1.18 && zoom < 1.45);
+      node.decor.visible = selected || (zoom >= 1.12 && zoom < 1.72);
       node.prompt.visible = node.hovered && zoom >= 1.05;
       node.beacon.visible = (selected || node.hovered) && zoom < 1.24;
       node.root.alpha = zoom < 0.72 && !selected ? 0.94 : 1;
@@ -206,7 +206,7 @@ export class HomeLayer {
         url: variant % 3 === 0 ? v4MapAssets.p15PropTreeFruit : v4MapAssets.p15PropBush,
         x: side * 76,
         y: 62,
-        width: variant % 3 === 0 ? 56 : 48,
+        width: variant % 3 === 0 ? 62 : 54,
         rotation: side * -0.06,
       });
     } else if (home.type === "shell" || home.type === "pearl") {
@@ -215,7 +215,7 @@ export class HomeLayer {
         url: home.type === "pearl" ? v4MapAssets.p16PropRockPlatform2 : v4MapAssets.p15PropPlantSmall,
         x: side * 72,
         y: 70,
-        width: home.type === "pearl" ? 48 : 42,
+        width: home.type === "pearl" ? 54 : 48,
         rotation: side * 0.08,
       });
     } else if (home.type === "tent") {
@@ -224,7 +224,7 @@ export class HomeLayer {
         url: variant % 2 === 0 ? v4MapAssets.p16PropCrate : v4MapAssets.p16PropBagOpen,
         x: side * 70,
         y: 76,
-        width: 40,
+        width: 46,
         rotation: side * -0.08,
       });
     } else if (home.type === "garden") {
@@ -233,7 +233,7 @@ export class HomeLayer {
         url: variant % 2 === 0 ? v4MapAssets.p16PropBench1 : v4MapAssets.p16PropBench2,
         x: side * 72,
         y: 74,
-        width: 52,
+        width: 58,
         rotation: side * 0.1,
       });
     } else {
@@ -242,16 +242,16 @@ export class HomeLayer {
         url: variant % 2 === 0 ? v4MapAssets.p15PropFenceMiddle : v4MapAssets.p15PropFence1,
         x: side * 76,
         y: 72,
-        width: 58,
+        width: 64,
         rotation: side * 0.1,
       });
     }
 
     const growthTokens = [
-      { idSuffix: "star-pad-prop", url: v4MapAssets.p15PropStar, width: 34 },
-      { idSuffix: "heart-pad-prop", url: v4MapAssets.p16PropHeart, width: 34 },
-      { idSuffix: "gem-pad-prop", url: v4MapAssets.p15PropGemGreen, width: 32 },
-      { idSuffix: "fruit-pad-prop", url: v4MapAssets.p16PropFruit, width: 30 },
+      { idSuffix: "star-pad-prop", url: v4MapAssets.p15PropStar, width: 40 },
+      { idSuffix: "heart-pad-prop", url: v4MapAssets.p16PropHeart, width: 40 },
+      { idSuffix: "gem-pad-prop", url: v4MapAssets.p15PropGemGreen, width: 38 },
+      { idSuffix: "fruit-pad-prop", url: v4MapAssets.p16PropFruit, width: 36 },
     ];
     const token = growthTokens[(variant + home.level) % growthTokens.length];
     props.push({

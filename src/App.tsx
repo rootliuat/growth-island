@@ -360,7 +360,7 @@ export function App() {
   const [dialogueOpen, setDialogueOpen] = useState(false);
   const [pkPair, setPkPair] = useState<{ playerId: string; opponentId: string } | null>(null);
   const [lastEvaluation, setLastEvaluation] = useState<MoralEvaluationResult | undefined>();
-  const [syncStatus, setSyncStatus] = useState<SyncStatus>(() => (initialClassroomBackup ? "offline" : "connecting"));
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>("connecting");
   const [assetVersion, setAssetVersion] = useState(0);
   const [growthFeedback, setGrowthFeedback] = useState<GrowthFeedback | undefined>();
   const [showcaseChildId, setShowcaseChildId] = useState<string | undefined>();
@@ -594,7 +594,6 @@ export function App() {
   };
 
   useEffect(() => {
-    if (initialClassroomBackup) return;
     let cancelled = false;
     fetchClassroomSnapshot()
       .then((snapshot) => {
@@ -607,7 +606,7 @@ export function App() {
     return () => {
       cancelled = true;
     };
-  }, [initialClassroomBackup]);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;

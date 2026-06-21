@@ -1213,3 +1213,30 @@ P2:
 - `QA_CHECKS=home-performance-soak QA_SOAK_MS=30000 npm run qa:visual`: passed with 0 issues and 0 warnings after moving home props into the selected/close decor layer.
 - `QA_CHECKS=classroom-touch-loop npm run qa:visual`: passed with 0 issues and 0 warnings.
 - Manual close-focus screenshot inspected: `qa-artifacts/latest/p19-home-props-close-whiteboard.png`.
+
+## P20 model prop visibility and LOD pass
+
+### Scope
+
+- Tightened the model-asset plan so the island reads as richer at close range without making the full classroom map noisy or slower.
+- Kept the same product boundaries: no backend, XP, ledger, data, account, permission, PDF, parent/reviewer/admin, approval-flow, or PixiJS map rewrite.
+- Continued using baked WebP model props on the main island. Live Three.js remains limited to bounded module surfaces, not the classroom map.
+
+### Implementation Notes
+
+- `DecorationLayer.ts` now applies a simple model-prop LOD: key interactive/priority props stay visible in island overview, while non-interactive baked model props appear only after zooming into detail range.
+- `WorldScene.ts` wires the decoration LOD into the camera zoom loop without refreshing the static map cache during active drag/wheel interaction. Detail props update after interaction settles, avoiding zoom flicker and frame spikes.
+- `PixiWorld.ts` exposes QA-only map prop LOD metrics on the canvas, including mode, visible count, detail-only count, and total count.
+- `HomeLayer.ts` keeps each child's home props in the selected/close decor layer, widens the close-range visibility window, and slightly enlarges home-side props so they read as real trees, benches, fences, crates, gems, hearts, fruit, or star pads.
+- `styles.css` slightly enlarges the spirit-cabin baked room props. The child's unique 2D spirit remains the primary cabin character.
+- `qa-visual.mjs` now asserts selected-spirit idle float in focused mode. This directly guards against the reported "spirit gets stuck and no longer floats" problem.
+
+### Validation
+
+- `npm run typecheck`: passed.
+- `node --check scripts/qa-visual.mjs`: passed.
+- `git diff --check`: passed.
+- `npm run build`: passed with the existing `three.module` large chunk warning.
+- `QA_BASE_URL=http://127.0.0.1:5175 QA_CHECKS=home,child-profile,mobile-child-profile npm run qa:visual`: home whiteboard, home ultra, profile whiteboard, and mobile profile passed with 0 issues and 0 warnings. Selected-spirit float sampled successfully with a `6.23px` movement range in focused idle mode.
+- `QA_BASE_URL=http://127.0.0.1:5175 QA_CHECKS=home-performance-soak QA_SOAK_MS=30000 npm run qa:visual`: passed with 0 issues and 0 warnings.
+- `QA_BASE_URL=http://127.0.0.1:5175 QA_CHECKS=classroom-touch-loop,moral-speak-flow npm run qa:visual`: whiteboard/mobile moral-speak and classroom touch loop passed with 0 issues and 0 warnings.

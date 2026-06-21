@@ -22,8 +22,7 @@ const syncMeta = {
 
 const dockModules = moduleConfigs.filter((module) => module.hudGroup === "dock");
 const allTeacherToolModules = moduleConfigs.filter((module) => module.hudGroup === "teacher-tools");
-const classroomTeacherToolIds = new Set<AppModuleId>(["teacher-workbench", "voice-record"]);
-const teacherToolModules = allTeacherToolModules.filter((module) => classroomTeacherToolIds.has(module.id));
+const teacherToolModules = allTeacherToolModules;
 
 const sceneRewardMeta: Record<AppModuleId, string> = {
   home: "能量地图",

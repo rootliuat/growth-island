@@ -304,6 +304,12 @@ async function inspectPixiRenderState(page) {
       cssHeight: canvas.clientHeight,
       backingRatioX: canvas.clientWidth ? Number((canvas.width / canvas.clientWidth).toFixed(3)) : 0,
       backingRatioY: canvas.clientHeight ? Number((canvas.height / canvas.clientHeight).toFixed(3)) : 0,
+      selectedSpiritVisible: canvas.dataset.selectedSpiritVisible === "true",
+      selectedSpiritBodyY: Number(canvas.dataset.selectedSpiritBodyY || Number.NaN),
+      mapPropLodMode: canvas.dataset.mapPropLodMode || "",
+      mapPropVisibleCount: Number(canvas.dataset.mapPropVisibleCount || 0),
+      mapPropDetailOnlyCount: Number(canvas.dataset.mapPropDetailOnlyCount || 0),
+      mapPropTotalCount: Number(canvas.dataset.mapPropTotalCount || 0),
     };
   });
 }
@@ -356,6 +362,7 @@ async function inspectHomeBigScreen(page) {
     const teacherSummary = teacherDrawer?.querySelector("summary");
     const teacherPanel = teacherDrawer?.querySelector(".teacher-tools-panel");
     const childChip = document.querySelector(".shell-child-chip");
+    const selectedChildChipText = childChip && isVisibleElement(childChip) ? collectVisibleText(childChip) : "";
     const moduleDockButtons = [...document.querySelectorAll(".shell-module-dock .module-dock-button")];
     const rectArea = (element) => {
       const r = element?.getBoundingClientRect();
@@ -514,7 +521,8 @@ async function inspectHomeBigScreen(page) {
       mapSelfServiceHotspotCount: Number(pixiCanvas?.dataset.selfServiceHotspotCount ?? 0),
       mapSelfServiceHotspots: pixiCanvas?.dataset.selfServiceHotspots ?? "",
       hasSelfServiceAction:
-        Boolean(document.querySelector(".map-self-service-action, .spirit-self-service-button")) && visibleText.includes("说成长"),
+        Boolean(document.querySelector(".map-self-service-action, .spirit-self-service-button, .shell-child-chip[aria-label*='说成长']")) &&
+        visibleHomeAndDockText.includes("说成长"),
       hasSelfServiceDock: Boolean(document.querySelector(".shell-child-chip[aria-label*='说成长']")) && shellDockText.includes("说成长"),
       teacherWorkbenchDocked: [...document.querySelectorAll(".module-dock-button")].some((button) =>
         teacherToolDockPattern.test(button.getAttribute("aria-label") ?? button.textContent ?? ""),
@@ -525,7 +533,8 @@ async function inspectHomeBigScreen(page) {
       pixiEnergyRegions: pixiCanvas?.dataset.energyRegions ?? "",
       pixiCurrentEnergyRegion: pixiCanvas?.dataset.currentEnergyRegion ?? "",
       textLength: rootText.replace(/\s+/g, "").length,
-      hasSelectedChild: Boolean(rootText.match(/可可|佳佳|安安|帆帆|石石/)),
+      selectedChildChipText,
+      hasSelectedChild: Boolean(selectedChildChipText || rootText.match(/可可|佳佳|安安|帆帆|石石|小满/)),
       largeHeadings,
       noisyCopy,
       horizontalOverflow: document.body.scrollWidth > document.documentElement.clientWidth,
@@ -797,6 +806,39 @@ async function measureHomeDrag(page, options = {}) {
   await waitForPixiIdle(page);
   const settledRenderState = await inspectPixiRenderState(page);
   return { ...activeFrameRate, renderState, settledRenderState };
+}
+
+async function measureSelectedSpiritIdleMotion(page) {
+  const target = await page.evaluate(() => {
+    const ids = window.__growthIslandChildIds ?? [];
+    const current = window.__growthIslandSelectedChildId ?? "";
+    const childId = ids.find((id) => id !== current) ?? current;
+    const selected = childId ? window.__growthIslandSelectMapChildForQa?.(childId) ?? false : false;
+    return { childId, selected };
+  });
+  if (!target.selected) return { ok: false, reason: "qa child selection hook failed", target };
+  await page.waitForSelector(".pixi-world-canvas[data-render-state='idle-animating']", { timeout: 6500 }).catch(() => undefined);
+  const samples = [];
+  for (let index = 0; index < 7; index += 1) {
+    samples.push(await inspectPixiRenderState(page));
+    await page.waitForTimeout(220);
+  }
+  const yValues = samples.map((sample) => sample?.selectedSpiritBodyY).filter((value) => Number.isFinite(value));
+  const range = yValues.length ? Number((Math.max(...yValues) - Math.min(...yValues)).toFixed(2)) : 0;
+  const visible = samples.some((sample) => sample?.selectedSpiritVisible);
+  return {
+    ok: visible && range >= 3,
+    target,
+    visible,
+    range,
+    samples: samples.map((sample) => ({
+      state: sample?.state,
+      bodyY: sample?.selectedSpiritBodyY,
+      selectedSpiritVisible: sample?.selectedSpiritVisible,
+      mapPropLodMode: sample?.mapPropLodMode,
+      mapPropVisibleCount: sample?.mapPropVisibleCount,
+    })),
+  };
 }
 
 async function measureHomePerformanceSoak(page, options = {}) {
@@ -4779,11 +4821,12 @@ async function inspectPage(browser, check, viewport) {
     const fps = await measureFrameRate(page, ".pixi-world-canvas");
     const wheelFps = await measureHomeWheel(page);
     const dragFps = await measureHomeDrag(page);
-    const renderState = await inspectPixiRenderState(page);
     const bigScreen = await inspectHomeBigScreen(page);
+    const selectedSpiritMotion = await measureSelectedSpiritIdleMotion(page);
+    const renderState = await inspectPixiRenderState(page);
     const p15MapProps = summarizeP15MapProps(resources);
     const p16MapProps = summarizeP16MapProps(resources);
-    details = { fps, wheelFps, dragFps, renderState, bigScreen, p15MapProps, p16MapProps };
+    details = { fps, wheelFps, dragFps, selectedSpiritMotion, renderState, bigScreen, p15MapProps, p16MapProps };
     if (!bigScreen.hasSelectedChild) issues.push("home selected child is not visible");
     if (bigScreen.mapShare < 0.75) issues.push(`home map does not dominate workspace: ${bigScreen.mapShare}`);
     if (!bigScreen.energyBoard) issues.push("home map energy board missing");
@@ -4852,6 +4895,15 @@ async function inspectPage(browser, check, viewport) {
     if (dragFps && dragFps.fps < 18) warnings.push(`home active drag frame sample is low: ${dragFps.fps} FPS`);
     if (wheelFps && wheelFps.maxFrameGap > 280) warnings.push(`home active wheel frame gap is high: ${wheelFps.maxFrameGap} ms`);
     if (dragFps && dragFps.maxFrameGap > 280) warnings.push(`home active drag frame gap is high: ${dragFps.maxFrameGap} ms`);
+    if (!selectedSpiritMotion?.ok) {
+      issues.push(`home selected spirit idle float is stuck: range ${selectedSpiritMotion?.range ?? 0}px`);
+    }
+    if ((renderState?.mapPropTotalCount ?? 0) > 0 && (renderState?.mapPropLodMode ?? "") !== "detail") {
+      issues.push(`home model prop LOD did not enter detail mode after selected focus: ${renderState?.mapPropLodMode || "unknown"}`);
+    }
+    if ((renderState?.mapPropDetailOnlyCount ?? 0) > 0 && (renderState?.mapPropVisibleCount ?? 0) <= (renderState?.mapPropTotalCount ?? 0) - (renderState?.mapPropDetailOnlyCount ?? 0)) {
+      issues.push("home detail-only model props are still hidden after selected focus");
+    }
     if ((wheelFps?.renderState?.renderResolution ?? 1) < minActiveMapRenderResolution) {
       issues.push(`home wheel active render resolution too low: ${wheelFps.renderState.renderResolution}`);
     }
