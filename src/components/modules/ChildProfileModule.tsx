@@ -1,13 +1,15 @@
 import type { CSSProperties } from "react";
 import { useMemo, useState } from "react";
-import { BadgeCheck, BookOpenText, History, Home, Search, Sparkles, Star, Trophy, Volume2 } from "lucide-react";
+import { BadgeCheck, BookOpenText, History, Home, Mic, Search, Sparkles, Star, Trophy, Volume2 } from "lucide-react";
 import { getSpiritStageLabel } from "../../domain/progression";
 import { getSpiritAsset } from "../../domain/spiritAssets";
 import { getChildSpiritVoiceType, getSpiritVoiceOption, spiritVoiceOptions } from "../../domain/spiritVoice";
 import { virtueCategories } from "../../data/spirits";
 import { v4MapAssets } from "../../game/v4MapAssets";
-import type { ChildProfile, ChildWithProgress, LedgerRecord, SpiritDefinition } from "../../types";
+import type { ChildProfile, ChildWithProgress, LedgerRecord, SpiritDefinition, VirtueCategory } from "../../types";
+import { MoralSpeakOverlay, type MoralSpeakViewState } from "../Hud/MoralSpeakOverlay";
 import { RewardModelPreview3D } from "../Hud/SpiritModelStage3D";
+import { TeacherMoralReviewCard } from "../Hud/TeacherMoralReviewCard";
 
 interface ChildProfileModuleProps {
   childrenWithProgress: ChildWithProgress[];
@@ -17,6 +19,16 @@ interface ChildProfileModuleProps {
   onSelectChild: (childId: string) => void;
   onFocusChild: (childId: string) => void;
   onUpdateChild: (patch: Partial<ChildProfile>) => void;
+  moralSpeak: MoralSpeakViewState;
+  onPrepareMoralSpeak: (childId: string) => void;
+  onStartMoralSpeak: () => void;
+  onStopMoralSpeak: () => void;
+  onRetryMoralSpeak: () => void;
+  onApproveMoralSpeak: () => void;
+  onAdjustMoralSpeak: (category: VirtueCategory, delta: 10 | 20 | 30) => void;
+  onRespeakMoralSpeak: () => void;
+  onSkipMoralSpeak: () => void;
+  onDeferMoralSpeak: () => void;
 }
 
 const sourceLabels: Record<LedgerRecord["source"], string> = {
@@ -90,6 +102,16 @@ export function ChildProfileModule({
   onSelectChild,
   onFocusChild,
   onUpdateChild,
+  moralSpeak,
+  onPrepareMoralSpeak,
+  onStartMoralSpeak,
+  onStopMoralSpeak,
+  onRetryMoralSpeak,
+  onApproveMoralSpeak,
+  onAdjustMoralSpeak,
+  onRespeakMoralSpeak,
+  onSkipMoralSpeak,
+  onDeferMoralSpeak,
 }: ChildProfileModuleProps) {
   const [query, setQuery] = useState("");
   const [voiceNotice, setVoiceNotice] = useState("");
@@ -123,6 +145,10 @@ export function ChildProfileModule({
   const spiritAccent = selectedSpirit?.accent ?? "#f6b352";
   const spiritShowcaseStyle = { "--profile-spirit-accent": spiritAccent } as CSSProperties;
   const cabinRoomProps = useMemo(() => getCabinRoomProps(selectedChild), [selectedChild.id, selectedChild.level, selectedChild.rank]);
+  const activeMoralSpeak =
+    moralSpeak.childId === selectedChild.id
+      ? moralSpeak
+      : ({ stage: "idle" } satisfies MoralSpeakViewState);
   const updateVoiceType = (voiceType: number) => {
     const nextVoice = getSpiritVoiceOption(voiceType);
     onUpdateChild({ voiceType });
@@ -186,10 +212,13 @@ export function ChildProfileModule({
 
         <section className="profile-story-panel" aria-label="精灵小屋主面板">
           <div className="profile-hero-card">
-            <div className="profile-cabin-stage" aria-label={`${selectedChild.name} 的精灵小屋`}>
+            <div
+              className={`profile-cabin-stage moral-stage-${activeMoralSpeak.stage}`}
+              aria-label={`${selectedChild.name} 的精灵小屋`}
+            >
               <div className="profile-cabin-status">
                 <span>已进入 {selectedChild.name} 小屋</span>
-                <strong>{stageLabel}</strong>
+                <strong>{activeMoralSpeak.stage === "idle" ? stageLabel : "说成长"}</strong>
               </div>
               <div className="profile-spirit-showcase" style={spiritShowcaseStyle}>
                 <div className="profile-spirit-aura" aria-hidden="true" />
@@ -234,6 +263,40 @@ export function ChildProfileModule({
                     loading="lazy"
                   />
                 ))}
+              </div>
+              {activeMoralSpeak.stage === "idle" ? (
+                <button
+                  type="button"
+                  className="profile-moral-start"
+                  onClick={() => onPrepareMoralSpeak(selectedChild.id)}
+                  aria-label={`${selectedChild.name} 在小屋说成长`}
+                >
+                  <Mic size={18} aria-hidden="true" />
+                  说成长
+                </button>
+              ) : null}
+              <div className="profile-moral-layer" aria-live="polite">
+                <MoralSpeakOverlay
+                  child={selectedChild}
+                  spirit={selectedSpirit}
+                  state={activeMoralSpeak}
+                  onStart={onStartMoralSpeak}
+                  onStop={onStopMoralSpeak}
+                  onRetry={onRetryMoralSpeak}
+                  onClose={onDeferMoralSpeak}
+                />
+                {activeMoralSpeak.stage === "pendingReview" ? (
+                  <TeacherMoralReviewCard
+                    key={activeMoralSpeak.reviewId ?? `${selectedChild.id}:${activeMoralSpeak.transcript ?? ""}`}
+                    child={selectedChild}
+                    transcript={activeMoralSpeak.transcript}
+                    result={activeMoralSpeak.result}
+                    onApprove={onApproveMoralSpeak}
+                    onAdjust={onAdjustMoralSpeak}
+                    onRespeak={onRespeakMoralSpeak}
+                    onSkip={onSkipMoralSpeak}
+                  />
+                ) : null}
               </div>
               <div className="profile-cabin-floor" aria-hidden="true" />
             </div>

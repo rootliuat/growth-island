@@ -17099,11 +17099,149 @@ button {
 }
 
 .profile-cabin-room-prop.is-left {
-  transform: rotate(-4deg);
+  --profile-prop-rotate: -4deg;
+  transform: rotate(var(--profile-prop-rotate));
 }
 
 .profile-cabin-room-prop.is-right {
-  transform: rotate(5deg);
+  --profile-prop-rotate: 5deg;
+  transform: rotate(var(--profile-prop-rotate));
+}
+
+.profile-moral-start {
+  position: absolute;
+  right: 18px;
+  bottom: 18px;
+  z-index: 4;
+  display: inline-flex;
+  min-height: 46px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 16px;
+  border: 1px solid rgba(122, 74, 50, 0.16);
+  border-radius: 999px;
+  color: #fff8ea;
+  background: #ff7a59;
+  box-shadow:
+    inset 0 -3px 0 rgba(122, 74, 50, 0.16),
+    0 10px 18px rgba(122, 74, 50, 0.12);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 950;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.profile-moral-start:hover {
+  filter: brightness(1.04);
+  transform: translateY(-1px);
+}
+
+.profile-moral-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.profile-cabin-stage .moral-speak-overlay {
+  z-index: 5;
+  padding: 42px 14px 36px;
+}
+
+.profile-cabin-stage .moral-speak-overlay.ready,
+.profile-cabin-stage .moral-speak-overlay.listening,
+.profile-cabin-stage .moral-speak-overlay.recognizing {
+  place-items: center;
+}
+
+.profile-cabin-stage .moral-speak-overlay.pendingReview {
+  place-items: start center;
+  padding-top: 54px;
+}
+
+.profile-cabin-stage .moral-speak-overlay.success {
+  place-items: center;
+  padding: 42px 12px 36px;
+}
+
+.profile-cabin-stage .moral-flow-ribbon {
+  top: 10px;
+}
+
+.profile-cabin-stage .moral-turn-chip {
+  top: 50px;
+  left: 50%;
+  right: auto;
+  max-width: calc(100% - 32px);
+  transform: translateX(-50%);
+}
+
+.profile-cabin-stage .moral-mic-button {
+  width: 104px;
+  height: 104px;
+}
+
+.profile-cabin-stage .moral-wave-state,
+.profile-cabin-stage .moral-shell-state {
+  min-height: 66px;
+  padding-inline: 20px;
+}
+
+.profile-cabin-stage .spirit-speech-bubble {
+  min-height: 58px;
+  max-width: calc(100% - 42px);
+  padding-inline: 20px;
+  font-size: 22px;
+}
+
+.profile-cabin-stage .spirit-speech-bubble.success {
+  max-width: calc(100% - 36px);
+  font-size: 18px;
+}
+
+.profile-cabin-stage .spirit-speech-bubble.success strong {
+  font-size: 18px;
+  white-space: normal;
+}
+
+.profile-cabin-stage .moral-success-reward-3d {
+  display: none;
+}
+
+.profile-cabin-stage .teacher-review-corner-card {
+  top: auto;
+  right: 10px;
+  bottom: 10px;
+  width: min(274px, calc(100% - 20px));
+}
+
+.profile-cabin-stage .review-edit-panel {
+  top: auto;
+  bottom: calc(100% + 8px);
+}
+
+.profile-cabin-stage.moral-stage-ready .profile-spirit-main,
+.profile-cabin-stage.moral-stage-listening .profile-spirit-main,
+.profile-cabin-stage.moral-stage-recognizing .profile-spirit-main,
+.profile-cabin-stage.moral-stage-pendingReview .profile-spirit-main {
+  opacity: 0.54;
+}
+
+.profile-cabin-stage.moral-stage-success .profile-spirit-aura {
+  box-shadow: 0 0 0 8px color-mix(in srgb, var(--profile-spirit-accent, #f6b352) 14%, transparent);
+}
+
+.profile-cabin-stage.moral-stage-success .profile-cabin-room-prop {
+  animation: profile-cabin-prop-light 1.2s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.profile-moral-start:focus-visible {
+  outline: 3px solid rgba(246, 179, 82, 0.86);
+  outline-offset: 3px;
 }
 
 @keyframes profile-spirit-float {
@@ -17130,9 +17268,29 @@ button {
   }
 }
 
+@keyframes profile-cabin-prop-light {
+  0% {
+    filter: drop-shadow(0 9px 5px rgba(23, 76, 90, 0.14));
+    transform: translateY(0) scale(1) rotate(var(--profile-prop-rotate, 0deg));
+  }
+
+  44% {
+    filter:
+      drop-shadow(0 9px 5px rgba(23, 76, 90, 0.14))
+      drop-shadow(0 0 14px rgba(246, 179, 82, 0.58));
+    transform: translateY(-5px) scale(1.08) rotate(var(--profile-prop-rotate, 0deg));
+  }
+
+  100% {
+    filter: drop-shadow(0 9px 5px rgba(23, 76, 90, 0.14));
+    transform: translateY(0) scale(1) rotate(var(--profile-prop-rotate, 0deg));
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .profile-page .profile-spirit-main,
-  .profile-spirit-shadow {
+  .profile-spirit-shadow,
+  .profile-cabin-stage.moral-stage-success .profile-cabin-room-prop {
     animation: none;
   }
 }

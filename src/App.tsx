@@ -709,7 +709,7 @@ export function App() {
   }, [children, ledger, lotteryDraws, moralReviews, organizationState, settingsChanges, shopRedemptions, syncStatus, teacherMode]);
 
   useEffect(() => {
-    if (activeModule === "home") return;
+    if (activeModule === "home" || activeModule === "child-profile") return;
     clearMoralSpeakTimers();
     stopMoralSpeakRecording(true);
     moralSpeakApprovingRef.current = false;
@@ -746,6 +746,7 @@ export function App() {
       __growthIslandMoralSpeak?: MoralSpeakViewState;
       __growthIslandFeedback?: GrowthFeedback;
       __growthIslandMoralAnalysisDelayMs?: number;
+      __growthIslandClearMoralSpeakForQa?: () => void;
       __growthIslandStartMoralReviewForQa?: (input: {
         childId?: string;
         transcript: string;
@@ -774,6 +775,12 @@ export function App() {
     qaWindow.__growthIslandMoralSpeak = moralSpeak;
     qaWindow.__growthIslandFeedback = growthFeedback;
     qaWindow.__growthIslandMoralAnalysisDelayMs ??= 0;
+    qaWindow.__growthIslandClearMoralSpeakForQa = () => {
+      clearMoralSpeakTimers();
+      stopMoralSpeakRecording(true);
+      moralSpeakApprovingRef.current = false;
+      setMoralSpeak({ stage: "idle" });
+    };
     qaWindow.__growthIslandStartMoralReviewForQa = (input) => {
       const child =
         childrenWithProgress.find((item) => item.id === input.childId) ??
@@ -1428,6 +1435,21 @@ export function App() {
     });
   };
 
+  const prepareMoralSpeakInProfile = (childId = selectedChild.id) => {
+    if (guardMoralSpeakChildSelection(childId)) return;
+    const child = childrenWithProgress.find((item) => item.id === childId) ?? selectedChild;
+    setSelectedChildId(child.id);
+    prepareMoralSpeakForChild(child.id);
+    setActiveModule("child-profile");
+    showGrowthFeedback({
+      kind: "status",
+      tone: "neutral",
+      title: `${child.name} 准备说成长`,
+      detail: "小屋麦克风已打开",
+      childName: child.name,
+    });
+  };
+
   const openSpiritShowcase = (childId = selectedChild.id) => {
     const child = childrenWithProgress.find((item) => item.id === childId) ?? selectedChild;
     setSelectedChildId(child.id);
@@ -1850,6 +1872,16 @@ export function App() {
           onSelectChild={setSelectedChildId}
           onFocusChild={focusChildOnHome}
           onUpdateChild={updateSelectedChild}
+          moralSpeak={moralSpeak}
+          onPrepareMoralSpeak={prepareMoralSpeakInProfile}
+          onStartMoralSpeak={startMoralSpeak}
+          onStopMoralSpeak={stopMoralSpeakRecording}
+          onRetryMoralSpeak={retryMoralSpeak}
+          onApproveMoralSpeak={approveMoralSpeak}
+          onAdjustMoralSpeak={adjustMoralSpeak}
+          onRespeakMoralSpeak={respeakMoralSpeak}
+          onSkipMoralSpeak={skipMoralSpeakChild}
+          onDeferMoralSpeak={deferMoralSpeak}
         />
       ) : activeModule === "data-management" ? (
         <DataManagementModule

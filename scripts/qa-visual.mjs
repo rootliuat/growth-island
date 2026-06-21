@@ -2571,6 +2571,8 @@ async function inspectCurrentProfile(page) {
     const cabin3dStyle = cabin3dStage ? getComputedStyle(cabin3dStage) : undefined;
     const cabinRoomProps = [...document.querySelectorAll(".profile-cabin-room-prop")];
     const cabinRoomPropSources = cabinRoomProps.map((prop) => prop.getAttribute("src") ?? "");
+    const moralStart = document.querySelector(".profile-moral-start");
+    const moralStartRect = moralStart?.getBoundingClientRect();
     const timelineRowMaxHeight = timelineRows.reduce((max, row) => Math.max(max, Math.round(row.getBoundingClientRect().height)), 0);
     const firstTimelineRow = timelineRows[0];
     const firstTimelineStyle = firstTimelineRow ? getComputedStyle(firstTimelineRow) : undefined;
@@ -2600,6 +2602,21 @@ async function inspectCurrentProfile(page) {
       hasCabinRoomModelProps:
         cabinRoomProps.length >= 2 &&
         cabinRoomPropSources.every((src) => src.includes("/assets/map/3d-props/")),
+      hasCabinMoralStart: Boolean(
+        moralStart &&
+          moralStartRect &&
+          moralStartRect.width >= 44 &&
+          moralStartRect.height >= 44 &&
+          (moralStart.textContent ?? "").includes("说成长"),
+      ),
+      cabinMoralStartInStage: Boolean(
+        moralStartRect &&
+          cabinRect &&
+          moralStartRect.left >= cabinRect.left - 1 &&
+          moralStartRect.right <= cabinRect.right + 1 &&
+          moralStartRect.top >= cabinRect.top - 1 &&
+          moralStartRect.bottom <= cabinRect.bottom + 1,
+      ),
       hasTimelineRecord: /课堂成长点亮|能量进精灵|数学光路点亮|已有成长|成长贝壳/.test(timelineText),
       hasAnyTimelineRecord: records.length === 0 || timelineRows.length > 0,
       evidenceHasRecordCount: evidenceText.includes(`${records.length} 条`),
@@ -2640,6 +2657,44 @@ async function inspectCurrentProfile(page) {
   });
 }
 
+async function exerciseProfileMoralReady(page) {
+  const start = page.locator(".profile-moral-start").first();
+  if ((await start.count()) === 0) return { ok: false, reason: "missing start button" };
+  await start.click();
+  await page.waitForSelector(".profile-cabin-stage.moral-stage-ready .moral-mic-button", { timeout: 4000 }).catch(() => undefined);
+  const details = await page.evaluate(() => {
+    const cabin = document.querySelector(".profile-cabin-stage");
+    const mic = document.querySelector(".profile-cabin-stage .moral-mic-button");
+    const overlay = document.querySelector(".profile-cabin-stage .moral-speak-overlay.ready");
+    const card = document.querySelector(".profile-cabin-stage .teacher-review-corner-card");
+    const cabinRect = cabin?.getBoundingClientRect();
+    const micRect = mic?.getBoundingClientRect();
+    const overlayRect = overlay?.getBoundingClientRect();
+    const rectInside = (inner, outer) =>
+      Boolean(
+        inner &&
+          outer &&
+          inner.left >= outer.left - 1 &&
+          inner.right <= outer.right + 1 &&
+          inner.top >= outer.top - 1 &&
+          inner.bottom <= outer.bottom + 1,
+      );
+    return {
+      stage: cabin?.className ?? "",
+      hasReadyMic: Boolean(mic),
+      readyOverlayInStage: rectInside(overlayRect, cabinRect),
+      micInStage: rectInside(micRect, cabinRect),
+      hasTeacherCard: Boolean(card),
+    };
+  });
+  await page.evaluate(() => window.__growthIslandClearMoralSpeakForQa?.());
+  await page.waitForSelector(".profile-cabin-stage.moral-stage-idle", { timeout: 3000 }).catch(() => undefined);
+  return {
+    ok: details.hasReadyMic && details.readyOverlayInStage && details.micInStage && !details.hasTeacherCard,
+    ...details,
+  };
+}
+
 async function exerciseProfileFlow(page, workbenchProfileScreenshot, homeProfileScreenshot) {
   const startsOnProfile = (await page.locator(".profile-page").count()) > 0;
   if (startsOnProfile) {
@@ -2653,6 +2708,7 @@ async function exerciseProfileFlow(page, workbenchProfileScreenshot, homeProfile
     await page.waitForSelector(".profile-spirit-main", { timeout: 5000 });
     await waitForModelStageSettled(page, ".profile-cabin-reward-stage");
     const profile = await inspectCurrentProfile(page);
+    const moralReady = await exerciseProfileMoralReady(page);
     await page.screenshot({ path: workbenchProfileScreenshot, fullPage: false });
 
     await page.locator(".profile-home-button").click();
@@ -2672,6 +2728,7 @@ async function exerciseProfileFlow(page, workbenchProfileScreenshot, homeProfile
       xpBefore,
       xpAfter: xpBefore,
       homeHadSelectedChild: Boolean(name) && homeText.includes(name),
+      moralReady,
       fromWorkbench: profile,
       fromHome,
       homeProfileScreenshot,
@@ -2701,6 +2758,7 @@ async function exerciseProfileFlow(page, workbenchProfileScreenshot, homeProfile
   await page.waitForSelector(".profile-spirit-main", { timeout: 5000 });
   await waitForModelStageSettled(page, ".profile-cabin-reward-stage");
   const fromWorkbench = await inspectCurrentProfile(page);
+  const moralReady = await exerciseProfileMoralReady(page);
   await page.screenshot({ path: workbenchProfileScreenshot, fullPage: false });
 
   await page.locator(".profile-home-button").click();
@@ -2720,6 +2778,7 @@ async function exerciseProfileFlow(page, workbenchProfileScreenshot, homeProfile
     xpBefore,
     xpAfter: xpBefore + 10,
     homeHadSelectedChild: Boolean(name) && homeText.includes(name),
+    moralReady,
     fromWorkbench,
     fromHome,
     homeProfileScreenshot,
@@ -4790,6 +4849,8 @@ async function inspectPage(browser, check, viewport) {
       if (!profile?.hasCabinAtmosphere3dSurface) issues.push(`profile flow ${source} cabin atmosphere 3d surface missing`);
       if (!profile?.cabinAtmosphere3dPassive) issues.push(`profile flow ${source} cabin atmosphere 3d should not intercept input`);
       if (!profile?.hasCabinRoomModelProps) issues.push(`profile flow ${source} cabin model room props missing`);
+      if (!profile?.hasCabinMoralStart) issues.push(`profile flow ${source} cabin moral speak entry missing`);
+      if (!profile?.cabinMoralStartInStage) issues.push(`profile flow ${source} cabin moral speak entry outside stage`);
       if (!profile?.hasCabinStage) issues.push(`profile flow ${source} cabin stage missing`);
       if (!profile?.storyPanelNotWhiteWorkbench) issues.push(`profile flow ${source} still reads as white workbench`);
       if (!profile?.pageHasCoastalScene) issues.push(`profile flow ${source} coastal scene background missing`);
@@ -4807,6 +4868,9 @@ async function inspectPage(browser, check, viewport) {
       if (!profile?.hasDimensionStats) issues.push(`profile flow ${source} dimension stats missing`);
       if (profile?.horizontalOverflow) issues.push(`profile flow ${source} horizontal overflow`);
       if (profile?.forbiddenCopy?.length) issues.push(`profile flow ${source} still shows old copy: ${profile.forbiddenCopy.join(", ")}`);
+    }
+    if (!profileFlowDetails?.moralReady?.ok) {
+      issues.push(`profile flow cabin moral ready state failed: ${profileFlowDetails?.moralReady?.reason ?? profileFlowDetails?.moralReady?.stage ?? "unknown"}`);
     }
     if (
       profileFlowDetails?.fromWorkbench?.selectedChildId &&

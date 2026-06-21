@@ -1240,3 +1240,32 @@ P2:
 - `QA_BASE_URL=http://127.0.0.1:5175 QA_CHECKS=home,child-profile,mobile-child-profile npm run qa:visual`: home whiteboard, home ultra, profile whiteboard, and mobile profile passed with 0 issues and 0 warnings. Selected-spirit float sampled successfully with a `6.23px` movement range in focused idle mode.
 - `QA_BASE_URL=http://127.0.0.1:5175 QA_CHECKS=home-performance-soak QA_SOAK_MS=30000 npm run qa:visual`: passed with 0 issues and 0 warnings.
 - `QA_BASE_URL=http://127.0.0.1:5175 QA_CHECKS=classroom-touch-loop,moral-speak-flow npm run qa:visual`: whiteboard/mobile moral-speak and classroom touch loop passed with 0 issues and 0 warnings.
+
+## P21 profile cabin moral-speak loop
+
+### Scope
+
+- Added the child self-service growth loop to the spirit cabin so children can start "say growth" from their own cabin, not only from the island map.
+- Kept the same classroom product boundary: no backend schema, XP rules, ledger contract, data files, account, permission, PDF, parent/reviewer/admin, approval-flow, or PixiJS map rewrite changes.
+- Kept the cabin identity hierarchy: the selected child's unique 2D spirit stays primary, while 3D/model props remain passive room atmosphere.
+
+### Implementation Notes
+
+- `ChildProfileModule.tsx` now accepts the existing moral-speak view state and callbacks, then renders the shared `MoralSpeakOverlay` inside the cabin stage.
+- The cabin stage gets a coral `说成长` microphone entry. When activated, it enters `ready`, `listening`, `pendingReview`, and `success` using the same state machine as the home island.
+- `TeacherMoralReviewCard` is reused inside the cabin stage for pending reviews, so teacher confirmation, correction, respeak, and skip actions remain one shared implementation.
+- `App.tsx` now allows moral-speak state to stay active on `child-profile`; switching to other non-home modules still clears it.
+- Added a QA-only clear hook so profile visual QA can enter the ready state and return the cabin to idle without affecting later checks.
+- `styles.css` scopes the moral overlay and teacher card to the cabin stage, adds reduced-motion-safe success lighting on cabin room props, and keeps the microphone inside the stage without covering the roster or bottom dock.
+- `qa-visual.mjs` now asserts that the cabin has a usable `说成长` entry and that clicking it enters a ready overlay contained inside the cabin stage.
+
+### Validation
+
+- `node --check scripts/qa-visual.mjs`: passed.
+- `npm run typecheck`: passed.
+- `git diff --check`: passed.
+- `npm run build`: passed with the existing `three.module` large chunk warning.
+- `QA_BASE_URL=http://127.0.0.1:5173 QA_CHECKS=child-profile,mobile-child-profile npm run qa:visual`: whiteboard and mobile profile passed with 0 issues and 0 warnings.
+- `QA_BASE_URL=http://127.0.0.1:5173 QA_CHECKS=moral-speak-flow,classroom-touch-loop npm run qa:visual`: whiteboard/mobile moral-speak and classroom touch loop passed with 0 issues and 0 warnings.
+- `QA_BASE_URL=http://127.0.0.1:5173 QA_CHECKS=home,home-fallback-return npm run qa:visual`: passed with 0 issues. Home ultra kept the existing headless drag warning at `17.3 FPS`.
+- Manual Playwright profile-cabin smoke in offline mode: cabin entered `pendingReview`, teacher card rendered inside the cabin, approval produced `moral-stage-success`, and the newest local ledger record used `source: "dialogue-agent"`, `reviewStatus: "approved"`, and `reason: "自助成长：..."`.
