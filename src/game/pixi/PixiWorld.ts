@@ -57,7 +57,7 @@ export class PixiWorld {
     this.camera?.update(ticker);
     this.scene?.update(ticker, this.interactionActive, selectedIdleOnly);
     this.updateSelectedAnimationDataset();
-    if (!selectedIdleOnly) this.cullVisibleScene();
+    if (!selectedIdleOnly && !this.interactionActive && !this.pointerDragging) this.cullVisibleScene();
   };
   private readonly wakeFromPointerInteraction = (interactionMode: "touch" | "drag" | "wheel" = "touch") => {
     this.interactionActive = true;
@@ -314,6 +314,7 @@ export class PixiWorld {
       this.setGlobalInteractionActive(false);
       this.refreshPendingStaticCache();
       this.restoreBaseResolution();
+      this.cullVisibleScene(true);
       this.app?.render();
     }, delayMs);
   }
@@ -331,7 +332,7 @@ export class PixiWorld {
   }
 
   private shouldKeepSelectedIdleAnimation() {
-    return this.viewMode === "focused" && Boolean(this.lastData?.selectedChildId);
+    return (this.viewMode === "focused" || this.viewMode === "manual") && Boolean(this.lastData?.selectedChildId);
   }
 
   private updateSelectedAnimationDataset() {

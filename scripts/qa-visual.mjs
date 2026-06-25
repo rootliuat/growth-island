@@ -66,6 +66,8 @@ const requestedChecks = (process.env.QA_CHECKS || "")
   .map((name) => name.trim())
   .filter(Boolean);
 const checks = requestedChecks.length ? allChecks.filter((check) => requestedChecks.includes(check.name)) : allChecks;
+const browserExecutablePath =
+  process.env.PLAYWRIGHT_CHROME_PATH || (fs.existsSync("/usr/bin/google-chrome") ? "/usr/bin/google-chrome" : undefined);
 
 function ensureCleanDir(dir) {
   fs.rmSync(dir, { recursive: true, force: true });
@@ -837,6 +839,47 @@ async function measureSelectedSpiritIdleMotion(page) {
       selectedSpiritVisible: sample?.selectedSpiritVisible,
       mapPropLodMode: sample?.mapPropLodMode,
       mapPropVisibleCount: sample?.mapPropVisibleCount,
+    })),
+  };
+}
+
+async function measureSelectedSpiritWheelIdleMotion(page) {
+  const target = await page.evaluate(() => {
+    const ids = window.__growthIslandChildIds ?? [];
+    const current = window.__growthIslandSelectedChildId ?? "";
+    const childId = ids.find((id) => id !== current) ?? current;
+    const selected = childId ? window.__growthIslandSelectMapChildForQa?.(childId) ?? false : false;
+    return { childId, selected };
+  });
+  if (!target.selected) return { ok: false, reason: "qa child selection hook failed", target };
+  await page.waitForSelector(".pixi-world-canvas[data-render-state='idle-animating']", { timeout: 6500 }).catch(() => undefined);
+  const stage = page.locator(".pixi-world-canvas").first();
+  const box = await stage.boundingBox({ timeout: 7000 }).catch(() => undefined);
+  if (!box) return { ok: false, reason: "missing pixi canvas", target };
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.wheel(0, -260);
+  await page.waitForSelector(".pixi-world-canvas[data-render-state='idle-animating']", { timeout: 6500 }).catch(() => undefined);
+  const samples = [];
+  for (let index = 0; index < 7; index += 1) {
+    samples.push(await inspectPixiRenderState(page));
+    await page.waitForTimeout(220);
+  }
+  const yValues = samples.map((sample) => sample?.selectedSpiritBodyY).filter((value) => Number.isFinite(value));
+  const range = yValues.length ? Number((Math.max(...yValues) - Math.min(...yValues)).toFixed(2)) : 0;
+  const visible = samples.some((sample) => sample?.selectedSpiritVisible);
+  const stayedAnimating = samples.some((sample) => sample?.state === "idle-animating");
+  return {
+    ok: visible && stayedAnimating && range >= 3,
+    target,
+    visible,
+    stayedAnimating,
+    range,
+    samples: samples.map((sample) => ({
+      state: sample?.state,
+      interactionMode: sample?.interactionMode,
+      bodyY: sample?.selectedSpiritBodyY,
+      selectedSpiritVisible: sample?.selectedSpiritVisible,
+      renderResolution: sample?.renderResolution,
     })),
   };
 }
@@ -4887,10 +4930,11 @@ async function inspectPage(browser, check, viewport) {
     const dragFps = await measureHomeDrag(page);
     const bigScreen = await inspectHomeBigScreen(page);
     const selectedSpiritMotion = await measureSelectedSpiritIdleMotion(page);
+    const selectedSpiritWheelMotion = await measureSelectedSpiritWheelIdleMotion(page);
     const renderState = await inspectPixiRenderState(page);
     const p15MapProps = summarizeP15MapProps(resources);
     const p16MapProps = summarizeP16MapProps(resources);
-    details = { fps, wheelFps, dragFps, selectedSpiritMotion, renderState, bigScreen, p15MapProps, p16MapProps };
+    details = { fps, wheelFps, dragFps, selectedSpiritMotion, selectedSpiritWheelMotion, renderState, bigScreen, p15MapProps, p16MapProps };
     if (!bigScreen.hasSelectedChild) issues.push("home selected child is not visible");
     if (bigScreen.mapShare < 0.75) issues.push(`home map does not dominate workspace: ${bigScreen.mapShare}`);
     if (!bigScreen.energyBoard) issues.push("home map energy board missing");
@@ -4961,6 +5005,9 @@ async function inspectPage(browser, check, viewport) {
     if (dragFps && dragFps.maxFrameGap > 280) warnings.push(`home active drag frame gap is high: ${dragFps.maxFrameGap} ms`);
     if (!selectedSpiritMotion?.ok) {
       issues.push(`home selected spirit idle float is stuck: range ${selectedSpiritMotion?.range ?? 0}px`);
+    }
+    if (!selectedSpiritWheelMotion?.ok) {
+      issues.push(`home selected spirit idle float stops after wheel zoom: range ${selectedSpiritWheelMotion?.range ?? 0}px`);
     }
     if ((renderState?.mapPropTotalCount ?? 0) > 0 && (renderState?.mapPropLodMode ?? "") !== "detail") {
       issues.push(`home model prop LOD did not enter detail mode after selected focus: ${renderState?.mapPropLodMode || "unknown"}`);
@@ -5353,7 +5400,10 @@ async function inspectPage(browser, check, viewport) {
 
 ensureCleanDir(outputDir);
 
-const browser = await chromium.launch({ headless: true });
+const browser = await chromium.launch({
+  headless: true,
+  ...(browserExecutablePath ? { executablePath: browserExecutablePath } : {}),
+});
 const results = [];
 
 try {

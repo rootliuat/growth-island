@@ -1269,3 +1269,45 @@ P2:
 - `QA_BASE_URL=http://127.0.0.1:5173 QA_CHECKS=moral-speak-flow,classroom-touch-loop npm run qa:visual`: whiteboard/mobile moral-speak and classroom touch loop passed with 0 issues and 0 warnings.
 - `QA_BASE_URL=http://127.0.0.1:5173 QA_CHECKS=home,home-fallback-return npm run qa:visual`: passed with 0 issues. Home ultra kept the existing headless drag warning at `17.3 FPS`.
 - Manual Playwright profile-cabin smoke in offline mode: cabin entered `pendingReview`, teacher card rendered inside the cabin, approval produced `moral-stage-success`, and the newest local ledger record used `source: "dialogue-agent"`, `reviewStatus: "approved"`, and `reason: "自助成长：..."`.
+
+## P22 classroom readiness performance hardening
+
+### Scope
+
+- Responded to the classroom-facing reports that the island still felt laggy during large-screen drag/zoom, that movement could look like flicker, and that selected spirits could stop floating after zoom.
+- Kept the same product and data boundaries: no backend, XP rules, ledger contract, data files, account, permission, PDF, parent/reviewer/admin, approval-flow, or live Three.js main-island rewrite changes.
+- Preserved map clarity: Pixi render resolution stays at `1x` or above; no blur, CSS downsampling, or lower-resolution fallback was introduced.
+
+### Baseline Finding
+
+- Before the patch, `QA_CHECKS=home` passed functionally but ultra viewport active interaction was below the classroom threshold:
+  - active wheel: `13.6 FPS`
+  - active drag: `13.5 FPS`
+- Short whiteboard soak was stable, so the primary regression was active interaction load on very large screens rather than a steady memory leak.
+
+### Implementation Notes
+
+- `PixiWorld.ts` now skips scene culling while pointer drag/wheel interaction is active, then performs one forced cull after interaction settles. This removes repeated traversal during the most latency-sensitive gesture and also reduces visible pop/flicker while dragging.
+- `WorldScene.ts` now applies a real interaction visual mode instead of a no-op. During active interaction, nonessential effect rendering is paused while the map, homes, spirits, and selected child label remain visible.
+- `LabelLayer.ts` now has interaction visibility mode: active drag/zoom hides region labels and non-selected spirit labels, while keeping the current child's name/ring visible. On settle it restores the normal zoom-dependent label layout.
+- `PixiWorld.ts` treats `manual` zoom as eligible for selected-spirit idle animation, so wheel zoom no longer leaves the selected spirit stuck after interaction settles.
+- `qa-visual.mjs` now prefers system Chrome through `PLAYWRIGHT_CHROME_PATH` or `/usr/bin/google-chrome`, matching the repository validation guidance and avoiding a hidden dependency on the Playwright browser cache.
+- `qa-visual.mjs` adds a selected-spirit wheel regression: select a child, wheel zoom, wait for settle, and assert that the selected spirit remains visible and continues idle floating.
+
+### Validation
+
+- `node --check scripts/qa-visual.mjs`: passed.
+- `npm run typecheck`: passed.
+- `npm run build`: passed with the existing `three.module` large chunk warning.
+- `QA_BASE_URL=http://127.0.0.1:5173 QA_CHECKS=home npm run qa:visual`: whiteboard and ultra passed with 0 issues and 0 warnings.
+  - whiteboard active wheel: `33 FPS`; active drag: `29.6 FPS`.
+  - ultra active wheel: `21.2 FPS`; active drag: `20.6 FPS`.
+  - selected-spirit idle float after wheel stayed active; sampled range was `8.53px` on ultra.
+  - Pixi render resolution stayed at `1`.
+- `QA_BASE_URL=http://127.0.0.1:5173 QA_CHECKS=classroom-touch-loop,moral-speak-flow,child-profile,mobile-child-profile npm run qa:visual`: all listed flows passed with 0 issues and 0 warnings.
+- `QA_BASE_URL=http://127.0.0.1:5173 QA_CHECKS=home-performance-soak QA_SOAK_MS=300000 QA_SOAK_SAMPLE_MS=30000 npm run qa:visual`: 5-minute whiteboard sustained drag passed with 0 issues and 0 warnings.
+  - sampled duration: `300000ms`.
+  - sustained frame average: `34.5 FPS`.
+  - p95/p99 frame gap: `33.4ms`.
+  - heap delta: `4.3MB`.
+  - render resolution remained `1`; settled state returned to crisp idle.

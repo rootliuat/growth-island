@@ -11,6 +11,9 @@ export class LabelLayer {
   private readonly spiritLabels = new Map<string, Container>();
   private readonly spiritMeta = new Map<string, { rank: number; level: number; hasActivity: boolean; x: number; y: number }>();
   private readonly spiritLabelLayer = new Container();
+  private interactionMode = false;
+  private lastZoom = 1;
+  private lastSelectedChildId = "";
 
   constructor(private readonly layer: Container) {
     this.spiritLabelLayer.label = "spirit-labels";
@@ -74,6 +77,12 @@ export class LabelLayer {
   }
 
   updateZoom(zoom: number, selectedChildId: string) {
+    this.lastZoom = zoom;
+    this.lastSelectedChildId = selectedChildId;
+    if (this.interactionMode) {
+      this.applyInteractionVisibility(selectedChildId);
+      return;
+    }
     const selectedMeta = this.spiritMeta.get(selectedChildId);
     const overviewFindMode = zoom <= 0.72;
     this.regionLabels.forEach((label) => {
@@ -97,6 +106,16 @@ export class LabelLayer {
       const bubble = label.getChildByLabel("activity-bubble");
       if (bubble) bubble.visible = selected && Boolean(meta?.hasActivity) && zoom >= 1.48;
     });
+  }
+
+  setInteractionMode(active: boolean) {
+    if (active === this.interactionMode) return;
+    this.interactionMode = active;
+    if (active) {
+      this.applyInteractionVisibility(this.lastSelectedChildId);
+      return;
+    }
+    this.updateZoom(this.lastZoom, this.lastSelectedChildId);
   }
 
   private createSpiritLabel() {
@@ -309,5 +328,21 @@ export class LabelLayer {
     if (cleaned.includes("已有成长")) return "成长记录";
     if (cleaned.includes("快速加分")) return "课堂记录";
     return cleaned.replace(/\s*[+＋-]\d+\s*XP?$/i, "").slice(0, 8);
+  }
+
+  private applyInteractionVisibility(selectedChildId: string) {
+    this.regionLabels.forEach((label) => {
+      label.visible = false;
+    });
+    this.spiritLabels.forEach((label, childId) => {
+      const selected = childId === selectedChildId;
+      label.visible = selected;
+      label.alpha = selected ? 0.92 : 0;
+      label.scale.set(selected ? 0.9 : 0.72);
+      const bubble = label.getChildByLabel("activity-bubble");
+      if (bubble) bubble.visible = false;
+      const currentRing = label.getChildByLabel("current-ring") as Graphics | undefined;
+      if (currentRing) currentRing.visible = selected;
+    });
   }
 }

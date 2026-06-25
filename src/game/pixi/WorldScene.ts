@@ -159,9 +159,10 @@ export class WorldScene {
   }
 
   setInteractionVisualMode(_interactionActive: boolean) {
+    this.labels.setInteractionMode(_interactionActive);
     this.layers.get("decorations").renderable = true;
     this.layers.get("labels").renderable = true;
-    this.layers.get("effects").renderable = true;
+    this.layers.get("effects").renderable = !_interactionActive;
   }
 
   focusFullIsland() {
