@@ -291,8 +291,10 @@ export function ChildProfileModule({
                     child={selectedChild}
                     transcript={activeMoralSpeak.transcript}
                     result={activeMoralSpeak.result}
+                    busy={activeMoralSpeak.approving === true}
                     onApprove={onApproveMoralSpeak}
                     onAdjust={onAdjustMoralSpeak}
+                    onDefer={onDeferMoralSpeak}
                     onRespeak={onRespeakMoralSpeak}
                     onSkip={onSkipMoralSpeak}
                   />

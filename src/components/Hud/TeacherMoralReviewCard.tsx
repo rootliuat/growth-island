@@ -1,4 +1,4 @@
-import { Check, Mic, Shell, SkipForward, Wrench } from "lucide-react";
+import { Check, Clock3, Mic, Shell, SkipForward, Wrench } from "lucide-react";
 import { useMemo, useState, type CSSProperties } from "react";
 import { virtueCategories } from "../../data/spirits";
 import {
@@ -14,8 +14,10 @@ interface TeacherMoralReviewCardProps {
   child?: ChildWithProgress;
   transcript?: string;
   result?: MoralEvaluationResult;
+  busy?: boolean;
   onApprove: () => void;
   onAdjust: (category: VirtueCategory, delta: 10 | 20 | 30) => void;
+  onDefer: () => void;
   onRespeak: () => void;
   onSkip: () => void;
 }
@@ -24,8 +26,10 @@ export function TeacherMoralReviewCard({
   child,
   transcript,
   result,
+  busy = false,
   onApprove,
   onAdjust,
+  onDefer,
   onRespeak,
   onSkip,
 }: TeacherMoralReviewCardProps) {
@@ -44,9 +48,10 @@ export function TeacherMoralReviewCard({
   const energyLabel = getChildEnergyLabel(safeCategory);
   const helpText = getTeacherHelpText(result);
   const transcriptPreview = transcript?.trim() || "未收到文字";
+  const actionLocked = busy === true;
 
   return (
-    <aside className="teacher-review-corner-card" style={style} aria-label="老师确认">
+    <aside className="teacher-review-corner-card" style={style} aria-label="老师确认" aria-busy={actionLocked}>
       <span className="teacher-review-status">
         <Shell size={13} />
         {canApprove ? "等老师" : "请老师帮忙"}
@@ -65,13 +70,20 @@ export function TeacherMoralReviewCard({
             className="approve"
             onClick={onApprove}
             aria-label={`${child.name} 点亮能量`}
+            disabled={actionLocked}
           >
             <Check size={18} />
             点亮
           </button>
         ) : null}
         <details className={canApprove ? "review-edit-popover" : "review-edit-popover primary"}>
-          <summary>
+          <summary
+            aria-disabled={actionLocked}
+            tabIndex={actionLocked ? -1 : undefined}
+            onClick={(event) => {
+              if (actionLocked) event.preventDefault();
+            }}
+          >
             <Wrench size={17} />
             修正
           </summary>
@@ -87,17 +99,26 @@ export function TeacherMoralReviewCard({
               </select>
             </label>
             {[10, 20, 30].map((delta) => (
-              <button key={delta} type="button" onClick={() => onAdjust(selectedCategory, delta as 10 | 20 | 30)}>
+              <button
+                key={delta}
+                type="button"
+                onClick={() => onAdjust(selectedCategory, delta as 10 | 20 | 30)}
+                disabled={actionLocked}
+              >
                 {getChildEnergyLabel(selectedCategory)} +{delta}
               </button>
             ))}
           </div>
         </details>
-        <button type="button" className="respeak" onClick={onRespeak}>
+        <button type="button" className="defer" onClick={onDefer} aria-label={`${child.name} 稍后确认`} disabled={actionLocked}>
+          <Clock3 size={17} />
+          稍后
+        </button>
+        <button type="button" className="respeak" onClick={onRespeak} disabled={actionLocked}>
           <Mic size={17} />
           重说
         </button>
-        <button type="button" className="skip" onClick={onSkip}>
+        <button type="button" className="skip" onClick={onSkip} disabled={actionLocked}>
           <SkipForward size={17} />
           跳过
         </button>

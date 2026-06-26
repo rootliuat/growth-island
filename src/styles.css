@@ -12601,7 +12601,9 @@ button {
   padding: 78px 24px 118px;
 }
 
-.moral-speak-overlay.recognizing {
+.moral-speak-overlay.listening,
+.moral-speak-overlay.recognizing,
+.moral-speak-overlay.error {
   gap: 10px;
 }
 
@@ -12982,6 +12984,10 @@ button {
 }
 
 .moral-cancel-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
   min-height: 44px;
   padding: 0 16px;
   border: 2px solid rgba(214, 177, 106, 0.44);
@@ -12995,6 +13001,11 @@ button {
   cursor: pointer;
   pointer-events: auto;
   touch-action: manipulation;
+}
+
+.moral-speak-overlay.error .moral-retry-button,
+.moral-speak-overlay.error .moral-safe-exit {
+  position: static;
 }
 
 .teacher-review-corner-card {
@@ -13102,6 +13113,12 @@ button {
   opacity: 0.48;
 }
 
+.review-edit-popover summary[aria-disabled="true"],
+.review-edit-panel button:disabled {
+  cursor: wait;
+  opacity: 0.58;
+}
+
 .moral-mic-button:focus-visible,
 .moral-retry-button:focus-visible,
 .moral-cancel-button:focus-visible,
@@ -13112,6 +13129,7 @@ button {
   outline-offset: 3px;
 }
 
+.teacher-review-actions .defer,
 .teacher-review-actions .respeak,
 .teacher-review-actions .skip,
 .review-edit-popover summary {
@@ -21538,6 +21556,10 @@ button {
   .teacher-review-actions .approve {
     min-height: 64px;
     font-size: 16px;
+  }
+
+  .home-screen-shell .teacher-review-corner-card:has(.review-edit-popover[open]) {
+    max-height: min(680px, calc(100% - 92px));
   }
 
   .home-screen-shell .dock-selected-summary {

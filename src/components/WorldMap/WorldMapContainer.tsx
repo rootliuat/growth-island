@@ -47,9 +47,9 @@ interface WorldMapContainerProps {
   onRetryMoralSpeak?: () => void;
   onApproveMoralSpeak?: () => void;
   onAdjustMoralSpeak?: (category: VirtueCategory, delta: 10 | 20 | 30) => void;
+  onDeferMoralSpeak?: () => void;
   onRespeakMoralSpeak?: () => void;
   onSkipMoralSpeak?: () => void;
-  onDeferMoralSpeak?: () => void;
 }
 
 const PixiWorldMap = lazy(() => import("./PixiWorldMap").then((module) => ({ default: module.PixiWorldMap })));
@@ -400,8 +400,10 @@ export const WorldMapContainer = forwardRef<PixiWorldMapHandle, WorldMapContaine
           child={moralSpeakChild}
           transcript={moralSpeak.transcript}
           result={moralSpeak.result}
+          busy={moralSpeak.approving === true}
           onApprove={props.onApproveMoralSpeak ?? (() => undefined)}
           onAdjust={props.onAdjustMoralSpeak ?? (() => undefined)}
+          onDefer={props.onDeferMoralSpeak ?? (() => undefined)}
           onRespeak={props.onRespeakMoralSpeak ?? (() => undefined)}
           onSkip={props.onSkipMoralSpeak ?? (() => undefined)}
         />

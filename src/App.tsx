@@ -337,6 +337,7 @@ export function App() {
   const moralRecordingFormatRef = useRef("webm");
   const moralRecordingCancelledRef = useRef(false);
   const moralSpeakApprovingRef = useRef(false);
+  const moralSpeakSessionRef = useRef(0);
   const growthFeedbackTimerRef = useRef<number | undefined>(undefined);
   const homeFocusTimerRefs = useRef<number[]>([]);
   const growthTaskInFlightRef = useRef(new Set<string>());
@@ -462,6 +463,29 @@ export function App() {
     moralSpeakTimersRef.current.push(timer);
   };
 
+  const beginMoralSpeakSession = () => {
+    moralSpeakSessionRef.current += 1;
+    return moralSpeakSessionRef.current;
+  };
+
+  const invalidateMoralSpeakSession = () => {
+    moralSpeakSessionRef.current += 1;
+  };
+
+  const isMoralSpeakSessionActive = (sessionId: number, childId?: string) => {
+    const current = moralSpeakRef.current;
+    return (
+      moralSpeakSessionRef.current === sessionId &&
+      current.stage !== "idle" &&
+      (!childId || current.childId === childId)
+    );
+  };
+
+  const isCurrentMoralApprovalTarget = (childId: string, reviewId?: string) => {
+    const current = moralSpeakRef.current;
+    return current.stage === "pendingReview" && current.childId === childId && current.reviewId === reviewId;
+  };
+
   const getMoralSpeakLockedChildId = () => {
     const current = moralSpeakRef.current;
     return current.stage === "listening" ||
@@ -473,6 +497,7 @@ export function App() {
   };
 
   const prepareMoralSpeakForChild = (childId: string) => {
+    beginMoralSpeakSession();
     clearMoralSpeakTimers();
     stopMoralSpeakRecording(true);
     moralSpeakApprovingRef.current = false;
@@ -486,12 +511,27 @@ export function App() {
     const activeChild = childrenWithProgress.find((item) => item.id === lockedChildId) ?? selectedChild;
     setSelectedChildId(activeChild.id);
     worldMapRef.current?.focusSelected();
+    showGrowthFeedback({
+      kind: "status",
+      tone: "neutral",
+      title: `${activeChild.name} 正在说成长`,
+      detail: "先完成这一位，再点下一位",
+      childName: activeChild.name,
+    });
     return true;
   };
 
-  const returnMoralSpeakToIslandIdle = () => {
+  const resetMoralSpeakToIdle = (options: { focusIsland?: boolean } = {}) => {
+    invalidateMoralSpeakSession();
+    clearMoralSpeakTimers();
+    stopMoralSpeakRecording(true);
+    moralSpeakApprovingRef.current = false;
     setMoralSpeak({ stage: "idle" });
-    worldMapRef.current?.focusFullIsland();
+    if (options.focusIsland ?? true) worldMapRef.current?.focusFullIsland();
+  };
+
+  const returnMoralSpeakToIslandIdle = () => {
+    resetMoralSpeakToIdle({ focusIsland: true });
     scheduleMoralSpeakTimer(() => worldMapRef.current?.focusFullIsland(), 140);
   };
 
@@ -710,10 +750,7 @@ export function App() {
 
   useEffect(() => {
     if (activeModule === "home" || activeModule === "child-profile") return;
-    clearMoralSpeakTimers();
-    stopMoralSpeakRecording(true);
-    moralSpeakApprovingRef.current = false;
-    setMoralSpeak({ stage: "idle" });
+    resetMoralSpeakToIdle({ focusIsland: false });
   }, [activeModule]);
 
   useEffect(() => {
@@ -742,11 +779,20 @@ export function App() {
       __growthIslandChildIds?: string[];
       __growthIslandSelectedChildId?: string;
       __growthIslandTeacherMode?: boolean;
+      __growthIslandSyncStatus?: SyncStatus;
       __growthIslandMoralSpeakStage?: MoralSpeakViewState["stage"];
       __growthIslandMoralSpeak?: MoralSpeakViewState;
       __growthIslandFeedback?: GrowthFeedback;
       __growthIslandMoralAnalysisDelayMs?: number;
+      __growthIslandForceMoralMicErrorForQa?: boolean;
       __growthIslandClearMoralSpeakForQa?: () => void;
+      __growthIslandSetActiveModuleForQa?: (moduleId: AppModuleId) => boolean;
+      __growthIslandFinishMoralSpeakForQa?: (input: {
+        childId?: string;
+        transcript: string;
+        summary?: string;
+        delayMs?: number;
+      }) => boolean;
       __growthIslandStartMoralReviewForQa?: (input: {
         childId?: string;
         transcript: string;
@@ -771,15 +817,32 @@ export function App() {
     qaWindow.__growthIslandChildIds = childrenWithProgress.map((child) => child.id);
     qaWindow.__growthIslandSelectedChildId = selectedChild.id;
     qaWindow.__growthIslandTeacherMode = teacherMode;
+    qaWindow.__growthIslandSyncStatus = syncStatus;
     qaWindow.__growthIslandMoralSpeakStage = moralSpeak.stage;
     qaWindow.__growthIslandMoralSpeak = moralSpeak;
     qaWindow.__growthIslandFeedback = growthFeedback;
     qaWindow.__growthIslandMoralAnalysisDelayMs ??= 0;
+    qaWindow.__growthIslandForceMoralMicErrorForQa ??= false;
     qaWindow.__growthIslandClearMoralSpeakForQa = () => {
-      clearMoralSpeakTimers();
-      stopMoralSpeakRecording(true);
-      moralSpeakApprovingRef.current = false;
-      setMoralSpeak({ stage: "idle" });
+      resetMoralSpeakToIdle({ focusIsland: false });
+    };
+    qaWindow.__growthIslandSetActiveModuleForQa = (moduleId) => {
+      if (!moduleConfigById.has(moduleId)) return false;
+      setActiveModule(moduleId);
+      return true;
+    };
+    qaWindow.__growthIslandFinishMoralSpeakForQa = (input) => {
+      const child =
+        childrenWithProgress.find((item) => item.id === input.childId) ??
+        childrenWithProgress.find((item) => item.id === moralSpeak.childId) ??
+        childrenWithProgress.find((item) => item.id === selectedChild.id) ??
+        selectedChild;
+      const sessionId = moralSpeakSessionRef.current;
+      if (!isMoralSpeakSessionActive(sessionId, child.id)) return false;
+      window.setTimeout(() => {
+        void finishMoralSpeakWithTranscript(child, input.transcript, input.summary, sessionId);
+      }, Math.max(0, input.delayMs ?? 0));
+      return true;
     };
     qaWindow.__growthIslandStartMoralReviewForQa = (input) => {
       const child =
@@ -837,7 +900,7 @@ export function App() {
       openSpiritShowcase(child.id);
       return true;
     };
-  }, [childrenWithProgress, growthFeedback, ledger, lotteryDraws, moralReviews, moralSpeak, organizationState, selectedChild, settingsChanges, shopRedemptions, teacherMode]);
+  }, [childrenWithProgress, growthFeedback, ledger, lotteryDraws, moralReviews, moralSpeak, organizationState, selectedChild, settingsChanges, shopRedemptions, syncStatus, teacherMode]);
 
   useEffect(() => {
     const existingIds = new Set(children.map((child) => child.id));
@@ -988,7 +1051,13 @@ export function App() {
     return result;
   };
 
-  const finishMoralSpeakWithTranscript = async (child: ChildWithProgress, transcript: string, summary?: string) => {
+  const finishMoralSpeakWithTranscript = async (
+    child: ChildWithProgress,
+    transcript: string,
+    summary: string | undefined,
+    sessionId: number,
+  ) => {
+    if (!isMoralSpeakSessionActive(sessionId, child.id)) return;
     const cleanTranscript = transcript.trim();
     if (!cleanTranscript) {
       setMoralSpeak({ stage: "error", childId: child.id, error: "没听清，可以再说一次" });
@@ -1003,6 +1072,15 @@ export function App() {
           operatorChildId: child.id,
           transcript: cleanTranscript,
         });
+        if (!isMoralSpeakSessionActive(sessionId, child.id)) {
+          try {
+            const snapshot = await rejectMoralReview(response.reviewItem.id, child.id, "已取消");
+            applySnapshot(snapshot);
+          } catch {
+            setSyncStatus("offline");
+          }
+          return;
+        }
         setLastEvaluation(response.result);
         applySnapshot(response.snapshot);
         setSelectedChildId(child.id);
@@ -1021,6 +1099,7 @@ export function App() {
       }
     }
 
+    if (!isMoralSpeakSessionActive(sessionId, child.id)) return;
     const result = evaluateMoralText(cleanTranscript);
     setLastEvaluation(result);
     const review: MoralReviewItem = {
@@ -1044,13 +1123,17 @@ export function App() {
     });
   };
 
-  const processRecordedMoralAudio = async (child: ChildWithProgress, blob: Blob, voiceFormat: string) => {
+  const processRecordedMoralAudio = async (child: ChildWithProgress, blob: Blob, voiceFormat: string, sessionId: number) => {
+    if (!isMoralSpeakSessionActive(sessionId, child.id)) return;
     setMoralSpeak({ stage: "recognizing", childId: child.id });
     try {
       const audioBase64 = await blobToBase64(blob);
+      if (!isMoralSpeakSessionActive(sessionId, child.id)) return;
       const response = await transcribeSpeech({ audioBase64, voiceFormat });
-      await finishMoralSpeakWithTranscript(child, response.text);
+      if (!isMoralSpeakSessionActive(sessionId, child.id)) return;
+      await finishMoralSpeakWithTranscript(child, response.text, undefined, sessionId);
     } catch {
+      if (!isMoralSpeakSessionActive(sessionId, child.id)) return;
       setMoralSpeak({ stage: "error", childId: child.id, error: "没听清，可以再说一次" });
     }
   };
@@ -1083,7 +1166,15 @@ export function App() {
     clearMoralSpeakTimers();
     moralSpeakApprovingRef.current = false;
     const child = childrenWithProgress.find((item) => item.id === moralSpeak.childId) ?? selectedChild;
+    const sessionId = moralSpeakSessionRef.current;
+    if (!isMoralSpeakSessionActive(sessionId, child.id)) return;
     setSelectedChildId(child.id);
+
+    const qaWindow = window as unknown as { __growthIslandForceMoralMicErrorForQa?: boolean };
+    if (import.meta.env.DEV && qaWindow.__growthIslandForceMoralMicErrorForQa) {
+      setMoralSpeak({ stage: "error", childId: child.id, error: "麦克风没准备好，请老师帮忙" });
+      return;
+    }
 
     const settings = getMoralRecorderSettings();
     if (!settings || !navigator.mediaDevices?.getUserMedia) {
@@ -1093,6 +1184,10 @@ export function App() {
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      if (!isMoralSpeakSessionActive(sessionId, child.id)) {
+        stream.getTracks().forEach((track) => track.stop());
+        return;
+      }
       const chunks: BlobPart[] = [];
       const recorder = new MediaRecorder(stream, settings.mimeType ? { mimeType: settings.mimeType } : undefined);
       moralRecordingCancelledRef.current = false;
@@ -1106,6 +1201,7 @@ export function App() {
       };
       recorder.onerror = () => {
         stopMoralRecordingTracks();
+        if (!isMoralSpeakSessionActive(sessionId, child.id)) return;
         setMoralSpeak({ stage: "error", childId: child.id, error: "录音中断，请再说一次" });
       };
       recorder.onstop = () => {
@@ -1113,36 +1209,50 @@ export function App() {
         moralRecorderRef.current = null;
         if (moralRecordingCancelledRef.current) {
           moralRecordingCancelledRef.current = false;
+          moralRecordingChildRef.current = null;
           return;
         }
         const recordedChild = moralRecordingChildRef.current ?? child;
+        moralRecordingChildRef.current = null;
+        if (!isMoralSpeakSessionActive(sessionId, recordedChild.id)) return;
         const blob = new Blob(chunks, { type: recorder.mimeType || settings.mimeType || "audio/webm" });
         if (blob.size === 0) {
           setMoralSpeak({ stage: "error", childId: recordedChild.id, error: "没听清，可以再说一次" });
           return;
         }
-        void processRecordedMoralAudio(recordedChild, blob, moralRecordingFormatRef.current);
+        void processRecordedMoralAudio(recordedChild, blob, moralRecordingFormatRef.current, sessionId);
       };
 
+      if (!isMoralSpeakSessionActive(sessionId, child.id)) {
+        stopMoralRecordingTracks();
+        return;
+      }
       setMoralSpeak({ stage: "listening", childId: child.id });
       recorder.start();
       scheduleMoralSpeakTimer(stopMoralSpeakRecording, 5500);
     } catch {
       stopMoralRecordingTracks();
+      if (!isMoralSpeakSessionActive(sessionId, child.id)) return;
       setMoralSpeak({ stage: "error", childId: child.id, error: "请允许麦克风后再试" });
     }
   };
 
   const retryMoralSpeak = () => {
+    if (moralSpeakApprovingRef.current) return;
     const childId = moralSpeak.childId ?? selectedChild.id;
+    beginMoralSpeakSession();
     stopMoralSpeakRecording(true);
     moralSpeakApprovingRef.current = false;
+    if (moralSpeak.stage === "pendingReview") {
+      markCurrentMoralReviewRejected("补说");
+    }
     setSelectedChildId(childId);
     setMoralSpeak({ stage: "ready", childId });
   };
 
   const approveMoralSpeak = async () => {
     if (
+      moralSpeak.stage !== "pendingReview" ||
       !moralSpeak.result ||
       !moralSpeak.childId ||
       !canApproveMoralGrowth(moralSpeak.result)
@@ -1154,12 +1264,16 @@ export function App() {
     clearMoralSpeakTimers();
     const result = moralSpeak.result;
     const transcript = moralSpeak.transcript ?? "孩子自助成长记录";
+    const approvalChildId = moralSpeak.childId;
     const reviewId = moralSpeak.reviewId;
-    const completedChild = childrenWithProgress.find((child) => child.id === moralSpeak.childId) ?? selectedChild;
+    const completedChild = childrenWithProgress.find((child) => child.id === approvalChildId) ?? selectedChild;
+    setMoralSpeak((current) =>
+      isCurrentMoralApprovalTarget(approvalChildId, reviewId) ? { ...current, approving: true } : current,
+    );
 
     try {
       await commitLedger({
-        childId: moralSpeak.childId,
+        childId: approvalChildId,
         operatorChildId: selectedChild.id,
         operatorRole: "teacher",
         delta: result.xpDelta,
@@ -1172,12 +1286,26 @@ export function App() {
         teacherAdjustedReview: moralSpeak.adjusted === true,
       });
     } catch {
+      if (!isCurrentMoralApprovalTarget(approvalChildId, reviewId)) {
+        moralSpeakApprovingRef.current = false;
+        return;
+      }
       moralSpeakApprovingRef.current = false;
-      setMoralSpeak((current) => ({
-        ...current,
-        stage: "error",
-        error: "请老师稍后再确认",
-      }));
+      setMoralSpeak((current) =>
+        isCurrentMoralApprovalTarget(approvalChildId, reviewId)
+          ? {
+              ...current,
+              stage: "error",
+              approving: false,
+              error: "请老师稍后再确认",
+            }
+          : current,
+      );
+      return;
+    }
+
+    if (!isCurrentMoralApprovalTarget(approvalChildId, reviewId)) {
+      moralSpeakApprovingRef.current = false;
       return;
     }
 
@@ -1196,12 +1324,17 @@ export function App() {
       );
     }
 
-    setMoralSpeak((current) => ({
-      ...current,
-      stage: "success",
-      result,
-      previousChildName: completedChild.name,
-    }));
+    setMoralSpeak((current) =>
+      isCurrentMoralApprovalTarget(approvalChildId, reviewId)
+        ? {
+            ...current,
+            stage: "success",
+            approving: false,
+            result,
+            previousChildName: completedChild.name,
+          }
+        : current,
+    );
     clearGrowthFeedback();
     scheduleMoralSpeakTimer(() => {
       moralSpeakApprovingRef.current = false;
@@ -1217,6 +1350,7 @@ export function App() {
   };
 
   const adjustMoralSpeak = (category: VirtueCategory, delta: 10 | 20 | 30) => {
+    if (moralSpeakApprovingRef.current) return;
     setMoralSpeak((current) => {
       if (!current.result) return current;
       const result = {
@@ -1237,6 +1371,7 @@ export function App() {
   };
 
   const markCurrentMoralReviewRejected = (rejectionReason: string) => {
+    if (moralSpeakApprovingRef.current) return;
     const reviewId = moralSpeak.reviewId;
     if (!reviewId) return;
     setMoralReviews((current) =>
@@ -1258,6 +1393,8 @@ export function App() {
   };
 
   const respeakMoralSpeak = () => {
+    if (moralSpeakApprovingRef.current) return;
+    beginMoralSpeakSession();
     clearMoralSpeakTimers();
     stopMoralSpeakRecording(true);
     moralSpeakApprovingRef.current = false;
@@ -1268,6 +1405,7 @@ export function App() {
   };
 
   const skipMoralSpeakChild = () => {
+    if (moralSpeakApprovingRef.current) return;
     clearMoralSpeakTimers();
     stopMoralSpeakRecording(true);
     moralSpeakApprovingRef.current = false;
@@ -1276,11 +1414,30 @@ export function App() {
   };
 
   const deferMoralSpeak = () => {
-    clearMoralSpeakTimers();
-    stopMoralSpeakRecording(true);
-    moralSpeakApprovingRef.current = false;
-    setMoralSpeak({ stage: "idle" });
-    worldMapRef.current?.focusFullIsland();
+    if (moralSpeakApprovingRef.current) return;
+    const currentChild = moralSpeak.childId
+      ? childrenWithProgress.find((child) => child.id === moralSpeak.childId)
+      : undefined;
+    resetMoralSpeakToIdle({ focusIsland: true });
+    if (moralSpeak.stage === "pendingReview" && currentChild) {
+      showGrowthFeedback({
+        kind: "status",
+        tone: "neutral",
+        title: "已放回老师待办",
+        detail: `${currentChild.name} 稍后再看`,
+        childName: currentChild.name,
+      });
+      return;
+    }
+    if (currentChild) {
+      showGrowthFeedback({
+        kind: "status",
+        tone: "neutral",
+        title: `${currentChild.name} 稍后再说`,
+        detail: "流程已收起",
+        childName: currentChild.name,
+      });
+    }
   };
 
   const updateSelectedChild = (patch: Partial<ChildProfile>) => {
@@ -1448,6 +1605,11 @@ export function App() {
       detail: "小屋麦克风已打开",
       childName: child.name,
     });
+  };
+
+  const selectChildFromProfile = (childId: string) => {
+    if (guardMoralSpeakChildSelection(childId)) return;
+    setSelectedChildId(childId);
   };
 
   const openSpiritShowcase = (childId = selectedChild.id) => {
@@ -1832,7 +1994,7 @@ export function App() {
           spiritsById={spiritsById}
           selectedChild={selectedChild}
           recentRecords={allRecentRecords}
-          onSelectChild={setSelectedChildId}
+          onSelectChild={selectChildFromProfile}
           onWin={recordMathPkWin}
           onFocusChild={focusChildOnHome}
         />
@@ -1869,7 +2031,7 @@ export function App() {
           spiritsById={spiritsById}
           selectedChild={selectedChild}
           recentRecords={allRecentRecords}
-          onSelectChild={setSelectedChildId}
+          onSelectChild={selectChildFromProfile}
           onFocusChild={focusChildOnHome}
           onUpdateChild={updateSelectedChild}
           moralSpeak={moralSpeak}

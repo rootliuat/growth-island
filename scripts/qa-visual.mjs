@@ -22,6 +22,7 @@ const allChecks = [
   { name: "moral-speak-flow", module: "home", viewports: ["whiteboard", "mobile"], kind: "moral-speak-flow", offline: true },
   { name: "classroom-touch-loop", module: "home", viewports: ["whiteboard"], kind: "classroom-loop", offline: true },
   { name: "moral-review-safety", module: "home", viewports: ["whiteboard", "mobile"], kind: "moral-review-safety", offline: true },
+  { name: "moral-review-online-stale", module: "home", viewports: ["whiteboard"], kind: "moral-review-online-stale" },
   { name: "spirit-showcase-3d", module: "home", viewports: ["whiteboard", "mobile"], kind: "spirit-showcase", offline: true },
   { name: "teacher-workbench", module: "teacher-workbench", viewports: ["whiteboard", "compact"], kind: "teacher" },
   { name: "teacher-flow", module: "teacher-workbench", viewports: ["whiteboard"], kind: "teacher-flow", offline: true },
@@ -1482,6 +1483,7 @@ async function inspectMoralReviewCard(page, transcript, childId) {
   return page.evaluate(({ transcript, childId }) => {
     const approve = document.querySelector(".teacher-review-corner-card .approve");
     const adjust = document.querySelector(".teacher-review-corner-card .review-edit-popover summary");
+    const defer = document.querySelector(".teacher-review-corner-card .defer");
     const respeak = document.querySelector(".teacher-review-corner-card .respeak");
     const skip = document.querySelector(".teacher-review-corner-card .skip");
     const actionButtons = [...document.querySelectorAll(".teacher-review-actions button, .teacher-review-actions summary")];
@@ -1512,11 +1514,13 @@ async function inspectMoralReviewCard(page, transcript, childId) {
           }
         : undefined,
       hasApproveAction: approve instanceof HTMLButtonElement,
+      hasDeferAction: defer instanceof HTMLButtonElement,
       hasRespeakAction: respeak instanceof HTMLButtonElement,
       hasSkipAction: skip instanceof HTMLButtonElement,
       approveDisabled: approve instanceof HTMLButtonElement ? approve.disabled : undefined,
       approveText: approve?.textContent?.replace(/\s+/g, "") ?? "",
       adjustText: adjust?.textContent?.replace(/\s+/g, "") ?? "",
+      deferText: defer?.textContent?.replace(/\s+/g, "") ?? "",
       actionLayout: actionButtons.map((button) => {
         const rect = button.getBoundingClientRect();
         return {
@@ -1569,6 +1573,36 @@ async function openMoralCorrectionPanel(page) {
     state: "visible",
     timeout: 5000,
   });
+}
+
+async function inspectMoralRuntime(page) {
+  return page.evaluate(() => ({
+    stage: window.__growthIslandMoralSpeakStage,
+    syncStatus: window.__growthIslandSyncStatus,
+    selectedChildId: window.__growthIslandSelectedChildId,
+    moralChildId: window.__growthIslandMoralSpeak?.childId,
+    hasOverlay: Boolean(document.querySelector(".moral-speak-overlay")),
+    hasTeacherCard: Boolean(document.querySelector(".teacher-review-corner-card")),
+    sceneText: document.querySelector(".shell-scene-chip")?.textContent?.replace(/\s+/g, "") ?? "",
+    feedbackText: document.querySelector(".growth-feedback-overlay")?.textContent?.replace(/\s+/g, "") ?? "",
+  }));
+}
+
+async function inspectMoralReviewPersistence(page, transcript, childId) {
+  return page.evaluate(({ transcript, childId }) => {
+    const reviews = window.__growthIslandReviews ?? [];
+    const records = window.__growthIslandLedger ?? [];
+    const matchingReviews = reviews.filter((review) => review.childId === childId && review.transcript === transcript);
+    const matchingRecords = records.filter(
+      (record) => record.childId === childId && record.reason === `自助成长：${transcript}`,
+    );
+    return {
+      pendingMatchingReviewCount: matchingReviews.filter((review) => review.status === "pending_review").length,
+      latestReviewStatus: matchingReviews[0]?.status,
+      latestReviewRejectionReason: matchingReviews[0]?.rejectionReason,
+      matchingSelfServiceCount: matchingRecords.length,
+    };
+  }, { transcript, childId });
 }
 
 async function inspectExpandedDockGeometry(page) {
@@ -1811,6 +1845,8 @@ async function inspectMoralSelfServiceState(page) {
       listeningActionText: document.querySelector(".moral-wave-state")?.textContent?.replace(/\s+/g, "") ?? "",
       micText: document.querySelector(".moral-mic-button")?.textContent?.replace(/\s+/g, "") ?? "",
       micAriaLabel: document.querySelector(".moral-mic-button")?.getAttribute("aria-label") ?? "",
+      safeExitText: document.querySelector(".moral-safe-exit")?.textContent?.replace(/\s+/g, "") ?? "",
+      hasSafeExitAction: document.querySelector(".moral-safe-exit") instanceof HTMLButtonElement,
       hasTeacherCard: Boolean(teacherCard),
       teacherCardRect: teacherRect
         ? {
@@ -1872,6 +1908,155 @@ async function exerciseMoralReviewSafety(page, pendingScreenshot, adjustedScreen
   });
   await page.locator(".teacher-review-corner-card .skip").click();
   await page.waitForFunction(() => window.__growthIslandMoralSpeakStage === "idle", null, { timeout: 3500 });
+
+  const readyRescue = { childId: "child-08" };
+  const readyStarted = await page.evaluate((childId) => window.__growthIslandPrepareMoralSpeakForQa?.(childId) ?? false, readyRescue.childId);
+  await page.waitForFunction(
+    ({ childId }) => window.__growthIslandMoralSpeakStage === "ready" && window.__growthIslandMoralSpeak?.childId === childId,
+    readyRescue,
+    { timeout: 3500 },
+  );
+  const readyPending = await inspectMoralSelfServiceState(page);
+  await page.locator(".moral-speak-overlay.ready .moral-safe-exit").click();
+  await page.waitForFunction(() => window.__growthIslandMoralSpeakStage === "idle", null, { timeout: 3500 });
+  const readyAfterExit = await inspectMoralRuntime(page);
+
+  const recognizingRescue = { childId: "child-09" };
+  const recognizingStarted = await page.evaluate(
+    (childId) => window.__growthIslandSetMoralRecognizingForQa?.(childId) ?? false,
+    recognizingRescue.childId,
+  );
+  await page.waitForFunction(
+    ({ childId }) => window.__growthIslandMoralSpeakStage === "recognizing" && window.__growthIslandMoralSpeak?.childId === childId,
+    recognizingRescue,
+    { timeout: 3500 },
+  );
+  const recognizingPending = await inspectMoralSelfServiceState(page);
+  await page.evaluate(() => {
+    const button = document.querySelector(".moral-speak-overlay.recognizing .moral-safe-exit");
+    if (!(button instanceof HTMLButtonElement)) throw new Error("async cancel button missing");
+    button.click();
+  });
+  await page.waitForFunction(() => window.__growthIslandMoralSpeakStage === "idle", null, { timeout: 3500 });
+  const recognizingAfterExit = await inspectMoralRuntime(page);
+
+  const listeningCancel = { childId: "child-10" };
+  const listeningStarted = await page.evaluate((childId) => window.__growthIslandPrepareMoralSpeakForQa?.(childId) ?? false, listeningCancel.childId);
+  await page.waitForFunction(
+    ({ childId }) => window.__growthIslandMoralSpeakStage === "ready" && window.__growthIslandMoralSpeak?.childId === childId,
+    listeningCancel,
+    { timeout: 3500 },
+  );
+  await page.locator(".moral-speak-overlay.ready .moral-mic-button").click();
+  await page.waitForFunction(
+    ({ childId }) => window.__growthIslandMoralSpeakStage === "listening" && window.__growthIslandMoralSpeak?.childId === childId,
+    listeningCancel,
+    { timeout: 3500 },
+  );
+  const listeningPending = await inspectMoralSelfServiceState(page);
+  await page.locator(".moral-speak-overlay.listening .moral-safe-exit").click();
+  await page.waitForFunction(() => window.__growthIslandMoralSpeakStage === "idle", null, { timeout: 3500 });
+  await page.waitForTimeout(260);
+  const listeningAfterExit = await inspectMoralRuntime(page);
+
+  const asyncCancel = {
+    childId: "child-14",
+    transcript: "我今天帮同伴整理水杯",
+    summary: "整理水杯",
+  };
+  const asyncPrepared = await page.evaluate((childId) => window.__growthIslandPrepareMoralSpeakForQa?.(childId) ?? false, asyncCancel.childId);
+  await page.waitForFunction(
+    ({ childId }) => window.__growthIslandMoralSpeakStage === "ready" && window.__growthIslandMoralSpeak?.childId === childId,
+    asyncCancel,
+    { timeout: 3500 },
+  );
+  const asyncRecognizing = await page.evaluate((childId) => window.__growthIslandSetMoralRecognizingForQa?.(childId) ?? false, asyncCancel.childId);
+  await page.waitForFunction(
+    ({ childId }) => window.__growthIslandMoralSpeakStage === "recognizing" && window.__growthIslandMoralSpeak?.childId === childId,
+    asyncCancel,
+    { timeout: 3500 },
+  );
+  const asyncFinishScheduled = await page.evaluate(
+    (payload) => window.__growthIslandFinishMoralSpeakForQa?.({ ...payload, delayMs: 1200 }) ?? false,
+    asyncCancel,
+  );
+  await page.evaluate(() => {
+    const button = document.querySelector(".moral-speak-overlay.recognizing .moral-safe-exit");
+    if (!(button instanceof HTMLButtonElement)) throw new Error("async cancel button missing");
+    button.click();
+  });
+  await page.waitForFunction(() => window.__growthIslandMoralSpeakStage === "idle", null, { timeout: 3500 });
+  await page.waitForTimeout(1500);
+  const asyncAfterExit = await inspectMoralRuntime(page);
+  const asyncAfterPersistence = await inspectMoralReviewPersistence(page, asyncCancel.transcript, asyncCancel.childId);
+
+  const micFailure = { childId: "child-10" };
+  await page.evaluate(() => {
+    window.__growthIslandForceMoralMicErrorForQa = true;
+  });
+  const micStarted = await page.evaluate((childId) => window.__growthIslandPrepareMoralSpeakForQa?.(childId) ?? false, micFailure.childId);
+  await page.waitForFunction(
+    ({ childId }) => window.__growthIslandMoralSpeakStage === "ready" && window.__growthIslandMoralSpeak?.childId === childId,
+    micFailure,
+    { timeout: 3500 },
+  );
+  await page.locator(".moral-speak-overlay.ready .moral-mic-button").click();
+  await page.waitForFunction(() => window.__growthIslandMoralSpeakStage === "error", null, { timeout: 3500 });
+  const micError = await inspectMoralSelfServiceState(page);
+  await page.locator(".moral-speak-overlay.error .moral-retry-button").click();
+  await page.waitForFunction(
+    ({ childId }) => window.__growthIslandMoralSpeakStage === "ready" && window.__growthIslandMoralSpeak?.childId === childId,
+    micFailure,
+    { timeout: 3500 },
+  );
+  const micAfterRetry = await inspectMoralSelfServiceState(page);
+  await page.evaluate(() => {
+    window.__growthIslandForceMoralMicErrorForQa = false;
+  });
+  await page.locator(".moral-speak-overlay.ready .moral-safe-exit").click();
+  await page.waitForFunction(() => window.__growthIslandMoralSpeakStage === "idle", null, { timeout: 3500 });
+  const micAfterExit = await inspectMoralRuntime(page);
+
+  const deferred = {
+    childId: "child-11",
+    transcript: "我今天帮老师摆好小椅子",
+    summary: "摆椅子",
+  };
+  const deferredStart = await startQaMoralReview(page, deferred);
+  const deferredPending = await inspectMoralReviewCard(page, deferred.transcript, deferred.childId);
+  await page.locator(".teacher-review-corner-card .defer").click();
+  await page.waitForFunction(() => window.__growthIslandMoralSpeakStage === "idle", null, { timeout: 3500 });
+  const deferredAfter = await inspectMoralReviewCard(page, deferred.transcript, deferred.childId);
+
+  const moduleSwitch = {
+    childId: "child-12",
+    transcript: "我今天主动排队等大家",
+    summary: "主动排队",
+  };
+  const moduleSwitchStart = await startQaMoralReview(page, moduleSwitch);
+  const moduleSwitchPending = await inspectMoralReviewCard(page, moduleSwitch.transcript, moduleSwitch.childId);
+  const moduleChanged = await page.evaluate(() => window.__growthIslandSetActiveModuleForQa?.("roll-call") ?? false);
+  await page.waitForFunction(() => window.__growthIslandMoralSpeakStage === "idle", null, { timeout: 3500 });
+  const moduleSwitchAfter = {
+    ...(await inspectMoralReviewCard(page, moduleSwitch.transcript, moduleSwitch.childId)),
+    runtime: await inspectMoralRuntime(page),
+  };
+  await page.evaluate(() => window.__growthIslandSetActiveModuleForQa?.("home"));
+  await page.waitForSelector(".pixi-world-canvas", { timeout: 5000 });
+
+  const refresh = {
+    childId: "child-13",
+    transcript: "我今天给同伴让路",
+    summary: "让路",
+  };
+  const refreshStart = await startQaMoralReview(page, refresh);
+  const refreshPending = await inspectMoralReviewCard(page, refresh.transcript, refresh.childId);
+  await page.waitForTimeout(180);
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.waitForLoadState("networkidle");
+  await page.waitForFunction(() => typeof window.__growthIslandPrepareMoralSpeakForQa === "function", null, { timeout: 5000 });
+  const refreshAfter = await inspectMoralRuntime(page);
+  const refreshPersistence = await inspectMoralReviewPersistence(page, refresh.transcript, refresh.childId);
 
   const lowConfidence = {
     childId: "child-07",
@@ -1958,6 +2143,52 @@ async function exerciseMoralReviewSafety(page, pendingScreenshot, adjustedScreen
       touchGeometry: longTranscriptTouch,
       layout: longTranscriptLayout,
     },
+    readyRescue: {
+      started: readyStarted,
+      pending: readyPending,
+      afterExit: readyAfterExit,
+    },
+    recognizingRescue: {
+      started: recognizingStarted,
+      pending: recognizingPending,
+      afterExit: recognizingAfterExit,
+    },
+    listeningCancel: {
+      started: listeningStarted,
+      pending: listeningPending,
+      afterExit: listeningAfterExit,
+    },
+    asyncCancel: {
+      prepared: asyncPrepared,
+      recognizing: asyncRecognizing,
+      finishScheduled: asyncFinishScheduled,
+      afterExit: asyncAfterExit,
+      persistence: asyncAfterPersistence,
+    },
+    micFailure: {
+      started: micStarted,
+      error: micError,
+      afterRetry: micAfterRetry,
+      afterExit: micAfterExit,
+    },
+    deferred,
+    deferredReview: {
+      start: deferredStart,
+      pending: deferredPending,
+      afterDefer: deferredAfter,
+    },
+    moduleSwitch: {
+      start: moduleSwitchStart,
+      pending: moduleSwitchPending,
+      changed: moduleChanged,
+      afterSwitch: moduleSwitchAfter,
+    },
+    refresh: {
+      start: refreshStart,
+      pending: refreshPending,
+      afterReload: refreshAfter,
+      persistence: refreshPersistence,
+    },
     lowConfidence: {
       childId: lowConfidence.childId,
       start: lowStart,
@@ -1984,6 +2215,72 @@ async function exerciseMoralReviewSafety(page, pendingScreenshot, adjustedScreen
         negativeStart.before.matchingSelfServiceCount === negativeAfterApproveAttempt.matchingSelfServiceCount,
       noNegativeLedger: !negativeFinal.hasNegativeLedger,
     },
+  };
+}
+
+async function exerciseMoralReviewOnlineStale(page, screenshot) {
+  await page.waitForSelector(".pixi-world-canvas");
+  await page.waitForFunction(() => window.__growthIslandSyncStatus === "online", null, { timeout: 5000 });
+
+  const stale = {
+    childId: "child-15",
+    transcript: "我今天主动把彩笔放回盒子",
+    summary: "收盒彩笔",
+  };
+  const before = await inspectMoralReviewPersistence(page, stale.transcript, stale.childId);
+
+  let markEvaluateStarted = () => undefined;
+  let releaseEvaluate = () => undefined;
+  let evaluateRequestCount = 0;
+  const evaluateStarted = new Promise((resolve) => {
+    markEvaluateStarted = resolve;
+  });
+
+  await page.route("**:5174/api/agent/moral-evaluate", async (route) => {
+    evaluateRequestCount += 1;
+    const hold = new Promise((resolve) => {
+      releaseEvaluate = resolve;
+    });
+    markEvaluateStarted();
+    await hold;
+    await route.continue();
+  });
+
+  const recognizing = await page.evaluate((childId) => window.__growthIslandSetMoralRecognizingForQa?.(childId) ?? false, stale.childId);
+  await page.waitForFunction(
+    ({ childId }) => window.__growthIslandMoralSpeakStage === "recognizing" && window.__growthIslandMoralSpeak?.childId === childId,
+    stale,
+    { timeout: 3500 },
+  );
+  const finishStarted = await page.evaluate((payload) => window.__growthIslandFinishMoralSpeakForQa?.(payload) ?? false, stale);
+  await Promise.race([
+    evaluateStarted,
+    new Promise((_, reject) => {
+      setTimeout(() => reject(new Error("moral evaluate request did not start")), 5000);
+    }),
+  ]);
+  await page.waitForFunction(() => window.__growthIslandSyncStatus === "saving", null, { timeout: 3500 });
+  const duringRequest = await inspectMoralRuntime(page);
+  await page.locator(".moral-speak-overlay.recognizing .moral-safe-exit").click();
+  await page.waitForFunction(() => window.__growthIslandMoralSpeakStage === "idle", null, { timeout: 3500 });
+  releaseEvaluate();
+  await page.waitForFunction(() => window.__growthIslandSyncStatus !== "saving", null, { timeout: 7000 });
+  await page.waitForTimeout(220);
+  await page.unroute("**:5174/api/agent/moral-evaluate");
+
+  const afterExit = await inspectMoralRuntime(page);
+  const afterPersistence = await inspectMoralReviewPersistence(page, stale.transcript, stale.childId);
+  await page.screenshot({ path: screenshot, fullPage: false });
+
+  return {
+    stale,
+    before,
+    recognizing,
+    finishStarted,
+    evaluateRequestCount,
+    duringRequest,
+    afterExit,
+    afterPersistence,
   };
 }
 
@@ -2738,6 +3035,56 @@ async function exerciseProfileMoralReady(page) {
   };
 }
 
+async function exerciseProfileLockedSelectionGuard(page) {
+  const start = page.locator(".profile-moral-start").first();
+  if ((await start.count()) === 0) return { ok: false, reason: "missing start button" };
+  await start.click();
+  await page.waitForSelector(".profile-cabin-stage.moral-stage-ready .moral-mic-button", { timeout: 4000 });
+  const lockedBefore = await page.evaluate(() => ({
+    selectedChildId: window.__growthIslandSelectedChildId,
+    moralChildId: window.__growthIslandMoralSpeak?.childId,
+    stage: window.__growthIslandMoralSpeakStage,
+  }));
+  await page.locator(".profile-cabin-stage .moral-mic-button").click();
+  await page.waitForFunction(() => window.__growthIslandMoralSpeakStage === "listening", null, { timeout: 4000 });
+  const otherChildClicked = await page.evaluate(() => {
+    const active = document.querySelector(".profile-roster-list button.active");
+    const other = [...document.querySelectorAll(".profile-roster-list button")].find((button) => button !== active);
+    if (!(other instanceof HTMLButtonElement)) return false;
+    other.click();
+    return true;
+  });
+  await page.waitForTimeout(260);
+  const after = await page.evaluate(() => {
+    const overlay = document.querySelector(".profile-cabin-stage .moral-speak-overlay.listening");
+    const cabin = document.querySelector(".profile-cabin-stage");
+    const selectedChildId = window.__growthIslandSelectedChildId;
+    const moralChildId = window.__growthIslandMoralSpeak?.childId;
+    return {
+      selectedChildId,
+      moralChildId,
+      stage: window.__growthIslandMoralSpeakStage,
+      hasListeningOverlay: Boolean(overlay),
+      cabinText: cabin?.textContent?.replace(/\s+/g, "") ?? "",
+      feedbackText: document.querySelector(".growth-feedback-overlay")?.textContent?.replace(/\s+/g, "") ?? "",
+    };
+  });
+  await page.evaluate(() => window.__growthIslandClearMoralSpeakForQa?.());
+  await page.waitForSelector(".profile-cabin-stage.moral-stage-idle", { timeout: 3000 }).catch(() => undefined);
+  return {
+    ok:
+      otherChildClicked &&
+      lockedBefore.selectedChildId === lockedBefore.moralChildId &&
+      after.selectedChildId === lockedBefore.selectedChildId &&
+      after.moralChildId === lockedBefore.moralChildId &&
+      after.stage === "listening" &&
+      after.hasListeningOverlay,
+    otherChildClicked,
+    lockedBefore,
+    after,
+  };
+}
+
 async function exerciseProfileFlow(page, workbenchProfileScreenshot, homeProfileScreenshot) {
   const startsOnProfile = (await page.locator(".profile-page").count()) > 0;
   if (startsOnProfile) {
@@ -2752,6 +3099,7 @@ async function exerciseProfileFlow(page, workbenchProfileScreenshot, homeProfile
     await waitForModelStageSettled(page, ".profile-cabin-reward-stage");
     const profile = await inspectCurrentProfile(page);
     const moralReady = await exerciseProfileMoralReady(page);
+    const moralSelectionGuard = await exerciseProfileLockedSelectionGuard(page);
     await page.screenshot({ path: workbenchProfileScreenshot, fullPage: false });
 
     await page.locator(".profile-home-button").click();
@@ -2772,6 +3120,7 @@ async function exerciseProfileFlow(page, workbenchProfileScreenshot, homeProfile
       xpAfter: xpBefore,
       homeHadSelectedChild: Boolean(name) && homeText.includes(name),
       moralReady,
+      moralSelectionGuard,
       fromWorkbench: profile,
       fromHome,
       homeProfileScreenshot,
@@ -2802,6 +3151,7 @@ async function exerciseProfileFlow(page, workbenchProfileScreenshot, homeProfile
   await waitForModelStageSettled(page, ".profile-cabin-reward-stage");
   const fromWorkbench = await inspectCurrentProfile(page);
   const moralReady = await exerciseProfileMoralReady(page);
+  const moralSelectionGuard = await exerciseProfileLockedSelectionGuard(page);
   await page.screenshot({ path: workbenchProfileScreenshot, fullPage: false });
 
   await page.locator(".profile-home-button").click();
@@ -2822,6 +3172,7 @@ async function exerciseProfileFlow(page, workbenchProfileScreenshot, homeProfile
     xpAfter: xpBefore + 10,
     homeHadSelectedChild: Boolean(name) && homeText.includes(name),
     moralReady,
+    moralSelectionGuard,
     fromWorkbench,
     fromHome,
     homeProfileScreenshot,
@@ -3992,7 +4343,13 @@ async function inspectPage(browser, check, viewport) {
   const pageErrors = [];
   const failedRequests = [];
 
-  if (check.kind === "moral-speak-flow" || check.kind === "classroom-loop") {
+  if (
+    check.kind === "moral-speak-flow" ||
+    check.kind === "classroom-loop" ||
+    check.kind === "moral-review-safety" ||
+    check.kind === "moral-review-online-stale" ||
+    check.kind === "profile-flow"
+  ) {
     await installMoralRecorderMock(page);
   }
 
@@ -4067,6 +4424,10 @@ async function inspectPage(browser, check, viewport) {
           path.join(outputDir, `${check.name}-adjusted-${viewport.name}.png`),
         )
       : undefined;
+  const moralReviewOnlineStaleDetails =
+    check.kind === "moral-review-online-stale"
+      ? await exerciseMoralReviewOnlineStale(page, screenshot)
+      : undefined;
   const spiritShowcaseDetails =
     check.kind === "spirit-showcase"
       ? await exerciseSpiritShowcase(page, screenshot)
@@ -4135,6 +4496,7 @@ async function inspectPage(browser, check, viewport) {
     check.kind !== "moral-speak-flow" &&
     check.kind !== "classroom-loop" &&
     check.kind !== "moral-review-safety" &&
+    check.kind !== "moral-review-online-stale" &&
     check.kind !== "spirit-showcase" &&
     check.kind !== "home-fallback-return" &&
     check.kind !== "voice-mobile" &&
@@ -4696,6 +5058,122 @@ async function inspectPage(browser, check, viewport) {
 
   if (check.kind === "moral-review-safety") {
     details = { flow: moralReviewSafetyDetails };
+    const readyRescue = moralReviewSafetyDetails?.readyRescue;
+    if (!readyRescue?.started) issues.push("ready rescue did not start through QA hook");
+    if (readyRescue?.pending?.stage !== "ready") issues.push("ready rescue did not enter ready stage");
+    if (!readyRescue?.pending?.hasSafeExitAction || !readyRescue?.pending?.safeExitText.includes("取消")) {
+      issues.push("ready stage missing visible cancel rescue action");
+    }
+    if (readyRescue?.afterExit?.stage !== "idle" || readyRescue?.afterExit?.hasOverlay || readyRescue?.afterExit?.hasTeacherCard) {
+      issues.push("ready cancel did not return to stable idle state");
+    }
+
+    const recognizingRescue = moralReviewSafetyDetails?.recognizingRescue;
+    if (!recognizingRescue?.started) issues.push("recognizing rescue did not start through QA hook");
+    if (recognizingRescue?.pending?.stage !== "recognizing") issues.push("recognizing rescue did not enter recognizing stage");
+    if (!recognizingRescue?.pending?.hasSafeExitAction || !recognizingRescue?.pending?.safeExitText.includes("取消")) {
+      issues.push("recognizing stage missing visible cancel action");
+    }
+    if (
+      recognizingRescue?.afterExit?.stage !== "idle" ||
+      recognizingRescue?.afterExit?.hasOverlay ||
+      recognizingRescue?.afterExit?.hasTeacherCard
+    ) {
+      issues.push("recognizing cancel did not return to stable idle state");
+    }
+
+    const listeningCancel = moralReviewSafetyDetails?.listeningCancel;
+    if (!listeningCancel?.started) issues.push("listening cancel did not start through QA hook");
+    if (listeningCancel?.pending?.stage !== "listening") issues.push("listening cancel did not enter listening stage");
+    if (!listeningCancel?.pending?.hasSafeExitAction || !listeningCancel?.pending?.safeExitText.includes("取消")) {
+      issues.push("listening stage missing visible cancel action");
+    }
+    if (
+      listeningCancel?.afterExit?.stage !== "idle" ||
+      listeningCancel?.afterExit?.hasOverlay ||
+      listeningCancel?.afterExit?.hasTeacherCard
+    ) {
+      issues.push("listening cancel did not return to stable idle state");
+    }
+
+    const asyncCancel = moralReviewSafetyDetails?.asyncCancel;
+    if (!asyncCancel?.prepared || !asyncCancel?.recognizing || !asyncCancel?.finishScheduled) {
+      issues.push("async cancel regression did not schedule delayed moral finish");
+    }
+    if (asyncCancel?.afterExit?.stage !== "idle" || asyncCancel?.afterExit?.hasOverlay || asyncCancel?.afterExit?.hasTeacherCard) {
+      issues.push("delayed moral finish reopened UI after cancellation");
+    }
+    if (
+      (asyncCancel?.persistence?.pendingMatchingReviewCount ?? 0) !== 0 ||
+      (asyncCancel?.persistence?.matchingSelfServiceCount ?? 0) !== 0
+    ) {
+      issues.push("delayed moral finish created a dirty review or ledger after cancellation");
+    }
+
+    const micFailure = moralReviewSafetyDetails?.micFailure;
+    if (!micFailure?.started) issues.push("mic failure rescue did not start through QA hook");
+    if (micFailure?.error?.stage !== "error") issues.push("forced microphone failure did not enter error state");
+    if (!micFailure?.error?.hasSafeExitAction || !micFailure?.error?.safeExitText.includes("稍后")) {
+      issues.push("microphone failure missing safe exit action");
+    }
+    if (/NotAllowed|Error|undefined|null|麦克风.*error/i.test(micFailure?.error?.childBubbleText ?? "")) {
+      issues.push("microphone failure leaked technical error copy");
+    }
+    if (micFailure?.afterRetry?.stage !== "ready" || !micFailure?.afterRetry?.hasSafeExitAction) {
+      issues.push("microphone failure retry did not return to ready");
+    }
+    if (micFailure?.afterExit?.stage !== "idle" || micFailure?.afterExit?.hasOverlay || micFailure?.afterExit?.hasTeacherCard) {
+      issues.push("microphone failure safe exit did not return idle");
+    }
+
+    const deferred = moralReviewSafetyDetails?.deferredReview;
+    if (!deferred?.start?.started) issues.push("defer review did not start through QA hook");
+    if (deferred?.pending?.stage !== "pendingReview") issues.push("defer review did not enter pending stage");
+    if (!deferred?.pending?.hasDeferAction || !deferred?.pending?.deferText.includes("稍后")) {
+      issues.push("teacher card missing defer action");
+    }
+    if (
+      deferred?.afterDefer?.stage !== "idle" ||
+      deferred?.afterDefer?.hasTeacherCard ||
+      (deferred?.afterDefer?.pendingMatchingReviewCount ?? 0) !== 1 ||
+      deferred?.afterDefer?.latestReviewStatus !== "pending_review" ||
+      (deferred?.start?.before?.matchingSelfServiceCount ?? -1) !== deferred?.afterDefer?.matchingSelfServiceCount
+    ) {
+      issues.push("defer action did not preserve pending review while returning idle");
+    }
+
+    const moduleSwitch = moralReviewSafetyDetails?.moduleSwitch;
+    if (!moduleSwitch?.changed) issues.push("module switch QA hook missing");
+    if (moduleSwitch?.pending?.stage !== "pendingReview") issues.push("module switch review did not enter pending stage");
+    if (
+      moduleSwitch?.afterSwitch?.runtime?.stage !== "idle" ||
+      moduleSwitch?.afterSwitch?.runtime?.hasOverlay ||
+      moduleSwitch?.afterSwitch?.runtime?.hasTeacherCard ||
+      !moduleSwitch?.afterSwitch?.runtime?.sceneText.includes("抽取")
+    ) {
+      issues.push("module switch did not clear active moral speak UI");
+    }
+    if (
+      (moduleSwitch?.afterSwitch?.pendingMatchingReviewCount ?? 0) !== 1 ||
+      moduleSwitch?.afterSwitch?.latestReviewStatus !== "pending_review"
+    ) {
+      issues.push("module switch dropped or resolved the pending review instead of deferring it");
+    }
+
+    const refresh = moralReviewSafetyDetails?.refresh;
+    if (!refresh?.start?.started) issues.push("refresh review did not start through QA hook");
+    if (refresh?.pending?.stage !== "pendingReview") issues.push("refresh review did not enter pending stage");
+    if (refresh?.afterReload?.stage !== "idle" || refresh?.afterReload?.hasOverlay || refresh?.afterReload?.hasTeacherCard) {
+      issues.push("refresh left moral speak UI half locked");
+    }
+    if (
+      (refresh?.persistence?.pendingMatchingReviewCount ?? 0) !== 1 ||
+      refresh?.persistence?.latestReviewStatus !== "pending_review" ||
+      (refresh?.persistence?.matchingSelfServiceCount ?? 0) !== refresh?.start?.before?.matchingSelfServiceCount
+    ) {
+      issues.push("refresh did not preserve pending review without ledger write");
+    }
+
     const low = moralReviewSafetyDetails?.lowConfidence;
     if (!low?.start?.started) issues.push("low-confidence review did not start through QA hook");
     if (low?.pending?.stage !== "pendingReview") issues.push("low-confidence review did not enter pending stage");
@@ -4708,6 +5186,7 @@ async function inspectPage(browser, check, viewport) {
     }
     if (!low?.pending?.teacherMainText?.includes("请老师帮忙")) issues.push("low-confidence teacher card main state not neutral");
     if (!low?.pending?.adjustText?.includes("修正")) issues.push("low-confidence teacher adjust action missing");
+    if (!low?.pending?.hasDeferAction) issues.push("low-confidence teacher card missing defer action");
     if (!low?.pending?.hasRespeakAction) issues.push("low-confidence teacher card missing respeak action");
     if (!low?.pending?.hasSkipAction) issues.push("low-confidence teacher card missing skip action");
     if (low?.pending?.actionLayout?.some((action) => action.clipped)) issues.push("low-confidence teacher action text clipped");
@@ -4754,6 +5233,7 @@ async function inspectPage(browser, check, viewport) {
     if (!negative?.pending?.teacherMainText?.includes("需老师处理")) issues.push("negative teacher card main state did not ask for handling");
     if (/[+＋-]\d/.test(negative?.pending?.teacherMainText ?? "")) issues.push("negative teacher card main state leaked score text");
     if (!negative?.pending?.adjustText?.includes("修正")) issues.push("negative teacher adjust action missing");
+    if (!negative?.pending?.hasDeferAction) issues.push("negative teacher card missing defer action");
     if (!negative?.pending?.hasRespeakAction) issues.push("negative teacher card missing respeak action");
     if (!negative?.pending?.hasSkipAction) issues.push("negative teacher card missing skip action");
     if (negative?.pending?.actionLayout?.some((action) => action.clipped)) issues.push("negative teacher action text clipped");
@@ -4781,6 +5261,25 @@ async function inspectPage(browser, check, viewport) {
     if (negative?.final?.latestPositiveCategory !== "开拓创新") issues.push("adjusted review ledger used the wrong category");
     if (negative?.final?.stage !== "idle") issues.push("adjusted review did not return idle after approval");
     if (!negative?.noNegativeLedger) issues.push("negative AI suggestion created a negative ledger record");
+  }
+
+  if (check.kind === "moral-review-online-stale") {
+    details = { flow: moralReviewOnlineStaleDetails };
+    const flow = moralReviewOnlineStaleDetails;
+    if (!flow?.recognizing) issues.push("online stale review did not enter recognizing state");
+    if (!flow?.finishStarted) issues.push("online stale review did not start finish callback");
+    if ((flow?.evaluateRequestCount ?? 0) !== 1) issues.push("online stale review did not issue exactly one evaluate request");
+    if (flow?.duringRequest?.syncStatus !== "saving") issues.push("online stale review did not reach saving while request was in flight");
+    if (flow?.afterExit?.stage !== "idle" || flow?.afterExit?.hasOverlay || flow?.afterExit?.hasTeacherCard) {
+      issues.push("online stale response reopened moral speak UI after cancellation");
+    }
+    if (flow?.afterExit?.syncStatus === "saving") issues.push("online stale response left sync status stuck at saving");
+    if ((flow?.afterPersistence?.pendingMatchingReviewCount ?? 0) !== 0) {
+      issues.push("online stale response left a pending review after cancellation");
+    }
+    if ((flow?.afterPersistence?.matchingSelfServiceCount ?? 0) !== (flow?.before?.matchingSelfServiceCount ?? 0)) {
+      issues.push("online stale response wrote a self-service ledger after cancellation");
+    }
   }
 
   if (check.kind === "voice-flow") {
@@ -4914,6 +5413,9 @@ async function inspectPage(browser, check, viewport) {
     }
     if (!profileFlowDetails?.moralReady?.ok) {
       issues.push(`profile flow cabin moral ready state failed: ${profileFlowDetails?.moralReady?.reason ?? profileFlowDetails?.moralReady?.stage ?? "unknown"}`);
+    }
+    if (!profileFlowDetails?.moralSelectionGuard?.ok) {
+      issues.push("profile flow active moral speak was hidden by roster selection");
     }
     if (
       profileFlowDetails?.fromWorkbench?.selectedChildId &&

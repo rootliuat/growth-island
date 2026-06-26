@@ -1,4 +1,4 @@
-import { AudioLines, Mic, Shell, Sparkles } from "lucide-react";
+import { AudioLines, Mic, Shell, Sparkles, X } from "lucide-react";
 import type { CSSProperties } from "react";
 import { canApproveMoralGrowth, getChildEnergyColor, getChildEnergyLabel } from "../../domain/virtueEnergy";
 import type { ChildWithProgress, MoralEvaluationResult, SpiritDefinition } from "../../types";
@@ -14,6 +14,7 @@ export interface MoralSpeakViewState {
   result?: MoralEvaluationResult;
   reviewId?: string;
   adjusted?: boolean;
+  approving?: boolean;
   error?: string;
   previousChildName?: string;
 }
@@ -94,17 +95,27 @@ export function MoralSpeakOverlay({ child, spirit, state, onStart, onStop, onRet
             <span className="energy-touch-halo" aria-hidden="true" style={{ pointerEvents: "none" }} />
             <Mic size={42} />
           </button>
+          <button type="button" className="moral-cancel-button moral-safe-exit" onClick={() => onClose()} aria-label={`${child.name} 稍后再说`}>
+            <X size={16} aria-hidden="true" />
+            取消
+          </button>
         </>
       ) : null}
 
       {state.stage === "listening" ? (
-        <button type="button" className="moral-wave-state" onClick={() => onStop()} aria-label="结束说话">
-          <AudioLines size={42} />
-          <span />
-          <span />
-          <span />
-          <em>说完点我</em>
-        </button>
+        <>
+          <button type="button" className="moral-wave-state" onClick={() => onStop()} aria-label="结束说话">
+            <AudioLines size={42} />
+            <span />
+            <span />
+            <span />
+            <em>说完点我</em>
+          </button>
+          <button type="button" className="moral-cancel-button moral-safe-exit" onClick={() => onClose()} aria-label={`${child.name} 取消录音`}>
+            <X size={16} aria-hidden="true" />
+            取消
+          </button>
+        </>
       ) : null}
 
       {state.stage === "recognizing" ? (
@@ -116,7 +127,8 @@ export function MoralSpeakOverlay({ child, spirit, state, onStart, onStop, onRet
             <span />
             <em>贝壳在听</em>
           </div>
-          <button type="button" className="moral-cancel-button" onClick={() => onClose()} aria-label="取消识别">
+          <button type="button" className="moral-cancel-button moral-safe-exit" onClick={() => onClose()} aria-label="取消识别">
+            <X size={16} aria-hidden="true" />
             取消
           </button>
         </>
@@ -160,6 +172,13 @@ export function MoralSpeakOverlay({ child, spirit, state, onStart, onStop, onRet
       {(state.stage === "error" || (state.stage === "pendingReview" && state.result?.xpDelta === 0)) ? (
         <button type="button" className="moral-retry-button" onClick={() => onRetry()}>
           再说一次
+        </button>
+      ) : null}
+
+      {state.stage === "error" ? (
+        <button type="button" className="moral-cancel-button moral-safe-exit" onClick={() => onClose()} aria-label={`${child.name} 稍后再说`}>
+          <X size={16} aria-hidden="true" />
+          稍后
         </button>
       ) : null}
     </div>
