@@ -488,7 +488,8 @@ export function App() {
 
   const getMoralSpeakLockedChildId = () => {
     const current = moralSpeakRef.current;
-    return current.stage === "listening" ||
+    return current.stage === "ready" ||
+      current.stage === "listening" ||
       current.stage === "recognizing" ||
       current.stage === "pendingReview" ||
       current.stage === "success"

@@ -1479,10 +1479,32 @@ async function startQaMoralReview(page, input) {
   return { before, started };
 }
 
+async function startOnlineMoralReview(page, input) {
+  await page.waitForFunction(() => typeof window.__growthIslandSetMoralRecognizingForQa === "function", null, {
+    timeout: 5000,
+  });
+  const before = await inspectMoralReviewPersistence(page, input.transcript, input.childId);
+  const recognizing = await page.evaluate((childId) => window.__growthIslandSetMoralRecognizingForQa?.(childId) ?? false, input.childId);
+  await page.waitForFunction(
+    ({ childId }) => window.__growthIslandMoralSpeakStage === "recognizing" && window.__growthIslandMoralSpeak?.childId === childId,
+    input,
+    { timeout: 3500 },
+  );
+  const finishStarted = await page.evaluate((payload) => window.__growthIslandFinishMoralSpeakForQa?.(payload) ?? false, input);
+  await page.waitForSelector(".teacher-review-corner-card", { timeout: 7000 });
+  await page.waitForFunction(
+    ({ childId }) => window.__growthIslandMoralSpeakStage === "pendingReview" && window.__growthIslandMoralSpeak?.childId === childId,
+    input,
+    { timeout: 7000 },
+  );
+  return { before, recognizing, finishStarted };
+}
+
 async function inspectMoralReviewCard(page, transcript, childId) {
   return page.evaluate(({ transcript, childId }) => {
     const approve = document.querySelector(".teacher-review-corner-card .approve");
     const adjust = document.querySelector(".teacher-review-corner-card .review-edit-popover summary");
+    const adjustSelect = document.querySelector(".teacher-review-corner-card .review-edit-panel select");
     const defer = document.querySelector(".teacher-review-corner-card .defer");
     const respeak = document.querySelector(".teacher-review-corner-card .respeak");
     const skip = document.querySelector(".teacher-review-corner-card .skip");
@@ -1518,6 +1540,11 @@ async function inspectMoralReviewCard(page, transcript, childId) {
       hasRespeakAction: respeak instanceof HTMLButtonElement,
       hasSkipAction: skip instanceof HTMLButtonElement,
       approveDisabled: approve instanceof HTMLButtonElement ? approve.disabled : undefined,
+      deferDisabled: defer instanceof HTMLButtonElement ? defer.disabled : undefined,
+      respeakDisabled: respeak instanceof HTMLButtonElement ? respeak.disabled : undefined,
+      skipDisabled: skip instanceof HTMLButtonElement ? skip.disabled : undefined,
+      adjustDisabled: adjust?.getAttribute("aria-disabled") === "true",
+      adjustSelectDisabled: adjustSelect instanceof HTMLSelectElement ? adjustSelect.disabled : undefined,
       approveText: approve?.textContent?.replace(/\s+/g, "") ?? "",
       adjustText: adjust?.textContent?.replace(/\s+/g, "") ?? "",
       deferText: defer?.textContent?.replace(/\s+/g, "") ?? "",
@@ -1649,7 +1676,7 @@ async function attemptWrongDockChildSelection(page) {
       windowStage: window.__growthIslandMoralSpeakStage,
       moralChildId: window.__growthIslandMoralSpeak?.childId,
     };
-    const lockedStages = ["listening", "recognizing", "pendingReview", "success"];
+    const lockedStages = ["ready", "listening", "recognizing", "pendingReview", "success"];
     if (!lockedStages.includes(before.stage)) {
       return { before, targetChildName: "", targetFound: false, skippedUnlocked: true, after: before, guarded: true };
     }
@@ -1705,7 +1732,7 @@ async function attemptWrongMapChildSelection(page) {
       windowStage: window.__growthIslandMoralSpeakStage,
       moralChildId: window.__growthIslandMoralSpeak?.childId,
     };
-    const lockedStages = ["listening", "recognizing", "pendingReview", "success"];
+    const lockedStages = ["ready", "listening", "recognizing", "pendingReview", "success"];
     if (!lockedStages.includes(before.stage)) {
       return { before, targetChildId: "", targetFound: false, hookFound: true, called: false, skippedUnlocked: true, after: before, guarded: true };
     }
@@ -2270,6 +2297,7 @@ async function exerciseMoralReviewOnlineStale(page, screenshot) {
 
   const afterExit = await inspectMoralRuntime(page);
   const afterPersistence = await inspectMoralReviewPersistence(page, stale.transcript, stale.childId);
+  const approvalLock = await exerciseMoralApprovalLock(page);
   await page.screenshot({ path: screenshot, fullPage: false });
 
   return {
@@ -2280,6 +2308,71 @@ async function exerciseMoralReviewOnlineStale(page, screenshot) {
     evaluateRequestCount,
     duringRequest,
     afterExit,
+    afterPersistence,
+    approvalLock,
+  };
+}
+
+async function exerciseMoralApprovalLock(page) {
+  const review = {
+    childId: "child-16",
+    transcript: "我今天主动帮同学收玩具",
+    summary: "帮助同伴",
+  };
+
+  let markLedgerStarted = () => undefined;
+  let releaseLedger = () => undefined;
+  let ledgerRequestCount = 0;
+  const ledgerStarted = new Promise((resolve) => {
+    markLedgerStarted = resolve;
+  });
+
+  await page.route("**:5174/api/ledger", async (route) => {
+    ledgerRequestCount += 1;
+    const hold = new Promise((resolve) => {
+      releaseLedger = resolve;
+    });
+    markLedgerStarted();
+    await hold;
+    await route.continue();
+  });
+
+  const started = await startOnlineMoralReview(page, review);
+  await openMoralCorrectionPanel(page);
+  const beforeApprove = await inspectMoralReviewCard(page, review.transcript, review.childId);
+  await page.locator(".teacher-review-corner-card .approve").click();
+  await Promise.race([
+    ledgerStarted,
+    new Promise((_, reject) => {
+      setTimeout(() => reject(new Error("ledger request did not start")), 5000);
+    }),
+  ]);
+  await page.waitForFunction(
+    () => window.__growthIslandSyncStatus === "saving" && window.__growthIslandMoralSpeak?.approving === true,
+    null,
+    { timeout: 3500 },
+  );
+  const duringApprove = await inspectMoralReviewCard(page, review.transcript, review.childId);
+  releaseLedger();
+  await page.waitForFunction(
+    () => window.__growthIslandSyncStatus !== "saving" && window.__growthIslandMoralSpeakStage === "success",
+    null,
+    { timeout: 7000 },
+  );
+  await page.waitForTimeout(220);
+  const afterApprove = await inspectMoralRuntime(page);
+  const afterPersistence = await inspectMoralReviewPersistence(page, review.transcript, review.childId);
+  await page.unroute("**:5174/api/ledger");
+  await page.evaluate(() => window.__growthIslandClearMoralSpeakForQa?.());
+  await page.waitForFunction(() => window.__growthIslandMoralSpeakStage === "idle", null, { timeout: 3500 }).catch(() => undefined);
+
+  return {
+    review,
+    started,
+    ledgerRequestCount,
+    beforeApprove,
+    duringApprove,
+    afterApprove,
     afterPersistence,
   };
 }
@@ -3045,6 +3138,26 @@ async function exerciseProfileLockedSelectionGuard(page) {
     moralChildId: window.__growthIslandMoralSpeak?.childId,
     stage: window.__growthIslandMoralSpeakStage,
   }));
+  const readyOtherChildClicked = await page.evaluate(() => {
+    const active = document.querySelector(".profile-roster-list button.active");
+    const other = [...document.querySelectorAll(".profile-roster-list button")].find((button) => button !== active);
+    if (!(other instanceof HTMLButtonElement)) return false;
+    other.click();
+    return true;
+  });
+  await page.waitForTimeout(260);
+  const readyAfter = await page.evaluate(() => {
+    const overlay = document.querySelector(".profile-cabin-stage .moral-speak-overlay.ready");
+    const cabin = document.querySelector(".profile-cabin-stage");
+    return {
+      selectedChildId: window.__growthIslandSelectedChildId,
+      moralChildId: window.__growthIslandMoralSpeak?.childId,
+      stage: window.__growthIslandMoralSpeakStage,
+      hasReadyOverlay: Boolean(overlay),
+      cabinText: cabin?.textContent?.replace(/\s+/g, "") ?? "",
+      feedbackText: document.querySelector(".growth-feedback-overlay")?.textContent?.replace(/\s+/g, "") ?? "",
+    };
+  });
   await page.locator(".profile-cabin-stage .moral-mic-button").click();
   await page.waitForFunction(() => window.__growthIslandMoralSpeakStage === "listening", null, { timeout: 4000 });
   const otherChildClicked = await page.evaluate(() => {
@@ -3073,14 +3186,21 @@ async function exerciseProfileLockedSelectionGuard(page) {
   await page.waitForSelector(".profile-cabin-stage.moral-stage-idle", { timeout: 3000 }).catch(() => undefined);
   return {
     ok:
+      readyOtherChildClicked &&
       otherChildClicked &&
       lockedBefore.selectedChildId === lockedBefore.moralChildId &&
+      readyAfter.selectedChildId === lockedBefore.selectedChildId &&
+      readyAfter.moralChildId === lockedBefore.moralChildId &&
+      readyAfter.stage === "ready" &&
+      readyAfter.hasReadyOverlay &&
       after.selectedChildId === lockedBefore.selectedChildId &&
       after.moralChildId === lockedBefore.moralChildId &&
       after.stage === "listening" &&
       after.hasListeningOverlay,
+    readyOtherChildClicked,
     otherChildClicked,
     lockedBefore,
+    readyAfter,
     after,
   };
 }
@@ -5279,6 +5399,45 @@ async function inspectPage(browser, check, viewport) {
     }
     if ((flow?.afterPersistence?.matchingSelfServiceCount ?? 0) !== (flow?.before?.matchingSelfServiceCount ?? 0)) {
       issues.push("online stale response wrote a self-service ledger after cancellation");
+    }
+
+    const approvalLock = flow?.approvalLock;
+    if (!approvalLock?.started?.recognizing || !approvalLock?.started?.finishStarted) {
+      issues.push("approval lock review did not start through the online QA hooks");
+    }
+    if ((approvalLock?.ledgerRequestCount ?? 0) !== 1) issues.push("approval lock did not issue exactly one ledger request");
+    if (approvalLock?.beforeApprove?.adjustSelectDisabled !== false) {
+      issues.push("approval lock setup did not expose an enabled correction select before approval");
+    }
+    if (
+      approvalLock?.duringApprove?.approveDisabled !== true ||
+      approvalLock?.duringApprove?.deferDisabled !== true ||
+      approvalLock?.duringApprove?.respeakDisabled !== true ||
+      approvalLock?.duringApprove?.skipDisabled !== true ||
+      approvalLock?.duringApprove?.adjustDisabled !== true ||
+      approvalLock?.duringApprove?.adjustSelectDisabled !== true
+    ) {
+      issues.push("approval lock did not disable all teacher review actions while ledger commit was in flight");
+    }
+    if (approvalLock?.afterApprove?.syncStatus === "saving") issues.push("approval lock left sync status stuck at saving");
+    if (approvalLock?.afterApprove?.stage !== "success") issues.push("approval lock did not settle into success after ledger commit");
+    if (
+      (approvalLock?.afterPersistence?.matchingSelfServiceCount ?? 0) !==
+      (approvalLock?.beforeApprove?.matchingSelfServiceCount ?? 0) + 1
+    ) {
+      issues.push("approval lock did not create exactly one approved self-service ledger after release");
+    }
+    if ((approvalLock?.beforeApprove?.pendingMatchingReviewCount ?? 0) < 1) {
+      issues.push("approval lock setup did not create a pending server review before approval");
+    }
+    if (
+      (approvalLock?.afterPersistence?.pendingMatchingReviewCount ?? 0) !==
+      Math.max(0, (approvalLock?.beforeApprove?.pendingMatchingReviewCount ?? 0) - 1)
+    ) {
+      issues.push("approval lock did not resolve the pending review after ledger commit");
+    }
+    if (approvalLock?.afterPersistence?.latestReviewStatus !== "approved") {
+      issues.push("approval lock latest review status was not approved after ledger commit");
     }
   }
 

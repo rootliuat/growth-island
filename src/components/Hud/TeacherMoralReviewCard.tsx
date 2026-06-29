@@ -90,7 +90,11 @@ export function TeacherMoralReviewCard({
           <div className="review-edit-panel">
             <label>
               <span>能量词</span>
-              <select value={selectedCategory} onChange={(event) => setSelectedCategory(event.target.value as VirtueCategory)}>
+              <select
+                value={selectedCategory}
+                onChange={(event) => setSelectedCategory(event.target.value as VirtueCategory)}
+                disabled={actionLocked}
+              >
                 {virtueCategories.map((category) => (
                   <option key={category} value={category}>
                     {getChildEnergyLabel(category)} · {category}

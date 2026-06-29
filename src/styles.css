@@ -13114,7 +13114,8 @@ button {
 }
 
 .review-edit-popover summary[aria-disabled="true"],
-.review-edit-panel button:disabled {
+.review-edit-panel button:disabled,
+.review-edit-panel select:disabled {
   cursor: wait;
   opacity: 0.58;
 }
