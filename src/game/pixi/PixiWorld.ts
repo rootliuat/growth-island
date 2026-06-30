@@ -1,6 +1,6 @@
 /**
- * [INPUT]: 依赖 PixiJS Application/Culler/Ticker、CameraController、InteractionManager 和 WorldScene。
- * [OUTPUT]: 对外提供 PixiWorld 类，管理首页地图挂载、相机、交互唤醒、渲染清晰度与生命周期。
+ * [INPUT]: 依赖 PixiJS Application/Culler/Ticker、CameraController、DomStaticMapLayer、InteractionManager 和 WorldScene。
+ * [OUTPUT]: 对外提供 PixiWorld 类，管理首页地图挂载、DOM 静态底图、相机、交互唤醒、渲染清晰度与生命周期。
  * [POS]: game/pixi 的地图运行时主控 Module，被 PixiWorldMap React Adapter 持有。
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -10,6 +10,7 @@ import { WORLD_HEIGHT, WORLD_WIDTH } from "../mapConfig";
 import type { RegionId, WorldMapCallbacks, WorldMapData } from "../types";
 import { v4DecorPlacements, v4LandmarkPlacements } from "../v4MapAssets";
 import { CameraController } from "./CameraController";
+import { DomStaticMapLayer } from "./DomStaticMapLayer";
 import { InteractionManager } from "./InteractionManager";
 import { WorldScene } from "./WorldScene";
 
@@ -37,6 +38,7 @@ function getAdaptiveRenderResolution(width: number, height: number) {
 export class PixiWorld {
   private app?: Application;
   private camera?: CameraController;
+  private staticMapLayer?: DomStaticMapLayer;
   private scene?: WorldScene;
   private readonly interactions = new InteractionManager();
   private resizeObserver?: ResizeObserver;
@@ -62,6 +64,7 @@ export class PixiWorld {
   private readonly tick = (ticker: Ticker) => {
     const selectedIdleOnly = this.selectedIdleAnimation && !this.interactionActive && !this.pointerDragging;
     this.camera?.update(ticker);
+    this.syncStaticMapLayer();
     this.scene?.update(ticker, this.interactionActive, selectedIdleOnly);
     this.updateSelectedAnimationDataset();
     if (!selectedIdleOnly && !this.interactionActive && !this.pointerDragging) this.cullVisibleScene();
@@ -116,6 +119,7 @@ export class PixiWorld {
     this.disposed = false;
     this.host = host;
     host.querySelectorAll("canvas.pixi-world-canvas").forEach((canvas) => canvas.remove());
+    host.querySelectorAll(".pixi-static-map-layer").forEach((layer) => layer.remove());
     const app = new Application();
     this.lastWidth = host.clientWidth || 1280;
     this.lastHeight = host.clientHeight || 720;
@@ -130,6 +134,7 @@ export class PixiWorld {
       antialias: false,
       preference: "webgl",
       powerPreference: "high-performance",
+      premultipliedAlpha: false,
       resolution: this.renderResolution,
       autoDensity: true,
       eventFeatures: {
@@ -139,6 +144,7 @@ export class PixiWorld {
         globalMove: false,
       },
     });
+    app.renderer.background.alpha = 0;
     app.ticker.maxFPS = activeMaxFps;
     if (this.disposed || this.host !== host) {
       const canvas = app.canvas;
@@ -151,10 +157,12 @@ export class PixiWorld {
     app.canvas.dataset.renderResolution = this.renderResolution.toFixed(2);
     app.canvas.dataset.selfServiceHotspotCount = String(selfServiceHotspotIds.length);
     app.canvas.dataset.selfServiceHotspots = selfServiceHotspotIds.join(",");
-    host.appendChild(app.canvas);
 
     this.app = app;
     this.camera = new CameraController(app);
+    this.staticMapLayer = new DomStaticMapLayer(host);
+    this.syncStaticMapLayer();
+    host.appendChild(app.canvas);
     this.scene = new WorldScene(this.camera, this.callbacks);
     app.stage.addChild(this.scene.root);
     app.ticker.add(this.tick);
@@ -258,6 +266,7 @@ export class PixiWorld {
     if (this.viewMode === "overview") {
       this.scene?.focusFullIsland();
     }
+    this.syncStaticMapLayer();
     this.wake(1200);
   }
 
@@ -389,6 +398,11 @@ export class PixiWorld {
     this.app.canvas.dataset.renderResolution = resolution.toFixed(2);
   }
 
+  private syncStaticMapLayer() {
+    if (!this.camera || !this.staticMapLayer) return;
+    this.staticMapLayer.sync(this.camera.getCssTransform());
+  }
+
   destroy() {
     this.disposed = true;
     this.setGlobalInteractionActive(false);
@@ -398,11 +412,13 @@ export class PixiWorld {
     this.interactions.destroy();
     this.app?.ticker.remove(this.tick);
     this.scene?.destroy();
+    this.staticMapLayer?.destroy();
     const canvas = this.app?.canvas;
     this.app?.destroy({ removeView: true }, { children: true, texture: false, textureSource: false });
     canvas?.remove();
     this.app = undefined;
     this.camera = undefined;
+    this.staticMapLayer = undefined;
     this.scene = undefined;
     this.host = undefined;
   }

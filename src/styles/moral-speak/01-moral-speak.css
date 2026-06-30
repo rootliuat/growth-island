@@ -142,6 +142,18 @@
   box-shadow: 0 16px 38px rgba(24, 47, 41, 0.12);
 }
 
+@media (min-width: 2000px) {
+  .home-screen-shell .product-workspace .game-layout {
+    display: grid;
+    place-items: center;
+  }
+
+  .home-screen-shell .world-map-shell {
+    width: min(100%, 2200px);
+    height: min(100%, 1240px);
+  }
+}
+
 .home-screen-shell .map-travel-board,
 .home-screen-shell .map-hint {
   display: none;

@@ -1,6 +1,6 @@
 /**
- * [INPUT]: 依赖 CameraController、LayerManager 和各 Pixi 地图 Layer。
- * [OUTPUT]: 对外提供 WorldScene 类，组合地图图层、数据更新、动画更新、聚焦和静态缓存。
+ * [INPUT]: 依赖 CameraController、LayerManager 和各 Pixi 动态/交互地图 Layer。
+ * [OUTPUT]: 对外提供 WorldScene 类，组合区域、路径、道具、小屋、精灵、标签、特效、数据更新、动画更新、聚焦和静态缓存。
  * [POS]: game/pixi 的场景编排 Module，被 PixiWorld 驱动。
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -15,7 +15,6 @@ import { CameraController } from "./CameraController";
 import { DecorationLayer } from "./DecorationLayer";
 import { EffectLayer } from "./EffectLayer";
 import { HomeLayer } from "./HomeLayer";
-import { IslandLayer } from "./IslandLayer";
 import { LabelLayer } from "./LabelLayer";
 import { LayerManager } from "./LayerManager";
 import { OceanLayer } from "./OceanLayer";
@@ -59,7 +58,6 @@ export class WorldScene {
     private readonly callbacks: WorldMapCallbacks,
   ) {
     this.ocean = new OceanLayer(this.layers.get("ocean"));
-    new IslandLayer(this.layers.get("island"));
     this.regions = new RegionLayer(this.layers.get("regions"), this.layers.get("labels"), this.focusRegionPoint);
     new PathLayer(this.layers.get("paths"));
     this.decorations = new DecorationLayer(this.layers.get("decorations"), {

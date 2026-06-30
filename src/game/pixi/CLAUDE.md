@@ -3,12 +3,12 @@
 
 成员清单
 PixiWorld.ts: PixiJS 地图运行时主控，管理挂载、相机、交互唤醒、渲染清晰度、限帧和销毁。
-WorldScene.ts: 地图场景编排，组合海岛、区域、道具、小屋、精灵、标签和特效层。
+WorldScene.ts: 地图场景编排，组合区域、路径、道具、小屋、精灵、标签和特效层。
 CameraController.ts: Pixi viewport 相机 Adapter，负责缩放、拖拽和聚焦动画。
+DomStaticMapLayer.ts: DOM 静态底图 Adapter，承载不可点击的主岛大图并同步 Pixi 相机变换。
 InteractionManager.ts: 运行时清理栈，集中移除监听器和副作用。
 LayerManager.ts: 地图图层树，提供固定层级顺序。
 OceanLayer.ts: 海水层生命周期占位，避免海水大纹理进入 Pixi 静态缓存；真实海水由 CSS 背景承载。
-IslandLayer.ts: 主岛底图层。
 RegionLayer.ts: 区域轮廓、能量徽章和区域聚焦入口。
 PathLayer.ts: 岛内路径层。
 DecorationLayer.ts: 海岛道具、热点和模型烘焙道具层。

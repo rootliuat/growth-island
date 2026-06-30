@@ -1341,3 +1341,33 @@ P2:
 - `QA_BASE_URL=http://127.0.0.1:5173 QA_CHECKS=moral-review-online-stale npm run qa:visual`: whiteboard passed with 0 issues and 0 warnings, covering the online in-flight evaluate/cancel/cleanup branch.
 - `QA_BASE_URL=http://127.0.0.1:5173 QA_CHECKS=home,classroom-touch-loop,moral-speak-flow,moral-review-safety,child-profile,mobile-child-profile npm run qa:visual`: all listed checks passed with 0 issues and 0 warnings.
 - Code review follow-up fixed P23 blocking findings: delayed speech/evaluation responses after cancellation, cabin roster selection hiding active/ready moral-speak, approval/defer race during ledger commit, locked correction controls during approval, and stale online cleanup leaving sync status in saving.
+
+## P24 large-screen map clarity and interaction performance pass
+
+### Scope
+
+- Continued the classroom big-screen performance work after reports that island drag still felt laggy and that selected spirits could appear stuck after zoom.
+- Kept map clarity intact: Pixi render resolution remains `1`, no blur/downsample fallback, no backend/XP/data/approval-flow changes.
+- Kept the main island 2.5D/Pixi architecture; this pass only split stable static visuals and constrained oversized ultra-wide drawing.
+
+### Implementation Notes
+
+- Added `DomStaticMapLayer.ts` to move the non-clickable island base from Pixi into a DOM static layer that follows the Pixi camera transform.
+- Removed the old Pixi `IslandLayer.ts`, leaving Pixi focused on region/path/decor interaction, homes, spirits, labels, and effects.
+- Set WebGL `premultipliedAlpha: false` and explicitly kept renderer background alpha at `0`; this fixes transparent canvas composition so CSS ocean and DOM island layers remain visible under Pixi.
+- Added CSS z-index rules for `pixi-static-map-layer` under the transparent Pixi canvas.
+- Added an ultra-wide classroom stage cap at `2200x1240` for screens wider than `2000px`. This preserves map-first layout while avoiding a `2544x1350` WebGL canvas on very wide displays.
+
+### Validation
+
+- `npm run build`: passed with the existing large chunk warning.
+- `QA_CHECKS=home npm run qa:visual`: whiteboard and ultra passed with 0 issues and 0 warnings.
+  - whiteboard active drag: `31.6 FPS`; active wheel: `33.2 FPS`.
+  - ultra active drag: `28.4 FPS`; active wheel: `26 FPS`.
+  - ultra Pixi backing size reduced from `2544x1350` to `2162x1240` while render resolution stayed `1`.
+- `QA_CHECKS=home-performance-soak npm run qa:visual`: 2-minute whiteboard sustained interaction passed with 0 issues and 0 warnings.
+  - sustained frame average: `34.5 FPS`.
+  - p95/p99 frame gap: `33.4ms / 33.5ms`.
+  - max frame gap: `50.1ms`.
+  - settled state returned to idle; selected spirit remained visible and animating.
+- `QA_CHECKS=home,moral-speak-flow,classroom-touch-loop npm run qa:visual`: home, whiteboard/mobile moral-speak, and classroom touch loop passed with 0 issues and 0 warnings.
