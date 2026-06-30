@@ -1,0 +1,672 @@
+/**
+ * [INPUT]: 依赖 ../01-tokens.css 以及前序 cascade 片段。
+ * [OUTPUT]: 对外提供后续模块、移动端和白板触控最终覆盖第 10 段样式。
+ * [POS]: styles/modules 的 cascade 片段 10/14，由 ../index.css 按顺序导入。
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
+
+
+@keyframes lightLogFlash {
+  from {
+    transform: translateY(4px);
+    box-shadow: 0 0 0 0 rgba(246, 179, 82, 0);
+  }
+
+  48% {
+    transform: translateY(0);
+    box-shadow: 0 0 0 4px rgba(246, 179, 82, 0.16);
+  }
+
+  to {
+    transform: translateY(0);
+    box-shadow: 0 0 0 0 rgba(246, 179, 82, 0);
+  }
+}
+
+@media (max-width: 1120px) {
+  .math-arena-page .math-arena-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .math-arena-page .math-arena-side {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .math-arena-page .math-arena-history {
+    min-height: 220px;
+  }
+}
+
+@media (max-width: 820px) {
+  .math-arena-page .math-arena-setup {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .math-arena-page .math-arena-command-panel {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .math-arena-page .math-arena-side {
+    display: none;
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 720px) {
+  .math-arena-page {
+    padding-bottom: 96px;
+  }
+
+  .math-arena-page .math-arena-title-pack {
+    gap: 7px;
+  }
+
+  .math-arena-page .math-arena-round-chip {
+    display: none;
+  }
+
+  .math-arena-page .math-arena-fighter-lane {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .math-arena-page .math-arena-vs-token {
+    justify-self: center;
+    width: 42px;
+    height: 36px;
+    border-radius: 14px;
+  }
+
+  .math-arena-page .math-fighter-card {
+    grid-template-columns: 56px minmax(0, 1fr);
+  }
+
+  .math-arena-page .math-fighter-avatar {
+    width: 56px;
+    height: 56px;
+    border-radius: 19px;
+  }
+
+  .math-arena-page .math-arena-battle-shell {
+    min-height: 0;
+    padding: 10px;
+  }
+
+  .math-arena-page .math-arena-battle-shell.is-idle {
+    min-height: 390px;
+  }
+
+  .math-arena-page .math-arena-stage-strip {
+    gap: 6px;
+    padding-inline: 8px;
+  }
+
+  .math-arena-page .math-arena-stage-strip span {
+    display: none;
+  }
+
+  .math-arena-page .math-arena-victory-badge {
+    top: 54px;
+    right: 12px;
+    max-width: calc(100% - 24px);
+  }
+
+  .math-arena-page .math-arena-battle-shell .lightfield {
+    min-height: 430px;
+    padding: 18px 10px 20px;
+  }
+
+  .math-arena-page .light-turn-banner {
+    top: 10px;
+    min-height: 30px;
+    font-size: 12px;
+  }
+
+  .math-arena-page .light-action-vfx {
+    top: 42%;
+    width: min(220px, 56%);
+    height: 36px;
+  }
+
+  .math-arena-page .light-pop {
+    top: 52px;
+    right: 12px;
+    min-width: 46px;
+    min-height: 32px;
+    font-size: 17px;
+  }
+
+  .math-arena-page .light-partner.right .light-pop {
+    left: 12px;
+  }
+
+  .math-arena-page .light-complete-medal {
+    top: 34px;
+  }
+
+  .math-arena-page .math-arena-battle-shell .problem-card strong {
+    font-size: 42px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .math-arena-page .light-action-vfx i,
+  .math-arena-page .light-action-vfx span,
+  .math-arena-page .light-partner.glowing .light-orb,
+  .math-arena-page .light-pop,
+  .math-arena-page .light-complete-medal,
+  .math-arena-page .answer-grid button.selected.lit,
+  .math-arena-page .answer-grid button.selected.try,
+  .math-arena-page .light-log.lit,
+  .math-arena-page .light-log.try,
+  .math-arena-page .light-log.complete {
+    animation: none;
+  }
+}
+
+/* P1/P2/P3 shop stall: keep the shop as a counter, not a description-card grid. */
+.shop-page {
+  --shop-sea: #174c5a;
+  --shop-lagoon: #2d9fb2;
+  --shop-foam: #87d8d0;
+  --shop-shell: #fff8ea;
+  --shop-cream: #fffdf4;
+  --shop-sand: #f4d99b;
+  --shop-gold: #f6b352;
+  --shop-coral: #ff7a59;
+  --shop-leaf: #3b7d53;
+  --shop-border: rgba(214, 177, 106, 0.42);
+}
+
+.shop-page .shop-status-strip {
+  position: relative;
+  grid-template-columns: minmax(280px, 0.82fr) minmax(110px, 142px) minmax(340px, 1.16fr);
+  padding-top: 44px;
+  background:
+    radial-gradient(circle at 86% 16%, rgba(255, 122, 89, 0.15), transparent 30%),
+    linear-gradient(180deg, rgba(255, 253, 244, 0.95), rgba(255, 240, 191, 0.76));
+}
+
+.shop-counter-awning {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  left: 12px;
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr 0.8fr;
+  gap: 7px;
+  pointer-events: none;
+}
+
+.shop-counter-awning span {
+  display: inline-flex;
+  min-width: 0;
+  min-height: 28px;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 1px solid rgba(255, 253, 244, 0.72);
+  border-radius: 999px;
+  color: #fffdf4;
+  background: var(--shop-sea);
+  box-shadow: inset 0 -4px 0 rgba(12, 52, 64, 0.18);
+  font-size: 12px;
+  font-weight: 950;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shop-counter-awning span:nth-child(2) {
+  background: var(--shop-gold);
+}
+
+.shop-counter-awning span:nth-child(3) {
+  background: var(--shop-leaf);
+}
+
+.shop-page .shop-intent-card {
+  min-height: 88px;
+}
+
+.shop-page .shop-intent-card.is-redeemed {
+  position: relative;
+  overflow: hidden;
+}
+
+.shop-page .shop-intent-card.is-redeemed::after {
+  position: absolute;
+  right: 78px;
+  bottom: -20px;
+  width: 116px;
+  height: 72px;
+  border: 2px dashed rgba(59, 125, 83, 0.28);
+  border-radius: 18px;
+  background: rgba(255, 253, 244, 0.44);
+  content: "";
+  transform: rotate(-7deg);
+}
+
+.shop-ticket-pop {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 24px;
+  align-items: center;
+  padding: 0 8px;
+  border: 1px solid rgba(59, 125, 83, 0.18);
+  border-radius: 999px;
+  color: var(--shop-leaf);
+  background: rgba(255, 253, 244, 0.8);
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.shop-page .shop-grid-panel {
+  gap: 14px;
+  padding: 18px;
+  background:
+    repeating-linear-gradient(180deg, transparent 0 158px, rgba(214, 177, 106, 0.26) 158px 166px),
+    radial-gradient(circle at 8% 16%, rgba(135, 216, 208, 0.18), transparent 30%),
+    linear-gradient(180deg, rgba(255, 248, 234, 0.94), rgba(244, 217, 155, 0.62));
+}
+
+.shop-page .shop-grid-panel::before {
+  position: absolute;
+  top: 14px;
+  right: 18px;
+  left: 18px;
+  height: 9px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--shop-coral), var(--shop-gold), var(--shop-lagoon));
+  opacity: 0.5;
+  content: "";
+}
+
+.shop-page .shop-reward-card {
+  min-height: 158px;
+  grid-template-rows: auto auto minmax(36px, auto) auto;
+  padding: 14px;
+  border-color: rgba(214, 177, 106, 0.38);
+  background:
+    linear-gradient(180deg, rgba(255, 253, 244, 0.96), rgba(255, 248, 234, 0.88)),
+    linear-gradient(90deg, rgba(244, 217, 155, 0.4), transparent);
+}
+
+.shop-page .shop-reward-card::before {
+  position: absolute;
+  top: -1px;
+  right: 16px;
+  left: 16px;
+  height: 5px;
+  border-radius: 0 0 999px 999px;
+  background: rgba(246, 179, 82, 0.64);
+  content: "";
+}
+
+.shop-page .shop-reward-card.available::before {
+  background: rgba(59, 125, 83, 0.58);
+}
+
+.shop-page .shop-reward-card.locked::before {
+  background: rgba(123, 128, 101, 0.36);
+}
+
+.shop-page .shop-reward-card.is-selected {
+  box-shadow: 0 0 0 3px rgba(45, 159, 178, 0.14), inset 0 -4px 0 rgba(45, 159, 178, 0.1);
+}
+
+.shop-page .shop-reward-card.is-redeemed {
+  box-shadow: 0 0 0 3px rgba(59, 125, 83, 0.14), inset 0 -4px 0 rgba(59, 125, 83, 0.1);
+}
+
+.shop-page .shop-reward-card h2 {
+  margin-top: 2px;
+  font-size: 20px;
+}
+
+.shop-reward-meter {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(23, 76, 90, 0.1);
+}
+
+.shop-reward-meter i {
+  display: block;
+  width: var(--reward-progress, 0%);
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--shop-lagoon), var(--shop-gold));
+  box-shadow: 0 0 12px rgba(246, 179, 82, 0.32);
+}
+
+.shop-page .shop-reward-card.available .shop-reward-meter i {
+  background: linear-gradient(90deg, var(--shop-leaf), var(--shop-gold));
+}
+
+.shop-page .shop-reward-card.locked .shop-reward-meter i {
+  background: linear-gradient(90deg, rgba(23, 76, 90, 0.42), rgba(246, 179, 82, 0.72));
+}
+
+.shop-page .shop-reward-card[data-shop-state="available"] {
+  animation: shopRewardReady 3s ease-in-out infinite;
+}
+
+@keyframes shopRewardReady {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(59, 125, 83, 0), inset 0 -4px 0 rgba(59, 125, 83, 0.04);
+  }
+
+  50% {
+    box-shadow: 0 0 0 3px rgba(59, 125, 83, 0.1), inset 0 -4px 0 rgba(59, 125, 83, 0.08);
+  }
+}
+
+.shop-reward-ticket {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: 7px;
+  align-items: center;
+}
+
+.shop-reward-ticket span,
+.shop-reward-ticket em {
+  display: inline-flex;
+  min-height: 28px;
+  align-items: center;
+  padding: 0 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 950;
+}
+
+.shop-reward-ticket span {
+  color: var(--shop-sea);
+  background: rgba(255, 253, 244, 0.88);
+}
+
+.shop-reward-ticket em {
+  color: var(--shop-leaf);
+  background: rgba(223, 242, 234, 0.86);
+}
+
+.shop-page .shop-reward-card.locked .shop-reward-ticket em {
+  color: #8a5a18;
+  background: rgba(255, 231, 173, 0.86);
+}
+
+.shop-page .shop-reward-card.is-redeemed .shop-reward-ticket em {
+  color: var(--shop-sea);
+  background: rgba(135, 216, 208, 0.25);
+}
+
+.shop-page .shop-reward-card button {
+  min-height: 40px;
+}
+
+.shop-page .shop-redemption-panel {
+  border-style: dashed;
+  background:
+    radial-gradient(circle at 0 0, rgba(246, 179, 82, 0.14), transparent 30%),
+    rgba(255, 248, 234, 0.88);
+}
+
+.shop-page .shop-redemption-panel > div strong {
+  color: var(--shop-sea);
+}
+
+.shop-page .shop-redemption-panel li {
+  border: 1px solid rgba(246, 179, 82, 0.3);
+  background: rgba(255, 240, 191, 0.78);
+}
+
+@media (max-width: 1160px) {
+  .shop-page .shop-status-strip {
+    grid-template-columns: minmax(280px, 1fr) minmax(110px, 138px);
+  }
+}
+
+@media (max-width: 720px) {
+  .shop-page .shop-status-strip {
+    grid-template-columns: minmax(0, 1fr) 86px;
+    padding-top: 38px;
+  }
+
+  .shop-counter-awning {
+    top: 8px;
+    right: 9px;
+    left: 9px;
+    grid-template-columns: 1fr 0.7fr;
+  }
+
+  .shop-counter-awning span {
+    min-height: 25px;
+    font-size: 11px;
+  }
+
+  .shop-counter-awning span:nth-child(3) {
+    display: none;
+  }
+
+  .shop-page .shop-intent-card {
+    min-height: 0;
+  }
+
+  .shop-page .shop-grid-panel {
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .shop-page .shop-reward-card {
+    min-height: 146px;
+  }
+
+  .shop-page .shop-reward-card h2 {
+    font-size: 18px;
+  }
+
+  .shop-reward-meter {
+    height: 7px;
+  }
+
+  .shop-reward-ticket span,
+  .shop-reward-ticket em {
+    min-height: 26px;
+    padding-inline: 8px;
+  }
+}
+
+.voice-review-actions button:disabled,
+.workbench-review-actions button:disabled,
+.data-review-actions button:disabled {
+  cursor: not-allowed;
+  color: #7b8065;
+  border-color: #d6d0be;
+  background: #e7dfc9;
+  box-shadow: none;
+  opacity: 0.72;
+}
+
+/* P8-1G whiteboard touch pass: keep child self-service controls large and avoid HUD overlap. */
+.scene-command-home,
+.dock-collapse,
+.spirit-self-service-button,
+.teacher-review-actions button,
+.review-edit-popover summary,
+.review-edit-panel button,
+.review-edit-panel select {
+  min-height: 44px;
+  touch-action: manipulation;
+}
+
+.dock-collapse {
+  min-width: 44px;
+}
+
+.dock-collapse:focus-visible,
+.dock-selected-summary:focus-visible,
+.dock-spirit:focus-visible,
+.module-dock-button:focus-visible,
+.shell-child-chip:focus-visible,
+.teacher-tools-drawer summary:focus-visible,
+.roll-call-secondary-details > summary:focus-visible,
+.voice-secondary-details > summary:focus-visible,
+.spirit-self-service-button:focus-visible {
+  outline: 3px solid rgba(246, 179, 82, 0.86);
+  outline-offset: 3px;
+}
+
+.dock-search:focus-within {
+  outline: 3px solid rgba(246, 179, 82, 0.86);
+  outline-offset: 3px;
+}
+
+.spirit-self-service-button {
+  padding-inline: 15px;
+  font-size: 13px;
+  position: relative;
+  z-index: 2;
+}
+
+.spirit-card-compact .spirit-portrait,
+.spirit-card-compact .spirit-portrait img,
+.hud-rail .spirit-portrait,
+.hud-rail .spirit-portrait img {
+  pointer-events: none;
+}
+
+.teacher-review-actions {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.teacher-review-actions button,
+.review-edit-popover summary {
+  border-radius: 14px;
+}
+
+.review-edit-panel button {
+  justify-content: center;
+}
+
+.review-edit-popover:not([open]) .review-edit-panel {
+  display: none;
+}
+
+.home-screen-shell .teacher-review-corner-card {
+  top: 76px;
+  right: 14px;
+  width: min(292px, calc(100% - 28px));
+}
+
+.home-screen-shell .moral-speak-overlay.pendingReview {
+  place-items: center;
+  padding: 76px 24px 128px;
+}
+
+.home-screen-shell .moral-speak-overlay.listening,
+.home-screen-shell .moral-speak-overlay.recognizing {
+  place-items: center;
+  padding: 76px 24px 128px;
+}
+
+.home-screen-shell .moral-retry-button {
+  right: auto;
+  bottom: 104px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.home-screen-shell .moral-speak-overlay.pendingReview .moral-retry-button,
+.home-screen-shell .game-layout:has(.world-map-shell:not(.moral-stage-idle)) .hud-rail .spirit-self-service-button {
+  display: none;
+}
+
+.home-screen-shell .world-map-shell:not(.moral-stage-idle) .map-scene-gate,
+.home-screen-shell .home-module:has(.spirit-dock:not(.collapsed)) .map-scene-gate {
+  display: none;
+}
+
+.home-screen-shell .spirit-dock.collapsed {
+  min-height: 64px;
+}
+
+.home-screen-shell .dock-selected-summary {
+  min-height: 52px;
+}
+
+.home-screen-shell .spirit-dock.collapsed .dock-collapse {
+  min-height: 44px;
+  padding-inline: 14px;
+}
+
+.home-screen-shell .spirit-dock:not(.collapsed) {
+  max-height: min(286px, calc(100% - 28px));
+}
+
+.home-screen-shell .home-module:has(.world-map-shell:not(.moral-stage-idle)) .spirit-dock:not(.collapsed) {
+  grid-template-columns: minmax(152px, 210px) minmax(0, 1fr);
+  align-items: center;
+  max-height: none;
+  overflow: visible;
+}
+
+.home-screen-shell .home-module:has(.world-map-shell:not(.moral-stage-idle)) .spirit-dock:not(.collapsed) .dock-tools {
+  min-width: 0;
+}
+
+.home-screen-shell .home-module:has(.world-map-shell:not(.moral-stage-idle)) .spirit-dock:not(.collapsed) .dock-search,
+.home-screen-shell .home-module:has(.world-map-shell:not(.moral-stage-idle)) .spirit-dock:not(.collapsed) .dock-filters {
+  display: none;
+}
+
+.home-screen-shell .home-module:has(.world-map-shell:not(.moral-stage-idle)) .spirit-dock:not(.collapsed) .dock-scroll {
+  min-height: 56px;
+  padding: 4px 6px;
+}
+
+.home-screen-shell .home-module:has(.world-map-shell:not(.moral-stage-idle)) .spirit-dock:not(.collapsed) .dock-spirit {
+  flex-basis: 76px;
+  min-height: 64px;
+  padding: 4px;
+  border-radius: 18px;
+}
+
+.home-screen-shell .home-module:has(.world-map-shell:not(.moral-stage-idle)) .spirit-dock:not(.collapsed) .dock-spirit em,
+.home-screen-shell .home-module:has(.world-map-shell:not(.moral-stage-idle)) .spirit-dock:not(.collapsed) .dock-spirit::before,
+.home-screen-shell .home-module:has(.world-map-shell:not(.moral-stage-idle)) .spirit-dock:not(.collapsed) .dock-spirit.active::after {
+  display: none;
+}
+
+.home-screen-shell .home-module:has(.world-map-shell:not(.moral-stage-idle)) .spirit-dock:not(.collapsed) .dock-spirit strong {
+  display: block;
+  max-width: 68px;
+  font-size: 12px;
+  line-height: 1.05;
+}
+
+.home-screen-shell .home-module:has(.world-map-shell:not(.moral-stage-idle)) .spirit-dock:not(.collapsed) .dock-avatar {
+  width: 46px;
+  height: 46px;
+}
+
+.home-screen-shell .home-module:has(.world-map-shell:not(.moral-stage-idle)) .spirit-dock:not(.collapsed) .dock-avatar img {
+  max-width: 54px;
+  max-height: 54px;
+}
+
+.home-screen-shell .spirit-dock.expanded {
+  display: grid;
+  grid-template-columns: minmax(176px, 220px) minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 8px 10px;
+  max-height: min(214px, calc(100% - 28px));
+  padding: 8px;
+  overflow: hidden;
+  border: 1px solid rgba(31, 74, 66, 0.14);
+  border-radius: 20px;
+  background: #fffaf0;
+  box-shadow: 0 14px 34px rgba(24, 47, 41, 0.12);
+}

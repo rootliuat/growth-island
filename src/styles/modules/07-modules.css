@@ -1,0 +1,670 @@
+/**
+ * [INPUT]: 依赖 ../01-tokens.css 以及前序 cascade 片段。
+ * [OUTPUT]: 对外提供后续模块、移动端和白板触控最终覆盖第 7 段样式。
+ * [POS]: styles/modules 的 cascade 片段 7/14，由 ../index.css 按顺序导入。
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
+
+
+.roll-call-page .roll-call-stage::before {
+  display: block;
+  inset: 14px;
+  border: 1px dashed rgba(45, 159, 178, 0.28);
+  border-radius: 20px;
+}
+
+.roll-call-page .roll-call-stage-top {
+  color: rgba(23, 76, 90, 0.72);
+}
+
+.roll-call-page .roll-call-stage-top strong,
+.roll-call-page .roll-call-toggle,
+.roll-call-page .roll-call-filter-title strong {
+  color: #174c5a;
+  border-color: rgba(246, 179, 82, 0.36);
+  background: #fff0bf;
+}
+
+.roll-call-command-strip {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  gap: 10px;
+}
+
+.roll-call-page .roll-call-actions {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.roll-call-page .roll-call-primary {
+  color: #fffdf4;
+  border-color: rgba(184, 78, 54, 0.24);
+  background: #ff7a59;
+}
+
+.roll-call-page .roll-call-primary:not(:disabled):hover {
+  background: #ee6648;
+}
+
+.roll-call-page .roll-call-secondary,
+.roll-call-page .roll-call-record-actions button,
+.roll-call-page .roll-call-filter-panel button,
+.roll-call-page .roll-call-copy-button {
+  color: #174c5a;
+  border-color: rgba(23, 76, 90, 0.12);
+  background: rgba(255, 253, 244, 0.88);
+}
+
+.roll-call-page .roll-call-record-actions button:not(:disabled):first-child {
+  color: #174c5a;
+  border-color: rgba(246, 179, 82, 0.46);
+  background: #fff0bf;
+}
+
+.roll-call-page .roll-call-filter-panel button.active {
+  color: #fffdf4;
+  border-color: rgba(23, 76, 90, 0.12);
+  background: #2d9fb2;
+}
+
+.roll-call-page .roll-call-winner {
+  gap: 13px;
+  padding: 4px 0 0;
+}
+
+.roll-call-page .roll-call-ring {
+  top: 36px;
+  width: min(60%, 286px);
+  border-color: rgba(246, 179, 82, 0.24);
+  box-shadow: inset 0 0 0 8px rgba(255, 248, 234, 0.56);
+}
+
+.roll-call-page .roll-call-avatar {
+  width: min(50%, 244px);
+  min-width: 190px;
+  border-color: rgba(246, 179, 82, 0.5);
+  background: linear-gradient(180deg, #fffdf4, #f3ead0);
+}
+
+.roll-call-page .roll-call-nameplate {
+  width: min(100%, 330px);
+  border-color: rgba(214, 177, 106, 0.42);
+  background: rgba(255, 253, 244, 0.9);
+}
+
+.roll-call-page .roll-call-nameplate strong {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  color: #174c5a;
+  font-size: clamp(28px, 3vw, 38px);
+}
+
+.roll-call-page .roll-call-action-status {
+  display: block;
+  min-height: 34px;
+  margin: 0;
+  padding: 8px 12px;
+  border: 1px solid rgba(246, 179, 82, 0.42);
+  border-radius: 999px;
+  color: #174c5a;
+  background: rgba(255, 240, 191, 0.82);
+  font-size: 13px;
+  font-weight: 950;
+  text-align: center;
+}
+
+.roll-call-page .roll-call-side {
+  grid-template-rows: auto auto minmax(0, 1fr);
+}
+
+.roll-call-page .roll-call-filter-panel {
+  gap: 9px;
+  padding: 13px;
+}
+
+.roll-call-page .roll-call-filter-title span,
+.roll-call-page .roll-call-list-title strong,
+.roll-call-page .roll-call-row-copy strong {
+  color: #174c5a;
+}
+
+.roll-call-page .roll-call-stats {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.roll-call-page .roll-call-stats article {
+  min-height: 42px;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 7px;
+  padding: 8px 10px;
+  border-radius: 999px;
+}
+
+.roll-call-page .roll-call-stats article svg {
+  width: 15px;
+  height: 15px;
+  color: #2d9fb2;
+}
+
+.roll-call-page .roll-call-stats span {
+  flex: 1;
+  color: rgba(23, 76, 90, 0.7);
+  font-size: 12px;
+}
+
+.roll-call-page .roll-call-stats strong {
+  color: #174c5a;
+  font-size: 19px;
+}
+
+.roll-call-page .roll-call-list-panel {
+  padding: 13px;
+}
+
+.roll-call-page .roll-call-list-title {
+  padding-bottom: 10px;
+  border-color: rgba(214, 177, 106, 0.34);
+}
+
+.roll-call-page .roll-call-list-title strong {
+  font-size: 17px;
+}
+
+.roll-call-page .roll-call-list-title span,
+.roll-call-page .roll-call-row-copy em,
+.roll-call-page .roll-call-empty {
+  color: rgba(23, 76, 90, 0.66);
+}
+
+.roll-call-page .roll-call-list li button {
+  min-height: 58px;
+  border-color: rgba(214, 177, 106, 0.32);
+  background: rgba(255, 253, 244, 0.88);
+}
+
+.roll-call-page .roll-call-list li.is-current button {
+  border-color: rgba(45, 159, 178, 0.52);
+  background: rgba(135, 216, 208, 0.2);
+}
+
+.roll-call-page .roll-call-order {
+  color: #fffdf4;
+  background: #2d9fb2;
+}
+
+.roll-call-page .roll-call-home-button {
+  color: #fffdf4;
+  border-color: rgba(23, 76, 90, 0.18);
+  background: #174c5a;
+  white-space: nowrap;
+}
+
+.roll-call-page button:focus-visible,
+.roll-call-page input:focus-visible {
+  outline: 3px solid rgba(246, 179, 82, 0.72);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .roll-call-winner.is-rolling .roll-call-avatar {
+    animation: none;
+  }
+}
+
+@media (max-width: 1160px) {
+  .roll-call-page .roll-call-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 720px) {
+  .roll-call-page {
+    padding-bottom: 96px;
+  }
+
+  .roll-call-page .roll-call-header {
+    min-height: 44px;
+  }
+
+  .roll-call-page .roll-call-header h1 {
+    font-size: 19px;
+  }
+
+  .roll-call-page .roll-call-home-button {
+    min-width: 92px;
+    padding-inline: 12px;
+  }
+
+  .roll-call-page .roll-call-stage {
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .roll-call-page .roll-call-stage::before {
+    inset: 8px;
+  }
+
+  .roll-call-page .roll-call-actions,
+  .roll-call-page .roll-call-record-actions {
+    grid-template-columns: minmax(0, 1fr) minmax(92px, auto);
+    gap: 8px;
+  }
+
+  .roll-call-page .roll-call-primary,
+  .roll-call-page .roll-call-secondary,
+  .roll-call-page .roll-call-record-actions button {
+    min-height: 44px;
+    padding-inline: 10px;
+  }
+
+  .roll-call-page .roll-call-winner {
+    gap: 8px;
+  }
+
+  .roll-call-page .roll-call-ring {
+    top: 22px;
+    width: min(48vw, 180px);
+    border-width: 9px;
+  }
+
+  .roll-call-page .roll-call-avatar {
+    width: min(52vw, 172px);
+    min-width: 0;
+  }
+
+  .roll-call-page .roll-call-nameplate {
+    padding: 9px 11px;
+  }
+
+  .roll-call-page .roll-call-nameplate strong {
+    font-size: clamp(25px, 8vw, 32px);
+  }
+
+  .roll-call-page .roll-call-action-status {
+    min-height: 32px;
+    padding: 7px 10px;
+  }
+
+  .roll-call-page .roll-call-filter-panel {
+    gap: 8px;
+    padding: 11px;
+  }
+
+  .roll-call-page .roll-call-chip-row {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+
+  .roll-call-page .roll-call-chip-row button {
+    flex: 0 0 auto;
+    min-height: 38px;
+  }
+
+  .roll-call-page .roll-call-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .roll-call-page .roll-call-stats article {
+    min-height: 38px;
+    padding: 7px 8px;
+  }
+
+  .roll-call-page .roll-call-stats article svg {
+    display: none;
+  }
+
+  .roll-call-page .roll-call-stats span {
+    font-size: 11px;
+  }
+
+  .roll-call-page .roll-call-stats strong {
+    font-size: 17px;
+  }
+}
+
+/* P1 Lottery scene: 幸运贝池 as a shell-pool reward scene, not a form workbench. */
+.lottery-page {
+  color: #174c5a;
+  background:
+    radial-gradient(circle at 14% 8%, rgba(135, 216, 208, 0.3), transparent 32%),
+    linear-gradient(180deg, #e9f8f4 0%, #f8efd7 100%);
+}
+
+.lottery-page .module-eyebrow {
+  color: #174c5a;
+  border-color: rgba(45, 159, 178, 0.24);
+  background: rgba(255, 248, 234, 0.88);
+}
+
+.lottery-page .reward-header h1 {
+  color: #174c5a;
+}
+
+.lottery-page .reward-home-button {
+  color: #fffdf4;
+  border-color: rgba(23, 76, 90, 0.18);
+  background: #174c5a;
+  white-space: nowrap;
+}
+.lottery-page .reward-layout {
+  grid-template-columns: minmax(520px, 1.24fr) minmax(340px, 0.76fr);
+  gap: 16px;
+}
+
+.lottery-page .lottery-stage,
+.lottery-page .reward-panel {
+  border: 1px solid rgba(214, 177, 106, 0.48);
+  background: rgba(255, 248, 234, 0.92);
+  box-shadow: 0 16px 34px rgba(23, 76, 90, 0.09);
+}
+
+.lottery-page .lottery-stage {
+  position: relative;
+  gap: 14px;
+  min-height: 0;
+  overflow: hidden;
+  padding: 18px;
+  background:
+    radial-gradient(circle at 50% 46%, rgba(135, 216, 208, 0.32), transparent 34%),
+    radial-gradient(circle at 50% 50%, rgba(246, 179, 82, 0.2), transparent 46%),
+    linear-gradient(180deg, rgba(255, 248, 234, 0.98), rgba(244, 217, 155, 0.42));
+}
+
+.lottery-page .lottery-stage::before {
+  position: absolute;
+  inset: 14px;
+  border: 1px dashed rgba(45, 159, 178, 0.28);
+  border-radius: 20px;
+  content: "";
+  pointer-events: none;
+}
+
+.lottery-page .reward-child-card,
+.lottery-page .lottery-result-card,
+.lottery-page .reward-actions {
+  position: relative;
+  z-index: 1;
+}
+
+.lottery-page .reward-child-card {
+  grid-template-columns: 82px minmax(0, 1fr);
+  padding: 12px;
+  border: 1px solid rgba(214, 177, 106, 0.42);
+  background: rgba(255, 253, 244, 0.86);
+}
+
+.lottery-page .reward-child-avatar {
+  width: 82px;
+  height: 82px;
+  border: 1px solid rgba(246, 179, 82, 0.5);
+  border-radius: 26px;
+  background: linear-gradient(180deg, #fffdf4, #f3ead0);
+}
+
+.lottery-page .reward-child-card label {
+  color: rgba(23, 76, 90, 0.72);
+}
+
+.lottery-page .reward-child-card select {
+  border: 1px solid rgba(23, 76, 90, 0.14);
+  color: #174c5a;
+  background: rgba(255, 253, 244, 0.92);
+}
+
+.lottery-page .reward-child-card em {
+  color: rgba(23, 76, 90, 0.68);
+}
+
+.lottery-page .lottery-result-card {
+  min-height: 282px;
+  border: 1px solid rgba(214, 177, 106, 0.42);
+  background:
+    radial-gradient(circle at 50% 38%, rgba(135, 216, 208, 0.22), transparent 36%),
+    rgba(255, 253, 244, 0.82);
+  box-shadow: inset 0 0 0 8px rgba(255, 248, 234, 0.42);
+}
+
+.lottery-page .lottery-result-orb {
+  width: 116px;
+  height: 116px;
+  border: 1px solid rgba(246, 179, 82, 0.58);
+  border-radius: 999px 999px 38px 38px;
+  color: #fffdf4;
+  background:
+    radial-gradient(circle at 50% 34%, rgba(255, 253, 244, 0.28), transparent 28%),
+    linear-gradient(180deg, #f6b352, #c98b4f);
+  box-shadow: inset 0 -8px 0 rgba(122, 74, 50, 0.12), 0 12px 24px rgba(23, 76, 90, 0.1);
+}
+
+.lottery-result-meta {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 7px;
+}
+
+.lottery-page .lottery-result-card span,
+.lottery-result-meta em {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 950;
+  font-style: normal;
+}
+
+.lottery-page .lottery-result-card span {
+  color: #174c5a;
+  border: 1px solid rgba(246, 179, 82, 0.44);
+  background: #fff0bf;
+}
+
+.lottery-result-meta em {
+  color: #fffdf4;
+  background: #2d9fb2;
+}
+
+.lottery-page .lottery-result-card strong {
+  max-width: 100%;
+  color: #174c5a;
+  font-size: clamp(24px, 3vw, 32px);
+  overflow-wrap: anywhere;
+}
+
+.lottery-page .lottery-result-card p {
+  max-width: 320px;
+  color: rgba(23, 76, 90, 0.68);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.lottery-page .reward-primary {
+  color: #fffdf4;
+  border-color: rgba(184, 78, 54, 0.24);
+  background: #ff7a59;
+}
+
+.lottery-page .reward-primary:hover {
+  background: #ee6648;
+}
+
+.lottery-page .reward-secondary {
+  color: #174c5a;
+  border-color: rgba(23, 76, 90, 0.12);
+  background: rgba(255, 253, 244, 0.88);
+}
+
+.lottery-page .reward-side {
+  grid-template-rows: minmax(0, 1fr) auto;
+}
+
+.lottery-page .reward-panel {
+  padding: 13px;
+}
+
+.lottery-page .reward-panel-title {
+  color: #174c5a;
+  border-bottom-color: rgba(214, 177, 106, 0.34);
+}
+
+.lottery-page .lottery-prize-grid {
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.lottery-page .lottery-prize-grid article {
+  min-height: 70px;
+  gap: 4px;
+  padding: 10px;
+  border: 1px solid rgba(214, 177, 106, 0.34);
+  border-radius: 16px;
+  background: rgba(255, 253, 244, 0.86);
+}
+
+.lottery-page .lottery-prize-grid span,
+.lottery-page .lottery-history-list span {
+  color: #fffdf4;
+  background: #c98b4f;
+}
+
+.lottery-page .lottery-prize-grid strong {
+  color: #174c5a;
+  font-size: 15px;
+}
+
+.lottery-page .lottery-history-list li {
+  grid-template-columns: 48px minmax(0, 0.72fr) minmax(96px, 1fr);
+  border: 1px solid rgba(214, 177, 106, 0.34);
+  background: rgba(255, 253, 244, 0.86);
+}
+
+.lottery-page .lottery-history-list strong,
+.lottery-page .lottery-history-list em {
+  color: #174c5a;
+}
+
+.lottery-page .reward-muted {
+  color: rgba(23, 76, 90, 0.66);
+}
+
+.lottery-page button:focus-visible,
+.lottery-page select:focus-visible {
+  outline: 3px solid rgba(246, 179, 82, 0.72);
+  outline-offset: 3px;
+}
+
+@media (max-width: 1160px) {
+  .lottery-page .reward-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 720px) {
+  .lottery-page {
+    padding-bottom: 96px;
+  }
+
+  .lottery-page .reward-header {
+    min-height: 44px;
+  }
+
+  .lottery-page .reward-header h1 {
+    font-size: 19px;
+  }
+
+  .lottery-page .reward-home-button {
+    min-width: 110px;
+    padding-inline: 11px;
+  }
+
+  .lottery-page .lottery-stage {
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .lottery-page .lottery-stage::before {
+    inset: 8px;
+  }
+
+  .lottery-page .reward-child-card {
+    grid-template-columns: 62px minmax(0, 1fr);
+    gap: 10px;
+    padding: 10px;
+  }
+
+  .lottery-page .reward-child-avatar {
+    width: 62px;
+    height: 62px;
+    border-radius: 20px;
+  }
+
+  .lottery-page .reward-child-card select {
+    min-height: 40px;
+    margin: 4px 0;
+  }
+
+  .lottery-page .lottery-result-card {
+    min-height: 216px;
+    gap: 7px;
+    padding: 16px;
+  }
+
+  .lottery-page .lottery-result-orb {
+    width: 82px;
+    height: 82px;
+  }
+
+  .lottery-page .lottery-result-card strong {
+    font-size: clamp(22px, 7vw, 28px);
+  }
+
+  .lottery-page .lottery-result-card p {
+    font-size: 12px;
+  }
+
+  .lottery-page .reward-actions {
+    grid-template-columns: minmax(0, 1fr) minmax(92px, auto);
+    gap: 8px;
+  }
+
+  .lottery-page .reward-primary,
+  .lottery-page .reward-secondary {
+    min-height: 44px;
+    padding-inline: 10px;
+  }
+
+  .lottery-page .reward-side {
+    gap: 10px;
+  }
+
+  .lottery-page .lottery-prize-grid {
+    display: flex;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+
+  .lottery-page .lottery-prize-grid article {
+    flex: 0 0 150px;
+  }
+}
+
+/* P0/P2 Teacher record harbor: visible game HUD identity without changing ledger logic. */
+.teacher-workbench-page {
+  --workbench-sea: #174c5a;
+  --workbench-lagoon: #2d9fb2;
+  --workbench-shell: #fff8ea;
+  --workbench-sand: #f4d99b;
+  --workbench-gold: #f6b352;
+  --workbench-coral: #ff7a59;
+  --workbench-border: rgba(214, 177, 106, 0.44);
+  color: var(--workbench-sea);
+  background:
+    radial-gradient(circle at 16% 0, rgba(135, 216, 208, 0.26), transparent 34%),
+    linear-gradient(180deg, #eaf7f4 0%, #f7f0db 100%);
+}

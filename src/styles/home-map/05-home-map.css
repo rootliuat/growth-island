@@ -1,0 +1,668 @@
+/**
+ * [INPUT]: 依赖 ../01-tokens.css 以及前序 cascade 片段。
+ * [OUTPUT]: 对外提供首页海岛地图、HUD、底部精灵队列和能量星座第 5 段样式。
+ * [POS]: styles/home-map 的 cascade 片段 5/6，由 ../index.css 按顺序导入。
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
+
+
+.map-energy-constellation > * {
+  position: relative;
+  z-index: 1;
+}
+
+.map-energy-constellation.moral-success {
+  border-color: color-mix(in srgb, var(--energy-current, #f0ae3f) 54%, #fff8ea);
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--energy-current, #f0ae3f) 18%, transparent),
+    0 8px 14px rgba(19, 51, 45, 0.14);
+  animation: moralEnergyBoardArrive 1.15s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.map-energy-constellation.moral-success::after {
+  position: absolute;
+  inset: -40% -24%;
+  z-index: 0;
+  background: linear-gradient(
+    108deg,
+    transparent 0 32%,
+    color-mix(in srgb, var(--energy-current, #f0ae3f) 28%, transparent) 44%,
+    rgba(255, 253, 244, 0.68) 50%,
+    transparent 62% 100%
+  );
+  content: "";
+  pointer-events: none;
+  transform: translateX(-46%) rotate(-8deg);
+  animation: moralEnergyBoardSweep 1.15s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.energy-constellation-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.energy-constellation-head span,
+.energy-constellation-head strong {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  border-radius: 999px;
+  font-weight: 950;
+  white-space: nowrap;
+}
+
+.energy-constellation-head span {
+  gap: 5px;
+  padding: 0 10px;
+  color: #fffdf4;
+  background: var(--energy-current, #f0ae3f);
+}
+
+.energy-constellation-head strong {
+  min-width: 0;
+  overflow: hidden;
+  padding: 0 11px;
+  border: 1px solid rgba(23, 76, 90, 0.1);
+  color: #174c5a;
+  background: rgba(255, 253, 244, 0.88);
+  font-size: 14px;
+  text-overflow: ellipsis;
+}
+
+.energy-slot-row {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.energy-slot-row button {
+  position: relative;
+  display: grid;
+  min-width: 0;
+  min-height: 66px;
+  align-content: center;
+  justify-items: center;
+  gap: 3px;
+  padding: 6px 4px 5px;
+  border: 1px solid rgba(23, 76, 90, 0.1);
+  border-radius: 14px;
+  color: rgba(23, 76, 90, 0.64);
+  background: rgba(255, 253, 244, 0.72);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 950;
+  box-shadow: inset 0 -3px 0 rgba(214, 177, 106, 0.12);
+  transition: transform 150ms ease, background 150ms ease, color 150ms ease, border-color 150ms ease;
+}
+
+.energy-slot-row button::before {
+  position: absolute;
+  inset: 3px;
+  border: 1px solid color-mix(in srgb, var(--energy-color, #f0ae3f) 18%, transparent);
+  border-radius: 11px;
+  content: "";
+  pointer-events: none;
+}
+
+.energy-glyph {
+  position: relative;
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 42% 34%, rgba(255, 253, 244, 0.92), rgba(255, 248, 234, 0.44) 55%, transparent 72%),
+    color-mix(in srgb, var(--energy-color, #f0ae3f) 12%, #fffdf4);
+}
+
+.energy-glyph i {
+  display: block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(23, 76, 90, 0.12);
+  border-radius: 999px;
+  background: rgba(23, 76, 90, 0.1);
+}
+
+.energy-glyph img {
+  position: absolute;
+  inset: 2px;
+  width: calc(100% - 4px);
+  height: calc(100% - 4px);
+  object-fit: contain;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 160ms ease;
+}
+
+.energy-glyph.has-image {
+  background: transparent;
+}
+
+.energy-glyph.has-image i {
+  opacity: 0;
+}
+
+.energy-glyph.has-image img {
+  opacity: 1;
+}
+
+.energy-slot-row button span {
+  overflow: hidden;
+  max-width: 100%;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.energy-slot-row button em,
+.energy-slot-row button b {
+  overflow: hidden;
+  max-width: 100%;
+  font-style: normal;
+  font-weight: 950;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.energy-slot-row button em {
+  display: none;
+  min-height: 18px;
+  padding: 2px 5px;
+  border-radius: 999px;
+  color: color-mix(in srgb, var(--energy-color, #f0ae3f) 78%, #174c5a);
+  background: rgba(255, 253, 244, 0.76);
+  font-size: 10px;
+}
+
+.energy-slot-row button b {
+  color: rgba(23, 76, 90, 0.48);
+  font-size: 10px;
+}
+
+.energy-slot-row button.active {
+  border-color: color-mix(in srgb, var(--energy-color, #f0ae3f) 38%, transparent);
+  color: #174c5a;
+  background: color-mix(in srgb, var(--energy-color, #f0ae3f) 16%, #fffdf4);
+}
+
+.energy-slot-row button.active .energy-glyph i {
+  border-color: rgba(255, 255, 255, 0.88);
+  background: var(--energy-color, #f0ae3f);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--energy-color, #f0ae3f) 18%, transparent);
+}
+
+.energy-slot-row button.current {
+  color: #fffdf4;
+  background: var(--energy-color, #f0ae3f);
+  box-shadow: inset 0 -4px 0 rgba(23, 76, 90, 0.16), 0 8px 18px color-mix(in srgb, var(--energy-color, #f0ae3f) 24%, transparent);
+  animation: energyCardBreath 2.4s ease-in-out infinite;
+}
+
+.world-map-shell.moral-stage-success .energy-slot-row button.current {
+  border-color: rgba(255, 253, 244, 0.86);
+  box-shadow:
+    inset 0 -4px 0 rgba(23, 76, 90, 0.16),
+    0 0 0 5px color-mix(in srgb, var(--energy-color, #f0ae3f) 22%, transparent),
+    0 10px 16px color-mix(in srgb, var(--energy-color, #f0ae3f) 28%, transparent);
+  animation:
+    moralEnergySlotArrive 1.05s cubic-bezier(0.22, 1, 0.36, 1) both,
+    energyCardBreath 2.4s ease-in-out 1.05s infinite;
+}
+
+.energy-slot-row button.current .energy-glyph {
+  background:
+    radial-gradient(circle at 45% 35%, rgba(255, 253, 244, 0.96), rgba(255, 253, 244, 0.28) 58%, transparent 76%),
+    rgba(255, 253, 244, 0.18);
+}
+
+.energy-slot-row button.current .energy-glyph i {
+  background: #fffdf4;
+  box-shadow: 0 0 0 4px rgba(255, 253, 244, 0.22);
+}
+
+.energy-slot-row button.active em,
+.energy-slot-row button.current em {
+  display: inline-flex;
+}
+
+.energy-slot-row button.current b {
+  color: rgba(255, 253, 244, 0.72);
+}
+
+.energy-slot-row button:hover {
+  transform: translateY(-1px);
+}
+
+.map-energy-constellation.moral-pendingReview .energy-constellation-head span {
+  background: #f6b352;
+}
+
+.map-energy-constellation.moral-error .energy-constellation-head span {
+  background: #b86464;
+}
+
+.world-map-shell:not(.moral-stage-idle) .map-energy-constellation {
+  top: 72px;
+}
+
+.map-companion-actions {
+  position: absolute;
+  right: 18px;
+  bottom: 20px;
+  z-index: 6;
+  width: min(284px, calc(100% - 210px));
+  padding: 10px;
+  border: 3px solid #f6e9ba;
+  border-radius: 20px;
+  color: #35524a;
+  background: #f4f1e6;
+  box-shadow: 0 7px 0 rgba(44, 92, 86, 0.16), 0 18px 30px rgba(35, 66, 61, 0.22);
+}
+
+.map-companion-actions::before {
+  position: absolute;
+  inset: 6px;
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  border-radius: 14px;
+  content: "";
+  pointer-events: none;
+}
+
+.map-companion-actions::after {
+  position: absolute;
+  right: 22px;
+  bottom: -11px;
+  width: 44px;
+  height: 18px;
+  border: 3px solid rgba(255, 243, 203, 0.86);
+  border-top: 0;
+  border-radius: 0 0 999px 999px;
+  background: var(--focus-accent, #59b97c);
+  box-shadow: inset 0 -4px 0 rgba(53, 82, 74, 0.18);
+  content: "";
+}
+
+.map-companion-actions > * {
+  position: relative;
+  z-index: 1;
+}
+
+.companion-action-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 24px;
+  padding: 0 9px;
+  border: 2px solid rgba(214, 208, 190, 0.66);
+  border-radius: 999px;
+  color: #7b6543;
+  font-size: 12px;
+  font-weight: 900;
+  background: #fff7d8;
+  box-shadow: inset 0 -3px 0 rgba(123, 128, 101, 0.08);
+}
+
+.map-companion-actions > strong {
+  display: block;
+  overflow: hidden;
+  margin-top: 6px;
+  color: #2f473f;
+  font-size: 17px;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.map-companion-actions > div {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+  gap: 7px;
+  margin-top: 9px;
+}
+
+.map-companion-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 0;
+  min-height: 38px;
+  padding: 0 7px;
+  border: 2px solid #fff3cb;
+  border-radius: 14px;
+  color: #fff9df;
+  font-size: 13px;
+  font-weight: 900;
+  background: var(--focus-accent, #59b97c);
+  box-shadow: inset 0 -4px 0 rgba(53, 82, 74, 0.18), 0 4px 0 rgba(53, 82, 74, 0.1);
+  transition: transform 0.16s ease, filter 0.16s ease, box-shadow 0.16s ease;
+}
+
+.map-companion-actions .map-self-service-action {
+  min-height: 44px;
+  background: #ff7a59;
+  box-shadow: inset 0 -4px 0 rgba(122, 74, 50, 0.2), 0 5px 0 rgba(53, 82, 74, 0.11);
+}
+
+.map-companion-actions button:not(.map-self-service-action):last-child {
+  color: #4f604f;
+  background: #fff7d8;
+  border-color: rgba(214, 208, 190, 0.74);
+}
+
+.map-companion-actions button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(1.04);
+  box-shadow: inset 0 -4px 0 rgba(53, 82, 74, 0.2), 0 6px 0 rgba(53, 82, 74, 0.12);
+}
+
+.map-companion-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.evolution-board {
+  margin-top: 8px;
+  padding: 9px;
+  border: 2px solid rgba(214, 208, 190, 0.62);
+  border-radius: 16px;
+  background: #f4f1e6;
+  box-shadow: inset 0 -5px 0 rgba(123, 128, 101, 0.08);
+}
+
+.evolution-board-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.evolution-board-head span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #35524a;
+  font-size: 13px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.evolution-board-head strong {
+  overflow: hidden;
+  min-width: 0;
+  color: #8a6b3d;
+  font-size: 12px;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.evolution-track {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 4px;
+  margin-top: 8px;
+}
+.evolution-track span {
+  display: grid;
+  min-width: 0;
+  min-height: 40px;
+  place-items: center;
+  gap: 3px;
+  padding: 4px 2px;
+  border: 2px solid rgba(214, 208, 190, 0.62);
+  border-radius: 12px;
+  color: #8a744c;
+  font-size: 10px;
+  font-weight: 900;
+  background: #fff7d8;
+  box-shadow: inset 0 -3px 0 rgba(123, 128, 101, 0.08);
+}
+
+.evolution-track span i {
+  width: 13px;
+  height: 13px;
+  border: 2px solid #fff3cb;
+  border-radius: 999px;
+  background: #d6d0be;
+  box-shadow: inset 0 -3px 0 rgba(53, 82, 74, 0.12);
+}
+
+.evolution-track span.done {
+  color: #4f604f;
+}
+
+.evolution-track span.done i {
+  background: #59b97c;
+}
+
+.evolution-track span.current {
+  color: #2f473f;
+  background: #fff0bf;
+  transform: translateY(-2px);
+}
+
+.evolution-track span.current i {
+  width: 16px;
+  height: 16px;
+  background: var(--spirit-accent, #f2c94c);
+}
+
+.evolution-track span.locked {
+  opacity: 0.72;
+}
+
+.evolution-board p {
+  margin: 6px 0 0;
+  overflow: hidden;
+  color: #7b8065;
+  font-size: 12px;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-height: 820px) {
+  .map-travel-board {
+    top: 88px;
+    width: 124px;
+    padding: 7px;
+  }
+
+  .map-travel-board strong {
+    min-height: 22px;
+    font-size: 12px;
+  }
+
+  .map-travel-board button {
+    min-height: 28px;
+    font-size: 11px;
+  }
+
+  .map-travel-board button svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .map-companion-actions {
+    right: 14px;
+    bottom: 14px;
+    width: min(252px, calc(100% - 180px));
+    padding: 8px;
+  }
+
+  .map-companion-actions > strong {
+    margin-top: 4px;
+    font-size: 15px;
+  }
+
+  .map-companion-actions > div {
+    gap: 5px;
+    margin-top: 7px;
+  }
+
+  .map-companion-actions button {
+    min-height: 32px;
+    border-radius: 12px;
+    font-size: 12px;
+  }
+
+  .evolution-board {
+    margin-top: 6px;
+    padding: 7px;
+    border-radius: 14px;
+  }
+
+  .evolution-track {
+    gap: 3px;
+    margin-top: 6px;
+  }
+
+  .evolution-track span {
+    min-height: 30px;
+    border-radius: 10px;
+    font-size: 0;
+  }
+
+  .evolution-board p {
+    display: none;
+  }
+
+  .dock-tools {
+    align-self: center;
+  }
+
+  .dock-filters {
+    display: none;
+  }
+}
+
+/* Final focus-view pass: these overrides intentionally sit last in the cascade. */
+.app-shell {
+  grid-template-rows: 62px minmax(0, 1fr) 116px;
+  gap: 10px;
+  padding: 10px 12px;
+}
+
+.app-shell:has(.spirit-dock.collapsed) {
+  grid-template-rows: 62px minmax(0, 1fr) 74px;
+}
+
+.game-topbar {
+  grid-template-columns: minmax(260px, 1fr) auto minmax(430px, 1fr);
+  padding: 6px 12px;
+  border-radius: 20px;
+}
+
+.game-brand {
+  gap: 10px;
+}
+
+.game-brand-mark {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  font-size: 27px;
+}
+
+.game-brand h1 {
+  font-size: 23px;
+}
+
+.game-brand p {
+  margin-top: 4px;
+  font-size: 12px;
+}
+
+.game-pill,
+.teacher-toggle {
+  min-height: 36px;
+  padding: 0 11px;
+  font-size: 13px;
+}
+
+.zoom-controls {
+  padding: 4px;
+}
+
+.zoom-controls button {
+  width: 35px;
+  min-height: 35px;
+}
+
+.map-focus-plaque,
+.map-companion-actions {
+  display: none;
+}
+
+.map-travel-board {
+  top: 106px;
+  width: 124px;
+  opacity: 0.9;
+}
+
+.map-travel-board:hover {
+  opacity: 1;
+}
+
+.map-hint {
+  padding: 7px 11px;
+  font-size: 12px;
+  opacity: 0.82;
+}
+
+.spirit-card {
+  padding: 12px;
+  border-radius: 22px;
+}
+
+.spirit-card-head {
+  font-size: 12px;
+}
+
+.spirit-card-head strong {
+  min-width: 42px;
+  height: 28px;
+}
+
+.spirit-portrait {
+  height: 146px;
+  margin-top: 4px;
+}
+
+.portrait-ring {
+  width: 188px;
+  height: 124px;
+  border-width: 3px;
+}
+
+.spirit-portrait img {
+  max-width: 164px;
+  max-height: 148px;
+}
+
+.spirit-nameplate h2 {
+  font-size: 23px;
+}
+
+.spirit-meta-row {
+  gap: 7px;
+  margin-top: 8px;
+}
+
+.xp-gem {
+  margin-top: 10px;
+  padding: 10px 11px;
+  border: 2px solid rgba(214, 208, 190, 0.58);
+  box-shadow: inset 0 -5px 0 rgba(123, 128, 101, 0.07);
+}
+
+.xp-track {
+  height: 12px;
+  border: 2px solid rgba(214, 208, 190, 0.7);
+  border-radius: 999px;
+  background: #d9d5c5;
+}

@@ -1,7 +1,32 @@
+/**
+ * [INPUT]: 依赖课堂数据、domain 规则、组件模块、地图容器和本地课堂 API。
+ * [OUTPUT]: 对外提供 Growth Island 应用根组件 App。
+ * [POS]: src 的状态接线层，协调路由、ledger、同步、说成长 session 与模块入口。
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
+
 import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  activeModuleStorageKey,
+  getInitialActiveModule,
+  getInitialClassroomBackup,
+  getInitialLotteryDraws,
+  getInitialOrganizationState,
+  getInitialSettingsChanges,
+  getInitialShopRedemptions,
+  getInitialTeacherMode,
+  lotteryDrawsStorageKey,
+  saveClassroomBackupToStorage,
+  saveOrganizationStateToStorage,
+  settingsChangesStorageKey,
+  shopRedemptionsStorageKey,
+  teacherModeStorageKey,
+} from "./browser/appStorage";
+import { blobToBase64, getMoralRecorderSettings } from "./browser/moralRecorder";
 import { AppShell } from "./components/AppShell";
 import { DialogueModal } from "./components/DialogueModal";
 import { GameTopBar } from "./components/Hud/GameTopBar";
+import { GrowthFeedbackOverlay } from "./components/Hud/GrowthFeedbackOverlay";
 import { SpiritDetailPanel } from "./components/Hud/SpiritDetailPanel";
 import { SpiritDock } from "./components/Hud/SpiritDock";
 import { SpiritShowcase3D } from "./components/Hud/SpiritShowcase3D";
@@ -21,8 +46,8 @@ import { VoiceRecordModule } from "./components/modules/VoiceRecordModule";
 import { moduleConfigById, type AppModuleId } from "./components/modules/moduleConfig";
 import { WorldMapContainer } from "./components/WorldMap/WorldMapContainer";
 import type { PixiWorldMapHandle } from "./components/WorldMap/PixiWorldMap";
-import type { MoralSpeakViewState } from "./components/Hud/MoralSpeakOverlay";
 import { initialChildren } from "./data/classroom";
+import { seededLedger, seededMoralReviews } from "./data/demoRecords";
 import { organizationConfig } from "./data/organization";
 import type { LotteryPrize, ShopReward } from "./data/rewards";
 import { spirits } from "./data/spirits";
@@ -30,13 +55,22 @@ import {
   compareClassroomBackups,
   createClassroomBackup,
   createClearedClassroomBackup,
-  normalizeOrganizationState,
   normalizeClassroomBackup,
   parseClassroomBackupJson,
   serializeClassroomBackup,
   summarizeClassroomBackup,
 } from "./domain/classroomBackup";
+import type { SyncStatus } from "./domain/appState";
+import { getShortFeedbackReason, type GrowthFeedback } from "./domain/growthFeedback";
 import { evaluateMoralText } from "./domain/moralAgent";
+import {
+  getMoralSpeakLockedChildId as getLockedMoralSpeakChildId,
+  getMoralSpeakSummary,
+  isCurrentMoralApprovalTarget as matchesMoralApprovalTarget,
+  isMoralSpeakSessionActive as hasActiveMoralSpeakSession,
+  nextMoralSpeakSessionId,
+  type MoralSpeakViewState,
+} from "./domain/moralSpeakSession";
 import { createGrowthTaskLedgerInput, publishCurriculumTrack } from "./domain/organization";
 import { enrichChildren, makeLedgerRecord, normalizeLedgerRecord } from "./domain/progression";
 import { getSpiritAsset, loadSpiritAsset } from "./domain/spiritAssets";
@@ -72,174 +106,10 @@ import type {
   VirtueCategory,
 } from "./types";
 
-type SyncStatus = "connecting" | "online" | "saving" | "offline";
-type GrowthFeedbackKind = "xp" | "energy" | "draw" | "redeem" | "focus" | "status";
-type GrowthFeedbackTone = "positive" | "watch" | "neutral";
-
-interface GrowthFeedback {
-  id: number;
-  kind: GrowthFeedbackKind;
-  tone: GrowthFeedbackTone;
-  title: string;
-  detail?: string;
-  delta?: number;
-  childName?: string;
-}
-
 const backgroundSpiritBatchSize = 2;
 const backgroundSpiritBatchDelayMs = 1100;
 const backgroundSpiritInitialDelayMs = 1400;
 const backgroundSpiritPreloadLimit = 12;
-const activeModuleStorageKey = "growth-island-active-module";
-const classroomBackupStorageKey = "growth-island-classroom-backup";
-const teacherModeStorageKey = "growth-island-teacher-mode";
-const settingsChangesStorageKey = "growth-island-settings-changes";
-const shopRedemptionsStorageKey = "growth-island-shop-redemptions";
-const lotteryDrawsStorageKey = "growth-island-lottery-draws";
-const organizationStateStorageKey = "growth-island-organization-state";
-
-const emptyOrganizationState: OrganizationState = {
-  activeCurriculumByClassroomId: {},
-  parentReportReviewsByChildId: {},
-};
-
-function getShortFeedbackReason(reason: string) {
-  const cleaned = reason
-    .replace(/^课堂记录：/, "")
-    .replace(/^抽取台：/, "")
-    .replace(/^随机点名：/, "")
-    .replace(/^数学魔法 PK 胜利 \+30$/, "数学光路点亮")
-    .replace(/^数学光路点亮 \+30$/, "数学光路点亮")
-    .replace(/^语音记录：/, "贝壳记录：")
-    .replace(/^复核通过：/, "复核通过：")
-    .trim();
-  if (cleaned.includes("快速加分") || cleaned.includes("课堂积极回应")) return "确认点亮";
-  if (cleaned.includes("扣分") || cleaned.includes("减分")) return "老师提醒";
-  return cleaned.replace(/\s*[+＋-]\d+\s*XP?$/i, "").slice(0, 34);
-}
-
-function GrowthFeedbackOverlay({ feedback }: { feedback?: GrowthFeedback }) {
-  if (!feedback) return null;
-  const stageLabel =
-    feedback.kind === "focus"
-      ? "回岛"
-      : feedback.kind === "redeem"
-        ? "小铺"
-        : feedback.kind === "draw"
-          ? "抽取"
-          : feedback.kind === "energy"
-            ? "能量"
-            : feedback.kind === "xp"
-              ? "能量"
-              : "成长";
-  const childInitial = feedback.childName?.slice(0, 1) ?? stageLabel.slice(0, 1);
-
-  return (
-    <div
-      key={feedback.id}
-      className={`growth-feedback-overlay ${feedback.tone}`}
-      data-kind={feedback.kind}
-      data-delta={feedback.delta ?? ""}
-      data-child={feedback.childName ?? ""}
-      aria-live="polite"
-      role="status"
-    >
-      {typeof feedback.delta === "number" ? (
-        <span className="growth-feedback-float" aria-hidden="true">
-          {feedback.delta > 0 ? "能量进精灵" : "老师提醒"}
-        </span>
-      ) : null}
-      <div className="growth-feedback-card">
-        <span className="growth-feedback-sigil" aria-hidden="true">{childInitial}</span>
-        <div className="growth-feedback-copy">
-          <span>{stageLabel}</span>
-          <strong>{feedback.title}</strong>
-          {feedback.detail ? <em>{feedback.detail}</em> : null}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function getInitialActiveModule(): AppModuleId {
-  if (typeof window === "undefined") return "home";
-  const fromQuery = new URLSearchParams(window.location.search).get("module");
-  const fromStorage = window.localStorage.getItem(activeModuleStorageKey);
-  const candidate = fromQuery || fromStorage;
-  return candidate && moduleConfigById.has(candidate as AppModuleId) ? (candidate as AppModuleId) : "home";
-}
-
-function getInitialClassroomBackup(): ClassroomBackupSnapshot | null {
-  if (typeof window === "undefined") return null;
-  const stored = window.localStorage.getItem(classroomBackupStorageKey);
-  if (!stored) return null;
-  try {
-    return parseClassroomBackupJson(stored);
-  } catch {
-    return null;
-  }
-}
-
-function saveClassroomBackupToStorage(snapshot: ClassroomBackupSnapshot) {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(classroomBackupStorageKey, serializeClassroomBackup(snapshot));
-}
-
-function saveOrganizationStateToStorage(state: OrganizationState) {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(organizationStateStorageKey, JSON.stringify(state));
-}
-
-function getInitialTeacherMode() {
-  if (typeof window === "undefined") return true;
-  const stored = window.localStorage.getItem(teacherModeStorageKey);
-  return stored === null ? true : stored === "true";
-}
-
-function getInitialSettingsChanges(): SettingsChangeRecord[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const parsed = JSON.parse(window.localStorage.getItem(settingsChangesStorageKey) ?? "[]") as SettingsChangeRecord[];
-    return Array.isArray(parsed)
-      ? parsed.filter((item) => item && typeof item.id === "string" && typeof item.key === "string").slice(0, 50)
-      : [];
-  } catch {
-    return [];
-  }
-}
-
-function getInitialShopRedemptions(): ShopRedemption[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const parsed = JSON.parse(window.localStorage.getItem(shopRedemptionsStorageKey) ?? "[]") as ShopRedemption[];
-    return Array.isArray(parsed)
-      ? parsed.filter((item) => item && typeof item.id === "string" && typeof item.childId === "string").slice(0, 50)
-      : [];
-  } catch {
-    return [];
-  }
-}
-
-function getInitialLotteryDraws(): LotteryDrawRecord[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const parsed = JSON.parse(window.localStorage.getItem(lotteryDrawsStorageKey) ?? "[]") as LotteryDrawRecord[];
-    return Array.isArray(parsed)
-      ? parsed.filter((item) => item && typeof item.id === "string" && typeof item.childId === "string").slice(0, 50)
-      : [];
-  } catch {
-    return [];
-  }
-}
-
-function getInitialOrganizationState(): OrganizationState {
-  if (typeof window === "undefined") return emptyOrganizationState;
-  try {
-    return normalizeOrganizationState(JSON.parse(window.localStorage.getItem(organizationStateStorageKey) ?? "{}"));
-  } catch {
-    return emptyOrganizationState;
-  }
-}
 
 function spiritAssetKey(child: ChildWithProgress) {
   return `${child.spiritId}:${child.state}`;
@@ -251,71 +121,6 @@ function getBackgroundSpiritPriority(child: ChildWithProgress, selectedChild: Ch
   const slotDistance = Math.abs(child.slotId - selectedChild.slotId);
   const levelBias = child.level >= 7 ? -4 : 0;
   return 10 + Math.min(slotDistance, 18) + child.rank / 100 + levelBias;
-}
-
-const seededLedger: LedgerRecord[] = initialChildren.slice(0, 16).flatMap((child, index) => {
-  const base = [30, 70, 110, 160, 260, 470, 720, 1010, 1450, 1910][index % 10];
-  return [
-    normalizeLedgerRecord({
-      id: `seed-${child.id}`,
-      childId: child.id,
-      operatorChildId: child.id,
-      delta: base,
-      source: "manual",
-      category: "积极阳光",
-      reason: "演示数据：已有成长 XP",
-      createdAt: new Date(Date.now() - index * 3600_000).toISOString(),
-    } as LedgerRecord),
-  ];
-});
-
-const seededMoralReviews: MoralReviewItem[] = [
-  {
-    id: "seed-review-child-06",
-    childId: "child-06",
-    operatorChildId: "child-06",
-    transcript: "我今天主动帮同学收玩具",
-    result: {
-      intent: "reward",
-      category: "积极阳光",
-      xpDelta: 20,
-      confidence: 0.82,
-      status: "pending_review",
-      reasonForChild: "你主动帮助同学，是很温暖的成长表现。",
-      reasonForTeacher: "建议记录为积极阳光 +20，等待老师复核确认。",
-      riskFlags: [],
-    },
-    status: "pending_review",
-    createdAt: new Date(Date.now() - 18 * 60_000).toISOString(),
-  },
-];
-
-function getMoralSpeakSummary(result: MoralEvaluationResult, fallback: string) {
-  if (!canApproveMoralGrowth(result)) return "请老师帮忙";
-  return fallback || `${getChildEnergyLabel(result.category)}能量`;
-}
-
-function getMoralRecorderSettings() {
-  if (typeof MediaRecorder === "undefined") return undefined;
-  const candidates = [
-    { mimeType: "audio/webm;codecs=opus", voiceFormat: "webm" },
-    { mimeType: "audio/webm", voiceFormat: "webm" },
-    { mimeType: "audio/mp4", voiceFormat: "m4a" },
-    { mimeType: "audio/mpeg", voiceFormat: "mp3" },
-  ];
-  return candidates.find((candidate) => MediaRecorder.isTypeSupported(candidate.mimeType)) ?? { mimeType: "", voiceFormat: "webm" };
-}
-
-function blobToBase64(blob: Blob) {
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = String(reader.result || "");
-      resolve(result.includes(",") ? result.slice(result.indexOf(",") + 1) : result);
-    };
-    reader.onerror = () => reject(reader.error ?? new Error("Audio read failed"));
-    reader.readAsDataURL(blob);
-  });
 }
 
 function downloadJson(filename: string, json: string) {
@@ -464,37 +269,29 @@ export function App() {
   };
 
   const beginMoralSpeakSession = () => {
-    moralSpeakSessionRef.current += 1;
+    moralSpeakSessionRef.current = nextMoralSpeakSessionId(moralSpeakSessionRef.current);
     return moralSpeakSessionRef.current;
   };
 
   const invalidateMoralSpeakSession = () => {
-    moralSpeakSessionRef.current += 1;
+    moralSpeakSessionRef.current = nextMoralSpeakSessionId(moralSpeakSessionRef.current);
   };
 
   const isMoralSpeakSessionActive = (sessionId: number, childId?: string) => {
-    const current = moralSpeakRef.current;
-    return (
-      moralSpeakSessionRef.current === sessionId &&
-      current.stage !== "idle" &&
-      (!childId || current.childId === childId)
-    );
+    return hasActiveMoralSpeakSession({
+      currentSessionId: moralSpeakSessionRef.current,
+      expectedSessionId: sessionId,
+      state: moralSpeakRef.current,
+      childId,
+    });
   };
 
   const isCurrentMoralApprovalTarget = (childId: string, reviewId?: string) => {
-    const current = moralSpeakRef.current;
-    return current.stage === "pendingReview" && current.childId === childId && current.reviewId === reviewId;
+    return matchesMoralApprovalTarget(moralSpeakRef.current, childId, reviewId);
   };
 
   const getMoralSpeakLockedChildId = () => {
-    const current = moralSpeakRef.current;
-    return current.stage === "ready" ||
-      current.stage === "listening" ||
-      current.stage === "recognizing" ||
-      current.stage === "pendingReview" ||
-      current.stage === "success"
-      ? current.childId
-      : undefined;
+    return getLockedMoralSpeakChildId(moralSpeakRef.current);
   };
 
   const prepareMoralSpeakForChild = (childId: string) => {

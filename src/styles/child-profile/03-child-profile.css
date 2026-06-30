@@ -1,0 +1,677 @@
+/**
+ * [INPUT]: 依赖 ../01-tokens.css 以及前序 cascade 片段。
+ * [OUTPUT]: 对外提供精灵小屋、成长档案和孩子档案覆盖第 3 段样式。
+ * [POS]: styles/child-profile 的 cascade 片段 3/5，由 ../index.css 按顺序导入。
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
+
+
+@media (max-width: 1160px) {
+  .roll-call-layout,
+  .roll-call-header,
+  .math-arena-layout,
+  .math-arena-setup,
+  .math-arena-header,
+  .leaderboard-layout,
+  .leaderboard-header,
+  .reward-layout,
+  .shop-layout,
+  .reward-header,
+  .data-layout,
+  .data-backup-panel,
+  .data-insight-panel,
+  .data-header,
+  .settings-layout,
+  .settings-header,
+  .voice-record-layout,
+  .voice-record-header,
+  .workbench-layout,
+  .workbench-toolbar,
+  .workbench-board-layout,
+  .workbench-header,
+  .profile-layout,
+  .profile-header {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-layout {
+    grid-template-areas:
+      "mode"
+      "class"
+      "records"
+      "rules";
+  }
+
+  .teacher-workbench-page {
+    overflow: auto;
+  }
+
+  .workbench-stat-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .workbench-toolbar-actions {
+    justify-content: flex-start;
+  }
+
+  .workbench-score-drawer {
+    overflow: visible;
+  }
+
+  .roll-call-header,
+  .math-arena-header,
+  .leaderboard-header,
+  .reward-header,
+  .data-header,
+  .settings-header,
+  .voice-record-header,
+  .workbench-header,
+  .profile-header {
+    flex-direction: column;
+  }
+
+  .roll-call-home-button,
+  .math-arena-home-button,
+  .leaderboard-home-button,
+  .reward-home-button,
+  .data-home-button,
+  .settings-home-button,
+  .voice-home-button,
+  .workbench-home-button,
+  .profile-home-button {
+    width: 100%;
+  }
+
+  .leaderboard-podium {
+    grid-template-columns: 1fr;
+  }
+
+  .roll-call-actions,
+  .roll-call-record-actions,
+  .roll-call-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .lottery-prize-grid,
+  .shop-grid-panel,
+  .settings-class-grid,
+  .settings-mode-grid,
+  .settings-rule-grid,
+  .settings-score-rules,
+  .transcript-samples {
+    grid-template-columns: 1fr;
+  }
+
+  .template-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .manual-score-grid,
+  .batch-score-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .settings-rule-panel,
+  .settings-action-panel {
+    grid-column: auto;
+    grid-row: auto;
+  }
+
+  .voice-history-list {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 720px) {
+  html,
+  body,
+  #root {
+    min-width: 0;
+  }
+
+  .product-shell {
+    grid-template-columns: 70px minmax(0, 1fr);
+  }
+
+  .product-sidebar {
+    gap: 10px;
+    padding: 10px 7px;
+  }
+
+  .sidebar-brand {
+    justify-content: center;
+    padding: 4px 0;
+  }
+
+  .sidebar-brand > div:not(.sidebar-brand-mark),
+  .classroom-card,
+  .sidebar-collapse-hint,
+  .module-nav-group > strong,
+  .module-nav button span {
+    display: none;
+  }
+
+  .sidebar-brand-mark {
+    width: 42px;
+    height: 42px;
+  }
+
+  .module-nav button {
+    justify-content: center;
+    min-height: 42px;
+    padding: 0;
+  }
+
+  .module-page {
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .workbench-stat-row {
+    grid-template-columns: 1fr;
+  }
+
+  .workbench-toolbar-actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .workbench-toolbar.single-select {
+    grid-template-columns: 1fr;
+  }
+
+  .workbench-page-controls {
+    justify-content: center;
+  }
+
+  .workbench-toolbar-actions button {
+    padding: 0 8px;
+  }
+
+  .workbench-class-grid {
+    grid-template-columns: repeat(auto-fill, minmax(172px, 1fr));
+  }
+
+  .roll-call-header,
+  .roll-call-stage,
+  .roll-call-filter-panel,
+  .roll-call-list-panel {
+    border-width: 2px;
+    border-radius: 18px;
+  }
+
+  .roll-call-header,
+  .roll-call-stage {
+    padding: 16px;
+  }
+
+  .roll-call-header h1 {
+    font-size: 20px;
+  }
+
+  .roll-call-stage {
+    min-height: 0;
+  }
+
+  .roll-call-stage::before {
+    inset: 10px;
+    border-radius: 16px;
+  }
+
+  .roll-call-ring {
+    top: 34px;
+    width: min(72%, 230px);
+    border-width: 12px;
+  }
+
+  .roll-call-avatar {
+    min-width: 170px;
+  }
+
+  .roll-call-nameplate {
+    width: 100%;
+    padding: 13px;
+  }
+
+  .roll-call-nameplate strong {
+    font-size: 30px;
+  }
+
+  .roll-call-chip-row button {
+    max-width: 100%;
+  }
+
+  .roll-call-list li button {
+    grid-template-columns: 30px 44px minmax(0, 1fr);
+  }
+
+  .roll-call-mini-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 15px;
+  }
+}
+
+/* Shared compact module chrome: keep the workflow first, not a title banner. */
+.roll-call-header,
+.math-arena-header,
+.leaderboard-header,
+.reward-header,
+.data-header,
+.settings-header,
+.voice-record-header,
+.workbench-header,
+.profile-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 52px;
+  gap: 12px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.roll-call-header > div,
+.math-arena-header > div,
+.leaderboard-header > div,
+.reward-header > div,
+.data-header > div,
+.settings-header > div,
+.voice-record-header > div,
+.workbench-header > div,
+.profile-header > div {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+}
+
+.roll-call-header .module-eyebrow,
+.math-arena-header .module-eyebrow,
+.leaderboard-header .module-eyebrow,
+.reward-header .module-eyebrow,
+.data-header .module-eyebrow,
+.settings-header .module-eyebrow,
+.voice-record-header .module-eyebrow,
+.workbench-header .module-eyebrow,
+.profile-header .module-eyebrow {
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid rgba(45, 140, 133, 0.18);
+  border-radius: 999px;
+  color: var(--apple-accent);
+  background: var(--apple-accent-soft);
+  font-size: 12px;
+}
+
+.roll-call-header h1,
+.math-arena-header h1,
+.leaderboard-header h1,
+.reward-header h1,
+.data-header h1,
+.settings-header h1,
+.voice-record-header h1,
+.workbench-header h1,
+.profile-header h1 {
+  margin: 0;
+  overflow: hidden;
+  color: var(--apple-text);
+  font-size: 20px;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.roll-call-header p,
+.math-arena-header p,
+.leaderboard-header p,
+.reward-header p,
+.data-header p,
+.settings-header p,
+.voice-record-header p,
+.workbench-header p,
+.profile-header p {
+  display: none;
+}
+
+.module-hero {
+  grid-template-columns: 1fr;
+}
+
+.module-hero-copy {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.module-hero-copy > p {
+  display: none;
+}
+
+.module-hero-copy > .module-eyebrow {
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid rgba(45, 140, 133, 0.18);
+  color: var(--apple-accent);
+  background: var(--apple-accent-soft);
+}
+
+.module-hero-copy > h1 {
+  margin: 0 auto 0 0;
+  color: var(--apple-text);
+  font-size: 20px;
+  line-height: 1.1;
+}
+
+.module-hero-copy .module-actions {
+  justify-content: flex-end;
+}
+
+/* P3 Beihai cockpit baseline for teacher/admin modules.
+   Keep Growth Island fantasy artwork intact; only quiet the operating surfaces. */
+:root {
+  --apple-page: #eef6f0;
+  --apple-surface: rgba(255, 248, 234, 0.9);
+  --apple-surface-solid: #fff9ec;
+  --apple-muted: #f3e8c8;
+  --apple-border: rgba(126, 104, 54, 0.18);
+  --apple-border-strong: rgba(126, 104, 54, 0.28);
+  --apple-text: #174c5a;
+  --apple-text-soft: #65756f;
+  --apple-accent: #2d8c85;
+  --apple-accent-soft: #dff2ea;
+  --apple-shadow: 0 18px 42px rgba(23, 76, 90, 0.1);
+  --apple-shadow-soft: 0 8px 24px rgba(23, 76, 90, 0.07);
+}
+
+.product-shell {
+  color: var(--apple-text);
+  background: var(--apple-page);
+}
+
+.product-sidebar {
+  border-right: 1px solid rgba(246, 247, 238, 0.16);
+  background: #ffffff;
+  box-shadow: none;
+}
+
+.sidebar-brand-mark,
+.classroom-card,
+.module-nav button.active,
+.sidebar-collapse-hint {
+  box-shadow: none;
+}
+
+.classroom-card {
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.module-nav button {
+  min-height: 40px;
+  border-radius: 12px;
+  font-size: 14px;
+}
+
+.module-nav button.active {
+  color: #18463d;
+  border-color: rgba(255, 255, 255, 0.72);
+  background: rgba(255, 252, 235, 0.92);
+}
+
+.module-page {
+  gap: 14px;
+  padding: 20px 22px;
+  color: var(--apple-text);
+  background: var(--apple-page);
+}
+
+.teacher-workbench-page,
+.roll-call-page,
+.profile-page,
+.settings-page,
+.data-page,
+.voice-record-page {
+  color: var(--apple-text);
+}
+
+.workbench-stat-row article,
+.workbench-toolbar,
+.workbench-class-board,
+.workbench-score-drawer,
+.workbench-child-panel,
+.workbench-action-panel,
+.workbench-review-panel,
+.profile-roster-panel,
+.profile-story-panel,
+.profile-insight-panel,
+.profile-hero-card,
+.roll-call-stage,
+.roll-call-filter-panel,
+.roll-call-list-panel,
+.roll-call-stats article,
+.settings-class-panel,
+.settings-mode-panel,
+.settings-rule-panel,
+.settings-action-panel,
+.settings-class-grid article,
+.settings-mode-grid article,
+.settings-rule-grid article,
+.settings-action-list article,
+.settings-score-rules span,
+.data-toolbar,
+.data-backup-panel,
+.data-insight-panel,
+.data-insight-metrics article,
+.data-child-panel,
+.data-record-panel,
+.data-review-panel {
+  border: 1px solid var(--apple-border);
+  background: var(--apple-surface);
+  box-shadow: var(--apple-shadow-soft);
+}
+
+.workbench-class-board,
+.workbench-score-drawer,
+.profile-roster-panel,
+.profile-story-panel,
+.profile-insight-panel,
+.roll-call-stage,
+.roll-call-filter-panel,
+.roll-call-list-panel,
+.settings-class-panel,
+.settings-mode-panel,
+.settings-rule-panel,
+.settings-action-panel {
+  border-radius: 18px;
+}
+
+.roll-call-stage::before {
+  display: none;
+}
+
+.student-card-focus,
+.workbench-toolbar-actions button,
+.workbench-page-controls button,
+.workbench-home-button,
+.profile-home-button,
+.roll-call-home-button,
+.roll-call-primary,
+.roll-call-secondary,
+.roll-call-record-actions button,
+.roll-call-filter-panel button,
+.roll-call-copy-button,
+.settings-home-button,
+.settings-mode-grid button,
+.data-backup-actions button,
+.data-restore-actions button,
+.data-clear-card button,
+.data-scope-tabs button,
+.data-category-strip button,
+.data-home-button,
+.data-review-actions button,
+.template-grid button,
+.manual-score-grid button,
+.transcript-samples button {
+  box-shadow: none;
+}
+
+.workbench-home-button,
+.profile-home-button,
+.roll-call-home-button,
+.roll-call-primary,
+.workbench-primary-action,
+.workbench-result-actions button:first-child,
+.workbench-review-actions button:first-child,
+.settings-home-button,
+.settings-mode-grid button,
+  .data-backup-actions button:first-child,
+  .data-restore-actions button:first-child,
+  .data-scope-tabs button.active,
+  .data-category-strip button.active,
+  .data-home-button,
+.data-review-actions button:first-child {
+  color: #ffffff;
+  border: 1px solid rgba(26, 112, 77, 0.18);
+  background: var(--apple-accent);
+}
+
+.workbench-secondary-action,
+.workbench-undo-button,
+.workbench-toolbar-actions button,
+.workbench-page-controls button,
+.roll-call-secondary,
+.roll-call-record-actions button,
+.roll-call-filter-panel button,
+.roll-call-copy-button,
+.data-backup-actions button:last-of-type,
+.data-restore-actions button:last-child,
+.data-scope-tabs button,
+.data-category-strip button,
+.data-review-actions button:last-child,
+.transcript-samples button {
+  color: var(--apple-text);
+  border: 1px solid var(--apple-border);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.workbench-search,
+.profile-search,
+.data-toolbar label {
+  border: 1px solid var(--apple-border);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.76);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+.workbench-stat-row article {
+  min-height: 58px;
+  border-radius: 14px;
+  background: rgba(255, 253, 246, 0.74);
+}
+
+.workbench-stat-row span,
+.workbench-stat-row em,
+.student-card-topline,
+.student-card-xp,
+.roll-call-stage-top,
+.roll-call-action-status,
+.roll-call-stats span,
+.roll-call-list-title span,
+.settings-class-grid span,
+.settings-mode-grid span,
+.settings-rule-grid span,
+.profile-section-title span,
+.profile-timeline p,
+.profile-timeline em,
+.profile-roster-list em,
+.dimension-list span {
+  color: var(--apple-text-soft);
+}
+
+.workbench-stat-row strong,
+.student-card-meta strong,
+.roll-call-stats strong,
+.roll-call-nameplate strong,
+.roll-call-list-title strong,
+.settings-class-grid strong,
+.settings-mode-grid strong,
+.settings-rule-grid strong,
+.profile-hero-card h2,
+.profile-timeline strong,
+.profile-roster-list strong {
+  color: var(--apple-text);
+}
+
+.workbench-student-card,
+.roll-call-list li button,
+.profile-roster-list button,
+.workbench-selected-child,
+.workbench-record-list article,
+.workbench-review-list article,
+.profile-timeline article,
+.profile-empty-story,
+.profile-milestone-card article,
+.profile-evidence-card dl,
+.template-grid button,
+.workbench-result-card,
+.dimension-list article,
+.batch-selection-strip,
+.data-child-list button,
+.data-record-list article,
+.data-review-list article {
+  border: 1px solid var(--apple-border);
+  background: var(--apple-surface-solid);
+  box-shadow: none;
+}
+
+.workbench-student-card {
+  border-radius: 14px;
+  padding: 8px;
+}
+
+.workbench-student-card.active,
+.profile-roster-list button.active,
+.roll-call-list li.is-current button,
+.data-child-list button.active,
+.settings-mode-grid article.active {
+  border-color: rgba(36, 137, 95, 0.44);
+  background: rgba(223, 242, 230, 0.72);
+  box-shadow: 0 0 0 3px rgba(36, 137, 95, 0.1);
+}
+
+.student-card-topline > span {
+  opacity: 0;
+}
+
+.student-card-actions button,
+.batch-score-grid button,
+.manual-score-grid button.gain {
+  background: var(--apple-accent);
+  box-shadow: none;
+}
+
+.manual-score-grid button.deduct {
+  background: #b86464;
+}
+
+.student-card-avatar,
+.workbench-child-avatar,
+.profile-portrait,
+.roll-call-avatar,
+.roll-call-mini-avatar,
+.profile-roster-list button > span,
+.data-child-avatar {
+  border: 1px solid rgba(235, 203, 122, 0.52);
+  background: #f8f7f1;
+  box-shadow: none;
+}

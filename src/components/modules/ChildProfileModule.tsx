@@ -1,3 +1,10 @@
+/**
+ * [INPUT]: 依赖孩子进度、精灵定义、说成长状态、3D 奖励预览和老师确认卡。
+ * [OUTPUT]: 对外提供 ChildProfileModule 组件。
+ * [POS]: components/modules 的精灵小屋页面，承载孩子唯一 2D 精灵与小屋内说成长入口。
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
+
 import type { CSSProperties } from "react";
 import { useMemo, useState } from "react";
 import { BadgeCheck, BookOpenText, History, Home, Mic, Search, Sparkles, Star, Trophy, Volume2 } from "lucide-react";
@@ -7,7 +14,8 @@ import { getChildSpiritVoiceType, getSpiritVoiceOption, spiritVoiceOptions } fro
 import { virtueCategories } from "../../data/spirits";
 import { v4MapAssets } from "../../game/v4MapAssets";
 import type { ChildProfile, ChildWithProgress, LedgerRecord, SpiritDefinition, VirtueCategory } from "../../types";
-import { MoralSpeakOverlay, type MoralSpeakViewState } from "../Hud/MoralSpeakOverlay";
+import type { MoralSpeakViewState } from "../../domain/moralSpeakSession";
+import { MoralSpeakOverlay } from "../Hud/MoralSpeakOverlay";
 import { RewardModelPreview3D } from "../Hud/SpiritModelStage3D";
 import { TeacherMoralReviewCard } from "../Hud/TeacherMoralReviewCard";
 

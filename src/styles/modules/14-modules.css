@@ -1,0 +1,313 @@
+/**
+ * [INPUT]: 依赖 ../01-tokens.css 以及前序 cascade 片段。
+ * [OUTPUT]: 对外提供后续模块、移动端和白板触控最终覆盖第 14 段样式。
+ * [POS]: styles/modules 的 cascade 片段 14/14，由 ../index.css 按顺序导入。
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
+
+
+.spirit-showcase-stage {
+  position: relative;
+  min-height: 360px;
+  overflow: hidden;
+  border: 1px solid rgba(45, 159, 178, 0.22);
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(135, 216, 208, 0.32), rgba(244, 217, 155, 0.34)),
+    #fffdf4;
+}
+
+.spirit-showcase-stage::before {
+  position: absolute;
+  inset: 14px;
+  border: 1px solid rgba(255, 253, 244, 0.68);
+  border-radius: 16px;
+  content: "";
+  pointer-events: none;
+}
+
+.spirit-showcase-canvas-mount,
+.spirit-showcase-canvas {
+  width: 100%;
+  height: 100%;
+}
+.spirit-showcase-canvas {
+  display: block;
+  cursor: grab;
+}
+
+.spirit-showcase-canvas:active {
+  cursor: grabbing;
+}
+
+.showcase-loader,
+.showcase-fallback {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #174c5a;
+  font-size: 14px;
+  font-weight: 950;
+  pointer-events: none;
+}
+
+.showcase-loader {
+  background: rgba(255, 253, 244, 0.64);
+}
+
+.showcase-fallback {
+  align-content: center;
+  gap: 8px;
+  padding: 24px;
+  text-align: center;
+  background: rgba(255, 253, 244, 0.86);
+}
+
+.showcase-fallback img,
+.showcase-fallback > span {
+  display: grid;
+  width: 132px;
+  height: 132px;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(255, 248, 234, 0.92);
+  filter: drop-shadow(0 12px 18px rgba(23, 76, 90, 0.18));
+  object-fit: contain;
+}
+
+.showcase-fallback > span {
+  color: #174c5a;
+  font-size: 48px;
+  font-weight: 950;
+}
+
+.showcase-fallback em {
+  color: rgba(23, 76, 90, 0.66);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.spirit-showcase-side {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid rgba(214, 177, 106, 0.3);
+  border-radius: 18px;
+  background: #fffdf4;
+}
+
+.showcase-side-title {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  align-items: center;
+  gap: 9px;
+}
+
+.showcase-side-title svg {
+  width: 38px;
+  height: 38px;
+  padding: 9px;
+  border-radius: 14px;
+  color: #fffdf4;
+  background: color-mix(in srgb, var(--showcase-accent) 78%, #2d9fb2);
+}
+
+.showcase-side-title strong {
+  display: block;
+  margin-top: 3px;
+  color: #14342e;
+  font-size: 16px;
+  font-weight: 950;
+}
+
+.spirit-showcase-side p {
+  margin: 0;
+  color: rgba(23, 76, 90, 0.72);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.42;
+}
+
+.showcase-model-tabs {
+  display: grid;
+  gap: 7px;
+}
+
+.showcase-model-tabs button {
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid rgba(23, 76, 90, 0.13);
+  border-radius: 14px;
+  color: #174c5a;
+  background: rgba(255, 248, 234, 0.88);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 950;
+  text-align: left;
+}
+
+.showcase-model-tabs button.active {
+  color: #fffdf4;
+  border-color: color-mix(in srgb, var(--showcase-accent) 74%, #174c5a);
+  background: color-mix(in srgb, var(--showcase-accent) 82%, #174c5a);
+}
+
+.showcase-touch-hint {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  margin-top: 2px;
+  padding: 0 10px;
+  border-radius: 999px;
+  color: #174c5a;
+  background: rgba(135, 216, 208, 0.22);
+}
+
+@media (max-width: 820px) {
+  .spirit-showcase-backdrop {
+    padding: 10px;
+  }
+
+  .spirit-showcase-modal {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(310px, 1fr) auto;
+    width: calc(100vw - 20px);
+    max-height: calc(100vh - 20px);
+  }
+
+  .spirit-showcase-stage {
+    min-height: 310px;
+  }
+
+  .spirit-showcase-side {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+    padding: 10px;
+  }
+
+  .showcase-model-tabs {
+    display: flex;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .showcase-model-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .showcase-model-tabs button {
+    flex: 0 0 auto;
+    min-height: 40px;
+    white-space: nowrap;
+  }
+
+  .home-screen-shell .spirit-dock.collapsed {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: 6px;
+  }
+
+  .home-screen-shell .dock-showcase-button {
+    min-width: 46px;
+    padding: 0 8px;
+  }
+}
+
+@media (max-width: 520px) {
+  .spirit-showcase-head {
+    grid-template-columns: 40px minmax(0, 1fr) 40px;
+  }
+
+  .showcase-mark,
+  .showcase-close {
+    width: 40px;
+    height: 40px;
+    border-radius: 13px;
+  }
+
+  .spirit-showcase-head strong {
+    font-size: 16px;
+  }
+
+  .home-screen-shell .dock-selected-summary {
+    max-width: min(220px, calc(100vw - 128px));
+    padding-right: 8px;
+  }
+
+  .home-screen-shell .dock-summary-copy small,
+  .home-screen-shell .dock-selected-summary > .dock-summary-status {
+    display: none;
+  }
+
+  .home-screen-shell .dock-summary-copy strong {
+    max-width: 112px;
+    font-size: 14px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spirit-card-actions .spirit-showcase-button,
+  .dock-showcase-button,
+  .model-stage-canvas,
+  .model-stage-reward,
+  .spirit-showcase-canvas,
+  .showcase-model-tabs button {
+    transition-duration: 1ms;
+  }
+
+  .model-stage-reward.is-success {
+    animation: none;
+  }
+}
+
+/* P14 whiteboard clarity pass: keep the child loop crisp and single-task. */
+.home-screen-shell .home-module:has(.world-map-shell:not(.moral-stage-idle)) .dock-showcase-button {
+  display: none;
+}
+
+.home-screen-shell .world-map-shell.moral-stage-pendingReview .map-energy-constellation {
+  display: none;
+}
+
+.moral-success-reward-3d[data-status="loading"],
+.moral-success-reward-3d[data-status="fallback"] {
+  display: none;
+}
+
+.moral-success-reward-3d .model-stage-loader,
+.moral-success-reward-3d .model-stage-fallback {
+  display: none;
+}
+
+.home-screen-shell .spirit-speech-bubble.success {
+  gap: 8px;
+}
+
+.home-screen-shell .spirit-speech-bubble.success .moral-success-reward-3d {
+  flex: 0 0 52px;
+  width: 52px;
+  height: 52px;
+  min-height: 52px;
+}
+
+.home-screen-shell .spirit-speech-bubble.success strong {
+  max-width: min(300px, calc(100vw - 156px));
+}
+
+@media (max-width: 720px) {
+  .home-screen-shell .spirit-speech-bubble.success .moral-success-reward-3d {
+    flex-basis: 44px;
+    width: 44px;
+    height: 44px;
+    min-height: 44px;
+  }
+
+  .home-screen-shell .spirit-speech-bubble.success strong {
+    max-width: calc(100vw - 118px);
+  }
+}

@@ -1,0 +1,668 @@
+/**
+ * [INPUT]: 依赖 ../01-tokens.css 以及前序 cascade 片段。
+ * [OUTPUT]: 对外提供首页海岛地图、HUD、底部精灵队列和能量星座第 2 段样式。
+ * [POS]: styles/home-map 的 cascade 片段 2/6，由 ../index.css 按顺序导入。
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
+
+
+.growth-log-panel details {
+  margin-bottom: 10px;
+}
+
+.growth-log-panel summary {
+  justify-content: space-between;
+  list-style: none;
+  cursor: pointer;
+}
+
+.growth-log-panel summary::-webkit-details-marker {
+  display: none;
+}
+
+.growth-log-panel summary span {
+  gap: 8px;
+  color: #4c4838;
+  font-weight: 900;
+}
+
+.growth-log-panel summary em {
+  display: grid;
+  min-width: 28px;
+  height: 26px;
+  place-items: center;
+  border-radius: 999px;
+  color: #fff7df;
+  font-style: normal;
+  background: #b96b3a;
+}
+
+.growth-log-panel .review-queue {
+  margin-top: 8px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.growth-log-panel .review-queue > .section-title {
+  display: none;
+}
+
+.record-row {
+  background: rgba(255, 255, 255, 0.56);
+}
+
+.teacher-action-panel summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  list-style: none;
+  cursor: pointer;
+}
+.teacher-action-panel summary::-webkit-details-marker {
+  display: none;
+}
+
+.teacher-action-panel label {
+  display: grid;
+  gap: 6px;
+  margin-top: 10px;
+  color: #6a563a;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.teacher-action-panel input,
+.teacher-action-panel select {
+  width: 100%;
+  min-height: 38px;
+  padding: 0 10px;
+  border: 1px solid rgba(105, 83, 55, 0.18);
+  border-radius: 12px;
+  color: #3c3128;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.spirit-dock {
+  display: grid;
+  min-height: 0;
+  grid-template-columns: 250px minmax(0, 1fr);
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid rgba(255, 236, 177, 0.44);
+  border-radius: 26px;
+  background: #f4f1e6;
+  box-shadow: 0 18px 52px rgba(5, 21, 29, 0.24);
+  backdrop-filter: blur(14px);
+}
+
+.dock-tools {
+  min-width: 0;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.dock-tools-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 30px;
+  color: var(--game-ink, #35524a);
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.dock-collapse {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 28px;
+  padding: 0 8px;
+  border-radius: 999px;
+  color: #fff8df;
+  font-size: 12px;
+  font-weight: 900;
+  background: #2f7f87;
+}
+
+.dock-search {
+  gap: 7px;
+  min-height: 38px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.dock-search input {
+  width: 100%;
+  border: 0;
+  outline: none;
+  background: transparent;
+}
+
+.dock-filters {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  gap: 6px;
+  min-height: 32px;
+  padding-bottom: 1px;
+  scrollbar-width: none;
+}
+
+.dock-filters::-webkit-scrollbar {
+  display: none;
+}
+
+.dock-filters button {
+  flex: 0 0 auto;
+  min-height: 28px;
+  padding: 0 9px;
+  border-radius: 999px;
+  color: #5d543e;
+  font-size: 12px;
+  font-weight: 900;
+  background: rgba(255, 255, 255, 0.58);
+}
+
+.dock-filters button.active {
+  color: #fff8df;
+  background: #2f7f87;
+}
+
+.dock-scroll {
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 2px 2px;
+  scrollbar-width: none;
+}
+
+.dock-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.dock-spirit {
+  position: relative;
+  isolation: isolate;
+  flex: 0 0 92px;
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  min-height: 106px;
+  padding: 8px 6px;
+  border-radius: 20px;
+  color: #493a2c;
+  background: rgba(255, 255, 255, 0.58);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.45), 0 8px 18px rgba(37, 52, 48, 0.12);
+}
+
+.dock-spirit.active {
+  color: #fff8df;
+  background: #2c8f99;
+}
+
+.dock-avatar {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  width: 54px;
+  height: 54px;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff8df;
+  font-weight: 900;
+  background: color-mix(in srgb, var(--dock-accent, #6ebf8b) 72%, white);
+  box-shadow: 0 8px 18px rgba(31, 49, 45, 0.2);
+}
+
+.dock-avatar img {
+  position: relative;
+  z-index: 1;
+  max-width: 62px;
+  max-height: 62px;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 9px rgba(34, 43, 35, 0.18));
+}
+
+.dock-avatar-label {
+  position: relative;
+  z-index: 1;
+}
+
+.dock-spirit strong {
+  max-width: 78px;
+  overflow: hidden;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dock-spirit em {
+  color: inherit;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 900;
+  opacity: 0.82;
+}
+
+/* Product-grade flat 2.5D game HUD overrides */
+:root {
+  --game-ocean: #55c7cd;
+  --game-ocean-dark: #2c8f99;
+  --game-paper: #f4f1e6;
+  --game-paper-strong: #fff3cb;
+  --game-border: #d6d0be;
+  --game-ink: #35524a;
+  --game-muted: #7b8065;
+  --game-wood: #7b4c2e;
+  --game-sand: #f3d98b;
+  --game-positive: #59b97c;
+  --game-negative: #b96e6e;
+  --game-accent: #f2c94c;
+  --game-shadow: 0 16px 0 rgba(46, 78, 73, 0.12), 0 22px 52px rgba(35, 66, 61, 0.2);
+}
+
+body {
+  background: var(--game-ocean-dark);
+}
+
+button {
+  color: inherit;
+}
+
+.app-shell {
+  grid-template-rows: 70px minmax(0, 1fr) 124px;
+  gap: 10px;
+  padding: 12px;
+  color: var(--game-ink);
+  background: var(--game-ocean-dark);
+}
+
+.game-topbar {
+  display: grid;
+  grid-template-columns: minmax(330px, 1fr) auto minmax(490px, 1fr);
+  min-height: 0;
+  padding: 8px 12px;
+  border: 3px solid rgba(255, 244, 205, 0.72);
+  border-radius: 20px;
+  background: var(--game-paper);
+  box-shadow: 0 10px 0 rgba(36, 79, 79, 0.18), 0 18px 34px rgba(30, 68, 68, 0.2);
+  backdrop-filter: none;
+}
+
+.game-brand {
+  min-width: 0;
+  gap: 12px;
+}
+
+.game-brand-mark {
+  width: 48px;
+  height: 48px;
+  border: 3px solid #fff7d6;
+  border-radius: 16px;
+  color: #fff7d6;
+  background: #2c8f99;
+  box-shadow: inset 0 -5px 0 rgba(20, 76, 81, 0.24), 0 5px 0 rgba(123, 76, 46, 0.18);
+}
+
+.game-brand h1 {
+  color: #2f473f;
+  font-size: 27px;
+  letter-spacing: 0;
+}
+
+.game-brand p {
+  color: var(--game-muted);
+  font-size: 13px;
+}
+
+.game-pill,
+.teacher-toggle,
+.zoom-controls button {
+  border: 2px solid var(--game-border);
+  background: #fff7d8;
+  box-shadow: inset 0 -4px 0 rgba(123, 76, 46, 0.12), 0 4px 0 rgba(44, 92, 86, 0.12);
+}
+
+.game-pill,
+.teacher-toggle {
+  min-height: 42px;
+  border-radius: 16px;
+  font-size: 14px;
+}
+
+.teacher-toggle {
+  color: #fff9df;
+  background: #c98b4f;
+}
+
+.teacher-toggle.active {
+  background: #d97155;
+}
+
+.sync-status.online {
+  background: #dff4df;
+}
+
+.sync-status.saving,
+.sync-status.connecting {
+  background: #fff0bf;
+}
+
+.sync-status.offline {
+  background: #f2d1c7;
+}
+
+.zoom-controls {
+  gap: 6px;
+  padding: 5px;
+  border: 2px solid rgba(214, 208, 190, 0.82);
+  background: #e7dfc9;
+}
+
+.zoom-controls button {
+  width: 40px;
+  min-height: 40px;
+  border-radius: 14px;
+}
+
+.game-layout {
+  grid-template-columns: minmax(820px, 1fr) clamp(330px, 22vw, 390px);
+  gap: 12px;
+}
+
+.world-map-shell {
+  border: 4px solid #f6e9ba;
+  border-radius: 22px;
+  background: var(--game-ocean);
+  box-shadow: 0 14px 0 rgba(30, 83, 84, 0.28), 0 28px 52px rgba(20, 51, 54, 0.24);
+}
+
+.pixi-world-host {
+  border-radius: 18px;
+}
+
+.map-hint {
+  left: 16px;
+  bottom: 14px;
+  border: 2px solid rgba(255, 244, 205, 0.72);
+  border-radius: 15px;
+  color: #fff7d6;
+  background: rgba(53, 82, 74, 0.78);
+  backdrop-filter: none;
+}
+
+.hud-rail {
+  gap: 10px;
+  padding-right: 0;
+  min-width: 0;
+}
+
+.spirit-card,
+.growth-log-panel,
+.teacher-action-panel {
+  border: 3px solid var(--game-border);
+  border-radius: 20px;
+  background: var(--game-paper);
+  box-shadow: 0 9px 0 rgba(123, 128, 101, 0.16), 0 18px 34px rgba(43, 67, 61, 0.16);
+  backdrop-filter: none;
+}
+
+.spirit-card {
+  padding: 14px;
+}
+
+.spirit-card::before {
+  inset: 9px;
+  border: 2px solid rgba(255, 255, 255, 0.72);
+  border-radius: 16px;
+}
+
+.spirit-card-head {
+  color: #8a6b3d;
+}
+
+.spirit-card-head strong {
+  min-width: 50px;
+  border: 2px solid #fff3cb;
+  color: #fff9df;
+  background: #7b8065;
+  box-shadow: inset 0 -4px 0 rgba(53, 82, 74, 0.22);
+}
+
+.spirit-portrait {
+  height: 164px;
+  margin-top: 6px;
+}
+
+.portrait-ring {
+  width: 176px;
+  height: 126px;
+  border: 4px solid color-mix(in srgb, var(--spirit-accent, #76b883) 56%, white);
+  background: #fff7d8;
+  box-shadow: inset 0 -8px 0 rgba(123, 128, 101, 0.1), 0 12px 0 rgba(53, 82, 74, 0.08);
+}
+
+.spirit-portrait img {
+  max-width: 166px;
+  max-height: 158px;
+  filter: drop-shadow(0 14px 10px rgba(53, 82, 74, 0.2));
+}
+
+.portrait-fallback {
+  background: color-mix(in srgb, var(--spirit-accent, #76b883) 78%, #f4f1e6);
+}
+
+.spirit-nameplate h2 {
+  color: #2f473f;
+  font-size: 23px;
+}
+
+.spirit-nameplate p {
+  color: var(--game-muted);
+}
+
+.xp-gem {
+  border: 2px solid rgba(214, 208, 190, 0.68);
+  border-radius: 16px;
+  background: #fff7d8;
+  box-shadow: inset 0 -5px 0 rgba(123, 128, 101, 0.08);
+}
+
+.xp-track {
+  height: 12px;
+  overflow: hidden;
+  border: 2px solid rgba(123, 128, 101, 0.22);
+  border-radius: 999px;
+  background: #d8dbc9;
+}
+
+.xp-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: #59b97c;
+}
+
+.score-actions {
+  gap: 8px;
+}
+
+.gain-button,
+.deduct-button,
+.quest-actions button {
+  min-height: 42px;
+  border: 2px solid rgba(255, 247, 216, 0.82);
+  border-radius: 14px;
+  color: #fff9df;
+  box-shadow: inset 0 -5px 0 rgba(53, 82, 74, 0.18), 0 5px 0 rgba(53, 82, 74, 0.1);
+}
+
+.gain-button {
+  background: var(--game-positive);
+}
+
+.deduct-button {
+  background: var(--game-negative);
+}
+
+.quest-actions {
+  gap: 8px;
+}
+
+.quest-actions button {
+  background: #2c8f99;
+}
+
+.agent-suggestion {
+  border: 2px solid rgba(214, 208, 190, 0.6);
+  border-radius: 15px;
+  color: #4e402d;
+  background: #fff0bf;
+}
+
+.growth-log-panel,
+.teacher-action-panel {
+  padding: 12px;
+}
+
+.growth-log-panel summary em {
+  background: #c98b4f;
+}
+
+.record-row {
+  border: 2px solid rgba(214, 208, 190, 0.46);
+  border-radius: 14px;
+  background: #fff7d8;
+}
+
+.teacher-action-panel input,
+.teacher-action-panel select {
+  border: 2px solid rgba(214, 208, 190, 0.8);
+  border-radius: 13px;
+  background: #fff7d8;
+}
+
+.teacher-action-panel summary {
+  align-items: center;
+  padding: 6px 7px 9px;
+}
+
+.teacher-action-panel summary > span:last-child {
+  padding: 5px 10px;
+  border: 2px solid rgba(214, 208, 190, 0.62);
+  border-radius: 999px;
+  color: #8a744c;
+  font-size: 12px;
+  font-weight: 900;
+  background: #fff7d8;
+}
+
+.teacher-pass {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  margin: 6px 0 10px;
+  padding: 10px;
+  border: 2px solid rgba(214, 208, 190, 0.58);
+  border-radius: 16px;
+  background: #fff2bd;
+}
+
+.pass-token {
+  display: grid;
+  width: 52px;
+  height: 52px;
+  place-items: center;
+  border: 3px solid #f6e9ba;
+  border-radius: 18px;
+  color: #fff7df;
+  background: #2d8b91;
+  box-shadow: 0 5px 0 rgba(38, 89, 91, 0.2);
+}
+
+.pass-token strong {
+  margin-top: -7px;
+  font-family: Georgia, serif;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.teacher-pass > div:last-child {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.teacher-pass > div:last-child strong {
+  overflow: hidden;
+  color: #35524a;
+  font-size: 15px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.teacher-pass > div:last-child span {
+  overflow: hidden;
+  color: #7b8065;
+  font-size: 12px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.teacher-field-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.teacher-action-panel label {
+  margin-top: 0;
+}
+
+.teacher-action-panel label > span:first-child {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #5e6f54;
+}
+
+.spirit-dock {
+  grid-template-columns: 245px minmax(0, 1fr);
+  gap: 10px;
+  padding: 9px;
+  border: 4px solid #f6e9ba;
+  border-radius: 22px;
+  background: var(--game-paper);
+  box-shadow: 0 10px 0 rgba(30, 83, 84, 0.22), 0 18px 34px rgba(20, 51, 54, 0.2);
+  backdrop-filter: none;
+}
+
+.app-shell:has(.spirit-dock.collapsed) {
+  grid-template-rows: 70px minmax(0, 1fr) 58px;
+}
+
+.spirit-dock.collapsed {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.spirit-dock.collapsed .dock-tools {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.spirit-dock.collapsed .dock-search,
+.spirit-dock.collapsed .dock-filters,
+.spirit-dock.collapsed .dock-scroll {
+  display: none;
+}

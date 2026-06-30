@@ -1,0 +1,54 @@
+/**
+ * [INPUT]: 无运行时依赖，承接全局字体、根变量和基础元素默认值。
+ * [OUTPUT]: 对外提供全局 CSS token 与基础 reset。
+ * [POS]: styles 的第一层样式片段，必须最先被 index.css 导入。
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
+
+:root {
+  font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", sans-serif;
+  color: #2f2b27;
+  background: #113f49;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  --ink: #2f2b27;
+  --paper: #fff7df;
+  --paper-strong: #fff0bf;
+  --jade: #4f9a72;
+  --coral: #d95f55;
+  --gold: #d99d32;
+  --violet: #6f68bf;
+  --sea: #247b95;
+  --shadow: 0 18px 60px rgba(20, 39, 42, 0.26);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  height: 100vh;
+  overflow: hidden;
+  background: #1d5b64;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}

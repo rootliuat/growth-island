@@ -1,0 +1,670 @@
+/**
+ * [INPUT]: 依赖 ../01-tokens.css 以及前序 cascade 片段。
+ * [OUTPUT]: 对外提供后续模块、移动端和白板触控最终覆盖第 9 段样式。
+ * [POS]: styles/modules 的 cascade 片段 9/14，由 ../index.css 按顺序导入。
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
+
+
+.math-arena-page .math-arena-header {
+  align-items: center;
+}
+
+.math-arena-page .math-arena-title-pack {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 9px;
+}
+
+.math-arena-page .module-eyebrow {
+  border-color: rgba(45, 159, 178, 0.18);
+  color: var(--arena-sea);
+  background: rgba(255, 253, 244, 0.82);
+}
+
+.math-arena-page .math-arena-round-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 10px;
+  border: 1px solid rgba(246, 179, 82, 0.38);
+  border-radius: 999px;
+  color: var(--arena-sea);
+  background: rgba(255, 240, 191, 0.82);
+  font-size: 12px;
+  font-weight: 950;
+  white-space: nowrap;
+}
+
+.math-arena-page .math-arena-home-button,
+.math-arena-page .math-arena-primary,
+.math-arena-page .math-arena-focus-winner {
+  color: #fffdf4;
+  border-color: rgba(23, 76, 90, 0.16);
+  background: var(--arena-sea);
+}
+
+.math-arena-page .math-arena-secondary {
+  color: var(--arena-sea);
+  border-color: rgba(23, 76, 90, 0.12);
+  background: rgba(255, 253, 244, 0.86);
+}
+
+.math-arena-page .math-arena-layout {
+  grid-template-columns: minmax(0, 1fr) clamp(292px, 21vw, 360px);
+  gap: 14px;
+}
+
+.math-arena-page .math-arena-stage,
+.math-arena-page .math-arena-side {
+  gap: 12px;
+}
+
+.math-arena-page .math-arena-stage {
+  grid-template-rows: auto auto;
+  align-content: start;
+}
+
+.math-arena-page .math-arena-setup {
+  grid-template-columns: minmax(0, 1fr) 160px;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--arena-border);
+  border-radius: 24px;
+  background:
+    linear-gradient(90deg, rgba(135, 216, 208, 0.28), rgba(255, 248, 234, 0.9) 38%, rgba(255, 240, 191, 0.82));
+  box-shadow: 0 16px 34px rgba(23, 76, 90, 0.09);
+}
+
+.math-arena-page .math-arena-fighter-lane {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr) 48px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+}
+
+.math-arena-page .math-arena-vs-token {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  place-items: center;
+  border: 2px solid rgba(255, 253, 244, 0.9);
+  border-radius: 18px;
+  color: #fffdf4;
+  background: var(--arena-coral);
+  box-shadow: inset 0 -5px 0 rgba(122, 74, 50, 0.14), 0 8px 16px rgba(23, 76, 90, 0.1);
+  font-size: 14px;
+  font-weight: 950;
+}
+
+.math-arena-page .math-fighter-card {
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: 10px;
+  padding: 9px;
+  border: 1px solid rgba(214, 177, 106, 0.42);
+  border-radius: 20px;
+  background: rgba(255, 253, 244, 0.9);
+  box-shadow: inset 0 -4px 0 rgba(246, 179, 82, 0.1);
+}
+
+.math-arena-page .math-fighter-avatar {
+  width: 64px;
+  height: 64px;
+  border: 2px solid rgba(246, 179, 82, 0.7);
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at 50% 12%, rgba(255, 253, 244, 0.96), transparent 42%),
+    linear-gradient(180deg, rgba(255, 248, 234, 0.95), rgba(244, 217, 155, 0.52));
+}
+
+.math-arena-page .math-fighter-copy {
+  gap: 5px;
+}
+
+.math-arena-page .math-fighter-copy label {
+  color: rgba(23, 76, 90, 0.7);
+}
+
+.math-arena-page .math-fighter-copy select {
+  min-height: 38px;
+  border: 1px solid rgba(23, 76, 90, 0.14);
+  color: var(--arena-sea);
+  background: rgba(255, 248, 234, 0.9);
+}
+
+.math-arena-page .math-fighter-copy em {
+  color: rgba(23, 76, 90, 0.72);
+}
+
+.math-arena-page .math-arena-command-panel {
+  gap: 8px;
+}
+
+.math-arena-page .math-arena-command-panel button {
+  min-height: 42px;
+  border-radius: 15px;
+}
+
+.math-arena-page .math-arena-primary {
+  background: var(--arena-coral);
+}
+
+.math-arena-page .math-arena-battle-shell {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+  padding: 12px;
+  border: 1px solid rgba(45, 159, 178, 0.28);
+  border-radius: 26px;
+  background:
+    radial-gradient(ellipse at 50% 64%, rgba(244, 217, 155, 0.8) 0 34%, transparent 35%),
+    linear-gradient(180deg, rgba(94, 203, 209, 0.72) 0 52%, rgba(238, 210, 128, 0.72) 53% 100%);
+  box-shadow: 0 16px 34px rgba(23, 76, 90, 0.11);
+}
+
+.math-arena-page .math-arena-battle-shell.is-idle {
+  min-height: 460px;
+}
+
+.math-arena-page .math-arena-battle-shell.has-winner {
+  border-color: rgba(246, 179, 82, 0.66);
+  box-shadow: 0 0 0 3px rgba(246, 179, 82, 0.16), 0 18px 34px rgba(23, 76, 90, 0.12);
+}
+
+.math-arena-page .math-arena-stage-strip {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding: 8px 10px;
+  border: 1px solid rgba(255, 253, 244, 0.64);
+  border-radius: 18px;
+  color: var(--arena-sea);
+  background: rgba(255, 253, 244, 0.74);
+  box-shadow: inset 0 -3px 0 rgba(246, 179, 82, 0.1);
+}
+
+.math-arena-page .math-arena-stage-strip span,
+.math-arena-page .math-arena-stage-strip em {
+  flex: 0 0 auto;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 950;
+}
+
+.math-arena-page .math-arena-stage-strip strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--arena-sea);
+  font-size: 15px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.math-arena-page .math-arena-stage-strip em {
+  margin-left: auto;
+  color: #0e8b67;
+}
+
+.math-arena-page .math-arena-victory-badge {
+  position: absolute;
+  top: 58px;
+  right: 18px;
+  z-index: 6;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  max-width: min(310px, calc(100% - 36px));
+  min-height: 42px;
+  padding: 0 14px;
+  border: 1px solid rgba(255, 253, 244, 0.8);
+  border-radius: 999px;
+  color: #fffdf4;
+  background: var(--arena-gold);
+  box-shadow: 0 12px 24px rgba(23, 76, 90, 0.16), inset 0 -5px 0 rgba(122, 74, 50, 0.12);
+  font-size: 14px;
+  font-weight: 950;
+  pointer-events: none;
+  animation: arenaVictoryPop 520ms ease both;
+}
+
+.math-arena-page .math-arena-battle-shell .lightfield {
+  position: relative;
+  min-height: 430px;
+  border: 1px solid rgba(255, 253, 244, 0.86);
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at 50% 12%, rgba(255, 253, 244, 0.18), transparent 30%),
+    linear-gradient(180deg, #5fc9cf 0 55%, #efd486 56% 100%);
+  box-shadow: inset 0 0 0 4px rgba(45, 159, 178, 0.12);
+}
+
+.math-arena-page .light-turn-banner {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 253, 244, 0.86);
+  border-radius: 999px;
+  color: var(--arena-sea);
+  background: rgba(255, 253, 244, 0.88);
+  box-shadow: 0 10px 22px rgba(23, 76, 90, 0.12);
+  font-size: 13px;
+  font-weight: 950;
+  transform: translateX(-50%);
+}
+
+.math-arena-page .light-action-vfx {
+  position: absolute;
+  top: 48%;
+  left: 50%;
+  z-index: 3;
+  display: grid;
+  width: min(340px, 36%);
+  height: 48px;
+  align-items: center;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
+.math-arena-page .light-action-vfx i {
+  display: block;
+  height: 12px;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle, rgba(255, 253, 244, 1) 0 28%, transparent 30%),
+    linear-gradient(90deg, rgba(255, 253, 244, 0), rgba(255, 240, 191, 0.96), rgba(135, 216, 208, 0.82), rgba(255, 253, 244, 0));
+  box-shadow: 0 0 18px rgba(255, 240, 191, 0.8);
+  animation: arenaPearlBeam 680ms ease-out both;
+}
+
+.math-arena-page .light-action-vfx span {
+  justify-self: center;
+  margin-top: 5px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  color: #7a4a32;
+  background: rgba(255, 240, 191, 0.9);
+  font-size: 12px;
+  font-weight: 950;
+  animation: arenaCuePop 620ms ease-out both;
+}
+
+.math-arena-page .light-action-vfx.from-opponent i {
+  animation-name: arenaPearlBeamReverse;
+}
+
+.math-arena-page .light-action-vfx.try {
+  opacity: 0.78;
+}
+
+.math-arena-page .light-action-vfx.try i {
+  background:
+    radial-gradient(circle, rgba(255, 253, 244, 0.95) 0 22%, transparent 24%),
+    linear-gradient(90deg, rgba(255, 253, 244, 0), rgba(255, 253, 244, 0.62), rgba(135, 216, 208, 0.45), rgba(255, 253, 244, 0));
+  box-shadow: 0 0 12px rgba(255, 253, 244, 0.58);
+}
+
+.math-arena-page .light-partner.glowing .light-orb {
+  animation: arenaLightGlow 520ms ease-out both;
+  filter: saturate(1.08) drop-shadow(0 0 14px rgba(246, 179, 82, 0.32));
+}
+
+.math-arena-page .light-pop,
+.math-arena-page .light-complete-medal {
+  position: absolute;
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid rgba(255, 253, 244, 0.86);
+  border-radius: 999px;
+  color: #fffdf4;
+  font-weight: 950;
+  pointer-events: none;
+}
+
+.math-arena-page .light-pop {
+  top: 64px;
+  right: 28px;
+  min-width: 54px;
+  min-height: 36px;
+  background: var(--arena-coral);
+  box-shadow: 0 10px 20px rgba(122, 74, 50, 0.18), inset 0 -4px 0 rgba(122, 74, 50, 0.16);
+  font-size: 20px;
+  animation: arenaLightPop 740ms ease-out both;
+}
+
+.math-arena-page .light-partner.right .light-pop {
+  right: auto;
+  left: 28px;
+}
+
+.math-arena-page .light-complete-medal {
+  top: 40px;
+  left: 50%;
+  min-height: 32px;
+  padding: 0 10px;
+  background: var(--arena-gold);
+  box-shadow: 0 12px 22px rgba(122, 74, 50, 0.18), inset 0 -4px 0 rgba(122, 74, 50, 0.12);
+  font-size: 13px;
+  transform: translateX(-50%);
+  animation: arenaVictoryPop 520ms ease both;
+}
+
+.math-arena-page .lightfield.complete {
+  box-shadow: inset 0 0 0 4px rgba(45, 159, 178, 0.12), 0 0 0 3px rgba(246, 179, 82, 0.28);
+}
+
+.math-arena-page .math-arena-battle-shell .problem-card {
+  border-color: rgba(246, 179, 82, 0.56);
+  background: rgba(255, 248, 234, 0.95);
+  box-shadow: 0 12px 0 rgba(122, 74, 50, 0.1), 0 16px 28px rgba(23, 76, 90, 0.08);
+}
+
+.math-arena-page .math-arena-battle-shell .problem-card span {
+  color: #7b62ba;
+}
+
+.math-arena-page .math-arena-battle-shell .answer-grid button {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "label state"
+    "value value";
+  align-items: center;
+  gap: 3px 8px;
+  overflow: hidden;
+  padding: 8px 12px;
+  border: 1px solid rgba(255, 253, 244, 0.28);
+  background:
+    radial-gradient(circle at 14% 16%, rgba(255, 253, 244, 0.18), transparent 34%),
+    var(--arena-sea);
+  box-shadow: 0 6px 0 #0f3440;
+}
+
+.math-arena-page .math-arena-battle-shell .answer-grid button::before {
+  position: absolute;
+  inset: 5px;
+  border: 1px solid rgba(255, 253, 244, 0.18);
+  border-radius: 13px;
+  content: "";
+  pointer-events: none;
+}
+
+.math-arena-page .math-arena-battle-shell .answer-grid button span,
+.math-arena-page .math-arena-battle-shell .answer-grid button em {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-style: normal;
+  font-weight: 950;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.math-arena-page .math-arena-battle-shell .answer-grid button span {
+  grid-area: label;
+  color: rgba(255, 253, 244, 0.76);
+  font-size: 11px;
+  text-align: left;
+}
+
+.math-arena-page .math-arena-battle-shell .answer-grid button strong {
+  grid-area: value;
+  position: relative;
+  z-index: 1;
+  color: #fffdf4;
+  font-size: 28px;
+  line-height: 1;
+}
+
+.math-arena-page .math-arena-battle-shell .answer-grid button em {
+  grid-area: state;
+  justify-self: end;
+  min-height: 22px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  color: #174c5a;
+  background: rgba(255, 253, 244, 0.82);
+  font-size: 11px;
+}
+
+.math-arena-page .math-arena-battle-shell .answer-grid button:hover {
+  background: var(--arena-lagoon);
+}
+
+.math-arena-page .math-arena-battle-shell .answer-grid button.selected.lit {
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255, 253, 244, 0.24), transparent 42%),
+    var(--arena-leaf);
+  box-shadow: 0 6px 0 #225a3a, 0 0 0 4px rgba(59, 125, 83, 0.16);
+  animation: skillShellHit 420ms ease both;
+}
+.math-arena-page .math-arena-battle-shell .answer-grid button.selected.try {
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255, 253, 244, 0.18), transparent 42%),
+    #8a7162;
+  box-shadow: 0 6px 0 #5e4b42, 0 0 0 4px rgba(138, 113, 98, 0.14);
+  animation: skillShellMiss 420ms ease both;
+}
+
+.math-arena-page .math-arena-battle-shell .answer-grid button.selected.lit em {
+  color: var(--arena-leaf);
+}
+
+.math-arena-page .math-arena-battle-shell .answer-grid button.selected.try em {
+  color: #7a4a32;
+}
+
+.math-arena-page .math-arena-battle-shell .light-log {
+  position: relative;
+  z-index: 4;
+  border-color: rgba(214, 177, 106, 0.36);
+  background: rgba(255, 253, 244, 0.9);
+}
+
+.math-arena-page .math-arena-battle-shell .light-log.lit,
+.math-arena-page .math-arena-battle-shell .light-log.try,
+.math-arena-page .math-arena-battle-shell .light-log.complete {
+  animation: lightLogFlash 420ms ease both;
+}
+
+.math-arena-page .math-arena-empty {
+  min-height: calc(100% - 54px);
+  border: 2px dashed rgba(23, 76, 90, 0.18);
+  color: var(--arena-sea);
+  background:
+    radial-gradient(circle at 50% 40%, rgba(255, 240, 191, 0.72), transparent 34%),
+    rgba(255, 253, 244, 0.72);
+}
+
+.math-arena-page .math-arena-scoreboard,
+.math-arena-page .math-arena-rules,
+.math-arena-page .math-arena-history {
+  border: 1px solid var(--arena-border);
+  border-radius: 22px;
+  background: rgba(255, 248, 234, 0.88);
+  box-shadow: 0 16px 34px rgba(23, 76, 90, 0.08);
+}
+
+.math-arena-page .math-arena-scoreboard {
+  background:
+    radial-gradient(circle at 100% 0, rgba(246, 179, 82, 0.22), transparent 36%),
+    rgba(255, 248, 234, 0.9);
+}
+
+.math-arena-page .math-arena-side-title {
+  border-bottom-color: rgba(214, 177, 106, 0.34);
+  color: var(--arena-sea);
+}
+
+.math-arena-page .math-arena-side-title strong {
+  color: var(--arena-sea);
+  font-size: 16px;
+}
+
+.math-arena-page .math-arena-scoreboard dl {
+  gap: 7px;
+  margin: 12px 0;
+}
+
+.math-arena-page .math-arena-scoreboard dl div,
+.math-arena-page .math-arena-rules li,
+.math-arena-page .math-arena-history li {
+  border: 1px solid rgba(214, 177, 106, 0.34);
+  background: rgba(255, 253, 244, 0.82);
+}
+
+.math-arena-page .math-arena-scoreboard dd {
+  color: var(--arena-sea);
+  font-size: 15px;
+}
+
+.math-arena-page .math-arena-rules li {
+  padding: 8px 10px;
+  color: rgba(23, 76, 90, 0.74);
+}
+
+.math-arena-page .math-arena-history li > span {
+  background: var(--arena-gold);
+}
+
+.math-arena-page .math-arena-history strong {
+  color: var(--arena-sea);
+}
+
+@keyframes arenaVictoryPop {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.94);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes arenaLightGlow {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+
+  42% {
+    transform: translateY(-8px) scale(1.04);
+  }
+}
+
+@keyframes arenaPearlBeam {
+  from {
+    clip-path: inset(0 100% 0 0);
+    opacity: 0;
+    transform: translateX(-14px) scaleX(0.72);
+  }
+
+  26%,
+  74% {
+    opacity: 1;
+  }
+
+  to {
+    clip-path: inset(0 0 0 0);
+    opacity: 0;
+    transform: translateX(24px) scaleX(1);
+  }
+}
+
+@keyframes arenaPearlBeamReverse {
+  from {
+    clip-path: inset(0 0 0 100%);
+    opacity: 0;
+    transform: translateX(14px) scaleX(0.72);
+  }
+
+  26%,
+  74% {
+    opacity: 1;
+  }
+
+  to {
+    clip-path: inset(0 0 0 0);
+    opacity: 0;
+    transform: translateX(-24px) scaleX(1);
+  }
+}
+
+@keyframes arenaCuePop {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.92);
+  }
+
+  72% {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+    transform: translateY(-6px) scale(1);
+  }
+}
+
+@keyframes arenaLightPop {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.8);
+  }
+
+  18%,
+  72% {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+    transform: translateY(-28px) scale(1.08);
+  }
+}
+
+@keyframes skillShellHit {
+  0% {
+    transform: translateY(0) scale(1);
+  }
+
+  42% {
+    transform: translateY(-4px) scale(1.04);
+  }
+
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes skillShellMiss {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  28% {
+    transform: translateX(-4px);
+  }
+
+  56% {
+    transform: translateX(4px);
+  }
+}

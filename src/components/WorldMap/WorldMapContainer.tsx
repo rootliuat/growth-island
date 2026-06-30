@@ -1,3 +1,10 @@
+/**
+ * [INPUT]: 依赖 PixiWorldMap、HUD 浮层、说成长状态和孩子/精灵进度数据。
+ * [OUTPUT]: 对外提供 WorldMapContainer 组件。
+ * [POS]: components/WorldMap 的 React 桥接层，把 App 状态接入 PixiJS 主地图。
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
+
 import { forwardRef, lazy, Suspense, useImperativeHandle, useMemo, useRef, useState, type CSSProperties } from "react";
 import {
   CircleDot,
@@ -15,7 +22,8 @@ import {
   Trophy,
   type LucideIcon,
 } from "lucide-react";
-import { MoralSpeakOverlay, type MoralSpeakViewState } from "../Hud/MoralSpeakOverlay";
+import type { MoralSpeakViewState } from "../../domain/moralSpeakSession";
+import { MoralSpeakOverlay } from "../Hud/MoralSpeakOverlay";
 import { TeacherMoralReviewCard } from "../Hud/TeacherMoralReviewCard";
 import type { PixiWorldMapHandle } from "./PixiWorldMap";
 import { virtueCategories } from "../../data/spirits";

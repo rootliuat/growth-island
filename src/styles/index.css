@@ -1,0 +1,44 @@
+/**
+ * [INPUT]: 依赖本目录按 cascade 顺序拆分的样式片段。
+ * [OUTPUT]: 对外提供应用唯一全局 CSS 入口。
+ * [POS]: styles 的聚合入口，被 src/main.tsx 消费。
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
+
+@import "./01-tokens.css";
+@import "./shell/01-shell.css";
+@import "./shell/02-shell.css";
+@import "./home-map/01-home-map.css";
+@import "./home-map/02-home-map.css";
+@import "./home-map/03-home-map.css";
+@import "./home-map/04-home-map.css";
+@import "./home-map/05-home-map.css";
+@import "./home-map/06-home-map.css";
+@import "./modules-base/01-modules-base.css";
+@import "./modules-base/02-modules-base.css";
+@import "./modules-base/03-modules-base.css";
+@import "./modules-base/04-modules-base.css";
+@import "./modules-base/05-modules-base.css";
+@import "./modules-base/06-modules-base.css";
+@import "./modules-base/07-modules-base.css";
+@import "./child-profile/01-child-profile.css";
+@import "./child-profile/02-child-profile.css";
+@import "./child-profile/03-child-profile.css";
+@import "./child-profile/04-child-profile.css";
+@import "./child-profile/05-child-profile.css";
+@import "./moral-speak/01-moral-speak.css";
+@import "./moral-speak/02-moral-speak.css";
+@import "./modules/01-modules.css";
+@import "./modules/02-modules.css";
+@import "./modules/03-modules.css";
+@import "./modules/04-modules.css";
+@import "./modules/05-modules.css";
+@import "./modules/06-modules.css";
+@import "./modules/07-modules.css";
+@import "./modules/08-modules.css";
+@import "./modules/09-modules.css";
+@import "./modules/10-modules.css";
+@import "./modules/11-modules.css";
+@import "./modules/12-modules.css";
+@import "./modules/13-modules.css";
+@import "./modules/14-modules.css";

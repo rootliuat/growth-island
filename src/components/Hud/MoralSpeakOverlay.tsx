@@ -1,23 +1,16 @@
+/**
+ * [INPUT]: 依赖 moralSpeakSession 的视图状态，依赖 virtueEnergy 的能量色彩，依赖 3D 奖励预览。
+ * [OUTPUT]: 对外提供 MoralSpeakOverlay 组件。
+ * [POS]: HUD 的儿童自助说成长浮层，只负责渲染与按钮回调，不持有流程状态。
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
+
 import { AudioLines, Mic, Shell, Sparkles, X } from "lucide-react";
 import type { CSSProperties } from "react";
+import type { MoralSpeakStage, MoralSpeakViewState } from "../../domain/moralSpeakSession";
 import { canApproveMoralGrowth, getChildEnergyColor, getChildEnergyLabel } from "../../domain/virtueEnergy";
-import type { ChildWithProgress, MoralEvaluationResult, SpiritDefinition } from "../../types";
+import type { ChildWithProgress, SpiritDefinition } from "../../types";
 import { RewardModelPreview3D } from "./SpiritModelStage3D";
-
-export type MoralSpeakStage = "idle" | "ready" | "listening" | "recognizing" | "pendingReview" | "success" | "error";
-
-export interface MoralSpeakViewState {
-  stage: MoralSpeakStage;
-  childId?: string;
-  transcript?: string;
-  summary?: string;
-  result?: MoralEvaluationResult;
-  reviewId?: string;
-  adjusted?: boolean;
-  approving?: boolean;
-  error?: string;
-  previousChildName?: string;
-}
 
 interface MoralSpeakOverlayProps {
   child?: ChildWithProgress;

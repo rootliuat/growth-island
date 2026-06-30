@@ -1,0 +1,675 @@
+/**
+ * [INPUT]: 依赖 ../01-tokens.css 以及前序 cascade 片段。
+ * [OUTPUT]: 对外提供后续模块、移动端和白板触控最终覆盖第 5 段样式。
+ * [POS]: styles/modules 的 cascade 片段 5/14，由 ../index.css 按顺序导入。
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
+
+
+.organization-track-list button:disabled,
+.organization-task-list button:disabled,
+.organization-report-actions button:disabled {
+  color: rgba(23, 76, 90, 0.54);
+  border-color: rgba(23, 76, 90, 0.1);
+  background: rgba(255, 253, 244, 0.62);
+  opacity: 1;
+}
+
+.organization-curriculum-notice,
+.organization-task-notice,
+.organization-report-notice {
+  border-color: rgba(45, 159, 178, 0.18);
+  background: rgba(223, 242, 234, 0.82);
+}
+
+.organization-class-list button:focus-visible,
+.organization-report-list button:focus-visible,
+.organization-track-list button:focus-visible,
+.organization-task-list button:focus-visible,
+.organization-report-actions button:focus-visible,
+.organization-home-button:focus-visible {
+  outline: 3px solid rgba(45, 159, 178, 0.34);
+  outline-offset: 3px;
+}
+
+@media (max-width: 1160px) {
+  .organization-layout {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "classes"
+      "report"
+      "tasks"
+      "curriculum"
+      "classroom";
+  }
+
+  .organization-summary {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 2px;
+  }
+
+  .organization-summary article {
+    flex: 0 0 auto;
+  }
+}
+
+@media (max-width: 720px) {
+  .organization-page {
+    gap: 12px;
+    padding: 14px;
+  }
+
+  .organization-header {
+    flex-direction: row;
+    align-items: center;
+    min-height: auto;
+  }
+
+  .organization-header > div {
+    flex-wrap: wrap;
+  }
+
+  .organization-header-chips {
+    flex-basis: 100%;
+  }
+
+  .organization-header-chips span:last-child {
+    max-width: 100%;
+  }
+
+  .organization-home-button {
+    width: auto;
+    min-width: 78px;
+  }
+
+  .organization-class-list {
+    display: flex;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  .organization-class-list button {
+    flex: 0 0 168px;
+    min-height: 66px;
+  }
+
+  .organization-report-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .organization-report-actions button {
+    min-width: 0;
+    padding: 0 8px;
+  }
+
+  .organization-evidence-list em {
+    white-space: normal;
+  }
+}
+
+/* P0/P1 voice shell: 贝壳记录台 reads as an island teacher tool, not a text/AI workbench. */
+.voice-record-page {
+  color: #174c5a;
+  background:
+    radial-gradient(circle at 12% 0%, rgba(135, 216, 208, 0.28), transparent 30%),
+    linear-gradient(180deg, #eef6f0 0%, #f7f0db 100%);
+}
+
+.voice-record-workbench,
+.voice-result-panel,
+.voice-history-panel {
+  border-color: rgba(214, 177, 106, 0.42);
+  background: rgba(255, 248, 234, 0.94);
+  box-shadow: 0 10px 0 rgba(214, 177, 106, 0.13), 0 18px 34px rgba(23, 76, 90, 0.1);
+}
+
+.voice-child-card,
+.voice-result-card,
+.voice-review-row,
+.voice-history-row,
+.voice-field select,
+.voice-field textarea {
+  border-color: rgba(214, 177, 106, 0.42);
+  background: #fff8ea;
+}
+
+.voice-child-card strong {
+  color: #174c5a;
+  font-size: 22px;
+}
+
+.voice-child-card span,
+.voice-child-card em,
+.voice-score-row span,
+.voice-review-row span,
+.voice-muted,
+.voice-history-row em {
+  color: #5f746d;
+}
+
+.voice-field > span,
+.voice-panel-title,
+.voice-subtitle {
+  color: #174c5a;
+}
+
+.voice-panel-title {
+  border-bottom-color: rgba(214, 177, 106, 0.34);
+}
+
+.voice-panel-title span,
+.voice-subtitle span {
+  color: #2f6d52;
+  background: #dff2ea;
+}
+
+.voice-template-row {
+  display: flex;
+  gap: 9px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.voice-template-row button {
+  flex: 0 0 auto;
+  max-width: min(270px, 72vw);
+  min-height: 38px;
+  overflow: hidden;
+  border-color: rgba(45, 159, 178, 0.22);
+  border-radius: 999px;
+  color: #174c5a;
+  background: #dff2ea;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.voice-primary-action {
+  color: #fff8ea;
+  border-color: rgba(197, 74, 46, 0.28);
+  background: #ff7a59;
+}
+
+.voice-home-button,
+.voice-result-actions button:first-child,
+.voice-review-actions button:first-child {
+  color: #fff8ea;
+  border-color: rgba(31, 107, 76, 0.28);
+  background: #3b7d53;
+}
+
+.voice-secondary-action,
+.voice-result-actions button:last-child,
+.voice-review-actions button:last-child {
+  color: #174c5a;
+  border-color: rgba(214, 177, 106, 0.42);
+  background: #fff8ea;
+}
+
+.voice-score-row strong {
+  color: #d95f55;
+}
+
+.voice-confidence {
+  background: rgba(214, 177, 106, 0.24);
+}
+
+.voice-confidence span,
+.voice-history-row > span {
+  background: #f6b352;
+}
+
+.voice-result-card em,
+.voice-empty-result {
+  background: rgba(247, 240, 219, 0.72);
+}
+
+.voice-empty-result {
+  min-height: 188px;
+  border-color: rgba(59, 125, 83, 0.28);
+  color: #5f746d;
+}
+
+.voice-home-button:focus-visible,
+.voice-primary-action:focus-visible,
+.voice-secondary-action:focus-visible,
+.voice-template-row button:focus-visible,
+.voice-result-actions button:focus-visible,
+.voice-review-actions button:focus-visible,
+.voice-field select:focus-visible,
+.voice-field textarea:focus-visible {
+  outline: 3px solid rgba(246, 179, 82, 0.72);
+  outline-offset: 3px;
+}
+
+@media (max-width: 720px) {
+  .voice-record-page {
+    grid-template-rows: auto auto auto;
+    align-content: start;
+    overflow: auto;
+    padding-bottom: 96px;
+  }
+
+  .voice-record-layout {
+    min-height: auto;
+    align-items: start;
+    overflow: visible;
+  }
+
+  .voice-record-workbench,
+  .voice-result-panel,
+  .voice-history-panel {
+    min-height: 0;
+    overflow: visible;
+  }
+
+  .voice-child-card {
+    grid-template-columns: 86px minmax(0, 1fr);
+  }
+
+  .voice-child-avatar {
+    width: 86px;
+    height: 86px;
+    border-radius: 26px;
+  }
+
+  .voice-field textarea {
+    min-height: 118px;
+  }
+
+  .voice-actions {
+    justify-content: stretch;
+  }
+
+  .voice-actions button {
+    flex: 1 1 140px;
+  }
+}
+
+/* P0/P1 teacher record harbor: keep the class board first, make the drawer read as a game tool. */
+.teacher-workbench-page {
+  color: #174c5a;
+  background:
+    radial-gradient(circle at 10% 4%, rgba(135, 216, 208, 0.3), transparent 30%),
+    linear-gradient(180deg, #edf8f3 0%, #f8f0d9 100%);
+}
+
+.teacher-workbench-page .workbench-class-board,
+.teacher-workbench-page .workbench-score-drawer {
+  border-color: rgba(214, 177, 106, 0.42);
+  background: rgba(255, 248, 234, 0.94);
+  box-shadow: 0 10px 0 rgba(214, 177, 106, 0.13), 0 18px 34px rgba(23, 76, 90, 0.1);
+}
+
+.teacher-workbench-page .workbench-score-drawer {
+  gap: 12px;
+}
+
+.teacher-workbench-page .workbench-selected-child,
+.teacher-workbench-page .workbench-recent-feedback,
+.teacher-workbench-page .template-grid button,
+.teacher-workbench-page .workbench-result-card,
+.teacher-workbench-page .workbench-record-list article,
+.teacher-workbench-page .workbench-review-list article {
+  border-color: rgba(214, 177, 106, 0.42);
+  background: #fff8ea;
+}
+
+.teacher-workbench-page .workbench-selected-child.compact > div > span {
+  display: inline-flex;
+  width: fit-content;
+  margin-bottom: 4px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  color: #2f6d52;
+  background: #dff2ea;
+  font-size: 11px;
+  font-weight: 950;
+}
+
+.teacher-workbench-page .student-card-avatar,
+.teacher-workbench-page .workbench-child-avatar {
+  background: #f8f7f1;
+}
+
+.teacher-workbench-page .student-card-meta strong,
+.teacher-workbench-page .workbench-selected-child strong,
+.teacher-workbench-page .workbench-section-title,
+.teacher-workbench-page .workbench-result-card strong,
+.teacher-workbench-page .workbench-record-list strong,
+.teacher-workbench-page .workbench-review-list strong {
+  color: #174c5a;
+}
+
+.teacher-workbench-page .student-card-xp,
+.teacher-workbench-page .workbench-selected-child em,
+.teacher-workbench-page .workbench-record-list em,
+.teacher-workbench-page .workbench-review-list em,
+.teacher-workbench-page .workbench-result-card p {
+  color: #5f746d;
+}
+
+.teacher-workbench-page .batch-score-grid button {
+  color: #fff8ea;
+  border-color: rgba(31, 107, 76, 0.24);
+  background: #13372f;
+}
+
+.teacher-workbench-page .template-grid button {
+  min-height: 70px;
+  border-radius: 15px;
+  box-shadow: inset 0 -3px 0 rgba(214, 177, 106, 0.16);
+}
+
+.teacher-workbench-page .template-grid button span {
+  color: #2f9b6b;
+}
+
+.teacher-workbench-page .template-grid button.watch {
+  border-color: rgba(255, 122, 89, 0.34);
+  background: #f8e3d2;
+}
+
+.teacher-workbench-page .manual-score-pad,
+.teacher-workbench-page .workbench-ai-panel,
+.teacher-workbench-page .workbench-review-panel {
+  min-width: 0;
+  border-top-color: rgba(214, 177, 106, 0.38);
+}
+
+.teacher-workbench-page .transcript-samples {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.teacher-workbench-page .transcript-samples button {
+  flex: 0 0 min(212px, 58vw);
+  min-height: 38px;
+  overflow: hidden;
+  border-color: rgba(45, 159, 178, 0.22);
+  border-radius: 999px;
+  color: #174c5a;
+  background: #dff2ea;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.teacher-workbench-page .workbench-primary-action {
+  color: #fff8ea;
+  border-color: rgba(197, 74, 46, 0.28);
+  background: #ff7a59;
+}
+
+.teacher-workbench-page .workbench-home-button,
+.teacher-workbench-page .workbench-result-actions button:first-child,
+.teacher-workbench-page .workbench-review-actions button:first-child,
+.teacher-workbench-page .deduct-confirm-panel .deduct-confirm {
+  color: #fff8ea;
+  border-color: rgba(31, 107, 76, 0.28);
+  background: #3b7d53;
+}
+
+.teacher-workbench-page .workbench-undo-button,
+.teacher-workbench-page .workbench-result-actions button:last-child,
+.teacher-workbench-page .workbench-review-actions button:last-child,
+.teacher-workbench-page .deduct-confirm-panel button:not(.deduct-confirm) {
+  color: #174c5a;
+  border-color: rgba(214, 177, 106, 0.42);
+  background: #fff8ea;
+}
+
+.teacher-workbench-page .workbench-result-card span,
+.teacher-workbench-page .workbench-record-list article > span,
+.teacher-workbench-page .workbench-review-list span,
+.teacher-workbench-page .workbench-recent-feedback > span {
+  color: #fff8ea;
+  background: #f6b352;
+}
+
+.teacher-workbench-page .workbench-result-card.negative span,
+.teacher-workbench-page .workbench-record-list article.negative > span,
+.teacher-workbench-page .workbench-recent-feedback.negative > span {
+  background: #d95f55;
+}
+
+.teacher-workbench-page .deduct-confirm-panel {
+  border-color: rgba(255, 122, 89, 0.32);
+  background: #fff1e5;
+}
+
+.teacher-workbench-page .workbench-transcript textarea {
+  border-color: rgba(214, 177, 106, 0.42);
+  background: #fff8ea;
+}
+
+.teacher-workbench-page .workbench-home-button:focus-visible,
+.teacher-workbench-page .workbench-primary-action:focus-visible,
+.teacher-workbench-page .workbench-undo-button:focus-visible,
+.teacher-workbench-page .template-grid button:focus-visible,
+.teacher-workbench-page .transcript-samples button:focus-visible,
+.teacher-workbench-page .workbench-result-actions button:focus-visible,
+.teacher-workbench-page .workbench-review-actions button:focus-visible,
+.teacher-workbench-page .workbench-transcript textarea:focus-visible {
+  outline: 3px solid rgba(246, 179, 82, 0.72);
+  outline-offset: 3px;
+}
+
+@media (max-width: 720px) {
+  .teacher-workbench-page {
+    padding-bottom: 96px;
+  }
+
+  .teacher-workbench-page .workbench-score-drawer {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  .teacher-workbench-page .template-grid {
+    display: flex;
+    gap: 9px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+
+  .teacher-workbench-page .template-grid button {
+    flex: 0 0 min(154px, 46vw);
+    min-height: 58px;
+  }
+
+  .teacher-workbench-page .transcript-samples button {
+    flex-basis: min(188px, 62vw);
+  }
+
+  .teacher-workbench-page .workbench-ai-actions,
+  .teacher-workbench-page .workbench-result-actions,
+  .teacher-workbench-page .workbench-review-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* P1 spirit cabin: selected child first, records and status as supporting shelves. */
+.profile-page {
+  color: #174c5a;
+  background:
+    radial-gradient(circle at 12% 4%, rgba(135, 216, 208, 0.28), transparent 32%),
+    linear-gradient(180deg, #e9f7f2 0%, #fff4d5 48%, #f5dc9d 100%);
+}
+
+.profile-page .profile-header {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.profile-page .profile-layout {
+  grid-template-columns: clamp(220px, 17vw, 284px) minmax(520px, 1fr) clamp(300px, 22vw, 380px);
+  gap: 14px;
+}
+
+.profile-page .profile-roster-panel,
+.profile-page .profile-story-panel,
+.profile-page .profile-insight-panel {
+  border-color: rgba(214, 177, 106, 0.45);
+  background: rgba(255, 248, 234, 0.9);
+  box-shadow: 0 10px 0 rgba(214, 177, 106, 0.12), 0 18px 34px rgba(23, 76, 90, 0.1);
+}
+
+.profile-page .profile-story-panel {
+  gap: 12px;
+  background:
+    radial-gradient(circle at 78% 14%, rgba(255, 122, 89, 0.12), transparent 24%),
+    linear-gradient(180deg, rgba(255, 248, 234, 0.96), rgba(244, 217, 155, 0.58));
+}
+
+.profile-roster-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: #174c5a;
+  font-size: 15px;
+  font-weight: 950;
+}
+
+.profile-insight-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: #174c5a;
+  font-size: 15px;
+  font-weight: 950;
+}
+
+.profile-insight-title span {
+  min-height: 28px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  color: #2f6d52;
+  background: #dff2ea;
+  font-size: 12px;
+}
+
+.profile-roster-title span {
+  min-height: 28px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  color: #2f6d52;
+  background: #dff2ea;
+  font-size: 12px;
+}
+
+.profile-page .profile-search {
+  border-color: rgba(214, 177, 106, 0.42);
+  background: rgba(255, 253, 244, 0.86);
+}
+
+.profile-page .profile-search input {
+  color: #174c5a;
+}
+
+.profile-page .profile-roster-list button {
+  min-height: 62px;
+  border-color: rgba(214, 177, 106, 0.42);
+  background: #fffdf4;
+}
+
+.profile-page .profile-roster-list button.active {
+  border-color: rgba(45, 159, 178, 0.45);
+  background: #dff2ea;
+  box-shadow: 0 0 0 3px rgba(45, 159, 178, 0.1);
+}
+
+.profile-page .profile-roster-list button > span,
+.profile-page .profile-portrait {
+  border-color: rgba(214, 177, 106, 0.58);
+  background: #f8f7f1;
+}
+
+.profile-page .profile-hero-card {
+  grid-template-columns: minmax(250px, 0.78fr) minmax(0, 1fr);
+  align-items: stretch;
+  min-height: 270px;
+  padding: 14px;
+  border-color: rgba(214, 177, 106, 0.46);
+  background: rgba(255, 253, 244, 0.78);
+  box-shadow: inset 0 -5px 0 rgba(214, 177, 106, 0.12);
+}
+
+.profile-cabin-stage {
+  position: relative;
+  display: grid;
+  min-height: 242px;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(45, 159, 178, 0.26);
+  border-radius: 22px;
+  background:
+    radial-gradient(ellipse at 50% 82%, rgba(244, 217, 155, 0.95) 0 34%, transparent 35%),
+    linear-gradient(180deg, #a5e3de 0%, #dff2ea 48%, #fff0bf 100%);
+}
+
+.profile-cabin-stage::before {
+  content: "";
+  position: absolute;
+  inset: 16px 28px auto;
+  height: 86px;
+  border: 1px solid rgba(255, 253, 244, 0.78);
+  border-bottom: 0;
+  border-radius: 34px 34px 0 0;
+  background: rgba(255, 248, 234, 0.36);
+}
+
+.profile-cabin-status {
+  position: absolute;
+  z-index: 2;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 7px;
+}
+
+.profile-cabin-status span,
+.profile-cabin-status strong {
+  min-height: 28px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  color: #174c5a;
+  background: rgba(255, 253, 244, 0.9);
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.profile-cabin-status strong {
+  color: #2f6d52;
+  background: #dff2ea;
+}
+
+.profile-spirit-showcase {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  width: min(92%, 318px);
+  min-height: 204px;
+  place-items: center;
+  isolation: isolate;
+}
+
+.profile-spirit-aura {
+  position: absolute;
+  width: 178px;
+  height: 178px;
+  border: 1px solid color-mix(in srgb, var(--profile-spirit-accent, #f6b352) 44%, #fffdf4);
+  border-radius: 999px;
+  background:
+    radial-gradient(circle, rgba(255, 253, 244, 0.78) 0 42%, transparent 64%),
+    radial-gradient(circle, color-mix(in srgb, var(--profile-spirit-accent, #f6b352) 28%, transparent) 0 48%, transparent 70%);
+  opacity: 0.86;
+}

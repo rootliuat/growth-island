@@ -1,0 +1,464 @@
+/**
+ * [INPUT]: 依赖 ../01-tokens.css 以及前序 cascade 片段。
+ * [OUTPUT]: 对外提供精灵小屋、成长档案和孩子档案覆盖第 5 段样式。
+ * [POS]: styles/child-profile 的 cascade 片段 5/5，由 ../index.css 按顺序导入。
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
+
+
+/* P0/P1 leaderboard plaza: honor first, list second, no white workbench rows. */
+.leaderboard-page {
+  color: #174c5a;
+  background:
+    radial-gradient(circle at 14% 10%, rgba(135, 216, 208, 0.26), transparent 34%),
+    linear-gradient(180deg, #e9f7f2 0%, #fff4d5 46%, #f4d99b 100%);
+}
+
+.leaderboard-page .leaderboard-header {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.leaderboard-page .leaderboard-plaza-stage {
+  grid-template-columns: minmax(220px, 0.72fr) minmax(420px, 1.18fr) minmax(260px, 0.72fr);
+  min-height: 172px;
+  border-color: rgba(214, 177, 106, 0.5);
+  background:
+    radial-gradient(circle at 78% 18%, rgba(255, 122, 89, 0.18), transparent 28%),
+    linear-gradient(180deg, rgba(255, 248, 234, 0.96), rgba(244, 217, 155, 0.76));
+  box-shadow: inset 0 -8px 0 rgba(214, 177, 106, 0.16), 0 14px 30px rgba(23, 76, 90, 0.08);
+}
+
+.leaderboard-page .leaderboard-plaza-copy strong {
+  color: #174c5a;
+  font-size: 24px;
+}
+
+.leaderboard-plaza-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.leaderboard-plaza-stats span,
+.leaderboard-row-action {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 0 11px;
+  border-radius: 999px;
+  color: #174c5a;
+  background: #fff8ea;
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.leaderboard-honor-stand {
+  display: grid;
+  grid-template-columns: 0.92fr 1.08fr 0.92fr;
+  align-items: stretch;
+  gap: 10px;
+  min-width: 0;
+}
+
+.leaderboard-honor-token {
+  display: grid;
+  grid-template-columns: 44px 64px minmax(72px, 1fr);
+  grid-template-rows: auto auto auto;
+  align-items: center;
+  gap: 6px 9px;
+  min-width: 0;
+  min-height: 112px;
+  padding: 10px;
+  border: 1px solid rgba(214, 177, 106, 0.48);
+  border-radius: 18px;
+  color: #174c5a;
+  background: linear-gradient(180deg, #fffdf4, #fff8ea);
+  box-shadow: inset 0 -4px 0 rgba(214, 177, 106, 0.16);
+  font-family: inherit;
+  text-align: left;
+}
+
+.leaderboard-honor-token.rank-1 {
+  order: 2;
+  min-height: 126px;
+  border-color: rgba(246, 179, 82, 0.74);
+  background: linear-gradient(180deg, #fff6c7, #fff8ea);
+}
+
+.leaderboard-honor-token.rank-2 {
+  order: 1;
+}
+
+.leaderboard-honor-token.rank-3 {
+  order: 3;
+}
+
+.leaderboard-honor-rank {
+  display: grid;
+  grid-column: 1;
+  grid-row: 1;
+  min-height: 38px;
+  place-items: center;
+  border-radius: 12px;
+  color: #174c5a;
+  background: #87d8d0;
+  font-size: 15px;
+  font-weight: 950;
+}
+
+.leaderboard-honor-token.rank-1 .leaderboard-honor-rank {
+  background: #f6b352;
+}
+
+.leaderboard-honor-token.rank-3 .leaderboard-honor-rank {
+  background: #ffb18f;
+}
+
+.leaderboard-honor-avatar {
+  display: grid;
+  grid-column: 2;
+  grid-row: 1 / 4;
+  width: 62px;
+  height: 62px;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(214, 177, 106, 0.55);
+  border-radius: 18px;
+  background: #f8f7f1;
+  font-size: 22px;
+  font-weight: 950;
+}
+
+.leaderboard-honor-avatar img {
+  width: 94%;
+  height: 94%;
+  object-fit: contain;
+}
+
+.leaderboard-honor-token strong,
+.leaderboard-honor-token em {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.leaderboard-honor-token strong {
+  grid-column: 3;
+  grid-row: 1;
+  color: #174c5a;
+  font-size: 16px;
+}
+
+.leaderboard-honor-token em {
+  grid-column: 3;
+  grid-row: 2;
+  min-width: 0;
+  color: #5f746d;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.leaderboard-honor-token .leaderboard-row-action {
+  grid-column: 3;
+  grid-row: 3;
+  background: #dff2ea;
+}
+
+.leaderboard-page .leaderboard-selected-token {
+  border-color: rgba(45, 159, 178, 0.28);
+  background: rgba(223, 242, 234, 0.78);
+}
+
+.leaderboard-page .leaderboard-selected-token div > span {
+  color: #2f6d52;
+  background: #fff8ea;
+}
+
+.leaderboard-page .leaderboard-list-panel {
+  border-color: rgba(214, 177, 106, 0.45);
+  background: rgba(255, 248, 234, 0.92);
+  box-shadow: 0 10px 0 rgba(214, 177, 106, 0.13), 0 18px 34px rgba(23, 76, 90, 0.1);
+}
+
+.leaderboard-page .leaderboard-list {
+  overscroll-behavior: contain;
+}
+
+.leaderboard-page .leaderboard-list li button {
+  grid-template-columns: 64px 56px minmax(0, 1fr) 72px 104px 92px;
+  border-color: rgba(214, 177, 106, 0.45);
+  background: linear-gradient(180deg, #fffdf4, #fff8ea);
+  box-shadow: inset 0 -3px 0 rgba(214, 177, 106, 0.12);
+}
+
+.leaderboard-page .leaderboard-list li:nth-child(1) .leaderboard-rank {
+  color: #174c5a;
+  background: #f6b352;
+}
+
+.leaderboard-page .leaderboard-list li:nth-child(2) .leaderboard-rank {
+  color: #174c5a;
+  background: #87d8d0;
+}
+
+.leaderboard-page .leaderboard-list li:nth-child(3) .leaderboard-rank {
+  color: #174c5a;
+  background: #ffb18f;
+}
+
+.leaderboard-page .leaderboard-list li.is-selected button {
+  border-color: rgba(45, 159, 178, 0.55);
+  background: linear-gradient(180deg, #e8f7f2, #fff8ea);
+}
+
+.leaderboard-page .leaderboard-list li button .leaderboard-row-action {
+  justify-self: end;
+  color: #fff8ea;
+  background: #3b7d53;
+}
+@media (max-width: 1160px) {
+  .leaderboard-page .leaderboard-plaza-stage {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .leaderboard-honor-stand {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .leaderboard-page {
+    padding-bottom: 96px;
+  }
+
+  .leaderboard-page .leaderboard-plaza-stage {
+    min-height: 0;
+    gap: 10px;
+  }
+
+  .leaderboard-honor-stand {
+    display: flex;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+
+  .leaderboard-honor-token {
+    flex: 0 0 214px;
+  }
+
+  .leaderboard-page .leaderboard-list li button {
+    grid-template-columns: 48px 44px minmax(0, 1fr);
+    gap: 7px;
+    min-height: 74px;
+  }
+
+  .leaderboard-page .leaderboard-row-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+  }
+
+  .leaderboard-page .leaderboard-level,
+  .leaderboard-page .leaderboard-xp,
+  .leaderboard-page .leaderboard-list li button .leaderboard-row-action {
+    grid-column: 3;
+    justify-self: start;
+  }
+
+  .leaderboard-page .leaderboard-list li button .leaderboard-row-action {
+    min-height: 28px;
+  }
+}
+
+/* Scroll-first card rendering: keep the lift subtle so whiteboard scrolling stays smooth. */
+.workbench-class-grid {
+  perspective: none;
+  overscroll-behavior: contain;
+}
+
+.workbench-student-card {
+  overflow: hidden;
+  contain: layout paint style;
+  transform: none;
+  transform-style: flat;
+  transition:
+    border-color 140ms ease,
+    background 140ms ease;
+  will-change: auto;
+}
+
+.workbench-student-card::before {
+  display: none;
+}
+
+.workbench-student-card.active {
+  transform: none;
+  will-change: auto;
+  outline: 2px solid rgba(49, 125, 104, 0.48);
+  outline-offset: -4px;
+  box-shadow: none;
+}
+
+.workbench-student-card.active:hover {
+  transform: none;
+}
+
+.workbench-student-card .student-card-topline,
+.workbench-student-card .student-card-main,
+.workbench-student-card .student-card-actions,
+.workbench-student-card .student-card-avatar {
+  transform: none;
+}
+
+.workbench-student-card:hover .student-card-avatar,
+.workbench-student-card:hover .student-card-avatar img {
+  transform: none;
+  filter: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .workbench-student-card:hover {
+    z-index: 3;
+    border-color: rgba(49, 125, 104, 0.3);
+    background: #ffffff;
+    box-shadow: none;
+    transform: none;
+  }
+
+  .workbench-student-card:hover .student-card-avatar img {
+    filter: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .workbench-student-card,
+  .workbench-student-card::before,
+  .workbench-student-card .student-card-avatar,
+  .workbench-student-card .student-card-avatar img {
+    transition: none;
+  }
+
+  .workbench-student-card:hover,
+  .workbench-student-card.active,
+  .workbench-student-card.active:hover {
+    transform: none;
+  }
+}
+
+/* Second-pass mobile fix: avoid clipping roll-call content behind overflow guards. */
+@media (max-width: 720px) {
+  .roll-call-page {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    overflow: auto;
+  }
+
+  .roll-call-header {
+    align-items: stretch;
+    gap: 8px;
+    min-height: auto;
+  }
+
+  .roll-call-header > div {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .roll-call-home-button {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .roll-call-layout {
+    width: 100%;
+    min-width: 0;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .roll-call-stage {
+    width: 100%;
+    min-width: 0;
+    min-height: auto;
+    gap: 14px;
+    padding: 16px;
+  }
+
+  .roll-call-winner {
+    width: 100%;
+    gap: 12px;
+  }
+
+  .roll-call-ring {
+    top: 32px;
+    width: min(70vw, 230px);
+  }
+
+  .roll-call-avatar {
+    width: min(68vw, 220px);
+    min-width: 0;
+  }
+
+  .roll-call-nameplate {
+    width: 100%;
+    padding: 12px 14px;
+  }
+
+  .roll-call-nameplate strong {
+    font-size: clamp(32px, 10vw, 40px);
+  }
+
+  .roll-call-actions,
+  .roll-call-record-actions,
+  .roll-call-stats {
+    width: 100%;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .roll-call-side {
+    width: 100%;
+    grid-template-rows: auto;
+    gap: 12px;
+  }
+
+  .roll-call-filter-panel,
+  .roll-call-list-panel {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .roll-call-chip-row button {
+    min-height: 44px;
+  }
+
+  .settings-page {
+    grid-template-rows: auto auto;
+    align-content: start;
+    overflow: auto;
+  }
+
+  .settings-layout {
+    display: flex;
+    height: auto;
+    min-height: 0;
+    flex-direction: column;
+    overflow: visible;
+  }
+
+  .settings-class-panel,
+  .settings-mode-panel,
+  .settings-rule-panel,
+  .settings-action-panel {
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    flex: none;
+    overflow: visible;
+  }
+}
