@@ -153,13 +153,34 @@ button {
   height: 100%;
   overflow: hidden;
   border-radius: inherit;
+  contain: paint;
+  background-color: #73d7dd;
+  background-image: url("/assets/map/v4-runtime/batch11/v4-ocean-base-tile.webp");
+  background-position: center;
+  background-size: 820px 820px;
+}
+
+.pixi-world-host::before {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  content: "";
+  background-image: url("/assets/map/v4-runtime/batch11/v4-ocean-wave-overlay.webp");
+  background-position: 18px -12px;
+  background-size: 820px 820px;
+  opacity: 0.42;
+  pointer-events: none;
 }
 
 .pixi-world-canvas {
+  position: relative;
+  z-index: 1;
   display: block;
   width: 100%;
   height: 100%;
   touch-action: none;
+  transform: translateZ(0);
+  will-change: transform;
 }
 
 .map-hint {

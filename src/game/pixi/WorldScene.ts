@@ -1,3 +1,10 @@
+/**
+ * [INPUT]: 依赖 CameraController、LayerManager 和各 Pixi 地图 Layer。
+ * [OUTPUT]: 对外提供 WorldScene 类，组合地图图层、数据更新、动画更新、聚焦和静态缓存。
+ * [POS]: game/pixi 的场景编排 Module，被 PixiWorld 驱动。
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
+
 import { Container, Ticker } from "pixi.js";
 import { getDoorFocusTarget } from "../assetScaleRules";
 import { cameraConfig } from "../cameraConfig";
@@ -45,6 +52,7 @@ export class WorldScene {
   private readonly animationStepMs = 1000 / 30;
   private readonly staticCacheResolution = 1;
   private pendingDecorationCacheRefresh = false;
+  private interactionVisualMode = false;
 
   constructor(
     private readonly camera: CameraController,
@@ -158,11 +166,13 @@ export class WorldScene {
     this.cachedStaticLayers.forEach((layer) => layer.updateCacheTexture());
   }
 
-  setInteractionVisualMode(_interactionActive: boolean) {
-    this.labels.setInteractionMode(_interactionActive);
+  setInteractionVisualMode(interactionActive: boolean) {
+    if (interactionActive === this.interactionVisualMode) return;
+    this.interactionVisualMode = interactionActive;
+    this.labels.setInteractionMode(interactionActive);
     this.layers.get("decorations").renderable = true;
     this.layers.get("labels").renderable = true;
-    this.layers.get("effects").renderable = !_interactionActive;
+    this.layers.get("effects").renderable = !interactionActive;
   }
 
   focusFullIsland() {

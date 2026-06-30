@@ -1,3 +1,10 @@
+/**
+ * [INPUT]: 依赖 PixiJS Application/Culler/Ticker、CameraController、InteractionManager 和 WorldScene。
+ * [OUTPUT]: 对外提供 PixiWorld 类，管理首页地图挂载、相机、交互唤醒、渲染清晰度与生命周期。
+ * [POS]: game/pixi 的地图运行时主控 Module，被 PixiWorldMap React Adapter 持有。
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
+
 import { Application, Culler, Ticker } from "pixi.js";
 import { WORLD_HEIGHT, WORLD_WIDTH } from "../mapConfig";
 import type { RegionId, WorldMapCallbacks, WorldMapData } from "../types";
@@ -8,7 +15,7 @@ import { WorldScene } from "./WorldScene";
 
 const minRenderResolution = 1;
 const maxRenderResolution = 1.5;
-const activeMaxFps = 30;
+const activeMaxFps = 60;
 const selectedIdleMaxFps = 24;
 const pointerWakeMs = 560;
 const pointerWakeThrottleMs = 96;
@@ -118,13 +125,19 @@ export class PixiWorld {
     await app.init({
       width: host.clientWidth || 1280,
       height: host.clientHeight || 720,
-      backgroundAlpha: 1,
+      backgroundAlpha: 0,
       backgroundColor: 0xd9f4ef,
       antialias: false,
       preference: "webgl",
       powerPreference: "high-performance",
       resolution: this.renderResolution,
       autoDensity: true,
+      eventFeatures: {
+        move: true,
+        click: true,
+        wheel: true,
+        globalMove: false,
+      },
     });
     app.ticker.maxFPS = activeMaxFps;
     if (this.disposed || this.host !== host) {
