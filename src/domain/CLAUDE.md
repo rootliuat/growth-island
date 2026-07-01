@@ -2,6 +2,7 @@
 > L2 | 父级: /CLAUDE.md
 
 成员清单
+appViewModel.ts: 应用根读模型，集中选中幼儿、精灵、最近记录、PK 对手和审核队列派生规则。
 appState.ts: 应用级状态词汇，提供 SyncStatus 契约。
 classroomBackup.ts: 课堂本地备份快照、导入预览、清空演示数据的结构化规则。
 energyAssets.ts: 德育能量图标资产映射。

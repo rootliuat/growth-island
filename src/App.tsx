@@ -61,6 +61,7 @@ import {
   summarizeClassroomBackup,
 } from "./domain/classroomBackup";
 import type { SyncStatus } from "./domain/appState";
+import { createAppViewModel } from "./domain/appViewModel";
 import { getShortFeedbackReason, type GrowthFeedback } from "./domain/growthFeedback";
 import { evaluateMoralText } from "./domain/moralAgent";
 import {
@@ -72,7 +73,7 @@ import {
   type MoralSpeakViewState,
 } from "./domain/moralSpeakSession";
 import { createGrowthTaskLedgerInput, publishCurriculumTrack } from "./domain/organization";
-import { enrichChildren, makeLedgerRecord, normalizeLedgerRecord } from "./domain/progression";
+import { makeLedgerRecord, normalizeLedgerRecord } from "./domain/progression";
 import { getSpiritAsset, loadSpiritAsset } from "./domain/spiritAssets";
 import { canApproveMoralGrowth, getChildEnergyLabel } from "./domain/virtueEnergy";
 import {
@@ -171,44 +172,42 @@ export function App() {
   const [growthFeedback, setGrowthFeedback] = useState<GrowthFeedback | undefined>();
   const [showcaseChildId, setShowcaseChildId] = useState<string | undefined>();
 
-  const spiritsById = useMemo(() => new Map(spirits.map((spirit) => [spirit.id, spirit])), []);
-  const childrenWithProgress = useMemo(() => enrichChildren(children, ledger), [children, ledger]);
-  const selectedChild = childrenWithProgress.find((child) => child.id === selectedChildId) ?? childrenWithProgress[0];
-  const selectedSpirit = spiritsById.get(selectedChild.spiritId) ?? spirits[0];
+  const appView = useMemo(
+    () =>
+      createAppViewModel({
+        children,
+        ledger,
+        moralReviews,
+        selectedChildId,
+        spirits,
+        showcaseChildId,
+        pkPair,
+      }),
+    [children, ledger, moralReviews, pkPair, selectedChildId, showcaseChildId],
+  );
+  const {
+    spiritsById,
+    childrenWithProgress,
+    selectedChild,
+    selectedSpirit,
+    showcaseChild,
+    showcaseSpirit,
+    allRecentRecords,
+    bigScreenRecentRecords,
+    recentRecords,
+    opponent,
+    pkPlayer,
+    pkOpponent,
+    pendingReviews,
+  } = appView;
   const selectedSpiritAsset = useMemo(
     () => getSpiritAsset(selectedSpirit, selectedChild.state),
     [assetVersion, selectedChild.state, selectedSpirit],
   );
-  const showcaseChild = showcaseChildId
-    ? childrenWithProgress.find((child) => child.id === showcaseChildId)
-    : undefined;
-  const showcaseSpirit = showcaseChild ? spiritsById.get(showcaseChild.spiritId) ?? spirits[0] : undefined;
   const showcaseSpiritAsset = useMemo(
     () => (showcaseChild && showcaseSpirit ? getSpiritAsset(showcaseSpirit, showcaseChild.state) : undefined),
     [assetVersion, showcaseChild, showcaseSpirit],
   );
-  const allRecentRecords = useMemo(
-    () =>
-      [...ledger]
-        .filter((record) => !record.undone)
-        .sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
-    [ledger],
-  );
-  const bigScreenRecentRecords = useMemo(
-    () => allRecentRecords.filter((record) => record.delta > 0),
-    [allRecentRecords],
-  );
-  const recentRecords = useMemo(
-    () => allRecentRecords.filter((record) => record.childId === selectedChild.id),
-    [allRecentRecords, selectedChild.id],
-  );
-  const opponent = useMemo(() => {
-    const selectedIndex = childrenWithProgress.findIndex((child) => child.id === selectedChild.id);
-    return childrenWithProgress[(selectedIndex + 1) % childrenWithProgress.length] ?? childrenWithProgress[1];
-  }, [childrenWithProgress, selectedChild.id]);
-  const pkPlayer = pkPair ? childrenWithProgress.find((child) => child.id === pkPair.playerId) : undefined;
-  const pkOpponent = pkPair ? childrenWithProgress.find((child) => child.id === pkPair.opponentId) : undefined;
-  const pendingReviews = moralReviews.filter((review) => review.status === "pending_review");
   const activeModuleConfig = moduleConfigById.get(activeModule) ?? moduleConfigById.get("home")!;
 
   const showGrowthFeedback = (feedback: Omit<GrowthFeedback, "id">) => {

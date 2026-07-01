@@ -9,23 +9,18 @@ import { chromium } from "playwright";
 import fs from "node:fs";
 import path from "node:path";
 import { allChecks } from "./checks/index.mjs";
+import { assertHomeMainScreen, assertHomePerformanceSoak } from "./home-assertions.mjs";
 import {
   inspectHomeBigScreen,
   inspectPixiRenderState,
   measureFrameRate,
-  measureHomeDrag,
   measureHomePerformanceSoak,
-  measureHomeWheel,
-  measureSelectedSpiritIdleMotion,
-  measureSelectedSpiritWheelIdleMotion,
   waitForPixiIdle,
 } from "./home-tools.mjs";
 
 const baseUrl = process.env.QA_BASE_URL || "http://127.0.0.1:5173";
 const outputDir = path.resolve("qa-artifacts/latest");
 const oneMb = 1024 * 1024;
-const minActiveMapRenderResolution = 0.99;
-const minSettledMapRenderResolution = 0.99;
 
 const viewports = [
   { name: "whiteboard", width: 1850, height: 1150 },
@@ -61,30 +56,6 @@ function summarizeResources(resources) {
     summary[resource.ext] = current;
     return summary;
   }, {});
-}
-
-function summarizeP15MapProps(resources) {
-  const props = resources.filter((resource) => resource.url.includes("/assets/map/3d-props/p15/"));
-  const uniqueUrls = [...new Set(props.map((resource) => resource.url))];
-  const bytes = props.reduce((sum, resource) => sum + resource.bytes, 0);
-  return {
-    count: props.length,
-    uniqueCount: uniqueUrls.length,
-    mb: Number((bytes / oneMb).toFixed(2)),
-    urls: uniqueUrls.map((url) => new URL(url).pathname),
-  };
-}
-
-function summarizeP16MapProps(resources) {
-  const props = resources.filter((resource) => resource.url.includes("/assets/map/3d-props/p16/"));
-  const uniqueUrls = [...new Set(props.map((resource) => resource.url))];
-  const bytes = props.reduce((sum, resource) => sum + resource.bytes, 0);
-  return {
-    count: props.length,
-    uniqueCount: uniqueUrls.length,
-    mb: Number((bytes / oneMb).toFixed(2)),
-    urls: uniqueUrls.map((url) => new URL(url).pathname),
-  };
 }
 
 function extractSelectedChildName(text) {
@@ -5021,135 +4992,17 @@ async function inspectPage(browser, check, viewport) {
   }
 
   if (check.kind === "home") {
-    const fps = await measureFrameRate(page, ".pixi-world-canvas");
-    const wheelFps = await measureHomeWheel(page);
-    const dragFps = await measureHomeDrag(page);
-    const bigScreen = await inspectHomeBigScreen(page);
-    const selectedSpiritMotion = await measureSelectedSpiritIdleMotion(page);
-    const selectedSpiritWheelMotion = await measureSelectedSpiritWheelIdleMotion(page);
-    const renderState = await inspectPixiRenderState(page);
-    const p15MapProps = summarizeP15MapProps(resources);
-    const p16MapProps = summarizeP16MapProps(resources);
-    details = { fps, wheelFps, dragFps, selectedSpiritMotion, selectedSpiritWheelMotion, renderState, bigScreen, p15MapProps, p16MapProps };
-    if (!bigScreen.hasSelectedChild) issues.push("home selected child is not visible");
-    if (bigScreen.mapShare < 0.75) issues.push(`home map does not dominate workspace: ${bigScreen.mapShare}`);
-    if (!bigScreen.energyBoard) issues.push("home map energy board missing");
-    if (!bigScreen.hasSelfServiceAction) issues.push("home self-service speak action missing");
-    if (!bigScreen.hasSelfServiceDock) issues.push("home self-service dock entry missing");
-    if (bigScreen.teacherWorkbenchDocked) issues.push("teacher workbench should not be in primary child dock");
-    if (bigScreen.adultVisibleCopy?.length) issues.push(`home shows adult operation copy: ${bigScreen.adultVisibleCopy.join(", ")}`);
-    if (bigScreen.childScoreCopy?.length) issues.push(`home child surface still shows score copy: ${bigScreen.childScoreCopy.join(", ")}`);
-    if (!bigScreen.shellDock?.rect) issues.push("home shell dock missing");
-    if (!bigScreen.shellDock?.hasChildChip) issues.push("home child energy chip missing from shell dock");
-    if (bigScreen.shellDock?.teacherToolCopyInPrimaryDock?.length) {
-      issues.push(`home primary dock exposes teacher tool copy: ${bigScreen.shellDock.teacherToolCopyInPrimaryDock.join(", ")}`);
-    }
-    if (!bigScreen.shellDock?.teacherDrawerClosed) issues.push("home teacher fallback drawer is open by default");
-    if (bigScreen.shellDock?.teacherPanelVisibleWhenClosed) issues.push("home teacher fallback panel visible while closed");
-    if (bigScreen.shellDock?.teacherSummaryText && bigScreen.shellDock.teacherSummaryText !== "师") {
-      issues.push(`home teacher fallback summary too prominent: ${bigScreen.shellDock.teacherSummaryText}`);
-    }
-    if ((bigScreen.shellDock?.teacherSummaryAreaRatioToChild ?? 1) > 0.5) {
-      issues.push("home teacher fallback competes with child energy chip");
-    }
-    if ((bigScreen.shellDock?.teacherSummaryAreaRatioToPrimary ?? 1) > 0.7) {
-      issues.push("home teacher fallback competes with primary dock buttons");
-    }
-    if (!bigScreen.sceneGate) issues.push("home map scene gate missing");
-    if (bigScreen.sceneGateButtonCount !== 4) issues.push(`home map scene gate button count wrong: ${bigScreen.sceneGateButtonCount}`);
-    if (bigScreen.sceneHotspotCount !== 4) issues.push(`home map dynamic scene hotspots missing: ${bigScreen.sceneHotspotCount}`);
-    if (bigScreen.sceneHotspotStatusCount !== 4) issues.push(`home map scene hotspot status missing: ${bigScreen.sceneHotspotStatusCount}`);
-    if (bigScreen.sceneLiveHotspotCount < 1) issues.push("home map live scene hotspot missing");
-    if (!bigScreen.hasChildDockSelfServiceEntry) issues.push("home child dock self-service entry missing");
-    if (bigScreen.dockSelfServiceEntryCount < 1) issues.push("home child dock self-service markers missing");
-    if (bigScreen.mapSelfServiceHotspotCount < 2) issues.push(`home map self-service hotspots missing: ${bigScreen.mapSelfServiceHotspotCount}`);
-    if (!["p15-growth-tree", "p16-growth-heart"].every((id) => bigScreen.mapSelfServiceHotspots.includes(id))) {
-      issues.push("home map growth self-service hotspot ids missing");
-    }
-    if (!["抽取台", "贝壳算术", "海岛小铺", "荣誉广场"].every((label) => bigScreen.sceneGateText.includes(label))) {
-      issues.push("home map scene gate labels missing");
-    }
-    if (bigScreen.sceneGateMicrocopy?.length) {
-      issues.push(`home map scene gate still shows trial-noise copy: ${bigScreen.sceneGateMicrocopy.join(", ")}`);
-    }
-    if (bigScreen.energySlotCount !== 7) issues.push(`home map energy slots missing: ${bigScreen.energySlotCount}`);
-    if (bigScreen.energyCardCount !== 7) issues.push(`home energy cards missing: ${bigScreen.energyCardCount}`);
-    if (bigScreen.energyStateCount !== 7) issues.push(`home energy card states missing: ${bigScreen.energyStateCount}`);
-    if (bigScreen.visibleEnergyCardCount > 4) {
-      issues.push(`home idle energy board is too visually dense: ${bigScreen.visibleEnergyCardCount} visible cards`);
-    }
-    const hasIdleEnergyHistory =
-      bigScreen.pixiEnergyRegionCount > 0 || /已点亮|进精灵|能量到账/.test(bigScreen.energyBoardText ?? "");
-    if (hasIdleEnergyHistory && bigScreen.currentEnergyCardsWithStatus < 1) issues.push("home current energy card status missing");
-    if (hasIdleEnergyHistory && bigScreen.activeEnergySlotCount < 1) issues.push("home map has no active virtue energy slot");
-    if (hasIdleEnergyHistory && bigScreen.currentEnergySlotCount < 1) issues.push("home map has no current virtue energy slot");
-    if (hasIdleEnergyHistory && bigScreen.pixiEnergyRegionCount < 1) issues.push("home pixi map has no lit virtue region");
-    if (hasIdleEnergyHistory && !bigScreen.pixiCurrentEnergyRegion) issues.push("home pixi map has no current lit virtue region");
-    if (p15MapProps.uniqueCount < 24) issues.push(`home P15 accepted map 3d props missing: ${p15MapProps.uniqueCount}/24 loaded`);
-    if (p15MapProps.mb > 0.45) warnings.push(`home P15 map 3d props are heavy: ${p15MapProps.mb} MB`);
-    if (p16MapProps.uniqueCount < 24) issues.push(`home P16 accepted map 3d props missing: ${p16MapProps.uniqueCount}/24 loaded`);
-    if (p16MapProps.mb > 0.45) warnings.push(`home P16 map 3d props are heavy: ${p16MapProps.mb} MB`);
-    if (bigScreen.largeHeadings.length) issues.push("home contains oversized heading(s)");
-    if (bigScreen.noisyCopy.length) issues.push(`home contains noisy explanatory copy: ${bigScreen.noisyCopy.join(", ")}`);
-    if (bigScreen.horizontalOverflow) issues.push("home horizontal overflow");
-    if (pngBytes > 40 * oneMb) warnings.push(`home requested ${(pngBytes / oneMb).toFixed(1)} MB of PNG assets`);
-    if (pngCount > 35) warnings.push(`home requested ${pngCount} PNG asset(s)`);
-    if (fps.fps < 30) warnings.push(`home frame sample is low: ${fps.fps} FPS`);
-    if (wheelFps && wheelFps.fps < 18) warnings.push(`home active wheel frame sample is low: ${wheelFps.fps} FPS`);
-    if (dragFps && dragFps.fps < 18) warnings.push(`home active drag frame sample is low: ${dragFps.fps} FPS`);
-    if (wheelFps && wheelFps.maxFrameGap > 280) warnings.push(`home active wheel frame gap is high: ${wheelFps.maxFrameGap} ms`);
-    if (dragFps && dragFps.maxFrameGap > 280) warnings.push(`home active drag frame gap is high: ${dragFps.maxFrameGap} ms`);
-    if (!selectedSpiritMotion?.ok) {
-      issues.push(`home selected spirit idle float is stuck: range ${selectedSpiritMotion?.range ?? 0}px`);
-    }
-    if (!selectedSpiritWheelMotion?.ok) {
-      issues.push(`home selected spirit idle float stops after wheel zoom: range ${selectedSpiritWheelMotion?.range ?? 0}px`);
-    }
-    if ((renderState?.mapPropTotalCount ?? 0) > 0 && (renderState?.mapPropLodMode ?? "") !== "detail") {
-      issues.push(`home model prop LOD did not enter detail mode after selected focus: ${renderState?.mapPropLodMode || "unknown"}`);
-    }
-    if ((renderState?.mapPropDetailOnlyCount ?? 0) > 0 && (renderState?.mapPropVisibleCount ?? 0) <= (renderState?.mapPropTotalCount ?? 0) - (renderState?.mapPropDetailOnlyCount ?? 0)) {
-      issues.push("home detail-only model props are still hidden after selected focus");
-    }
-    if ((wheelFps?.renderState?.renderResolution ?? 1) < minActiveMapRenderResolution) {
-      issues.push(`home wheel active render resolution too low: ${wheelFps.renderState.renderResolution}`);
-    }
-    if ((dragFps?.renderState?.renderResolution ?? 1) < minActiveMapRenderResolution) {
-      issues.push(`home drag active render resolution too low: ${dragFps.renderState.renderResolution}`);
-    }
-    if ((wheelFps?.settledRenderState?.renderResolution ?? 1) < minSettledMapRenderResolution) {
-      issues.push(`home wheel did not return to crisp render resolution: ${wheelFps.settledRenderState.renderResolution}`);
-    }
-    if ((dragFps?.settledRenderState?.renderResolution ?? 1) < minSettledMapRenderResolution) {
-      issues.push(`home drag did not return to crisp render resolution: ${dragFps.settledRenderState.renderResolution}`);
-    }
+    const homeResult = await assertHomeMainScreen(page, resources, resourceSummary);
+    details = homeResult.details;
+    issues.push(...homeResult.issues);
+    warnings.push(...homeResult.warnings);
   }
 
   if (check.kind === "home-performance-soak") {
-    const samples = performanceSoakDetails?.samples ?? [];
-    const heapValues = samples.map((sample) => sample.memory?.usedJSHeapMB).filter((value) => Number.isFinite(value));
-    const heapDelta = heapValues.length ? Number((Math.max(...heapValues) - Math.min(...heapValues)).toFixed(1)) : 0;
-    details = { soak: performanceSoakDetails, heapDelta };
-    if (!performanceSoakDetails) issues.push("home performance soak did not run");
-    if ((performanceSoakDetails?.frameRate?.fps ?? 0) < 18) {
-      warnings.push(`home sustained drag frame sample is low: ${performanceSoakDetails?.frameRate?.fps} FPS`);
-    }
-    if ((performanceSoakDetails?.frameRate?.p99FrameGap ?? 0) > 320) {
-      warnings.push(`home sustained drag p99 frame gap is high: ${performanceSoakDetails?.frameRate?.p99FrameGap} ms`);
-    }
-    if (heapDelta > 50) warnings.push(`home sustained drag JS heap moved by ${heapDelta} MB`);
-    if ((performanceSoakDetails?.settledRenderState?.renderResolution ?? 1) < minSettledMapRenderResolution) {
-      issues.push(`home soak did not return to crisp render resolution: ${performanceSoakDetails?.settledRenderState?.renderResolution}`);
-    }
-    if (
-      samples.some(
-        (sample) =>
-          Number.isFinite(sample.renderState?.renderResolution) &&
-          sample.renderState.renderResolution < minActiveMapRenderResolution,
-      )
-    ) {
-      issues.push("home soak dropped below active drag render resolution floor");
-    }
+    const homeSoakResult = assertHomePerformanceSoak(performanceSoakDetails);
+    details = homeSoakResult.details;
+    issues.push(...homeSoakResult.issues);
+    warnings.push(...homeSoakResult.warnings);
   }
 
   if (check.kind === "home-fallback-return") {

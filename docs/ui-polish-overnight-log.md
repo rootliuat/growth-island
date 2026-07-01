@@ -1371,3 +1371,23 @@ P2:
   - max frame gap: `50.1ms`.
   - settled state returned to idle; selected spirit remained visible and animating.
 - `QA_CHECKS=home,moral-speak-flow,classroom-touch-loop npm run qa:visual`: home, whiteboard/mobile moral-speak, and classroom touch loop passed with 0 issues and 0 warnings.
+
+## P25 App and QA core split
+
+### Scope
+
+- Started the App/QA runner inner-core split after the large-screen performance work, without adding product features.
+- Kept classroom behavior unchanged: no backend, XP, ledger, data, parent/reviewer/admin, PDF, approval-flow, or main-island Three.js changes.
+
+### Implementation Notes
+
+- Added `src/domain/appViewModel.ts` so `App.tsx` no longer owns the selected child, selected spirit, recent ledger, PK opponent, showcase child, and pending-review derivation rules.
+- Added `scripts/qa/home-assertions.mjs` so homepage clarity, model-prop, active drag/wheel, selected-spirit float, and soak assertions are no longer embedded in the generic QA runner.
+- Kept `scripts/qa/home-tools.mjs` as the measurement Module and `scripts/qa/runner.mjs` as orchestration. The runner now calls a homepage assertion Interface instead of carrying the whole assertion implementation.
+
+### Validation
+
+- `node --check scripts/qa/runner.mjs && node --check scripts/qa/home-assertions.mjs && node --check scripts/qa/home-tools.mjs`: passed.
+- `npm run build`: passed with the existing `three.module` large chunk warning.
+- `QA_BASE_URL=http://127.0.0.1:5173 QA_CHECKS=home npm run qa:visual`: whiteboard and ultra passed with 0 issues and 0 warnings.
+- `QA_BASE_URL=http://127.0.0.1:5173 QA_CHECKS=home-performance-soak QA_SOAK_MS=30000 QA_SOAK_SAMPLE_MS=10000 npm run qa:visual`: whiteboard passed with 0 issues and 0 warnings.
