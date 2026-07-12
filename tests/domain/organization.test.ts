@@ -1,3 +1,10 @@
+/**
+ * [INPUT]: 依赖组织种子、成长账本类型与 organization 领域深 Interface。
+ * [OUTPUT]: 提供班级运行态、家长报告、课程发布和周期任务完成的确定性回归测试。
+ * [POS]: tests/domain 的组织规则护栏，固定时间边界并隔离浏览器与 Provider。
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
+
 import { describe, expect, it } from "vitest";
 import { organizationConfig } from "../../src/data/organization";
 import {
@@ -6,6 +13,7 @@ import {
   createGrowthTaskLedgerInput,
   formatParentReportMarkdown,
   getGrowthTaskReason,
+  isGrowthTaskCompletionInCurrentCadence,
   publishCurriculumTrack,
   updateParentReportReview,
   validateOrganizationConfig,
@@ -232,6 +240,14 @@ describe("organization runtime", () => {
         createdAt: "2026-06-02T09:00:00.000Z",
       }),
       record({
+        id: "task-old-window",
+        childId: firstClass.childIds[2],
+        delta: task.xpDelta,
+        category: task.category,
+        reason: getGrowthTaskReason(task),
+        createdAt: "2026-05-29T10:00:00.000Z",
+      }),
+      record({
         id: "task-undone",
         childId: firstClass.childIds[2],
         delta: task.xpDelta,
@@ -242,7 +258,8 @@ describe("organization runtime", () => {
       }),
     ];
 
-    const runtime = buildOrganizationRuntime(organizationConfig, children, ledger, []);
+    const now = new Date("2026-06-03T12:00:00.000Z");
+    const runtime = buildOrganizationRuntime(organizationConfig, children, ledger, [], {}, {}, now);
     const taskRuntime = runtime.classrooms[0].growthTasks.find((item) => item.id === task.id);
 
     expect(taskRuntime).toMatchObject({
@@ -251,6 +268,52 @@ describe("organization runtime", () => {
       completedChildIds: [firstClass.childIds[1], firstClass.childIds[0]],
       latestCompletedAt: "2026-06-02T09:00:00.000Z",
     });
+  });
+
+  it("uses UTC week, month, and season windows for recurring task completion", () => {
+    const childId = organizationConfig.classrooms[0].childIds[0];
+    const taskRecord = (id: string, title: string, createdAt: string) =>
+      record({ id, childId, delta: 10, reason: `成长任务：${title}`, createdAt });
+
+    const weeklyTask = { title: "每周任务", cadence: "weekly" } as const;
+    const monthlyTask = { title: "每月任务", cadence: "monthly" } as const;
+    const seasonalTask = { title: "季度任务", cadence: "seasonal" } as const;
+
+    expect(isGrowthTaskCompletionInCurrentCadence(
+      weeklyTask,
+      taskRecord("weekly-current", weeklyTask.title, "2026-06-01T00:00:00.000Z"),
+      new Date("2026-06-07T23:59:59.000Z"),
+    )).toBe(true);
+    expect(isGrowthTaskCompletionInCurrentCadence(
+      weeklyTask,
+      taskRecord("weekly-old", weeklyTask.title, "2026-05-31T23:59:59.000Z"),
+      new Date("2026-06-03T12:00:00.000Z"),
+    )).toBe(false);
+    expect(isGrowthTaskCompletionInCurrentCadence(
+      weeklyTask,
+      taskRecord("weekly-future", weeklyTask.title, "2026-06-04T00:00:00.000Z"),
+      new Date("2026-06-03T12:00:00.000Z"),
+    )).toBe(false);
+    expect(isGrowthTaskCompletionInCurrentCadence(
+      monthlyTask,
+      taskRecord("monthly-current", monthlyTask.title, "2026-06-01T00:00:00.000Z"),
+      new Date("2026-06-30T23:59:59.000Z"),
+    )).toBe(true);
+    expect(isGrowthTaskCompletionInCurrentCadence(
+      monthlyTask,
+      taskRecord("monthly-old", monthlyTask.title, "2026-05-31T23:59:59.000Z"),
+      new Date("2026-06-15T12:00:00.000Z"),
+    )).toBe(false);
+    expect(isGrowthTaskCompletionInCurrentCadence(
+      seasonalTask,
+      taskRecord("season-current", seasonalTask.title, "2026-04-01T00:00:00.000Z"),
+      new Date("2026-06-30T23:59:59.000Z"),
+    )).toBe(true);
+    expect(isGrowthTaskCompletionInCurrentCadence(
+      seasonalTask,
+      taskRecord("season-old", seasonalTask.title, "2026-03-31T23:59:59.000Z"),
+      new Date("2026-05-15T12:00:00.000Z"),
+    )).toBe(false);
   });
 
   it("publishes a curriculum week and marks matching tasks as current", () => {

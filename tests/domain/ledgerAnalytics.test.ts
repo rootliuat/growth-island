@@ -1,3 +1,10 @@
+/**
+ * [INPUT]: 依赖成长账本分析的时间、类别筛选与汇总规则。
+ * [OUTPUT]: 提供滚动时间范围、可追踪记录和分类统计口径的领域回归测试。
+ * [POS]: tests/domain 的 ledger 分析护栏，确保筛选集合与统计集合保持同源。
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
+
 import { describe, expect, it } from "vitest";
 import {
   filterLedgerRecordsByCategory,
@@ -68,5 +75,18 @@ describe("ledger analytics", () => {
 
     expect(filterLedgerRecordsByCategory(records, "all")).toHaveLength(2);
     expect(filterLedgerRecordsByCategory(records, "尊矩守法").map((item) => item.id)).toEqual(["law"]);
+  });
+
+  it("summarizes totals from the selected category record set", () => {
+    const records = [
+      record({ id: "sunny", childId: "child-1", delta: 20, category: "积极阳光", createdAt: "2026-06-29T12:00:00.000Z" }),
+      record({ id: "law-a", childId: "child-2", delta: 10, category: "尊矩守法", createdAt: "2026-06-29T12:00:00.000Z" }),
+      record({ id: "law-b", childId: "child-2", delta: -5, category: "尊矩守法", createdAt: "2026-06-29T13:00:00.000Z" }),
+    ];
+
+    const categoryRecords = filterLedgerRecordsByCategory(records, "尊矩守法");
+    const summary = summarizeLedgerAnalytics(categoryRecords, "week");
+
+    expect(summary).toMatchObject({ recordCount: 2, activeRecordCount: 2, childCount: 1, xpDelta: 5 });
   });
 });

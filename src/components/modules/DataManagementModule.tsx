@@ -1,3 +1,10 @@
+/**
+ * [INPUT]: 依赖成长账本分析规则、德育复核规则、精灵资产和课堂备份动作。
+ * [OUTPUT]: 对外提供 DataManagementModule 记录港组件。
+ * [POS]: components/modules 的课堂数据工作台，保证筛选后的流水、复核与统计口径一致。
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
+
 import { useMemo, useRef, useState } from "react";
 import { AlertTriangle, BarChart3, CalendarDays, Check, ClipboardList, Download, Home, Search, ShieldCheck, Sparkles, Trash2, Upload, X } from "lucide-react";
 import {
@@ -116,8 +123,8 @@ export function DataManagementModule({
   const childById = useMemo(() => new Map(childrenWithProgress.map((child) => [child.id, child])), [childrenWithProgress]);
   const normalizedQuery = normalize(query);
   const scopedRecords = useMemo(() => filterLedgerRecordsByTimeScope(recentRecords, timeScope), [recentRecords, timeScope]);
-  const analytics = useMemo(() => summarizeLedgerAnalytics(scopedRecords, timeScope), [scopedRecords, timeScope]);
   const categoryRecords = useMemo(() => filterLedgerRecordsByCategory(scopedRecords, categoryFilter), [categoryFilter, scopedRecords]);
+  const analytics = useMemo(() => summarizeLedgerAnalytics(categoryRecords, timeScope), [categoryRecords, timeScope]);
   const filteredChildren = childrenWithProgress
     .filter((child) => {
       if (!normalizedQuery) return true;
@@ -136,6 +143,9 @@ export function DataManagementModule({
     return `${child?.name ?? ""} ${child?.petName ?? ""} ${review.transcript} ${review.result.category ?? ""}`.toLowerCase().includes(normalizedQuery);
   });
   const activeCategoryLabel = categoryFilter === "all" ? "全部维度" : categoryFilter;
+  const visibleCategoryStats = categoryFilter === "all"
+    ? analytics.categoryStats.slice(0, 3)
+    : analytics.categoryStats.filter((stat) => stat.category === categoryFilter);
   const harborRecords = filteredRecords.slice(0, 8);
   const rosterPreview = filteredChildren.slice(0, 6);
   const topChild = childrenWithProgress.reduce<ChildWithProgress | undefined>((currentTop, child) => {
@@ -323,7 +333,7 @@ export function DataManagementModule({
             </div>
             <div className="data-chip-row data-category-summary" aria-label="维度摘要">
               <span>{activeCategoryLabel}</span>
-              {analytics.categoryStats.slice(0, 3).map((stat) => (
+              {visibleCategoryStats.map((stat) => (
                 <span key={stat.category}>{stat.category} {stat.recordCount === 0 ? "0" : formatXpDelta(stat.xpDelta)}</span>
               ))}
             </div>

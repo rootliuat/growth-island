@@ -9,6 +9,7 @@ import { chromium } from "playwright";
 import fs from "node:fs";
 import path from "node:path";
 import { allChecks } from "./checks/index.mjs";
+import { matchesCategoryAnalytics } from "./data-management-assertions.mjs";
 import { assertHomeMainScreen, assertHomePerformanceSoak } from "./home-assertions.mjs";
 import {
   inspectHomeBigScreen,
@@ -3252,6 +3253,9 @@ async function exerciseDataManagementFlow(page, dataScreenshot) {
     const recordText = document.querySelector(".data-record-list")?.textContent ?? "";
     const reviewText = document.querySelector(".data-review-list")?.textContent ?? "";
     const pendingReviews = (window.__growthIslandReviews ?? []).filter((review) => review.status === "pending_review");
+    const metricValues = [...document.querySelectorAll(".data-insight-metrics article strong")].map((metric) =>
+      Number((metric.textContent ?? "").replace(/[^\d-]/g, "")),
+    );
     return {
       toolbarText,
       childText,
@@ -3268,12 +3272,21 @@ async function exerciseDataManagementFlow(page, dataScreenshot) {
       hasVirtueStats: document.querySelectorAll(".data-category-strip button").length >= 8 && drawerText.includes("积极阳光"),
       scopeFilterApplied: activeScopeText.includes("近30天") && recordScopeText.includes("近30天"),
       categoryFilterApplied: activeCategoryText.includes("积极阳光") && toolbarText.includes("积极阳光"),
+      categoryAnalyticsInput: {
+        records: window.__growthIslandLedger ?? [],
+        metrics: { xpDelta: metricValues[0], childCount: metricValues[1], activeRecordCount: metricValues[2] },
+        category: "积极阳光",
+        scopeDays: 30,
+        now: Date.now(),
+      },
       hasSearchResult: childText.includes("帆帆"),
       hasLedgerRows: recordText.includes("帆帆") || recordText.includes("已有成长 XP"),
       hasPendingReview: reviewText.includes("帆帆") && reviewText.includes("记入") && reviewText.includes("不采用"),
       hasNoTable: document.querySelectorAll(".data-page table").length === 0,
     };
   });
+  details.categoryTotalsMatch = matchesCategoryAnalytics(details.categoryAnalyticsInput);
+  delete details.categoryAnalyticsInput;
   const clearPermissionBefore = await page.evaluate(() => {
     const privacyText = document.querySelector(".data-privacy-note")?.textContent ?? "";
     const clearText = document.querySelector(".data-clear-card")?.textContent ?? "";
@@ -5172,6 +5185,7 @@ async function inspectPage(browser, check, viewport) {
     if (!dataFlowDetails?.hasVirtueStats) issues.push("data management virtue stats missing");
     if (!dataFlowDetails?.scopeFilterApplied) issues.push("data management week/month scope filter failed");
     if (!dataFlowDetails?.categoryFilterApplied) issues.push("data management virtue category filter failed");
+    if (!dataFlowDetails?.categoryTotalsMatch) issues.push("data management category totals ignored the active filter");
     if (!dataFlowDetails?.hasSearchResult) issues.push("data management child search failed");
     if (!dataFlowDetails?.hasLedgerRows) issues.push("data management ledger rows missing");
     if (!dataFlowDetails?.hasPendingReview) issues.push("data management pending review display missing");

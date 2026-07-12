@@ -3,7 +3,7 @@
 
 成员清单
 ChildProfileModule.tsx: 精灵小屋页面，孩子唯一 2D 精灵为主，3D 道具和说成长为辅。
-DataManagementModule.tsx: 班级数据备份、恢复、清空和查看工具。
+DataManagementModule.tsx: 班级数据备份、恢复、清空和筛选统计同口径的记录港工具。
 LeaderboardModule.tsx: 荣誉榜与成长能量排行。
 LotteryModule.tsx: 幸运贝池抽取页面。
 MathArenaModule.tsx: 数学光路练习页面。

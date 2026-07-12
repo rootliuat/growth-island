@@ -1,3 +1,10 @@
+/**
+ * [INPUT]: 依赖课堂组织配置、成长账本、德育复核与幼儿成长状态类型。
+ * [OUTPUT]: 对外提供组织运行态、家长报告、课程发布、周期任务窗口与账本输入规则。
+ * [POS]: src/domain 的组织领域深 Module，统一班级、课程、报告和周期任务的派生真相。
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
+
 import type {
   ChildWithProgress,
   LedgerRecord,
@@ -212,19 +219,45 @@ export function getGrowthTaskReason(task: Pick<GrowthTaskTemplate, "title">) {
   return `成长任务：${task.title}`;
 }
 
+function getGrowthTaskCadenceWindow(cadence: GrowthTaskCadence, now: Date) {
+  const year = now.getUTCFullYear();
+  const month = now.getUTCMonth();
+  if (cadence === "weekly") {
+    const mondayOffset = (now.getUTCDay() + 6) % 7;
+    const start = Date.UTC(year, month, now.getUTCDate() - mondayOffset);
+    return { start, end: start + 7 * 24 * 60 * 60 * 1000 };
+  }
+  if (cadence === "monthly") {
+    return { start: Date.UTC(year, month, 1), end: Date.UTC(year, month + 1, 1) };
+  }
+  const quarterStartMonth = Math.floor(month / 3) * 3;
+  return { start: Date.UTC(year, quarterStartMonth, 1), end: Date.UTC(year, quarterStartMonth + 3, 1) };
+}
+
+export function isGrowthTaskCompletionInCurrentCadence(
+  task: Pick<GrowthTaskTemplate, "title" | "cadence">,
+  record: LedgerRecord,
+  now = new Date(),
+) {
+  if (record.undone || record.source === "undo" || record.reason !== getGrowthTaskReason(task)) return false;
+  const createdAt = new Date(record.createdAt).getTime();
+  if (Number.isNaN(createdAt)) return false;
+  const window = getGrowthTaskCadenceWindow(task.cadence, now);
+  return createdAt >= window.start && createdAt <= now.getTime() && createdAt < window.end;
+}
+
 function buildGrowthTaskRuntime(
   task: GrowthTaskTemplate,
   ledger: LedgerRecord[],
   childIdSet: Set<string>,
   activeCurriculumCategory?: VirtueCategory,
+  now = new Date(),
 ): GrowthTaskRuntime {
   const completions = ledger
     .filter(
       (record) =>
         childIdSet.has(record.childId) &&
-        !record.undone &&
-        record.source !== "undo" &&
-        record.reason === getGrowthTaskReason(task),
+        isGrowthTaskCompletionInCurrentCadence(task, record, now),
     )
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   const completedChildIds = [...new Set(completions.map((record) => record.childId))];
@@ -421,6 +454,7 @@ export function buildOrganizationRuntime(
   reviews: MoralReviewItem[],
   activeCurriculumByClassroomId: ActiveCurriculumByClassroomId = {},
   parentReportReviewsByChildId: OrganizationState["parentReportReviewsByChildId"] = {},
+  now = new Date(),
 ): OrganizationRuntime {
   const childById = new Map(children.map((child) => [child.id, child]));
   const classrooms = config.classrooms.map<OrganizationClassroomRuntime>((classroom) => {
@@ -432,7 +466,7 @@ export function buildOrganizationRuntime(
     const activeCurriculumTrack = config.curriculumTracks.find((track) => track.id === activeCurriculumTrackId);
     const classTasks = config.growthTasks
       .filter((task) => task.classroomIds.includes(classroom.id))
-      .map((task) => buildGrowthTaskRuntime(task, ledger, childIdSet, activeCurriculumTrack?.category))
+      .map((task) => buildGrowthTaskRuntime(task, ledger, childIdSet, activeCurriculumTrack?.category, now))
       .sort((a, b) => Number(b.curriculumActive) - Number(a.curriculumActive) || a.title.localeCompare(b.title, "zh-Hans-CN"));
     const reportDrafts = classroomChildren
       .map((child) =>
