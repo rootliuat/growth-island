@@ -10,7 +10,7 @@ Resolve the three remaining review findings without changing API shapes, stored 
 
 ## Moral review correction
 
-Review validation has one invariant path. The pending review must belong to the target child. A request with `teacherAdjustedReview: true` must provide a positive integer delta and a known virtue category; it replaces either a positive or unsafe suggestion and records `teacher_adjusted_positive`. Without that flag, only an already-approvable suggestion with exactly matching category and delta may enter the ledger.
+Review validation has one invariant path. The pending review must belong to the target child. A request with `teacherAdjustedReview: true` must provide one of the shared moral-growth increments (`+10`, `+20`, or `+30`) and a known virtue category; it replaces either a positive or unsafe suggestion and records `teacher_adjusted_positive`. Without that flag, only an already-approvable suggestion with exactly matching category and delta may enter the ledger.
 
 This ordering removes the accidental special case where positive suggestions rejected explicit teacher corrections while preserving the existing safety gate for unadjusted unsafe suggestions.
 
@@ -22,7 +22,7 @@ Task history keeps the existing `成长任务：{title}` reason for storage and 
 - monthly: first day of the UTC month through the next month;
 - seasonal: calendar quarter boundaries in UTC.
 
-The same domain predicate drives both organization runtime summaries and the App duplicate-write guard. Invalid timestamps and undone/undo records never complete a task. A fixed `now` parameter keeps tests deterministic.
+The same domain predicate drives both organization runtime summaries and the App duplicate-write guard. Invalid timestamps, future timestamps, and undone/undo records never complete a task. A fixed `now` parameter keeps tests deterministic.
 
 ## Category analytics
 
