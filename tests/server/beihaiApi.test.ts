@@ -1,3 +1,10 @@
+/**
+ * [INPUT]: 依赖 Node 子进程启动本地 Beihai API，依赖临时课堂快照与 HTTP 请求。
+ * [OUTPUT]: 提供课堂账本、撤销、德育复核审批与教师修正的端到端回归测试。
+ * [POS]: tests/server 的 API 业务护栏，验证公开 HTTP 契约到课堂数据事务的完整链路。
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
+
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -262,6 +269,81 @@ describe("Beihai API business safeguards", () => {
       status: "pending_review",
     });
     expect(snapshot.ledger.some((record) => record.reviewId === reviewResponse.reviewItem.id)).toBe(false);
+  });
+
+  it("honors teacher corrections to already-positive moral reviews", async () => {
+    const transcript = "我今天主动帮同学收玩具";
+    const reviewResponse = await requestJson<MoralAgentResponse>("/api/agent/moral-evaluate", {
+      method: "POST",
+      body: JSON.stringify({
+        childId: "child-07",
+        operatorChildId: "child-01",
+        transcript,
+      }),
+    });
+    expect(reviewResponse.result).toMatchObject({ intent: "reward", category: "积极阳光" });
+
+    await expect(
+      requestJson<ClassroomSnapshot>("/api/ledger", {
+        method: "POST",
+        body: JSON.stringify({
+          childId: "child-07",
+          operatorChildId: "child-01",
+          operatorRole: "teacher",
+          delta: 25,
+          source: "dialogue-agent",
+          category: "开拓创新",
+          reason: `自助成长：${transcript}`,
+          aiSuggested: true,
+          reviewStatus: "approved",
+          reviewId: reviewResponse.reviewItem.id,
+          teacherAdjustedReview: true,
+        }),
+      }),
+    ).rejects.toThrow("400");
+
+    const unchanged = await requestJson<ClassroomSnapshot>("/api/classroom");
+    expect(unchanged.moralReviews?.find((review) => review.id === reviewResponse.reviewItem.id)).toMatchObject({
+      status: "pending_review",
+      result: { category: "积极阳光" },
+    });
+    expect(unchanged.ledger.some((record) => record.reviewId === reviewResponse.reviewItem.id)).toBe(false);
+
+    const snapshot = await requestJson<ClassroomSnapshot>("/api/ledger", {
+      method: "POST",
+      body: JSON.stringify({
+        childId: "child-07",
+        operatorChildId: "child-01",
+        operatorRole: "teacher",
+        delta: 30,
+        source: "dialogue-agent",
+        category: "开拓创新",
+        reason: `自助成长：${transcript}`,
+        aiSuggested: true,
+        reviewStatus: "approved",
+        reviewId: reviewResponse.reviewItem.id,
+        teacherAdjustedReview: true,
+      }),
+    });
+
+    expect(snapshot.moralReviews?.find((review) => review.id === reviewResponse.reviewItem.id)).toMatchObject({
+      status: "approved",
+      ledgerRecordId: expect.any(String),
+      reviewedByChildId: "child-01",
+      result: {
+        intent: "reward",
+        category: "开拓创新",
+        xpDelta: 30,
+        riskFlags: expect.arrayContaining(["teacher_adjusted_positive"]),
+      },
+    });
+    expect(snapshot.ledger.find((record) => record.reviewId === reviewResponse.reviewItem.id)).toMatchObject({
+      childId: "child-07",
+      delta: 30,
+      category: "开拓创新",
+      reviewId: reviewResponse.reviewItem.id,
+      reviewStatus: "approved",
+    });
   });
 
   it("marks pending reviews approved when a reviewed self-service ledger record is posted", async () => {

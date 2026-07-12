@@ -1,3 +1,10 @@
+/**
+ * [INPUT]: 依赖 shared/moral-rules.json 的类别、正向与风险关键词。
+ * [OUTPUT]: 对外提供 evaluateMoralText 确定性德育评估函数。
+ * [POS]: server 的本地规则兜底引擎，被 beihai-api 的 Provider 降级路径消费。
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
+
 import { readFileSync } from "node:fs";
 
 const moralRules = JSON.parse(readFileSync(new URL("../shared/moral-rules.json", import.meta.url), "utf8"));

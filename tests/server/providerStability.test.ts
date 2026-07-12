@@ -11,7 +11,8 @@ let fakeDeepSeek: Server;
 let apiServer: ChildProcessWithoutNullStreams;
 let tempDir: string;
 let apiBaseUrl: string;
-let deepSeekMode: "error" | "slow" | "valid" = "error";
+let deepSeekMode: "error" | "paused-valid" | "slow" | "valid" = "error";
+let releasePausedDeepSeek: (() => void) | undefined;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 
@@ -48,6 +49,37 @@ async function postJson<T>(route: string, body: unknown): Promise<T> {
   return response.json() as Promise<T>;
 }
 
+async function getJson<T>(route: string): Promise<T> {
+  const response = await fetch(`${apiBaseUrl}${route}`);
+  if (!response.ok) throw new Error(`${route} failed ${response.status}: ${await response.text()}`);
+  return response.json() as Promise<T>;
+}
+
+function sendValidDeepSeekResponse(response: import("node:http").ServerResponse) {
+  response.writeHead(200, { "Content-Type": "application/json" });
+  response.end(
+    JSON.stringify({
+      model: "fake-deepseek",
+      choices: [
+        {
+          message: {
+            content: JSON.stringify({
+              intent: "reward",
+              category: "积极阳光",
+              xpDelta: 20,
+              confidence: 0.91,
+              reasonForChild: "精灵收到了友爱能量。",
+              reasonForTeacher: "测试模型返回。",
+              riskFlags: ["teacher_confirmation_required"],
+            }),
+          },
+        },
+      ],
+      usage: { total_tokens: 42 },
+    }),
+  );
+}
+
 describe("provider stability safeguards", () => {
   beforeAll(async () => {
     fakeDeepSeek = createServer((request, response) => {
@@ -62,29 +94,12 @@ describe("provider stability safeguards", () => {
         }, 1_000);
         return;
       }
+      if (deepSeekMode === "paused-valid") {
+        releasePausedDeepSeek = () => sendValidDeepSeekResponse(response);
+        return;
+      }
       if (deepSeekMode === "valid") {
-        response.writeHead(200, { "Content-Type": "application/json" });
-        response.end(
-          JSON.stringify({
-            model: "fake-deepseek",
-            choices: [
-              {
-                message: {
-                  content: JSON.stringify({
-                    intent: "reward",
-                    category: "积极阳光",
-                    xpDelta: 20,
-                    confidence: 0.91,
-                    reasonForChild: "精灵收到了友爱能量。",
-                    reasonForTeacher: "测试模型返回。",
-                    riskFlags: ["teacher_confirmation_required"],
-                  }),
-                },
-              },
-            ],
-            usage: { total_tokens: 42 },
-          }),
-        );
+        sendValidDeepSeekResponse(response);
         return;
       }
       response.writeHead(503, { "Content-Type": "application/json" });
@@ -131,6 +146,39 @@ describe("provider stability safeguards", () => {
     expect(response.model).toBe("fake-deepseek");
     expect(response.result).toMatchObject({ category: "积极阳光", xpDelta: 20, status: "pending_review" });
     expect(response.usage).toEqual({ total_tokens: 42 });
+  });
+
+  it("preserves a ledger write completed while DeepSeek evaluation is in flight", async () => {
+    deepSeekMode = "paused-valid";
+    releasePausedDeepSeek = undefined;
+    const reason = `并发写保护 ${crypto.randomUUID()}`;
+    const evaluationPromise = postJson<MoralAgentResponse>("/api/agent/moral-evaluate", {
+      childId: "child-01",
+      operatorChildId: "child-01",
+      transcript: "我今天主动帮同学收玩具",
+    });
+    const deadline = Date.now() + 1_000;
+    while (!releasePausedDeepSeek && Date.now() < deadline) {
+      await new Promise((resolve) => setTimeout(resolve, 5));
+    }
+    const releaseDeepSeek = releasePausedDeepSeek as (() => void) | undefined;
+    expect(releaseDeepSeek).toBeTypeOf("function");
+    if (!releaseDeepSeek) throw new Error("DeepSeek request did not reach the pause gate");
+
+    await postJson("/api/ledger", {
+      childId: "child-02",
+      operatorChildId: "child-01",
+      delta: 10,
+      source: "manual",
+      category: "积极阳光",
+      reason,
+    });
+    releaseDeepSeek();
+    const evaluation = await evaluationPromise;
+    const snapshot = await getJson<import("../../src/types").ClassroomSnapshot>("/api/classroom");
+
+    expect(snapshot.ledger.some((record) => record.reason === reason)).toBe(true);
+    expect(snapshot.moralReviews?.some((review) => review.id === evaluation.reviewItem.id)).toBe(true);
   });
 
   it("falls back to local rules when DeepSeek returns an upstream error", async () => {
