@@ -29,6 +29,10 @@ package.json - npm scripts 与 Vite/React/Pixi/Three 依赖版本。
 tsconfig.json - TypeScript strict 编译规则与项目 include 范围。
 </config>
 
+<config>
+CONTEXT.md - 课堂德育领域词汇、关系与命名约束。
+</config>
+
 法则: 主屏优先孩子自助成长；老师是守门员；后台能力不得挤压课堂岛屿体验。
 
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
