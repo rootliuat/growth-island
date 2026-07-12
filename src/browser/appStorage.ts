@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 classroomBackup 的解析/序列化规则、moduleConfig 的模块清单和浏览器 localStorage。
- * [OUTPUT]: 对外提供 App 启动状态读取与本地备份写入 Adapter。
+ * [OUTPUT]: 对外提供 App 启动状态、本地备份及课堂快照来源偏好的读写 Adapter。
  * [POS]: browser 的持久化 Adapter，把 localStorage 细节从 App 根接线层移走。
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -21,6 +21,7 @@ import type {
 
 export const activeModuleStorageKey = "growth-island-active-module";
 export const classroomBackupStorageKey = "growth-island-classroom-backup";
+export const classroomBackupSourceStorageKey = "growth-island-classroom-source";
 export const teacherModeStorageKey = "growth-island-teacher-mode";
 export const settingsChangesStorageKey = "growth-island-settings-changes";
 export const shopRedemptionsStorageKey = "growth-island-shop-redemptions";
@@ -54,6 +55,19 @@ export function getInitialClassroomBackup(): ClassroomBackupSnapshot | null {
 export function saveClassroomBackupToStorage(snapshot: ClassroomBackupSnapshot) {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(classroomBackupStorageKey, serializeClassroomBackup(snapshot));
+}
+
+export function preferLocalClassroomBackup() {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(classroomBackupSourceStorageKey, "local");
+}
+
+export function getInitialClassroomSource(backup: ClassroomBackupSnapshot | null): "local" | "server" {
+  if (typeof window === "undefined") return "server";
+  if (window.localStorage.getItem(classroomBackupSourceStorageKey) !== "local") return "server";
+  if (backup) return "local";
+  window.localStorage.removeItem(classroomBackupSourceStorageKey);
+  return "server";
 }
 
 export function saveOrganizationStateToStorage(state: OrganizationState) {

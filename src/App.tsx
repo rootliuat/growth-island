@@ -1,175 +1,94 @@
 /**
- * [INPUT]: 依赖课堂数据、domain 规则、组件模块、地图容器和本地课堂 API。
+ * [INPUT]: 依赖 app 深 Module、domain 规则、地图句柄和本地课堂 API。
  * [OUTPUT]: 对外提供 Growth Island 应用根组件 App。
- * [POS]: src 的状态接线层，协调路由、ledger、同步、说成长 session 与模块入口。
+ * [POS]: src 的组合根，连接课堂数据会话、说成长会话、产品动作与 GrowthIslandView。
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  activeModuleStorageKey,
-  getInitialActiveModule,
-  getInitialClassroomBackup,
-  getInitialLotteryDraws,
-  getInitialOrganizationState,
-  getInitialSettingsChanges,
-  getInitialShopRedemptions,
-  getInitialTeacherMode,
-  lotteryDrawsStorageKey,
-  saveClassroomBackupToStorage,
-  saveOrganizationStateToStorage,
-  settingsChangesStorageKey,
-  shopRedemptionsStorageKey,
-  teacherModeStorageKey,
-} from "./browser/appStorage";
-import { blobToBase64, getMoralRecorderSettings } from "./browser/moralRecorder";
-import { AppShell } from "./components/AppShell";
-import { DialogueModal } from "./components/DialogueModal";
-import { GameTopBar } from "./components/Hud/GameTopBar";
-import { GrowthFeedbackOverlay } from "./components/Hud/GrowthFeedbackOverlay";
-import { SpiritDetailPanel } from "./components/Hud/SpiritDetailPanel";
-import { SpiritDock } from "./components/Hud/SpiritDock";
-import { SpiritShowcase3D } from "./components/Hud/SpiritShowcase3D";
-import { MathPkModal } from "./components/MathPkModal";
-import { ModulePlaceholder } from "./components/modules/ModulePlaceholder";
-import { ChildProfileModule } from "./components/modules/ChildProfileModule";
-import { DataManagementModule } from "./components/modules/DataManagementModule";
-import { LeaderboardModule } from "./components/modules/LeaderboardModule";
-import { LotteryModule } from "./components/modules/LotteryModule";
-import { MathArenaModule } from "./components/modules/MathArenaModule";
-import { OrganizationModule } from "./components/modules/OrganizationModule";
-import { RollCallModule } from "./components/modules/RollCallModule";
-import { SettingsModule } from "./components/modules/SettingsModule";
-import { ShopModule } from "./components/modules/ShopModule";
-import { TeacherWorkbenchModule } from "./components/modules/TeacherWorkbenchModule";
-import { VoiceRecordModule } from "./components/modules/VoiceRecordModule";
+import { activeModuleStorageKey, getInitialActiveModule } from "./browser/appStorage";
+import { useClassroomSession } from "./app/useClassroomSession";
+import { GrowthIslandView } from "./app/GrowthIslandView";
+import { useGrowthIslandQaBridge } from "./app/useGrowthIslandQaBridge";
+import { useGrowthFeedback } from "./app/useGrowthFeedback";
+import { useMoralSpeakWorkflow } from "./app/useMoralSpeakWorkflow";
+import { useSpiritAssetPreload } from "./app/useSpiritAssetPreload";
 import { moduleConfigById, type AppModuleId } from "./components/modules/moduleConfig";
-import { WorldMapContainer } from "./components/WorldMap/WorldMapContainer";
 import type { PixiWorldMapHandle } from "./components/WorldMap/PixiWorldMap";
-import { initialChildren } from "./data/classroom";
-import { seededLedger, seededMoralReviews } from "./data/demoRecords";
 import { organizationConfig } from "./data/organization";
 import type { LotteryPrize, ShopReward } from "./data/rewards";
 import { spirits } from "./data/spirits";
-import {
-  compareClassroomBackups,
-  createClassroomBackup,
-  createClearedClassroomBackup,
-  normalizeClassroomBackup,
-  parseClassroomBackupJson,
-  serializeClassroomBackup,
-  summarizeClassroomBackup,
-} from "./domain/classroomBackup";
-import type { SyncStatus } from "./domain/appState";
 import { createAppViewModel } from "./domain/appViewModel";
-import { getShortFeedbackReason, type GrowthFeedback } from "./domain/growthFeedback";
+import { getShortFeedbackReason } from "./domain/growthFeedback";
 import { evaluateMoralText } from "./domain/moralAgent";
-import {
-  getMoralSpeakLockedChildId as getLockedMoralSpeakChildId,
-  getMoralSpeakSummary,
-  isCurrentMoralApprovalTarget as matchesMoralApprovalTarget,
-  isMoralSpeakSessionActive as hasActiveMoralSpeakSession,
-  nextMoralSpeakSessionId,
-  type MoralSpeakViewState,
-} from "./domain/moralSpeakSession";
-import { createGrowthTaskLedgerInput, publishCurriculumTrack } from "./domain/organization";
-import { makeLedgerRecord, normalizeLedgerRecord } from "./domain/progression";
-import { getSpiritAsset, loadSpiritAsset } from "./domain/spiritAssets";
+import { createGrowthTaskLedgerInput, isGrowthTaskCompletionInCurrentCadence, publishCurriculumTrack } from "./domain/organization";
+import { makeLedgerRecord } from "./domain/progression";
+import { getSpiritAsset } from "./domain/spiritAssets";
 import { canApproveMoralGrowth, getChildEnergyLabel } from "./domain/virtueEnergy";
 import {
   approveMoralReview,
   createLedgerRecord,
-  evaluateMoralRecord,
-  fetchClassroomSnapshot,
   isClassroomApiError,
   patchChildProfile,
   rejectMoralReview,
-  transcribeSpeech,
   undoLedgerRecord,
 } from "./services/classroomApi";
 import type {
   ChildProfile,
-  ClassroomBackupImportPreview,
-  ClassroomBackupSnapshot,
-  ClassroomBackupSummary,
-  ClassroomDataClearSummary,
   ChildWithProgress,
-  ClassroomSnapshot,
-  LedgerRecord,
   LedgerRecordInput,
   LotteryDrawRecord,
   MoralEvaluationResult,
-  MoralReviewItem,
-  OrganizationState,
   SettingsChangeRecord,
   ShopRedemption,
-  SpiritDefinition,
   VirtueCategory,
 } from "./types";
 
-const backgroundSpiritBatchSize = 2;
-const backgroundSpiritBatchDelayMs = 1100;
-const backgroundSpiritInitialDelayMs = 1400;
-const backgroundSpiritPreloadLimit = 12;
-
-function spiritAssetKey(child: ChildWithProgress) {
-  return `${child.spiritId}:${child.state}`;
-}
-
-function getBackgroundSpiritPriority(child: ChildWithProgress, selectedChild: ChildWithProgress) {
-  if (child.rank <= 3) return child.rank;
-
-  const slotDistance = Math.abs(child.slotId - selectedChild.slotId);
-  const levelBias = child.level >= 7 ? -4 : 0;
-  return 10 + Math.min(slotDistance, 18) + child.rank / 100 + levelBias;
-}
-
-function downloadJson(filename: string, json: string) {
-  const blob = new Blob([json], { type: "application/json;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = filename;
-  anchor.click();
-  window.setTimeout(() => URL.revokeObjectURL(url), 0);
-}
-
 export function App() {
   const worldMapRef = useRef<PixiWorldMapHandle | null>(null);
-  const moralSpeakTimersRef = useRef<number[]>([]);
-  const moralRecorderRef = useRef<MediaRecorder | null>(null);
-  const moralRecordingStreamRef = useRef<MediaStream | null>(null);
-  const moralRecordingChildRef = useRef<ChildWithProgress | null>(null);
-  const moralRecordingFormatRef = useRef("webm");
-  const moralRecordingCancelledRef = useRef(false);
-  const moralSpeakApprovingRef = useRef(false);
-  const moralSpeakSessionRef = useRef(0);
-  const growthFeedbackTimerRef = useRef<number | undefined>(undefined);
   const homeFocusTimerRefs = useRef<number[]>([]);
   const growthTaskInFlightRef = useRef(new Set<string>());
-  const initialClassroomBackup = useMemo(() => getInitialClassroomBackup(), []);
-  const [children, setChildren] = useState<ChildProfile[]>(() => initialClassroomBackup?.children ?? initialChildren);
-  const [ledger, setLedger] = useState<LedgerRecord[]>(() => initialClassroomBackup?.ledger ?? seededLedger);
-  const [moralReviews, setMoralReviews] = useState<MoralReviewItem[]>(() => initialClassroomBackup?.moralReviews ?? seededMoralReviews);
-  const [selectedChildId, setSelectedChildId] = useState(initialClassroomBackup?.children[0]?.id ?? initialChildren[0].id);
-  const [moralSpeak, setMoralSpeak] = useState<MoralSpeakViewState>({ stage: "idle" });
-  const moralSpeakRef = useRef<MoralSpeakViewState>(moralSpeak);
-  moralSpeakRef.current = moralSpeak;
-  const [teacherMode, setTeacherMode] = useState(() => initialClassroomBackup?.settings.teacherMode ?? getInitialTeacherMode());
-  const [settingsChanges, setSettingsChanges] = useState<SettingsChangeRecord[]>(() => initialClassroomBackup?.settings.settingsChanges ?? getInitialSettingsChanges());
+  const classroom = useClassroomSession();
+  const {
+    children,
+    ledger,
+    moralReviews,
+    organizationState,
+    settingsChanges,
+    shopRedemptions,
+    lotteryDraws,
+    teacherMode,
+    syncStatus,
+    selectedChildId,
+  } = classroom.state;
+  const {
+    setChildren,
+    setLedger,
+    setMoralReviews,
+    setOrganizationState,
+    setSettingsChanges,
+    setShopRedemptions,
+    setLotteryDraws,
+    setTeacherMode,
+    setSyncStatus,
+    setSelectedChildId,
+  } = classroom.setters;
+  const applySnapshot = classroom.snapshot.apply;
+  const createCurrentClassroomBackup = classroom.backup.create;
+  const restoreClassroomBackup = classroom.backup.restore;
+  const exportClassroomBackup = classroom.backup.export;
+  const previewClassroomBackupFile = classroom.backup.previewFile;
+  const confirmClassroomBackupImport = classroom.backup.confirmImport;
+  const clearLocalDemoData = classroom.backup.clear;
   const [activeModule, setActiveModule] = useState<AppModuleId>(() => getInitialActiveModule());
   const [rollCallCurrentId, setRollCallCurrentId] = useState<string | undefined>();
   const [rollCallCalledIds, setRollCallCalledIds] = useState<string[]>([]);
   const [rollCallExcludeCalled, setRollCallExcludeCalled] = useState(true);
-  const [lotteryDraws, setLotteryDraws] = useState<LotteryDrawRecord[]>(() => initialClassroomBackup?.lotteryDraws ?? getInitialLotteryDraws());
-  const [shopRedemptions, setShopRedemptions] = useState<ShopRedemption[]>(() => initialClassroomBackup?.shopRedemptions ?? getInitialShopRedemptions());
-  const [organizationState, setOrganizationState] = useState<OrganizationState>(() => initialClassroomBackup?.organization ?? getInitialOrganizationState());
   const [dialogueOpen, setDialogueOpen] = useState(false);
   const [pkPair, setPkPair] = useState<{ playerId: string; opponentId: string } | null>(null);
-  const [lastEvaluation, setLastEvaluation] = useState<MoralEvaluationResult | undefined>();
-  const [syncStatus, setSyncStatus] = useState<SyncStatus>("connecting");
-  const [assetVersion, setAssetVersion] = useState(0);
-  const [growthFeedback, setGrowthFeedback] = useState<GrowthFeedback | undefined>();
+  const [, setLastEvaluation] = useState<MoralEvaluationResult | undefined>();
+  const growthFeedbackRuntime = useGrowthFeedback();
+  const growthFeedback = growthFeedbackRuntime.feedback;
   const [showcaseChildId, setShowcaseChildId] = useState<string | undefined>();
 
   const appView = useMemo(
@@ -195,11 +114,11 @@ export function App() {
     allRecentRecords,
     bigScreenRecentRecords,
     recentRecords,
-    opponent,
     pkPlayer,
     pkOpponent,
     pendingReviews,
   } = appView;
+  const assetVersion = useSpiritAssetPreload({ activeModule, children: childrenWithProgress, selectedChild, spiritsById });
   const selectedSpiritAsset = useMemo(
     () => getSpiritAsset(selectedSpirit, selectedChild.state),
     [assetVersion, selectedChild.state, selectedSpirit],
@@ -210,20 +129,8 @@ export function App() {
   );
   const activeModuleConfig = moduleConfigById.get(activeModule) ?? moduleConfigById.get("home")!;
 
-  const showGrowthFeedback = (feedback: Omit<GrowthFeedback, "id">) => {
-    if (growthFeedbackTimerRef.current) window.clearTimeout(growthFeedbackTimerRef.current);
-    setGrowthFeedback({ ...feedback, id: Date.now() });
-    growthFeedbackTimerRef.current = window.setTimeout(() => {
-      setGrowthFeedback(undefined);
-      growthFeedbackTimerRef.current = undefined;
-    }, 4800);
-  };
-
-  const clearGrowthFeedback = () => {
-    if (growthFeedbackTimerRef.current) window.clearTimeout(growthFeedbackTimerRef.current);
-    growthFeedbackTimerRef.current = undefined;
-    setGrowthFeedback(undefined);
-  };
+  const showGrowthFeedback = growthFeedbackRuntime.show;
+  const clearGrowthFeedback = growthFeedbackRuntime.clear;
 
   const clearHomeFocusTimers = () => {
     homeFocusTimerRefs.current.forEach((timer) => window.clearTimeout(timer));
@@ -238,312 +145,42 @@ export function App() {
     homeFocusTimerRefs.current.push(timer);
   };
 
-  const clearMoralSpeakTimers = () => {
-    moralSpeakTimersRef.current.forEach((timer) => window.clearTimeout(timer));
-    moralSpeakTimersRef.current = [];
-  };
+  const moralWorkflow = useMoralSpeakWorkflow({
+    applySnapshot,
+    children: childrenWithProgress,
+    clearFeedback: clearGrowthFeedback,
+    commitLedger,
+    selectedChild,
+    setLastEvaluation,
+    setMoralReviews,
+    setSelectedChildId,
+    setSyncStatus,
+    showFeedback: showGrowthFeedback,
+    syncStatus,
+    worldMapRef,
+  });
+  const moralSpeak = moralWorkflow.state;
+  const {
+    adjust: adjustMoralSpeak,
+    approve: approveMoralSpeak,
+    defer: deferMoralSpeak,
+    prepare: prepareMoralSpeakForChild,
+    reset: resetMoralSpeakToIdle,
+    respeak: respeakMoralSpeak,
+    retry: retryMoralSpeak,
+    selectFromDock: selectChildFromDock,
+    selectFromMap: selectChildFromMap,
+    skip: skipMoralSpeakChild,
+    start: startMoralSpeak,
+    stop: stopMoralSpeakRecording,
+    submitDialogue,
+  } = moralWorkflow.actions;
+  const guardMoralSpeakChildSelection = moralWorkflow.guardSelection;
 
-  const stopMoralRecordingTracks = () => {
-    moralRecordingStreamRef.current?.getTracks().forEach((track) => track.stop());
-    moralRecordingStreamRef.current = null;
-  };
-
-  const stopMoralSpeakRecording = (cancel = false) => {
-    clearMoralSpeakTimers();
-    if (cancel) moralRecordingCancelledRef.current = true;
-    const recorder = moralRecorderRef.current;
-    if (recorder && recorder.state !== "inactive") {
-      recorder.stop();
-      return;
-    }
-    stopMoralRecordingTracks();
-  };
-
-  const scheduleMoralSpeakTimer = (callback: () => void, delay: number) => {
-    const timer = window.setTimeout(() => {
-      moralSpeakTimersRef.current = moralSpeakTimersRef.current.filter((item) => item !== timer);
-      callback();
-    }, delay);
-    moralSpeakTimersRef.current.push(timer);
-  };
-
-  const beginMoralSpeakSession = () => {
-    moralSpeakSessionRef.current = nextMoralSpeakSessionId(moralSpeakSessionRef.current);
-    return moralSpeakSessionRef.current;
-  };
-
-  const invalidateMoralSpeakSession = () => {
-    moralSpeakSessionRef.current = nextMoralSpeakSessionId(moralSpeakSessionRef.current);
-  };
-
-  const isMoralSpeakSessionActive = (sessionId: number, childId?: string) => {
-    return hasActiveMoralSpeakSession({
-      currentSessionId: moralSpeakSessionRef.current,
-      expectedSessionId: sessionId,
-      state: moralSpeakRef.current,
-      childId,
-    });
-  };
-
-  const isCurrentMoralApprovalTarget = (childId: string, reviewId?: string) => {
-    return matchesMoralApprovalTarget(moralSpeakRef.current, childId, reviewId);
-  };
-
-  const getMoralSpeakLockedChildId = () => {
-    return getLockedMoralSpeakChildId(moralSpeakRef.current);
-  };
-
-  const prepareMoralSpeakForChild = (childId: string) => {
-    beginMoralSpeakSession();
-    clearMoralSpeakTimers();
-    stopMoralSpeakRecording(true);
-    moralSpeakApprovingRef.current = false;
-    clearGrowthFeedback();
-    setMoralSpeak({ stage: "ready", childId });
-  };
-
-  const guardMoralSpeakChildSelection = (childId: string) => {
-    const lockedChildId = getMoralSpeakLockedChildId();
-    if (!lockedChildId || childId === lockedChildId) return false;
-    const activeChild = childrenWithProgress.find((item) => item.id === lockedChildId) ?? selectedChild;
-    setSelectedChildId(activeChild.id);
-    worldMapRef.current?.focusSelected();
-    showGrowthFeedback({
-      kind: "status",
-      tone: "neutral",
-      title: `${activeChild.name} 正在说成长`,
-      detail: "先完成这一位，再点下一位",
-      childName: activeChild.name,
-    });
-    return true;
-  };
-
-  const resetMoralSpeakToIdle = (options: { focusIsland?: boolean } = {}) => {
-    invalidateMoralSpeakSession();
-    clearMoralSpeakTimers();
-    stopMoralSpeakRecording(true);
-    moralSpeakApprovingRef.current = false;
-    setMoralSpeak({ stage: "idle" });
-    if (options.focusIsland ?? true) worldMapRef.current?.focusFullIsland();
-  };
-
-  const returnMoralSpeakToIslandIdle = () => {
-    resetMoralSpeakToIdle({ focusIsland: true });
-    scheduleMoralSpeakTimer(() => worldMapRef.current?.focusFullIsland(), 140);
-  };
-
-  const selectChildFromDock = (childId: string) => {
-    if (guardMoralSpeakChildSelection(childId)) return;
-    if (childId === selectedChild.id) {
-      worldMapRef.current?.focusSelected();
-      prepareMoralSpeakForChild(childId);
-      return;
-    }
-    setSelectedChildId(childId);
-    prepareMoralSpeakForChild(childId);
-  };
-
-  const selectChildFromMap = (childId: string) => {
-    if (guardMoralSpeakChildSelection(childId)) return;
-    setSelectedChildId(childId);
-    prepareMoralSpeakForChild(childId);
-  };
-
-  const applySnapshot = (snapshot: ClassroomSnapshot) => {
-    setChildren(snapshot.children);
-    setLedger(snapshot.ledger.map(normalizeLedgerRecord));
-    setMoralReviews(snapshot.moralReviews ?? []);
-    setSyncStatus("online");
-  };
-
-  const createCurrentClassroomBackup = () =>
-    createClassroomBackup({
-      children,
-      ledger,
-      moralReviews,
-      shopRedemptions,
-      lotteryDraws,
-      teacherMode,
-      settingsChanges,
-      organization: organizationState,
-    });
-
-  const restoreClassroomBackup = (input: ClassroomBackupSnapshot) => {
-    const backup = normalizeClassroomBackup(input);
-    saveClassroomBackupToStorage(backup);
-    saveOrganizationStateToStorage(backup.organization);
-    setChildren(backup.children);
-    setLedger(backup.ledger.map(normalizeLedgerRecord));
-    setMoralReviews(backup.moralReviews);
-    setShopRedemptions(backup.shopRedemptions.slice(0, 50));
-    setLotteryDraws(backup.lotteryDraws.slice(0, 50));
-    setTeacherMode(backup.settings.teacherMode);
-    setSettingsChanges(backup.settings.settingsChanges.slice(0, 50));
-    setOrganizationState(backup.organization);
-    setSelectedChildId((current) => (backup.children.some((child) => child.id === current) ? current : backup.children[0]?.id ?? initialChildren[0].id));
-    setSyncStatus("offline");
-    return summarizeClassroomBackup(backup);
-  };
-
-  const exportClassroomBackup = () => {
-    const backup = createCurrentClassroomBackup();
-    saveClassroomBackupToStorage(backup);
-    downloadJson(`beihai-growth-island-backup-${backup.exportedAt.slice(0, 10)}.json`, serializeClassroomBackup(backup));
-    return summarizeClassroomBackup(backup);
-  };
-
-  const previewClassroomBackupFile = async (file: File): Promise<ClassroomBackupImportPreview> => {
-    const backup = parseClassroomBackupJson(await file.text());
-    const current = createCurrentClassroomBackup();
-    return {
-      snapshot: backup,
-      comparison: compareClassroomBackups(current, backup),
-    };
-  };
-
-  const confirmClassroomBackupImport = (backup: ClassroomBackupSnapshot) => restoreClassroomBackup(backup);
-
-  const clearLocalDemoData = (): ClassroomDataClearSummary => {
-    const clearedAt = new Date().toISOString();
-    const summary: ClassroomDataClearSummary = {
-      childCount: children.length,
-      clearedLedgerCount: ledger.length,
-      clearedReviewCount: moralReviews.length,
-      clearedShopRedemptionCount: shopRedemptions.length,
-      clearedLotteryDrawCount: lotteryDraws.length,
-      clearedSettingsChangeCount: settingsChanges.length,
-      clearedActiveCurriculumCount: Object.keys(organizationState.activeCurriculumByClassroomId).length,
-      clearedParentReportReviewCount: Object.keys(organizationState.parentReportReviewsByChildId).length,
-      exportedAt: clearedAt,
-    };
-    const clearedBackup = createClearedClassroomBackup({ children, teacherMode }, clearedAt);
-    saveClassroomBackupToStorage(clearedBackup);
-    saveOrganizationStateToStorage(clearedBackup.organization);
-    setLedger([]);
-    setMoralReviews([]);
-    setShopRedemptions([]);
-    setLotteryDraws([]);
-    setSettingsChanges([]);
-    setOrganizationState(clearedBackup.organization);
-    setSelectedChildId((current) => (children.some((child) => child.id === current) ? current : children[0]?.id ?? initialChildren[0].id));
-    setSyncStatus("offline");
-    return summary;
-  };
-
-  useEffect(() => {
-    let cancelled = false;
-    fetchClassroomSnapshot()
-      .then((snapshot) => {
-        if (!cancelled) applySnapshot(snapshot);
-      })
-      .catch(() => {
-        if (!cancelled) setSyncStatus("offline");
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-    const timers: number[] = [];
-    if (activeModule !== "home") {
-      return () => {
-        cancelled = true;
-        timers.forEach((timer) => window.clearTimeout(timer));
-      };
-    }
-
-    const assetTargets = new Map<string, { child: ChildWithProgress; spirit: SpiritDefinition }>();
-
-    childrenWithProgress.forEach((child) => {
-      const spirit = spiritsById.get(child.spiritId);
-      if (!spirit) return;
-      assetTargets.set(spiritAssetKey(child), { child, spirit });
-    });
-
-    const selectedTarget = selectedChild ? assetTargets.get(spiritAssetKey(selectedChild)) : undefined;
-    const backgroundTargets = [...assetTargets.values()]
-      .filter(({ child }) => child.id !== selectedChild.id)
-      .sort(
-        (a, b) =>
-          getBackgroundSpiritPriority(a.child, selectedChild) - getBackgroundSpiritPriority(b.child, selectedChild),
-      )
-      .slice(0, backgroundSpiritPreloadLimit);
-
-    const applyLoadedAssets = (loaded: boolean[]) => {
-      if (!cancelled && loaded.some(Boolean)) setAssetVersion((current) => current + 1);
-    };
-
-    if (selectedTarget) {
-      loadSpiritAsset(selectedTarget.spirit, selectedTarget.child.state).then((loaded) => applyLoadedAssets([loaded]));
-    }
-
-    let cursor = 0;
-    const schedule = (callback: () => void, delay: number) => {
-      const timer = window.setTimeout(callback, delay);
-      timers.push(timer);
-    };
-    const loadNextBatch = () => {
-      if (cancelled || cursor >= backgroundTargets.length) return;
-      const batch = backgroundTargets.slice(cursor, cursor + backgroundSpiritBatchSize);
-      cursor += backgroundSpiritBatchSize;
-      Promise.all(batch.map(({ child, spirit }) => loadSpiritAsset(spirit, child.state))).then((loaded) => {
-        applyLoadedAssets(loaded);
-        if (!cancelled && cursor < backgroundTargets.length) {
-          schedule(loadNextBatch, backgroundSpiritBatchDelayMs);
-        }
-      });
-    };
-
-    schedule(loadNextBatch, backgroundSpiritInitialDelayMs);
-
-    return () => {
-      cancelled = true;
-      timers.forEach((timer) => window.clearTimeout(timer));
-    };
-  }, [activeModule, childrenWithProgress, selectedChild, spiritsById]);
 
   useEffect(() => {
     window.localStorage.setItem(activeModuleStorageKey, activeModule);
   }, [activeModule]);
-
-  useEffect(() => {
-    window.localStorage.setItem(teacherModeStorageKey, String(teacherMode));
-  }, [teacherMode]);
-
-  useEffect(() => {
-    window.localStorage.setItem(settingsChangesStorageKey, JSON.stringify(settingsChanges.slice(0, 50)));
-  }, [settingsChanges]);
-
-  useEffect(() => {
-    window.localStorage.setItem(shopRedemptionsStorageKey, JSON.stringify(shopRedemptions.slice(0, 50)));
-  }, [shopRedemptions]);
-
-  useEffect(() => {
-    window.localStorage.setItem(lotteryDrawsStorageKey, JSON.stringify(lotteryDraws.slice(0, 50)));
-  }, [lotteryDraws]);
-
-  useEffect(() => {
-    saveOrganizationStateToStorage(organizationState);
-  }, [organizationState]);
-
-  useEffect(() => {
-    if (syncStatus === "connecting") return;
-    saveClassroomBackupToStorage(
-      createClassroomBackup({
-        children,
-        ledger,
-        moralReviews,
-        shopRedemptions,
-        lotteryDraws,
-        teacherMode,
-        settingsChanges,
-        organization: organizationState,
-      }),
-    );
-  }, [children, ledger, lotteryDraws, moralReviews, organizationState, settingsChanges, shopRedemptions, syncStatus, teacherMode]);
 
   useEffect(() => {
     if (activeModule === "home" || activeModule === "child-profile") return;
@@ -552,152 +189,10 @@ export function App() {
 
   useEffect(() => {
     return () => {
-      clearMoralSpeakTimers();
       clearHomeFocusTimers();
-      stopMoralSpeakRecording(true);
-      if (growthFeedbackTimerRef.current) window.clearTimeout(growthFeedbackTimerRef.current);
     };
   }, []);
 
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (!params.has("qa") || !import.meta.env.DEV) return;
-    const qaWindow = window as unknown as {
-      __growthIslandClearDemoDataForQa?: () => ClassroomDataClearSummary;
-      __growthIslandCreateBackupForQa?: () => ClassroomBackupSnapshot;
-      __growthIslandLedger?: LedgerRecord[];
-      __growthIslandLocalBackup?: ClassroomBackupSummary;
-      __growthIslandLotteryDraws?: LotteryDrawRecord[];
-      __growthIslandOrganizationState?: OrganizationState;
-      __growthIslandReviews?: MoralReviewItem[];
-      __growthIslandRestoreBackupForQa?: (backup: ClassroomBackupSnapshot) => ClassroomBackupSummary;
-      __growthIslandSettingsChanges?: SettingsChangeRecord[];
-      __growthIslandShopRedemptions?: ShopRedemption[];
-      __growthIslandChildIds?: string[];
-      __growthIslandSelectedChildId?: string;
-      __growthIslandTeacherMode?: boolean;
-      __growthIslandSyncStatus?: SyncStatus;
-      __growthIslandMoralSpeakStage?: MoralSpeakViewState["stage"];
-      __growthIslandMoralSpeak?: MoralSpeakViewState;
-      __growthIslandFeedback?: GrowthFeedback;
-      __growthIslandMoralAnalysisDelayMs?: number;
-      __growthIslandForceMoralMicErrorForQa?: boolean;
-      __growthIslandClearMoralSpeakForQa?: () => void;
-      __growthIslandSetActiveModuleForQa?: (moduleId: AppModuleId) => boolean;
-      __growthIslandFinishMoralSpeakForQa?: (input: {
-        childId?: string;
-        transcript: string;
-        summary?: string;
-        delayMs?: number;
-      }) => boolean;
-      __growthIslandStartMoralReviewForQa?: (input: {
-        childId?: string;
-        transcript: string;
-        summary?: string;
-      }) => boolean;
-      __growthIslandPrepareMoralSpeakForQa?: (childId?: string) => boolean;
-      __growthIslandOpenIslandHotspotForQa?: (childId?: string) => boolean;
-      __growthIslandSetMoralRecognizingForQa?: (childId?: string) => boolean;
-      __growthIslandSelectMapChildForQa?: (childId: string) => boolean;
-      __growthIslandOpen3dShowcaseForQa?: (childId?: string) => boolean;
-    };
-    qaWindow.__growthIslandClearDemoDataForQa = clearLocalDemoData;
-    qaWindow.__growthIslandCreateBackupForQa = createCurrentClassroomBackup;
-    qaWindow.__growthIslandLedger = ledger;
-    qaWindow.__growthIslandLocalBackup = summarizeClassroomBackup(createCurrentClassroomBackup());
-    qaWindow.__growthIslandLotteryDraws = lotteryDraws;
-    qaWindow.__growthIslandOrganizationState = organizationState;
-    qaWindow.__growthIslandReviews = moralReviews;
-    qaWindow.__growthIslandRestoreBackupForQa = restoreClassroomBackup;
-    qaWindow.__growthIslandSettingsChanges = settingsChanges;
-    qaWindow.__growthIslandShopRedemptions = shopRedemptions;
-    qaWindow.__growthIslandChildIds = childrenWithProgress.map((child) => child.id);
-    qaWindow.__growthIslandSelectedChildId = selectedChild.id;
-    qaWindow.__growthIslandTeacherMode = teacherMode;
-    qaWindow.__growthIslandSyncStatus = syncStatus;
-    qaWindow.__growthIslandMoralSpeakStage = moralSpeak.stage;
-    qaWindow.__growthIslandMoralSpeak = moralSpeak;
-    qaWindow.__growthIslandFeedback = growthFeedback;
-    qaWindow.__growthIslandMoralAnalysisDelayMs ??= 0;
-    qaWindow.__growthIslandForceMoralMicErrorForQa ??= false;
-    qaWindow.__growthIslandClearMoralSpeakForQa = () => {
-      resetMoralSpeakToIdle({ focusIsland: false });
-    };
-    qaWindow.__growthIslandSetActiveModuleForQa = (moduleId) => {
-      if (!moduleConfigById.has(moduleId)) return false;
-      setActiveModule(moduleId);
-      return true;
-    };
-    qaWindow.__growthIslandFinishMoralSpeakForQa = (input) => {
-      const child =
-        childrenWithProgress.find((item) => item.id === input.childId) ??
-        childrenWithProgress.find((item) => item.id === moralSpeak.childId) ??
-        childrenWithProgress.find((item) => item.id === selectedChild.id) ??
-        selectedChild;
-      const sessionId = moralSpeakSessionRef.current;
-      if (!isMoralSpeakSessionActive(sessionId, child.id)) return false;
-      window.setTimeout(() => {
-        void finishMoralSpeakWithTranscript(child, input.transcript, input.summary, sessionId);
-      }, Math.max(0, input.delayMs ?? 0));
-      return true;
-    };
-    qaWindow.__growthIslandStartMoralReviewForQa = (input) => {
-      const child =
-        childrenWithProgress.find((item) => item.id === input.childId) ??
-        childrenWithProgress.find((item) => item.id === selectedChild.id) ??
-        selectedChild;
-      clearMoralSpeakTimers();
-      moralSpeakApprovingRef.current = false;
-      setSelectedChildId(child.id);
-      finishQaMoralRecognition(child, input.transcript, input.summary ?? input.transcript.slice(0, 8));
-      return true;
-    };
-    qaWindow.__growthIslandPrepareMoralSpeakForQa = (childId) => {
-      const child =
-        childrenWithProgress.find((item) => item.id === childId) ??
-        childrenWithProgress.find((item) => item.id === selectedChild.id) ??
-        selectedChild;
-      setSelectedChildId(child.id);
-      prepareMoralSpeakForChild(child.id);
-      return true;
-    };
-    qaWindow.__growthIslandOpenIslandHotspotForQa = (childId) => {
-      const child =
-        childrenWithProgress.find((item) => item.id === childId) ??
-        childrenWithProgress.find((item) => item.id === selectedChild.id) ??
-        selectedChild;
-      focusChildOnHome(child.id, { prepareMoralSpeak: true });
-      return true;
-    };
-    qaWindow.__growthIslandSetMoralRecognizingForQa = (childId) => {
-      const child =
-        childrenWithProgress.find((item) => item.id === childId) ??
-        childrenWithProgress.find((item) => item.id === selectedChild.id) ??
-        selectedChild;
-      clearMoralSpeakTimers();
-      stopMoralSpeakRecording(true);
-      moralSpeakApprovingRef.current = false;
-      clearGrowthFeedback();
-      setSelectedChildId(child.id);
-      setMoralSpeak({ stage: "recognizing", childId: child.id });
-      return true;
-    };
-    qaWindow.__growthIslandSelectMapChildForQa = (childId) => {
-      const child = childrenWithProgress.find((item) => item.id === childId);
-      if (!child) return false;
-      selectChildFromMap(child.id);
-      return true;
-    };
-    qaWindow.__growthIslandOpen3dShowcaseForQa = (childId) => {
-      const child =
-        childrenWithProgress.find((item) => item.id === childId) ??
-        childrenWithProgress.find((item) => item.id === selectedChild.id) ??
-        selectedChild;
-      setActiveModule("home");
-      openSpiritShowcase(child.id);
-      return true;
-    };
-  }, [childrenWithProgress, growthFeedback, ledger, lotteryDraws, moralReviews, moralSpeak, organizationState, selectedChild, settingsChanges, shopRedemptions, syncStatus, teacherMode]);
 
   useEffect(() => {
     const existingIds = new Set(children.map((child) => child.id));
@@ -709,7 +204,7 @@ export function App() {
     setRollCallCurrentId((current) => (current && existingIds.has(current) ? current : undefined));
   }, [children]);
 
-  const commitLedger = async (input: LedgerRecordInput) => {
+  async function commitLedger(input: LedgerRecordInput) {
     const feedbackChild = childrenWithProgress.find((child) => child.id === input.childId);
     if (feedbackChild && input.delta !== 0) {
       const isSelfServiceEnergy = input.delta > 0 && input.reason.startsWith("自助成长：");
@@ -748,25 +243,7 @@ export function App() {
       const record = makeLedgerRecord(input);
       setLedger((current) => [record, ...current]);
     }
-  };
-
-  const addLedger = (
-    delta: number,
-    reason: string,
-    source: LedgerRecord["source"] = "manual",
-    childId = selectedChild.id,
-    category: LedgerRecord["category"] = delta >= 0 ? "积极阳光" : "尊矩守法",
-  ) => {
-    void commitLedger({
-      childId,
-      operatorChildId: selectedChild.id,
-      operatorRole: "teacher",
-      delta,
-      source,
-      category,
-      reason,
-    });
-  };
+  }
 
   const recordMathPkWin = (winner: ChildWithProgress) => {
     setSelectedChildId(winner.id);
@@ -814,427 +291,6 @@ export function App() {
       undoOf: target.id,
     });
     setLedger((current) => current.map((record) => (record.id === target.id ? { ...record, undone: true } : record)).concat(undo));
-  };
-
-  const submitDialogue = async (text: string) => {
-    if (syncStatus !== "offline") {
-      setSyncStatus("saving");
-      try {
-        const response = await evaluateMoralRecord({
-          childId: selectedChild.id,
-          operatorChildId: selectedChild.id,
-          transcript: text,
-        });
-        setLastEvaluation(response.result);
-        applySnapshot(response.snapshot);
-        return response.result;
-      } catch {
-        setSyncStatus("offline");
-      }
-    }
-
-    const result = evaluateMoralText(text);
-    setLastEvaluation(result);
-    const localReview: MoralReviewItem = {
-      id: crypto.randomUUID(),
-      childId: selectedChild.id,
-      operatorChildId: selectedChild.id,
-      transcript: text,
-      result,
-      status: "pending_review",
-      createdAt: new Date().toISOString(),
-    };
-    setMoralReviews((current) => [localReview, ...current]);
-    return result;
-  };
-
-  const finishMoralSpeakWithTranscript = async (
-    child: ChildWithProgress,
-    transcript: string,
-    summary: string | undefined,
-    sessionId: number,
-  ) => {
-    if (!isMoralSpeakSessionActive(sessionId, child.id)) return;
-    const cleanTranscript = transcript.trim();
-    if (!cleanTranscript) {
-      setMoralSpeak({ stage: "error", childId: child.id, error: "没听清，可以再说一次" });
-      return;
-    }
-
-    if (syncStatus !== "offline") {
-      setSyncStatus("saving");
-      try {
-        const response = await evaluateMoralRecord({
-          childId: child.id,
-          operatorChildId: child.id,
-          transcript: cleanTranscript,
-        });
-        if (!isMoralSpeakSessionActive(sessionId, child.id)) {
-          try {
-            const snapshot = await rejectMoralReview(response.reviewItem.id, child.id, "已取消");
-            applySnapshot(snapshot);
-          } catch {
-            setSyncStatus("offline");
-          }
-          return;
-        }
-        setLastEvaluation(response.result);
-        applySnapshot(response.snapshot);
-        setSelectedChildId(child.id);
-        clearGrowthFeedback();
-        setMoralSpeak({
-          stage: "pendingReview",
-          childId: child.id,
-          transcript: cleanTranscript,
-          summary: getMoralSpeakSummary(response.result, summary ?? cleanTranscript.slice(0, 8)),
-          result: response.result,
-          reviewId: response.reviewItem.id,
-        });
-        return;
-      } catch {
-        setSyncStatus("offline");
-      }
-    }
-
-    if (!isMoralSpeakSessionActive(sessionId, child.id)) return;
-    const result = evaluateMoralText(cleanTranscript);
-    setLastEvaluation(result);
-    const review: MoralReviewItem = {
-      id: crypto.randomUUID(),
-      childId: child.id,
-      operatorChildId: child.id,
-      transcript: cleanTranscript,
-      result,
-      status: "pending_review",
-      createdAt: new Date().toISOString(),
-    };
-    setMoralReviews((current) => [review, ...current]);
-    clearGrowthFeedback();
-    setMoralSpeak({
-      stage: "pendingReview",
-      childId: child.id,
-      transcript: cleanTranscript,
-      summary: getMoralSpeakSummary(result, summary ?? cleanTranscript.slice(0, 8)),
-      result,
-      reviewId: review.id,
-    });
-  };
-
-  const processRecordedMoralAudio = async (child: ChildWithProgress, blob: Blob, voiceFormat: string, sessionId: number) => {
-    if (!isMoralSpeakSessionActive(sessionId, child.id)) return;
-    setMoralSpeak({ stage: "recognizing", childId: child.id });
-    try {
-      const audioBase64 = await blobToBase64(blob);
-      if (!isMoralSpeakSessionActive(sessionId, child.id)) return;
-      const response = await transcribeSpeech({ audioBase64, voiceFormat });
-      if (!isMoralSpeakSessionActive(sessionId, child.id)) return;
-      await finishMoralSpeakWithTranscript(child, response.text, undefined, sessionId);
-    } catch {
-      if (!isMoralSpeakSessionActive(sessionId, child.id)) return;
-      setMoralSpeak({ stage: "error", childId: child.id, error: "没听清，可以再说一次" });
-    }
-  };
-
-  const finishQaMoralRecognition = (child: ChildWithProgress, transcript: string, summary: string) => {
-    const result = evaluateMoralText(transcript);
-    setLastEvaluation(result);
-    const review: MoralReviewItem = {
-      id: crypto.randomUUID(),
-      childId: child.id,
-      operatorChildId: child.id,
-      transcript,
-      result,
-      status: "pending_review",
-      createdAt: new Date().toISOString(),
-    };
-    setMoralReviews((current) => [review, ...current]);
-    clearGrowthFeedback();
-    setMoralSpeak({
-      stage: "pendingReview",
-      childId: child.id,
-      transcript,
-      summary: getMoralSpeakSummary(result, summary),
-      result,
-      reviewId: review.id,
-    });
-  };
-
-  const startMoralSpeak = async () => {
-    clearMoralSpeakTimers();
-    moralSpeakApprovingRef.current = false;
-    const child = childrenWithProgress.find((item) => item.id === moralSpeak.childId) ?? selectedChild;
-    const sessionId = moralSpeakSessionRef.current;
-    if (!isMoralSpeakSessionActive(sessionId, child.id)) return;
-    setSelectedChildId(child.id);
-
-    const qaWindow = window as unknown as { __growthIslandForceMoralMicErrorForQa?: boolean };
-    if (import.meta.env.DEV && qaWindow.__growthIslandForceMoralMicErrorForQa) {
-      setMoralSpeak({ stage: "error", childId: child.id, error: "麦克风没准备好，请老师帮忙" });
-      return;
-    }
-
-    const settings = getMoralRecorderSettings();
-    if (!settings || !navigator.mediaDevices?.getUserMedia) {
-      setMoralSpeak({ stage: "error", childId: child.id, error: "这台设备还不能录音" });
-      return;
-    }
-
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      if (!isMoralSpeakSessionActive(sessionId, child.id)) {
-        stream.getTracks().forEach((track) => track.stop());
-        return;
-      }
-      const chunks: BlobPart[] = [];
-      const recorder = new MediaRecorder(stream, settings.mimeType ? { mimeType: settings.mimeType } : undefined);
-      moralRecordingCancelledRef.current = false;
-      moralRecorderRef.current = recorder;
-      moralRecordingStreamRef.current = stream;
-      moralRecordingChildRef.current = child;
-      moralRecordingFormatRef.current = settings.voiceFormat;
-
-      recorder.ondataavailable = (event) => {
-        if (event.data.size > 0) chunks.push(event.data);
-      };
-      recorder.onerror = () => {
-        stopMoralRecordingTracks();
-        if (!isMoralSpeakSessionActive(sessionId, child.id)) return;
-        setMoralSpeak({ stage: "error", childId: child.id, error: "录音中断，请再说一次" });
-      };
-      recorder.onstop = () => {
-        stopMoralRecordingTracks();
-        moralRecorderRef.current = null;
-        if (moralRecordingCancelledRef.current) {
-          moralRecordingCancelledRef.current = false;
-          moralRecordingChildRef.current = null;
-          return;
-        }
-        const recordedChild = moralRecordingChildRef.current ?? child;
-        moralRecordingChildRef.current = null;
-        if (!isMoralSpeakSessionActive(sessionId, recordedChild.id)) return;
-        const blob = new Blob(chunks, { type: recorder.mimeType || settings.mimeType || "audio/webm" });
-        if (blob.size === 0) {
-          setMoralSpeak({ stage: "error", childId: recordedChild.id, error: "没听清，可以再说一次" });
-          return;
-        }
-        void processRecordedMoralAudio(recordedChild, blob, moralRecordingFormatRef.current, sessionId);
-      };
-
-      if (!isMoralSpeakSessionActive(sessionId, child.id)) {
-        stopMoralRecordingTracks();
-        return;
-      }
-      setMoralSpeak({ stage: "listening", childId: child.id });
-      recorder.start();
-      scheduleMoralSpeakTimer(stopMoralSpeakRecording, 5500);
-    } catch {
-      stopMoralRecordingTracks();
-      if (!isMoralSpeakSessionActive(sessionId, child.id)) return;
-      setMoralSpeak({ stage: "error", childId: child.id, error: "请允许麦克风后再试" });
-    }
-  };
-
-  const retryMoralSpeak = () => {
-    if (moralSpeakApprovingRef.current) return;
-    const childId = moralSpeak.childId ?? selectedChild.id;
-    beginMoralSpeakSession();
-    stopMoralSpeakRecording(true);
-    moralSpeakApprovingRef.current = false;
-    if (moralSpeak.stage === "pendingReview") {
-      markCurrentMoralReviewRejected("补说");
-    }
-    setSelectedChildId(childId);
-    setMoralSpeak({ stage: "ready", childId });
-  };
-
-  const approveMoralSpeak = async () => {
-    if (
-      moralSpeak.stage !== "pendingReview" ||
-      !moralSpeak.result ||
-      !moralSpeak.childId ||
-      !canApproveMoralGrowth(moralSpeak.result)
-    ) {
-      return;
-    }
-    if (moralSpeakApprovingRef.current) return;
-    moralSpeakApprovingRef.current = true;
-    clearMoralSpeakTimers();
-    const result = moralSpeak.result;
-    const transcript = moralSpeak.transcript ?? "孩子自助成长记录";
-    const approvalChildId = moralSpeak.childId;
-    const reviewId = moralSpeak.reviewId;
-    const completedChild = childrenWithProgress.find((child) => child.id === approvalChildId) ?? selectedChild;
-    setMoralSpeak((current) =>
-      isCurrentMoralApprovalTarget(approvalChildId, reviewId) ? { ...current, approving: true } : current,
-    );
-
-    try {
-      await commitLedger({
-        childId: approvalChildId,
-        operatorChildId: selectedChild.id,
-        operatorRole: "teacher",
-        delta: result.xpDelta,
-        source: "dialogue-agent",
-        category: result.category,
-        reason: `自助成长：${transcript}`,
-        aiSuggested: true,
-        reviewStatus: "approved",
-        reviewId,
-        teacherAdjustedReview: moralSpeak.adjusted === true,
-      });
-    } catch {
-      if (!isCurrentMoralApprovalTarget(approvalChildId, reviewId)) {
-        moralSpeakApprovingRef.current = false;
-        return;
-      }
-      moralSpeakApprovingRef.current = false;
-      setMoralSpeak((current) =>
-        isCurrentMoralApprovalTarget(approvalChildId, reviewId)
-          ? {
-              ...current,
-              stage: "error",
-              approving: false,
-              error: "请老师稍后再确认",
-            }
-          : current,
-      );
-      return;
-    }
-
-    if (!isCurrentMoralApprovalTarget(approvalChildId, reviewId)) {
-      moralSpeakApprovingRef.current = false;
-      return;
-    }
-
-    if (reviewId) {
-      setMoralReviews((current) =>
-        current.map((review) =>
-          review.id === reviewId
-            ? {
-                ...review,
-                status: "approved",
-                reviewedAt: new Date().toISOString(),
-                reviewedByChildId: selectedChild.id,
-              }
-            : review,
-        ),
-      );
-    }
-
-    setMoralSpeak((current) =>
-      isCurrentMoralApprovalTarget(approvalChildId, reviewId)
-        ? {
-            ...current,
-            stage: "success",
-            approving: false,
-            result,
-            previousChildName: completedChild.name,
-          }
-        : current,
-    );
-    clearGrowthFeedback();
-    scheduleMoralSpeakTimer(() => {
-      moralSpeakApprovingRef.current = false;
-      returnMoralSpeakToIslandIdle();
-      showGrowthFeedback({
-        kind: "status",
-        tone: "neutral",
-        title: "下一位可以点精灵",
-        detail: "孩子自己选择精灵继续",
-        childName: completedChild.name,
-      });
-    }, 2400);
-  };
-
-  const adjustMoralSpeak = (category: VirtueCategory, delta: 10 | 20 | 30) => {
-    if (moralSpeakApprovingRef.current) return;
-    setMoralSpeak((current) => {
-      if (!current.result) return current;
-      const result = {
-        ...current.result,
-        category,
-        confidence: Math.max(current.result.confidence, 0.6),
-        xpDelta: delta,
-        intent: "reward" as const,
-        status: "pending_review" as const,
-      };
-      if (current.reviewId) {
-        setMoralReviews((reviews) =>
-          reviews.map((review) => (review.id === current.reviewId ? { ...review, result } : review)),
-        );
-      }
-      return { ...current, result, adjusted: true };
-    });
-  };
-
-  const markCurrentMoralReviewRejected = (rejectionReason: string) => {
-    if (moralSpeakApprovingRef.current) return;
-    const reviewId = moralSpeak.reviewId;
-    if (!reviewId) return;
-    setMoralReviews((current) =>
-      current.map((review) =>
-        review.id === reviewId
-          ? {
-              ...review,
-              status: "rejected",
-              reviewedAt: new Date().toISOString(),
-              reviewedByChildId: selectedChild.id,
-              rejectionReason,
-            }
-          : review,
-      ),
-    );
-    if (syncStatus === "offline") return;
-    setSyncStatus("saving");
-    rejectMoralReview(reviewId, selectedChild.id, rejectionReason).then(applySnapshot).catch(() => setSyncStatus("offline"));
-  };
-
-  const respeakMoralSpeak = () => {
-    if (moralSpeakApprovingRef.current) return;
-    beginMoralSpeakSession();
-    clearMoralSpeakTimers();
-    stopMoralSpeakRecording(true);
-    moralSpeakApprovingRef.current = false;
-    markCurrentMoralReviewRejected("补说");
-    const childId = moralSpeak.childId ?? selectedChild.id;
-    setSelectedChildId(childId);
-    setMoralSpeak({ stage: "ready", childId });
-  };
-
-  const skipMoralSpeakChild = () => {
-    if (moralSpeakApprovingRef.current) return;
-    clearMoralSpeakTimers();
-    stopMoralSpeakRecording(true);
-    moralSpeakApprovingRef.current = false;
-    markCurrentMoralReviewRejected("跳过这位");
-    returnMoralSpeakToIslandIdle();
-  };
-
-  const deferMoralSpeak = () => {
-    if (moralSpeakApprovingRef.current) return;
-    const currentChild = moralSpeak.childId
-      ? childrenWithProgress.find((child) => child.id === moralSpeak.childId)
-      : undefined;
-    resetMoralSpeakToIdle({ focusIsland: true });
-    if (moralSpeak.stage === "pendingReview" && currentChild) {
-      showGrowthFeedback({
-        kind: "status",
-        tone: "neutral",
-        title: "已放回老师待办",
-        detail: `${currentChild.name} 稍后再看`,
-        childName: currentChild.name,
-      });
-      return;
-    }
-    if (currentChild) {
-      showGrowthFeedback({
-        kind: "status",
-        tone: "neutral",
-        title: `${currentChild.name} 稍后再说`,
-        detail: "流程已收起",
-        childName: currentChild.name,
-      });
-    }
   };
 
   const updateSelectedChild = (patch: Partial<ChildProfile>) => {
@@ -1492,9 +548,12 @@ export function App() {
 
   const completeGrowthTask = (childId: string, taskId: string) => {
     const input = createGrowthTaskLedgerInput(organizationConfig, taskId, childId, selectedChild.id);
-    if (!input) return;
+    const task = organizationConfig.growthTasks.find((item) => item.id === taskId);
+    if (!input || !task) return;
     const taskKey = `${childId}:${taskId}`;
-    const alreadyRecorded = ledger.some((record) => record.childId === childId && record.reason === input.reason && !record.undone);
+    const alreadyRecorded = ledger.some(
+      (record) => record.childId === childId && isGrowthTaskCompletionInCurrentCadence(task, record),
+    );
     if (alreadyRecorded || growthTaskInFlightRef.current.has(taskKey)) return;
     growthTaskInFlightRef.current.add(taskKey);
     setSelectedChildId(childId);
@@ -1671,248 +730,40 @@ export function App() {
     });
   };
 
-  return (
-    <AppShell
-      activeModule={activeModule}
-      childrenCount={children.length}
-      selectedChildName={selectedChild.name}
-      selectedChildEnergy={selectedChild.xp}
-      syncStatus={syncStatus}
-      onModuleChange={setActiveModule}
-      onSelfServiceChild={() => focusChildOnHome(selectedChild.id, { prepareMoralSpeak: true })}
-    >
-      {activeModule === "home" ? (
-        <section className="home-module app-shell" aria-label="北海成长岛首页">
-          <GameTopBar
-            childrenCount={children.length}
-            syncStatus={syncStatus}
-            onZoomIn={() => worldMapRef.current?.zoomIn()}
-            onZoomOut={() => worldMapRef.current?.zoomOut()}
-            onFocusSelected={() => worldMapRef.current?.focusSelected()}
-            onFullIsland={() => worldMapRef.current?.focusFullIsland()}
-          />
+  useGrowthIslandQaBridge({
+    backup: { clear: clearLocalDemoData, create: createCurrentClassroomBackup, restore: restoreClassroomBackup },
+    classroom: { ledger, lotteryDraws, moralReviews, organizationState, settingsChanges, shopRedemptions, syncStatus, teacherMode },
+    children: childrenWithProgress,
+    feedback: growthFeedback,
+    focusChildOnHome,
+    moral: {
+      prepare: prepareMoralSpeakForChild,
+      qa: moralWorkflow.qa,
+      reset: resetMoralSpeakToIdle,
+      selectFromMap: selectChildFromMap,
+      state: moralSpeak,
+    },
+    openShowcase: openSpiritShowcase,
+    selectedChild,
+    setActiveModule,
+    setSelectedChildId,
+  });
 
-          <section className="game-layout">
-            <WorldMapContainer
-              ref={worldMapRef}
-              childrenWithProgress={childrenWithProgress}
-              spiritsById={spiritsById}
-              selectedChildId={selectedChild.id}
-              recentLedger={bigScreenRecentRecords}
-              assetVersion={assetVersion}
-              onSelectChild={selectChildFromMap}
-              moralSpeak={moralSpeak}
-              onOpenModule={openSceneFromHome}
-              onPrepareMoralSpeak={(childId) => focusChildOnHome(childId, { prepareMoralSpeak: true })}
-              onStartMoralSpeak={startMoralSpeak}
-              onStopMoralSpeak={stopMoralSpeakRecording}
-              onRetryMoralSpeak={retryMoralSpeak}
-              onApproveMoralSpeak={approveMoralSpeak}
-              onAdjustMoralSpeak={adjustMoralSpeak}
-              onRespeakMoralSpeak={respeakMoralSpeak}
-              onSkipMoralSpeak={skipMoralSpeakChild}
-              onDeferMoralSpeak={deferMoralSpeak}
-            />
-
-            <aside className="hud-rail">
-              <SpiritDetailPanel
-                child={selectedChild}
-                spirit={selectedSpirit}
-                spiritAssetUrl={selectedSpiritAsset?.url}
-                recentRecords={recentRecords.filter((record) => record.delta > 0)}
-                onOpenProfile={openChildProfile}
-                onStartSelfService={(childId) => focusChildOnHome(childId, { prepareMoralSpeak: true })}
-                onOpenShowcase={openSpiritShowcase}
-              />
-            </aside>
-          </section>
-
-          <SpiritDock
-            childrenWithProgress={childrenWithProgress}
-            spiritsById={spiritsById}
-            selectedChildId={selectedChild.id}
-            onSelectChild={selectChildFromDock}
-            onOpenShowcase={openSpiritShowcase}
-          />
-        </section>
-      ) : activeModule === "roll-call" ? (
-        <RollCallModule
-          childrenWithProgress={childrenWithProgress}
-          spiritsById={spiritsById}
-          selectedChild={selectedChild}
-          currentChildId={rollCallCurrentId}
-          calledChildIds={rollCallCalledIds}
-          excludeCalled={rollCallExcludeCalled}
-          onDraw={drawRollCallChild}
-          onReset={resetRollCall}
-          onToggleExcludeCalled={() => setRollCallExcludeCalled((current) => !current)}
-          onQuickRecord={quickRecordRollCallChild}
-          onOpenVoiceRecord={openVoiceRecordFromRollCall}
-          onFocusChild={(childId) => focusChildOnHome(childId, { prepareMoralSpeak: true })}
-        />
-      ) : activeModule === "teacher-workbench" ? (
-        <TeacherWorkbenchModule
-          childrenWithProgress={childrenWithProgress}
-          spiritsById={spiritsById}
-          selectedChild={selectedChild}
-          pendingReviews={pendingReviews}
-          recentRecords={allRecentRecords}
-          onSelectChild={setSelectedChildId}
-          onQuickRecord={(childIds, delta, reason, category) => {
-            void recordTeacherWorkbench(childIds, delta, reason, category);
-          }}
-          onAnalyze={analyzeVoiceRecord}
-          onConfirm={confirmVoiceRecord}
-          onRejectSuggestion={rejectVoiceSuggestion}
-          onApproveReview={approveReview}
-          onRejectReview={rejectReview}
-          onUndoLast={undoLast}
-          onFocusChild={focusChildOnHome}
-          onOpenProfile={openChildProfile}
-        />
-      ) : activeModule === "voice-record" ? (
-        <VoiceRecordModule
-          childrenWithProgress={childrenWithProgress}
-          spiritsById={spiritsById}
-          selectedChild={selectedChild}
-          pendingReviews={pendingReviews}
-          recentRecords={allRecentRecords}
-          onSelectChild={setSelectedChildId}
-          onAnalyze={analyzeVoiceRecord}
-          onConfirm={confirmVoiceRecord}
-          onRejectSuggestion={rejectVoiceSuggestion}
-          onApproveReview={approveReview}
-          onRejectReview={rejectReview}
-          onFocusChild={focusChildOnHome}
-        />
-      ) : activeModule === "math-arena" ? (
-        <MathArenaModule
-          childrenWithProgress={childrenWithProgress}
-          spiritsById={spiritsById}
-          selectedChild={selectedChild}
-          recentRecords={allRecentRecords}
-          onSelectChild={selectChildFromProfile}
-          onWin={recordMathPkWin}
-          onFocusChild={focusChildOnHome}
-        />
-      ) : activeModule === "leaderboard" ? (
-        <LeaderboardModule
-          childrenWithProgress={childrenWithProgress}
-          spiritsById={spiritsById}
-          selectedChild={selectedChild}
-          onFocusChild={focusChildOnHome}
-        />
-      ) : activeModule === "lottery" ? (
-        <LotteryModule
-          childrenWithProgress={childrenWithProgress}
-          spiritsById={spiritsById}
-          selectedChild={selectedChild}
-          drawRecords={lotteryDraws}
-          onSelectChild={setSelectedChildId}
-          onDrawPrize={recordLotteryDraw}
-          onFocusChild={focusChildOnHome}
-        />
-      ) : activeModule === "shop" ? (
-        <ShopModule
-          childrenWithProgress={childrenWithProgress}
-          spiritsById={spiritsById}
-          selectedChild={selectedChild}
-          redemptions={shopRedemptions}
-          onSelectChild={setSelectedChildId}
-          onFocusChild={focusChildOnHome}
-          onRedeemReward={redeemShopReward}
-        />
-      ) : activeModule === "child-profile" ? (
-        <ChildProfileModule
-          childrenWithProgress={childrenWithProgress}
-          spiritsById={spiritsById}
-          selectedChild={selectedChild}
-          recentRecords={allRecentRecords}
-          onSelectChild={selectChildFromProfile}
-          onFocusChild={focusChildOnHome}
-          onUpdateChild={updateSelectedChild}
-          moralSpeak={moralSpeak}
-          onPrepareMoralSpeak={prepareMoralSpeakInProfile}
-          onStartMoralSpeak={startMoralSpeak}
-          onStopMoralSpeak={stopMoralSpeakRecording}
-          onRetryMoralSpeak={retryMoralSpeak}
-          onApproveMoralSpeak={approveMoralSpeak}
-          onAdjustMoralSpeak={adjustMoralSpeak}
-          onRespeakMoralSpeak={respeakMoralSpeak}
-          onSkipMoralSpeak={skipMoralSpeakChild}
-          onDeferMoralSpeak={deferMoralSpeak}
-        />
-      ) : activeModule === "data-management" ? (
-        <DataManagementModule
-          childrenWithProgress={childrenWithProgress}
-          spiritsById={spiritsById}
-          selectedChild={selectedChild}
-          recentRecords={allRecentRecords}
-          pendingReviews={pendingReviews}
-          onFocusChild={focusChildOnHome}
-          onApproveReview={approveReview}
-          onRejectReview={rejectReview}
-          onExportBackup={exportClassroomBackup}
-          onPreviewImportBackup={previewClassroomBackupFile}
-          onConfirmImportBackup={confirmClassroomBackupImport}
-          onClearDemoData={clearLocalDemoData}
-        />
-      ) : activeModule === "organization" ? (
-        <OrganizationModule
-          childrenWithProgress={childrenWithProgress}
-          ledger={allRecentRecords}
-          moralReviews={moralReviews}
-          selectedChild={selectedChild}
-          activeCurriculumByClassroomId={organizationState.activeCurriculumByClassroomId}
-          parentReportReviewsByChildId={organizationState.parentReportReviewsByChildId}
-          onFocusChild={focusChildOnHome}
-          onCompleteGrowthTask={completeGrowthTask}
-          onPublishCurriculumTrack={publishOrganizationCurriculumTrack}
-        />
-      ) : activeModule === "settings" ? (
-        <SettingsModule
-          childrenCount={children.length}
-          teacherMode={teacherMode}
-          syncStatus={syncStatus}
-          settingsChanges={settingsChanges}
-          onToggleTeacherMode={toggleTeacherModeSetting}
-          onSaveSettings={saveCurrentSettings}
-          onReturnHome={returnToHome}
-        />
-      ) : (
-        <ModulePlaceholder
-          module={activeModuleConfig}
-          selectedChild={selectedChild}
-          pendingReviewCount={pendingReviews.length}
-          onReturnHome={returnToHome}
-        />
-      )}
-
-      {dialogueOpen && <DialogueModal child={selectedChild} onClose={() => setDialogueOpen(false)} onSubmit={submitDialogue} />}
-
-      {pkPair && pkPlayer && pkOpponent && (
-        <MathPkModal
-          player={pkPlayer}
-          opponent={pkOpponent}
-          spiritsById={spiritsById}
-          onClose={() => {
-            setSelectedChildId(pkPlayer.id);
-            setPkPair(null);
-          }}
-          onWin={recordMathPkWin}
-        />
-      )}
-
-      {showcaseChild && showcaseSpirit ? (
-        <SpiritShowcase3D
-          child={showcaseChild}
-          spirit={showcaseSpirit}
-          spiritAssetUrl={showcaseSpiritAsset?.url}
-          onClose={() => setShowcaseChildId(undefined)}
-        />
-      ) : null}
-
-      <GrowthFeedbackOverlay feedback={growthFeedback} />
-    </AppShell>
-  );
+  return <GrowthIslandView {...{
+    activeModule, activeModuleConfig, adjustMoralSpeak, allRecentRecords, analyzeVoiceRecord, approveMoralSpeak,
+    approveReview, assetVersion, bigScreenRecentRecords, children, childrenWithProgress, clearLocalDemoData,
+    completeGrowthTask, confirmClassroomBackupImport, confirmVoiceRecord, deferMoralSpeak, dialogueOpen,
+    drawRollCallChild, exportClassroomBackup, focusChildOnHome, growthFeedback, lotteryDraws, moralReviews,
+    moralSpeak, openChildProfile, openSceneFromHome, openSpiritShowcase, openVoiceRecordFromRollCall,
+    organizationState, pendingReviews, pkOpponent, pkPair, pkPlayer, prepareMoralSpeakInProfile,
+    previewClassroomBackupFile, publishOrganizationCurriculumTrack, quickRecordRollCallChild, recentRecords,
+    recordLotteryDraw, recordMathPkWin, recordTeacherWorkbench, redeemShopReward, rejectReview,
+    rejectVoiceSuggestion, resetRollCall, respeakMoralSpeak, retryMoralSpeak, returnToHome, rollCallCalledIds,
+    rollCallCurrentId, rollCallExcludeCalled, saveCurrentSettings, selectedChild, selectedSpirit,
+    selectedSpiritAsset, selectChildFromDock, selectChildFromMap, selectChildFromProfile, setActiveModule,
+    setDialogueOpen, setPkPair, setRollCallExcludeCalled, setSelectedChildId, setShowcaseChildId,
+    settingsChanges, showcaseChild, showcaseSpirit, showcaseSpiritAsset, shopRedemptions, skipMoralSpeakChild,
+    spiritsById, startMoralSpeak, stopMoralSpeakRecording, submitDialogue, syncStatus, teacherMode,
+    toggleTeacherModeSetting, undoLast, updateSelectedChild, worldMapRef,
+  }} />;
 }
