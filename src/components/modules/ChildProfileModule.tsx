@@ -1,9 +1,23 @@
+/**
+ * [INPUT]: 依赖孩子进度、精灵定义、说成长状态、3D 奖励预览和老师确认卡。
+ * [OUTPUT]: 对外提供 ChildProfileModule 组件。
+ * [POS]: components/modules 的精灵小屋页面，承载孩子唯一 2D 精灵与小屋内说成长入口。
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
+
+import type { CSSProperties } from "react";
 import { useMemo, useState } from "react";
-import { BadgeCheck, BookOpenText, History, Home, Search, Sparkles, Star, Trophy } from "lucide-react";
+import { BadgeCheck, BookOpenText, History, Home, Mic, Search, Sparkles, Star, Trophy, Volume2 } from "lucide-react";
 import { getSpiritStageLabel } from "../../domain/progression";
 import { getSpiritAsset } from "../../domain/spiritAssets";
+import { getChildSpiritVoiceType, getSpiritVoiceOption, spiritVoiceOptions } from "../../domain/spiritVoice";
 import { virtueCategories } from "../../data/spirits";
-import type { ChildWithProgress, LedgerRecord, SpiritDefinition } from "../../types";
+import { v4MapAssets } from "../../game/v4MapAssets";
+import type { ChildProfile, ChildWithProgress, LedgerRecord, SpiritDefinition, VirtueCategory } from "../../types";
+import type { MoralSpeakViewState } from "../../domain/moralSpeakSession";
+import { MoralSpeakOverlay } from "../Hud/MoralSpeakOverlay";
+import { RewardModelPreview3D } from "../Hud/SpiritModelStage3D";
+import { TeacherMoralReviewCard } from "../Hud/TeacherMoralReviewCard";
 
 interface ChildProfileModuleProps {
   childrenWithProgress: ChildWithProgress[];
@@ -12,12 +26,23 @@ interface ChildProfileModuleProps {
   recentRecords: LedgerRecord[];
   onSelectChild: (childId: string) => void;
   onFocusChild: (childId: string) => void;
+  onUpdateChild: (patch: Partial<ChildProfile>) => void;
+  moralSpeak: MoralSpeakViewState;
+  onPrepareMoralSpeak: (childId: string) => void;
+  onStartMoralSpeak: () => void;
+  onStopMoralSpeak: () => void;
+  onRetryMoralSpeak: () => void;
+  onApproveMoralSpeak: () => void;
+  onAdjustMoralSpeak: (category: VirtueCategory, delta: 10 | 20 | 30) => void;
+  onRespeakMoralSpeak: () => void;
+  onSkipMoralSpeak: () => void;
+  onDeferMoralSpeak: () => void;
 }
 
 const sourceLabels: Record<LedgerRecord["source"], string> = {
-  manual: "老师记录",
-  "dialogue-agent": "AI 建议确认",
-  "math-pk": "数学 PK",
+  manual: "老师贝壳",
+  "dialogue-agent": "贝壳建议",
+  "math-pk": "算术点亮",
   undo: "撤销",
 };
 
@@ -37,7 +62,44 @@ function formatRecordDate(createdAt: string) {
 }
 
 function formatDelta(delta: number) {
-  return delta > 0 ? `+${delta}` : String(delta);
+  return delta > 0 ? "点亮" : "提醒";
+}
+
+function getChildRecordLabel(record: LedgerRecord) {
+  const reason = record.reason
+    .replace(/^演示数据[:：]?\s*/, "")
+    .replace(/^课堂记录[:：]?\s*/, "")
+    .replace(/^语音记录[:：]?\s*/, "")
+    .replace(/^复核通过[:：]?\s*/, "")
+    .trim();
+  if (record.source === "math-pk") return "数学光路点亮";
+  if (reason.includes("快速加分") || reason.includes("课堂积极回应")) return "课堂成长点亮";
+  if (reason.includes("自助成长")) return "能量进精灵";
+  if (reason.includes("已有成长")) return "已有成长";
+  if (record.delta < 0) return "老师提醒";
+  return reason.replace(/\s*[+＋-]\d+\s*XP?$/i, "").slice(0, 18) || "成长贝壳";
+}
+
+function getCabinRoomProps(child: ChildWithProgress) {
+  const propPairs = [
+    [
+      { id: "chest", label: "小屋宝箱", url: v4MapAssets.p15PropChest },
+      { id: "star", label: "星光台", url: v4MapAssets.p15PropStar },
+    ],
+    [
+      { id: "fruit", label: "成长果", url: v4MapAssets.p16PropFruit },
+      { id: "bench", label: "小屋长椅", url: v4MapAssets.p16PropBench1 },
+    ],
+    [
+      { id: "bell", label: "荣誉铃", url: v4MapAssets.p16PropBell },
+      { id: "heart", label: "成长心", url: v4MapAssets.p16PropHeart },
+    ],
+    [
+      { id: "gem", label: "能量石", url: v4MapAssets.p15PropGemGreen },
+      { id: "plant", label: "小屋花草", url: v4MapAssets.p15PropPlantSmall },
+    ],
+  ];
+  return propPairs[(child.rank + child.level) % propPairs.length];
 }
 
 export function ChildProfileModule({
@@ -47,8 +109,20 @@ export function ChildProfileModule({
   recentRecords,
   onSelectChild,
   onFocusChild,
+  onUpdateChild,
+  moralSpeak,
+  onPrepareMoralSpeak,
+  onStartMoralSpeak,
+  onStopMoralSpeak,
+  onRetryMoralSpeak,
+  onApproveMoralSpeak,
+  onAdjustMoralSpeak,
+  onRespeakMoralSpeak,
+  onSkipMoralSpeak,
+  onDeferMoralSpeak,
 }: ChildProfileModuleProps) {
   const [query, setQuery] = useState("");
+  const [voiceNotice, setVoiceNotice] = useState("");
   const selectedSpirit = spiritsById.get(selectedChild.spiritId);
   const selectedAsset = selectedSpirit ? getSpiritAsset(selectedSpirit, selectedChild.state) : undefined;
   const normalizedQuery = normalize(query);
@@ -74,33 +148,51 @@ export function ChildProfileModule({
   const strongestDimension = [...dimensionStats].sort((a, b) => b.xp - a.xp || b.count - a.count)[0];
   const latestMilestone = positiveRecords[0];
   const stageLabel = getSpiritStageLabel(selectedChild.state);
+  const selectedVoiceType = getChildSpiritVoiceType(selectedChild);
+  const selectedVoice = getSpiritVoiceOption(selectedVoiceType) ?? spiritVoiceOptions[0];
+  const spiritAccent = selectedSpirit?.accent ?? "#f6b352";
+  const spiritShowcaseStyle = { "--profile-spirit-accent": spiritAccent } as CSSProperties;
+  const cabinRoomProps = useMemo(() => getCabinRoomProps(selectedChild), [selectedChild.id, selectedChild.level, selectedChild.rank]);
+  const activeMoralSpeak =
+    moralSpeak.childId === selectedChild.id
+      ? moralSpeak
+      : ({ stage: "idle" } satisfies MoralSpeakViewState);
+  const updateVoiceType = (voiceType: number) => {
+    const nextVoice = getSpiritVoiceOption(voiceType);
+    onUpdateChild({ voiceType });
+    setVoiceNotice(`${nextVoice?.label ?? "声音"} 已换`);
+  };
 
   return (
     <section className="module-page profile-page" aria-labelledby="profile-title">
-      <div className="profile-header">
+      <div className="profile-header module-compact-header">
         <div>
           <span className="module-eyebrow">
-            <BookOpenText size={18} />
-            成长沉淀
+            <BookOpenText size={18} aria-hidden="true" />
+            精灵小屋
           </span>
-          <h1 id="profile-title">孩子成长档案</h1>
+          <h1 id="profile-title">精灵小屋</h1>
         </div>
         <button type="button" className="profile-home-button" onClick={() => onFocusChild(selectedChild.id)}>
-          <Home size={18} />
-          聚焦
+          <Home size={18} aria-hidden="true" />
+          看精灵
         </button>
       </div>
 
       <div className="profile-layout">
-        <aside className="profile-roster-panel" aria-label="档案孩子列表">
+        <aside className="profile-roster-panel" aria-label="精灵小屋名单">
+          <div className="profile-roster-title">
+            <strong>小屋名单</strong>
+            <span>{filteredChildren.length} 位</span>
+          </div>
           <label className="profile-search" htmlFor="profile-search">
-            <Search size={18} />
+            <Search size={18} aria-hidden="true" />
             <input
               id="profile-search"
               name="profileSearch"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="搜索孩子或精灵"
+              placeholder="找孩子 / 精灵"
             />
           </label>
           <div className="profile-roster-list">
@@ -108,54 +200,169 @@ export function ChildProfileModule({
               const spirit = spiritsById.get(child.spiritId);
               const asset = spirit ? getSpiritAsset(spirit, child.state) : undefined;
               return (
-                <button key={child.id} type="button" className={child.id === selectedChild.id ? "active" : undefined} onClick={() => onSelectChild(child.id)}>
+                <button
+                  key={child.id}
+                  type="button"
+                  aria-current={child.id === selectedChild.id ? "true" : undefined}
+                  className={child.id === selectedChild.id ? "active" : undefined}
+                  onClick={() => onSelectChild(child.id)}
+                >
                   <span>
-                    {asset?.url ? <img src={asset.url} alt={`${child.petName} 精灵`} /> : child.name.slice(0, 1)}
+                    {asset?.url ? <img src={asset.url} alt={`${child.petName} 精灵`} width={48} height={48} /> : child.name.slice(0, 1)}
                   </span>
                   <strong>{child.name}</strong>
-                  <em>
-                    Lv.{child.level} · {child.xp} XP
-                  </em>
+                  <em>{child.petName} · 精灵能量</em>
                 </button>
               );
             })}
           </div>
         </aside>
 
-        <section className="profile-story-panel" aria-label="成长故事线">
+        <section className="profile-story-panel" aria-label="精灵小屋主面板">
           <div className="profile-hero-card">
-            <div className="profile-portrait">
-              {selectedAsset?.url ? <img src={selectedAsset.url} alt={`${selectedChild.petName} 精灵`} /> : selectedChild.name.slice(0, 1)}
+            <div
+              className={`profile-cabin-stage moral-stage-${activeMoralSpeak.stage}`}
+              aria-label={`${selectedChild.name} 的精灵小屋`}
+            >
+              <div className="profile-cabin-status">
+                <span>已进入 {selectedChild.name} 小屋</span>
+                <strong>{activeMoralSpeak.stage === "idle" ? stageLabel : "说成长"}</strong>
+              </div>
+              <div className="profile-spirit-showcase" style={spiritShowcaseStyle}>
+                <div className="profile-spirit-aura" aria-hidden="true" />
+                <div
+                  className="profile-portrait profile-spirit-main"
+                  data-spirit-id={selectedSpirit?.id ?? selectedChild.spiritId}
+                  data-spirit-state={selectedChild.state}
+                >
+                  {selectedAsset?.url ? (
+                    <img
+                      src={selectedAsset.url}
+                      alt={`${selectedChild.name} 的${selectedChild.petName}精灵`}
+                      width={220}
+                      height={220}
+                    />
+                  ) : (
+                    <span>{selectedChild.name.slice(0, 1)}</span>
+                  )}
+                </div>
+                <div className="profile-spirit-shadow" aria-hidden="true" />
+                <div className="profile-cabin-prop-3d" aria-hidden="true">
+                  <RewardModelPreview3D
+                    modelKey="growth-star"
+                    label="小屋星光"
+                    accent={spiritAccent}
+                    className="profile-cabin-reward-stage"
+                    hideLoading
+                    interactive={false}
+                    size="compact"
+                  />
+                </div>
+              </div>
+              <div className="profile-cabin-room-props" aria-hidden="true">
+                {cabinRoomProps.map((prop, index) => (
+                  <img
+                    key={prop.id}
+                    className={`profile-cabin-room-prop ${index === 0 ? "is-left" : "is-right"}`}
+                    src={prop.url}
+                    alt=""
+                    width={72}
+                    height={72}
+                    loading="lazy"
+                  />
+                ))}
+              </div>
+              {activeMoralSpeak.stage === "idle" ? (
+                <button
+                  type="button"
+                  className="profile-moral-start"
+                  onClick={() => onPrepareMoralSpeak(selectedChild.id)}
+                  aria-label={`${selectedChild.name} 在小屋说成长`}
+                >
+                  <Mic size={18} aria-hidden="true" />
+                  说成长
+                </button>
+              ) : null}
+              <div className="profile-moral-layer" aria-live="polite">
+                <MoralSpeakOverlay
+                  child={selectedChild}
+                  spirit={selectedSpirit}
+                  state={activeMoralSpeak}
+                  onStart={onStartMoralSpeak}
+                  onStop={onStopMoralSpeak}
+                  onRetry={onRetryMoralSpeak}
+                  onClose={onDeferMoralSpeak}
+                />
+                {activeMoralSpeak.stage === "pendingReview" ? (
+                  <TeacherMoralReviewCard
+                    key={activeMoralSpeak.reviewId ?? `${selectedChild.id}:${activeMoralSpeak.transcript ?? ""}`}
+                    child={selectedChild}
+                    transcript={activeMoralSpeak.transcript}
+                    result={activeMoralSpeak.result}
+                    busy={activeMoralSpeak.approving === true}
+                    onApprove={onApproveMoralSpeak}
+                    onAdjust={onAdjustMoralSpeak}
+                    onDefer={onDeferMoralSpeak}
+                    onRespeak={onRespeakMoralSpeak}
+                    onSkip={onSkipMoralSpeak}
+                  />
+                ) : null}
+              </div>
+              <div className="profile-cabin-floor" aria-hidden="true" />
             </div>
-            <div>
-              <span>成长档案</span>
-              <h2>{selectedChild.name}</h2>
-              <p>{selectedSpirit?.name ?? "小精灵"} · {stageLabel}</p>
-              <div className="profile-stat-row">
-                <strong>Lv.{selectedChild.level}</strong>
-                <strong>{selectedChild.xp} XP</strong>
-                <strong>全班 #{selectedChild.rank}</strong>
+            <div className="profile-cabin-info">
+              <div className="profile-cabin-heading">
+                <span>小屋主人</span>
+                <h2>{selectedChild.name}</h2>
+                <p>{selectedSpirit?.name ?? "小精灵"} · {stageLabel}</p>
+              </div>
+              <div className="profile-stat-row" aria-label="精灵成长状态">
+                <strong>成长阶段</strong>
+                <strong>能量槽</strong>
+                <strong>小屋伙伴</strong>
+              </div>
+              <div className="profile-cabin-controls">
+                <label className="profile-voice-select">
+                  <span>
+                    <Volume2 size={16} aria-hidden="true" />
+                    精灵声音
+                  </span>
+                  <select value={selectedVoiceType} onChange={(event) => updateVoiceType(Number(event.target.value))}>
+                    {spiritVoiceOptions.map((voice) => (
+                      <option key={voice.voiceType} value={voice.voiceType}>
+                        {voice.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <div className="profile-cabin-actions">
+                  <span>{voiceNotice || `${selectedVoice.label} 声线`}</span>
+                  <button type="button" onClick={() => onFocusChild(selectedChild.id)}>
+                    <Home size={16} aria-hidden="true" />
+                    看精灵
+                  </button>
+                </div>
               </div>
             </div>
           </div>
 
           <div className="profile-section-title">
-            <History size={18} />
-            <strong>成长故事线</strong>
-            <span>{childRecords.length} 条确认记录</span>
+            <History size={18} aria-hidden="true" />
+            <strong>最近贝壳</strong>
+            <span>{childRecords.length} 条</span>
           </div>
           <div className="profile-timeline">
             {childRecords.length === 0 ? (
               <article className="profile-empty-story">
-                <Sparkles size={22} />
-                <p>暂无记录</p>
+                <Sparkles size={22} aria-hidden="true" />
+                <p>暂无成长贝壳</p>
               </article>
             ) : (
               childRecords.slice(0, 8).map((record) => (
                 <article key={record.id} className={record.delta < 0 ? "negative" : undefined}>
                   <span>{formatDelta(record.delta)}</span>
                   <div>
-                    <strong>{record.reason}</strong>
+                    <strong>{getChildRecordLabel(record)}</strong>
                     <p>{record.category ?? sourceLabels[record.source]}</p>
                     <em>
                       {sourceLabels[record.source]} · {formatRecordDate(record.createdAt)}
@@ -167,11 +374,15 @@ export function ChildProfileModule({
           </div>
         </section>
 
-        <aside className="profile-insight-panel" aria-label="德育画像和代表事件">
+        <aside className="profile-insight-panel" aria-label="能量与高光">
+          <div className="profile-insight-title">
+            <strong>能量与高光</strong>
+            <span>{strongestDimension?.category ?? "暂无"}</span>
+          </div>
           <section>
             <div className="profile-section-title">
-              <Star size={18} />
-              <strong>德育画像</strong>
+              <Star size={18} aria-hidden="true" />
+              <strong>能量徽章</strong>
               <span>{strongestDimension?.category ?? "暂无"}</span>
             </div>
             <div className="dimension-list">
@@ -191,15 +402,15 @@ export function ChildProfileModule({
 
           <section className="profile-milestone-card">
             <div className="profile-section-title">
-              <Trophy size={18} />
-              <strong>代表成长</strong>
+              <Trophy size={18} aria-hidden="true" />
+              <strong>高光贝壳</strong>
             </div>
             {latestMilestone ? (
               <article>
-                <span>{formatDelta(latestMilestone.delta)} XP</span>
-                <strong>{latestMilestone.reason}</strong>
+                <span>{formatDelta(latestMilestone.delta)}</span>
+                <strong>{getChildRecordLabel(latestMilestone)}</strong>
                 <p>
-                  {latestMilestone.category ?? "成长记录"} · {formatRecordDate(latestMilestone.createdAt)}
+                  {latestMilestone.category ?? "成长贝壳"} · {formatRecordDate(latestMilestone.createdAt)}
                 </p>
               </article>
             ) : (
@@ -209,8 +420,8 @@ export function ChildProfileModule({
 
           <section className="profile-evidence-card">
             <div className="profile-section-title">
-              <BadgeCheck size={18} />
-              <strong>展示证据</strong>
+              <BadgeCheck size={18} aria-hidden="true" />
+              <strong>小屋状态</strong>
             </div>
             <dl>
               <div>
@@ -218,12 +429,16 @@ export function ChildProfileModule({
                 <dd>{stageLabel}</dd>
               </div>
               <div>
-                <dt>成长记录</dt>
+                <dt>精灵声音</dt>
+                <dd>{selectedVoice.label}</dd>
+              </div>
+              <div>
+                <dt>成长贝壳</dt>
                 <dd>{childRecords.length} 条</dd>
               </div>
               <div>
-                <dt>正向 XP</dt>
-                <dd>{positiveRecords.reduce((sum, record) => sum + record.delta, 0)} XP</dd>
+                <dt>点亮能量</dt>
+                <dd>{positiveRecords.reduce((sum, record) => sum + record.delta, 0)} 能量</dd>
               </div>
             </dl>
           </section>

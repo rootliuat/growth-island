@@ -1,0 +1,674 @@
+/**
+ * [INPUT]: 依赖 ../01-tokens.css 以及前序 cascade 片段。
+ * [OUTPUT]: 对外提供后续模块、移动端和白板触控最终覆盖第 4 段样式。
+ * [POS]: styles/modules 的 cascade 片段 4/14，由 ../index.css 按顺序导入。
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
+
+
+.growth-feedback-copy span {
+  width: fit-content;
+  min-height: 24px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  color: #fffdf4;
+  background: #2d9fb2;
+}
+
+.growth-feedback-card strong {
+  color: #174c5a;
+  font-size: 18px;
+  line-height: 1.12;
+}
+
+.growth-feedback-card em {
+  overflow: hidden;
+  color: rgba(23, 76, 90, 0.68);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.growth-feedback-overlay.watch .growth-feedback-card span,
+.growth-feedback-overlay.watch .growth-feedback-sigil,
+.growth-feedback-overlay.watch .growth-feedback-float {
+  background: #d95f55;
+}
+
+.growth-feedback-overlay.neutral .growth-feedback-card span,
+.growth-feedback-overlay.neutral .growth-feedback-sigil,
+.growth-feedback-overlay.neutral .growth-feedback-float {
+  background: #174c5a;
+}
+
+@keyframes growthFeedbackFloat {
+  0% {
+    opacity: 0;
+    transform: translateY(16px) scale(0.88);
+  }
+  18%,
+  76% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-34px) scale(1.06);
+  }
+}
+
+@keyframes growthFeedbackPop {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 720px) {
+  .growth-feedback-overlay {
+    top: auto;
+    right: 10px;
+    bottom: 84px;
+    left: 10px;
+    justify-items: stretch;
+    max-width: none;
+  }
+
+  .growth-feedback-float {
+    justify-self: end;
+  }
+
+  .growth-feedback-card {
+    min-width: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .growth-feedback-float,
+  .growth-feedback-card {
+    animation: none;
+  }
+}
+
+/* Data harbor: the teacher sees the next classroom action before maintenance tools. */
+.data-harbor-page {
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  background:
+    radial-gradient(circle at 14% 0, rgba(135, 216, 208, 0.22), transparent 32%),
+    linear-gradient(180deg, #eef6f0 0%, #f7f0db 100%);
+}
+
+.data-harbor-header .data-harbor-title-chips,
+.data-harbor-dock,
+.data-chip-row,
+.data-backup-status-card .data-backup-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.data-harbor-title-chips span,
+.data-harbor-dock article,
+.data-chip-row span {
+  border: 1px solid rgba(23, 76, 90, 0.11);
+  color: #174c5a;
+  background: rgba(255, 253, 244, 0.82);
+}
+
+.data-harbor-title-chips span {
+  min-height: 28px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.data-harbor-dock {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.data-harbor-dock article {
+  display: grid;
+  min-width: 0;
+  min-height: 64px;
+  align-content: center;
+  gap: 3px;
+  padding: 10px 13px;
+  border-radius: 18px;
+  box-shadow: 0 10px 24px rgba(20, 28, 25, 0.06);
+}
+
+.data-harbor-dock span,
+.data-status-card-title span,
+.data-roster-current span,
+.data-roster-current em {
+  overflow: hidden;
+  color: rgba(23, 76, 90, 0.64);
+  font-size: 12px;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.data-harbor-dock strong {
+  overflow: hidden;
+  color: #174c5a;
+  font-size: 20px;
+  font-weight: 950;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.data-harbor-grid {
+  display: grid;
+  grid-template-columns: minmax(310px, 0.88fr) minmax(420px, 1.16fr) minmax(270px, 0.74fr);
+  grid-template-areas: "review ledger status";
+  align-items: stretch;
+  gap: 14px;
+  min-height: 0;
+}
+
+.data-priority-panel {
+  grid-area: review;
+}
+
+.data-ledger-panel {
+  grid-area: ledger;
+}
+.data-status-rail {
+  display: grid;
+  grid-area: status;
+  grid-template-rows: auto auto auto;
+  align-content: start;
+  gap: 12px;
+  min-width: 0;
+  min-height: 0;
+}
+
+.data-overview-panel,
+.data-status-card,
+.data-tools-drawer,
+.data-drawer-card {
+  border: 1px solid rgba(23, 76, 90, 0.12);
+  border-radius: 20px;
+  background: rgba(255, 253, 244, 0.9);
+  box-shadow: 0 12px 28px rgba(20, 28, 25, 0.07);
+}
+
+.data-overview-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: stretch;
+  gap: 12px;
+  padding: 15px;
+}
+
+.data-overview-panel .data-panel-title {
+  padding-bottom: 10px;
+}
+
+.data-overview-panel .data-insight-metrics {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.data-overview-panel .data-insight-metrics article {
+  min-height: 58px;
+  padding: 9px;
+  border-radius: 14px;
+}
+
+.data-chip-row span {
+  min-height: 27px;
+  padding: 5px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 950;
+}
+
+.data-status-card {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  padding: 14px;
+}
+
+.data-status-card-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.data-status-card-title strong {
+  min-width: 0;
+  overflow: hidden;
+  color: #174c5a;
+  font-size: 15px;
+  font-weight: 950;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.data-status-card-title span {
+  margin-left: auto;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(223, 242, 234, 0.86);
+  color: #2d8c85;
+}
+
+.data-roster-preview {
+  display: grid;
+  grid-template-columns: repeat(6, 44px);
+  gap: 6px;
+}
+
+.data-roster-preview button {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(214, 177, 106, 0.5);
+  border-radius: 14px;
+  color: #174c5a;
+  background: #fff7d8;
+  font-weight: 950;
+}
+
+.data-roster-preview button.active {
+  border-color: rgba(45, 159, 178, 0.5);
+  background: rgba(135, 216, 208, 0.3);
+  outline: 2px solid rgba(45, 159, 178, 0.25);
+  outline-offset: 2px;
+}
+
+.data-roster-preview img,
+.data-child-avatar img {
+  width: 94%;
+  height: 94%;
+  object-fit: contain;
+}
+
+.data-roster-current {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid rgba(23, 76, 90, 0.1);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.66);
+}
+
+.data-roster-current strong {
+  overflow: hidden;
+  color: #174c5a;
+  font-size: 16px;
+  font-weight: 950;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.data-backup-status-card .data-backup-metrics {
+  justify-content: flex-start;
+}
+
+.data-tools-drawer {
+  overflow: clip;
+}
+
+.data-tools-drawer summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 52px;
+  padding: 0 14px;
+  color: #174c5a;
+  list-style: none;
+  cursor: pointer;
+}
+
+.data-tools-drawer summary::-webkit-details-marker {
+  display: none;
+}
+
+.data-tools-drawer summary span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 950;
+}
+
+.data-tools-drawer summary em {
+  overflow: hidden;
+  color: rgba(23, 76, 90, 0.58);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.data-tools-drawer[open] summary {
+  border-bottom: 1px solid rgba(23, 76, 90, 0.1);
+  background: rgba(255, 248, 234, 0.72);
+}
+
+.data-drawer-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(330px, 0.86fr);
+  gap: 12px;
+  max-height: min(720px, calc(100vh - 180px));
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 12px;
+}
+
+.data-drawer-search,
+.data-drawer-filter,
+.data-drawer-backup {
+  grid-column: 1 / -1;
+}
+
+.data-drawer-card,
+.data-drawer-roster,
+.data-drawer-backup {
+  min-width: 0;
+}
+
+.data-drawer-card {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+}
+
+.data-drawer-filter .data-insight-controls {
+  align-items: start;
+}
+
+.data-drawer-roster {
+  min-height: 320px;
+  max-height: 420px;
+}
+
+.data-drawer-roster .data-child-list {
+  content-visibility: auto;
+}
+
+.data-page button:focus-visible,
+.data-tools-drawer summary:focus-visible,
+.data-clear-input:focus-visible,
+.data-toolbar label:focus-within {
+  outline: 3px solid rgba(45, 159, 178, 0.34);
+  outline-offset: 3px;
+}
+
+@media (max-width: 1160px) {
+  .data-harbor-grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "review"
+      "ledger"
+      "status";
+  }
+
+  .data-status-rail {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-rows: auto;
+  }
+
+  .data-drawer-panel {
+    grid-template-columns: minmax(0, 1fr);
+    max-height: none;
+  }
+
+  .data-drawer-backup,
+  .data-drawer-filter,
+  .data-drawer-search {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 720px) {
+  .data-harbor-page {
+    grid-template-rows: auto auto auto auto;
+    padding: 14px;
+    overflow: auto;
+  }
+
+  .data-harbor-header {
+    align-items: center;
+    min-height: auto;
+  }
+
+  .data-harbor-header > div {
+    flex-wrap: wrap;
+  }
+
+  .data-harbor-header .data-harbor-title-chips {
+    display: none;
+  }
+
+  .data-harbor-dock {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .data-harbor-grid {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .data-status-rail {
+    display: contents;
+  }
+
+  .data-priority-panel {
+    order: 1;
+  }
+
+  .data-overview-panel {
+    order: 2;
+  }
+
+  .data-ledger-panel {
+    order: 3;
+  }
+
+  .data-roster-card {
+    order: 4;
+  }
+
+  .data-backup-status-card {
+    order: 5;
+  }
+
+  .data-overview-panel .data-insight-metrics,
+  .data-backup-panel.data-drawer-backup,
+  .data-governance-row,
+  .data-restore-review {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .data-roster-preview {
+    grid-template-columns: repeat(4, 44px);
+  }
+
+  .data-drawer-panel {
+    max-height: none;
+    padding: 10px;
+  }
+
+  .data-tools-drawer summary {
+    min-height: 54px;
+  }
+
+  .data-tools-drawer summary em {
+    display: none;
+  }
+
+  .data-drawer-roster {
+    max-height: none;
+  }
+}
+
+/* Organization harbor: keep school operations inside the island teacher-tool language. */
+.organization-page {
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: 12px;
+  background:
+    radial-gradient(circle at 12% 0, rgba(135, 216, 208, 0.22), transparent 34%),
+    linear-gradient(180deg, #eef6f0 0%, #f7f0db 100%);
+}
+
+.organization-header-chips,
+.organization-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.organization-header-chips span,
+.organization-summary article {
+  border: 1px solid rgba(23, 76, 90, 0.11);
+  color: #174c5a;
+  background: rgba(255, 253, 244, 0.84);
+}
+
+.organization-header-chips span {
+  min-height: 28px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.organization-summary {
+  align-items: center;
+}
+
+.organization-summary article {
+  display: inline-flex;
+  width: auto;
+  min-height: 38px;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 11px;
+  border-radius: 999px;
+  box-shadow: 0 10px 22px rgba(20, 28, 25, 0.05);
+}
+
+.organization-summary span {
+  color: rgba(23, 76, 90, 0.62);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.organization-summary strong {
+  color: #174c5a;
+  font-size: 14px;
+  font-weight: 950;
+}
+
+.organization-layout {
+  grid-template-columns: minmax(220px, 0.7fr) minmax(360px, 1.1fr) minmax(380px, 1.08fr);
+  grid-template-rows: auto auto auto;
+  grid-template-areas:
+    "classes classroom report"
+    "classes curriculum report"
+    "classes tasks report";
+  align-items: start;
+  gap: 12px;
+  min-height: auto;
+}
+
+.organization-class-panel {
+  grid-area: classes;
+}
+
+.organization-classroom-panel {
+  grid-area: classroom;
+}
+
+.organization-report-panel {
+  grid-area: report;
+}
+
+.organization-curriculum-panel {
+  grid-area: curriculum;
+}
+
+.organization-task-panel {
+  grid-area: tasks;
+}
+
+.organization-class-panel,
+.organization-classroom-panel,
+.organization-report-panel,
+.organization-curriculum-panel,
+.organization-task-panel {
+  border: 1px solid rgba(214, 177, 106, 0.42);
+  border-radius: 20px;
+  background: rgba(255, 248, 234, 0.9);
+  box-shadow: 0 12px 28px rgba(20, 28, 25, 0.07);
+  min-height: auto;
+  overflow: visible;
+}
+
+.organization-class-list,
+.organization-teacher-list,
+.organization-report-list,
+.organization-track-list,
+.organization-task-list {
+  min-height: auto;
+  overflow: visible;
+}
+
+.organization-panel-title {
+  min-height: 36px;
+  color: #174c5a;
+}
+
+.organization-panel-title span {
+  margin-left: auto;
+  padding: 4px 8px;
+  border-radius: 999px;
+  color: #2d8c85;
+  background: rgba(223, 242, 234, 0.86);
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.organization-class-list button,
+.organization-report-list button,
+.organization-classroom-metrics article,
+.organization-teacher-list article,
+.organization-track-list article,
+.organization-task-list article,
+.organization-report-preview {
+  border-color: rgba(23, 76, 90, 0.12);
+  background: rgba(255, 253, 244, 0.84);
+}
+
+.organization-class-list button.active,
+.organization-report-list button.active,
+.organization-track-list article.active,
+.organization-task-list article.active,
+.organization-report-preview {
+  border-color: rgba(45, 159, 178, 0.38);
+  background: rgba(235, 250, 245, 0.9);
+  box-shadow: 0 0 0 3px rgba(45, 159, 178, 0.09);
+}
+
+.organization-track-list button,
+.organization-task-list button,
+.organization-report-actions button,
+.organization-home-button {
+  border-radius: 999px;
+  background: #174c5a;
+}

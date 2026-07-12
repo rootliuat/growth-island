@@ -27,6 +27,17 @@ npm run build
 
 当前生成精灵图资产体积较大，构建会提示 chunk 体积警告，但构建可通过。后续需要把精灵图片改成按需加载和缩略图加载。
 
+## 测试与 QA
+
+```bash
+npm run typecheck
+npm test
+npm run qa:visual
+npm run qa:p4-providers
+```
+
+`qa:visual` 需要先运行 `npm run dev`。`qa:p4-providers` 需要 Tencent TTS/ASR 和 DeepSeek 凭据；环境变量、mock provider、fallback 行为见 `docs/provider-runtime-guide.md`。
+
 ## 数据说明
 
 运行数据在 `data/beihai-db.json`，已被 `.gitignore` 排除，不会提交到仓库。服务端缺少该文件时会按内置初始数据创建本地数据库。
@@ -39,4 +50,3 @@ npm run build
 - `src/components/WorldMap/`：React 与 PixiJS 的桥接容器。
 - `assets/generated/`：当前生成的精灵图资产。
 - `.agents/skills/beihai-asset-imagegen/`：项目专用批量生图 skill。
-

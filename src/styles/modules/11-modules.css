@@ -1,0 +1,667 @@
+/**
+ * [INPUT]: 依赖 ../01-tokens.css 以及前序 cascade 片段。
+ * [OUTPUT]: 对外提供后续模块、移动端和白板触控最终覆盖第 11 段样式。
+ * [POS]: styles/modules 的 cascade 片段 11/14，由 ../index.css 按顺序导入。
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
+
+
+.home-screen-shell .spirit-dock.expanded .dock-tools {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: auto minmax(150px, 240px) minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+}
+
+.home-screen-shell .spirit-dock.expanded .dock-tools-head,
+.home-screen-shell .spirit-dock.expanded .dock-search,
+.home-screen-shell .spirit-dock.expanded .dock-filters {
+  min-width: 0;
+}
+
+.home-screen-shell .spirit-dock.expanded .dock-tools-head {
+  gap: 10px;
+  min-height: 44px;
+}
+
+.home-screen-shell .spirit-dock.expanded .dock-tools-head strong {
+  font-size: 15px;
+  white-space: nowrap;
+}
+
+.home-screen-shell .spirit-dock.expanded .dock-tools-head strong::before {
+  display: none;
+}
+
+.home-screen-shell .spirit-dock.expanded .dock-collapse {
+  min-height: 44px;
+  padding-inline: 12px;
+  box-shadow: none;
+}
+
+.home-screen-shell .spirit-dock.expanded .dock-search {
+  min-height: 44px;
+  border-color: rgba(31, 74, 66, 0.12);
+  background: #ffffff;
+}
+
+.home-screen-shell .spirit-dock.expanded .dock-filters {
+  display: flex;
+  min-height: 44px;
+  padding-bottom: 0;
+}
+
+.home-screen-shell .spirit-dock.expanded .dock-filters button {
+  min-height: 36px;
+  border-color: rgba(31, 74, 66, 0.12);
+  background: #fff7d8;
+}
+
+.home-screen-shell .spirit-dock.expanded .dock-filters button.active {
+  color: #fff8df;
+  border-color: rgba(23, 76, 90, 0.24);
+  background: #2f7f87;
+}
+
+.home-screen-shell .spirit-dock.expanded .dock-selected-summary.expanded {
+  display: grid;
+  grid-column: 1;
+  grid-row: 2;
+  grid-template-columns: 56px minmax(0, 1fr);
+  align-self: stretch;
+  gap: 10px;
+  width: 100%;
+  max-width: none;
+  min-height: 96px;
+  padding: 10px;
+  text-align: left;
+  border-color: rgba(31, 74, 66, 0.14);
+  background: #fff7d8;
+}
+
+.home-screen-shell .spirit-dock.expanded .dock-selected-summary.expanded .dock-avatar {
+  width: 56px;
+  height: 56px;
+  align-self: center;
+}
+
+.home-screen-shell .spirit-dock.expanded .dock-selected-summary.expanded .dock-avatar img {
+  max-width: 66px;
+  max-height: 66px;
+}
+
+.dock-selected-copy {
+  display: grid;
+  min-width: 0;
+  align-content: center;
+  gap: 3px;
+}
+
+.home-screen-shell .dock-selected-summary .dock-selected-copy strong,
+.home-screen-shell .dock-selected-summary .dock-selected-copy em,
+.home-screen-shell .dock-selected-summary .dock-selected-copy small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-screen-shell .dock-selected-summary .dock-selected-copy small {
+  color: #7a6a4d;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.home-screen-shell .spirit-dock.expanded .dock-scroll {
+  display: grid;
+  grid-column: 2;
+  grid-row: 2;
+  grid-auto-flow: column;
+  grid-auto-columns: 86px;
+  grid-template-rows: repeat(2, minmax(74px, 1fr));
+  align-items: stretch;
+  gap: 7px;
+  min-height: 0;
+  padding: 6px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  border-color: rgba(31, 74, 66, 0.1);
+  background: #f3ead2;
+  overscroll-behavior-x: contain;
+}
+
+.home-screen-shell .spirit-dock.expanded.has-many-children .dock-scroll {
+  grid-auto-columns: 82px;
+}
+
+.home-screen-shell .spirit-dock.expanded .dock-scroll::before {
+  display: none;
+}
+
+.home-screen-shell .spirit-dock.expanded .dock-spirit {
+  display: grid;
+  grid-template-rows: 42px auto auto;
+  align-content: center;
+  justify-items: center;
+  gap: 2px;
+  width: 100%;
+  min-width: 0;
+  min-height: 74px;
+  padding: 5px 4px;
+  border-radius: 16px;
+  scroll-margin-inline: 94px;
+}
+
+.home-screen-shell .spirit-dock.expanded .dock-avatar {
+  width: 42px;
+  height: 42px;
+}
+
+.home-screen-shell .spirit-dock.expanded .dock-avatar img {
+  max-width: 50px;
+  max-height: 50px;
+}
+
+.home-screen-shell .spirit-dock.expanded .dock-spirit strong {
+  max-width: 72px;
+  color: #14342e;
+  font-size: 13px;
+}
+
+.home-screen-shell .spirit-dock.expanded .dock-spirit em {
+  max-width: 72px;
+  min-width: 0;
+  padding: 1px 6px;
+  font-size: 11px;
+}
+
+.home-screen-shell .spirit-dock.expanded .dock-spirit.active {
+  transform: none;
+}
+
+.home-screen-shell .spirit-dock.expanded .dock-spirit.active strong,
+.home-screen-shell .spirit-dock.expanded .dock-spirit.active em {
+  color: #fff9df;
+}
+
+.home-screen-shell .home-module:has(.world-map-shell:not(.moral-stage-idle)) .spirit-dock.expanded {
+  grid-template-columns: minmax(166px, 210px) minmax(0, 1fr);
+  max-height: 166px;
+  overflow: hidden;
+}
+
+.home-screen-shell .home-module:has(.world-map-shell:not(.moral-stage-idle)) .spirit-dock.expanded .dock-tools {
+  display: grid;
+  grid-template-columns: auto auto;
+  justify-content: space-between;
+}
+
+.home-screen-shell .home-module:has(.world-map-shell:not(.moral-stage-idle)) .spirit-dock.expanded .dock-search,
+.home-screen-shell .home-module:has(.world-map-shell:not(.moral-stage-idle)) .spirit-dock.expanded .dock-filters {
+  display: none;
+}
+
+.home-screen-shell .home-module:has(.world-map-shell:not(.moral-stage-idle)) .spirit-dock.expanded .dock-selected-summary.expanded {
+  min-height: 78px;
+}
+
+.home-screen-shell .home-module:has(.world-map-shell:not(.moral-stage-idle)) .spirit-dock.expanded .dock-scroll {
+  grid-template-rows: 1fr;
+  grid-auto-columns: 76px;
+  min-height: 78px;
+  padding: 5px;
+}
+
+.home-screen-shell .home-module:has(.world-map-shell:not(.moral-stage-idle)) .spirit-dock.expanded .dock-spirit {
+  grid-template-rows: 44px auto;
+  min-height: 68px;
+  padding: 4px;
+}
+
+.home-screen-shell .home-module:has(.world-map-shell:not(.moral-stage-idle)) .spirit-dock.expanded .dock-spirit em,
+.home-screen-shell .home-module:has(.world-map-shell:not(.moral-stage-idle)) .spirit-dock.expanded .dock-spirit::before,
+.home-screen-shell .home-module:has(.world-map-shell:not(.moral-stage-idle)) .spirit-dock.expanded .dock-spirit.active::after {
+  display: none;
+}
+
+.home-screen-shell .home-module:has(.world-map-shell:not(.moral-stage-idle)) .spirit-dock.expanded .dock-spirit strong {
+  display: block;
+  max-width: 68px;
+  font-size: 12px;
+  line-height: 1.05;
+}
+
+.home-screen-shell .home-module:has(.world-map-shell:not(.moral-stage-idle)) .spirit-dock.expanded .dock-selected-summary.expanded strong {
+  display: block;
+}
+
+/* P1/P2 child flow pass: one task at a time on the whiteboard. */
+.home-screen-shell .game-layout:has(.world-map-shell:not(.moral-stage-idle)) .hud-rail,
+.home-screen-shell .home-module:has(.spirit-dock.expanded) .hud-rail,
+.world-map-shell:not(.moral-stage-idle) .map-companion-actions {
+  display: none;
+}
+
+.world-map-shell:not(.moral-stage-idle) .energy-slot-row button:not(.current) {
+  display: none;
+}
+
+.world-map-shell:not(.moral-stage-idle) .map-energy-constellation {
+  pointer-events: none;
+}
+
+.world-map-shell:not(.moral-stage-idle) .energy-card.current {
+  pointer-events: auto;
+}
+
+.world-map-shell:not(.moral-stage-idle) .moral-flow-ribbon {
+  opacity: 0.78;
+  transform: translateX(-50%) scale(0.94);
+}
+
+.home-screen-shell .map-scene-gate button,
+.home-screen-shell .energy-slot-row button,
+.home-screen-shell .zoom-controls button {
+  min-width: 48px;
+  min-height: 48px;
+  touch-action: manipulation;
+}
+
+.teacher-review-status {
+  gap: 5px;
+}
+
+.teacher-review-transcript-line {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 7px;
+  margin: 0;
+  padding: 8px 9px;
+  border: 1px solid rgba(214, 177, 106, 0.28);
+  border-radius: 13px;
+  color: #174c5a;
+  background: rgba(255, 253, 244, 0.72);
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.34;
+}
+
+.teacher-review-transcript-line span {
+  display: inline-flex;
+  min-height: 22px;
+  align-items: center;
+  padding: 0 7px;
+  border-radius: 999px;
+  color: #fffdf4;
+  background: #2d9fb2;
+  font-size: 11px;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.review-transcript {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+
+.review-transcript summary {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 32px;
+  align-items: center;
+  padding: 0 10px;
+  border: 1px solid rgba(214, 177, 106, 0.34);
+  border-radius: 999px;
+  color: rgba(23, 76, 90, 0.72);
+  background: rgba(255, 253, 244, 0.74);
+  font-size: 12px;
+  font-weight: 950;
+  cursor: pointer;
+  list-style: none;
+}
+
+.review-transcript summary::-webkit-details-marker {
+  display: none;
+}
+
+.review-transcript summary::after {
+  margin-left: 6px;
+  content: "展开";
+}
+
+.review-transcript[open] summary::after {
+  content: "收起";
+}
+
+.teacher-review-actions[data-mode="approve"] {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.teacher-review-actions[data-mode="adjust"] {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.teacher-review-actions button,
+.review-edit-popover summary {
+  min-height: 52px;
+  padding-inline: 10px;
+}
+
+.teacher-review-actions .approve {
+  background: #3b7d53;
+}
+
+.teacher-review-actions[data-mode="adjust"] .review-edit-popover summary,
+.review-edit-popover.primary summary {
+  color: #fffdf4;
+  background: #174c5a;
+  box-shadow: inset 0 -3px 0 rgba(7, 41, 50, 0.16);
+}
+
+.review-edit-popover[open] {
+  grid-column: 1 / -1;
+}
+
+.review-edit-panel {
+  position: static;
+  display: grid;
+  width: auto;
+  gap: 7px;
+  margin-top: 7px;
+  padding: 7px;
+  border-radius: 13px;
+  box-shadow: inset 0 0 0 1px rgba(214, 177, 106, 0.32);
+}
+
+.review-edit-panel button {
+  min-height: 48px;
+  padding: 0 8px;
+}
+
+.review-confidence {
+  display: flex;
+  min-height: 30px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 4px;
+  border-top: 1px solid rgba(214, 177, 106, 0.28);
+  color: rgba(23, 76, 90, 0.66);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.review-confidence em {
+  min-height: 24px;
+  padding: 5px 8px;
+  border-radius: 999px;
+  color: color-mix(in srgb, var(--moral-accent, #f6b352) 76%, #174c5a);
+  background: color-mix(in srgb, var(--moral-accent, #f6b352) 12%, #fffdf4);
+  font-style: normal;
+  line-height: 1;
+}
+
+@media (max-width: 720px) {
+  .scene-command-home {
+    min-height: 44px;
+  }
+
+  .home-screen-shell .zoom-controls {
+    flex-direction: column;
+  }
+
+  .map-energy-constellation {
+    width: min(226px, calc(100% - 92px));
+  }
+
+  .energy-slot-row {
+    display: flex;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+  }
+
+  .energy-slot-row::-webkit-scrollbar {
+    display: none;
+  }
+
+  .energy-slot-row button {
+    flex: 0 0 56px;
+    min-height: 56px;
+  }
+
+  .energy-glyph {
+    width: 28px;
+    height: 28px;
+  }
+
+  .home-screen-shell .map-scene-gate {
+    bottom: 92px;
+  }
+
+  .home-screen-shell .spirit-dock:not(.collapsed) {
+    max-height: min(232px, calc(100% - 112px));
+  }
+
+  .home-screen-shell .spirit-dock.expanded {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto minmax(0, 1fr);
+    max-height: min(314px, calc(100% - 112px));
+  }
+
+  .home-screen-shell .spirit-dock.expanded .dock-tools {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .home-screen-shell .spirit-dock.expanded .dock-search,
+  .home-screen-shell .spirit-dock.expanded .dock-filters {
+    grid-column: 1 / -1;
+  }
+
+  .home-screen-shell .spirit-dock.expanded .dock-selected-summary.expanded,
+  .home-screen-shell .spirit-dock.expanded .dock-scroll {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .home-screen-shell .spirit-dock.expanded .dock-selected-summary.expanded {
+    min-height: 72px;
+  }
+
+  .home-screen-shell .spirit-dock.expanded .dock-scroll {
+    grid-template-rows: repeat(2, minmax(74px, 1fr));
+    grid-auto-columns: 84px;
+  }
+
+  .home-screen-shell .home-module:has(.world-map-shell:not(.moral-stage-idle)) .spirit-dock.expanded {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto minmax(0, 1fr);
+    max-height: min(286px, calc(100% - 112px));
+  }
+
+  .home-screen-shell .home-module:has(.world-map-shell:not(.moral-stage-idle)) .spirit-dock.expanded .dock-tools {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .home-screen-shell .home-module:has(.world-map-shell:not(.moral-stage-idle)) .spirit-dock.expanded .dock-selected-summary.expanded,
+  .home-screen-shell .home-module:has(.world-map-shell:not(.moral-stage-idle)) .spirit-dock.expanded .dock-scroll {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .home-screen-shell .home-module:has(.world-map-shell:not(.moral-stage-idle)) .spirit-dock.expanded .dock-scroll {
+    grid-template-rows: 1fr;
+    grid-auto-columns: 58px;
+  }
+
+  .home-screen-shell .teacher-review-corner-card {
+    top: auto;
+    right: 12px;
+    bottom: 116px;
+    left: 12px;
+    z-index: 40;
+    width: auto;
+    max-height: min(250px, calc(100% - 176px));
+    overflow: auto;
+    overscroll-behavior: contain;
+  }
+
+  .home-screen-shell .teacher-review-corner-card:has(.review-edit-popover[open]) {
+    bottom: 88px;
+    max-height: min(300px, calc(100% - 116px));
+    overflow: auto;
+  }
+
+  .home-screen-shell .home-module:has(.world-map-shell:not(.moral-stage-idle)):has(.spirit-dock.expanded) .teacher-review-corner-card {
+    bottom: 304px;
+    max-height: min(300px, calc(100% - 116px));
+  }
+
+  .home-screen-shell .home-module:has(.world-map-shell.moral-stage-pendingReview):has(.spirit-dock.expanded) .spirit-speech-bubble {
+    display: none;
+  }
+
+  .home-screen-shell .moral-speak-overlay.pendingReview {
+    padding: 58px 14px 214px;
+  }
+
+  .home-screen-shell .moral-speak-overlay.listening,
+  .home-screen-shell .moral-speak-overlay.recognizing {
+    padding: 58px 14px 184px;
+  }
+
+  .home-screen-shell .moral-retry-button {
+    bottom: 184px;
+  }
+
+  .home-screen-shell .review-edit-panel {
+    position: static;
+    width: auto;
+    z-index: auto;
+  }
+
+  .home-screen-shell .spirit-speech-bubble {
+    max-width: calc(100vw - 44px);
+  }
+}
+
+/* P4 home touch pass: keep the island primary and avoid duplicated touch targets. */
+.home-screen-shell .map-energy-constellation {
+  width: min(430px, calc(100% - 116px));
+  gap: 6px;
+  padding: 7px;
+  border-radius: 16px;
+  background: rgba(255, 248, 234, 0.76);
+  box-shadow: 0 8px 18px rgba(19, 51, 45, 0.1);
+}
+
+.home-screen-shell .energy-constellation-head strong {
+  max-width: 210px;
+  min-height: 26px;
+  padding-inline: 9px;
+  font-size: 12px;
+}
+.home-screen-shell .energy-constellation-head span {
+  min-height: 26px;
+  padding-inline: 8px;
+  font-size: 12px;
+}
+
+.home-screen-shell .energy-slot-row {
+  gap: 5px;
+}
+
+.home-screen-shell .energy-slot-row button {
+  min-height: 54px;
+  padding: 4px 3px;
+  border-radius: 12px;
+  font-size: 11px;
+}
+
+.home-screen-shell .energy-glyph {
+  width: 26px;
+  height: 26px;
+}
+
+.home-screen-shell .map-scene-gate {
+  opacity: 0.78;
+  transform: scale(0.94);
+  transform-origin: top right;
+}
+
+.home-screen-shell .map-scene-gate > strong,
+.home-screen-shell .map-scene-gate button em,
+.home-screen-shell .map-scene-gate button small {
+  display: none;
+}
+
+.home-screen-shell .spirit-dock.collapsed {
+  z-index: 16;
+  min-height: 56px;
+  padding: 5px 8px;
+  overflow: visible;
+}
+
+.home-screen-shell .dock-selected-summary {
+  max-width: min(360px, calc(100vw - 148px));
+  min-height: 46px;
+  overflow: visible;
+  padding: 4px 12px 4px 5px;
+}
+
+.home-screen-shell .dock-summary-copy {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+  text-align: left;
+}
+
+.home-screen-shell .dock-summary-copy small {
+  color: rgba(20, 52, 46, 0.58);
+  font-size: 11px;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.home-screen-shell .dock-summary-copy strong {
+  display: block;
+  max-width: 220px;
+  overflow: hidden;
+  font-size: 16px;
+  line-height: 1.08;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-screen-shell .dock-selected-summary > em {
+  display: none;
+}
+
+.home-screen-shell .dock-selected-summary > .dock-summary-status {
+  display: inline-flex;
+  min-height: 28px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 8px;
+  border-radius: 999px;
+  color: #174c5a;
+  background: rgba(255, 240, 191, 0.92);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 950;
+  white-space: nowrap;
+}
+
+.home-screen-shell .spirit-dock.collapsed .dock-collapse {
+  display: inline-flex;
+  min-width: 72px;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding-inline: 11px;
+  font-size: 13px;
+}

@@ -1,7 +1,8 @@
-import { ChevronDown, Home, MapPin, Pencil, Sparkles } from "lucide-react";
+import { ChevronDown, Home, MapPin, Pencil, Sparkles, Volume2 } from "lucide-react";
 import type { ChildProfile, ChildWithProgress } from "../../types";
 import { islandSlots } from "../../data/classroom";
 import { spirits } from "../../data/spirits";
+import { getChildSpiritVoiceType, getSpiritVoiceOption, spiritVoiceOptions } from "../../domain/spiritVoice";
 
 interface TeacherActionPanelProps {
   child: ChildWithProgress;
@@ -13,6 +14,8 @@ export function TeacherActionPanel({ child, teacherMode, onUpdateChild }: Teache
   if (!teacherMode) return null;
   const currentSpirit = spirits.find((spirit) => spirit.id === child.spiritId) ?? spirits[0];
   const currentSlot = islandSlots.find((slot) => slot.id === child.slotId) ?? islandSlots[0];
+  const currentVoiceType = getChildSpiritVoiceType(child);
+  const currentVoice = getSpiritVoiceOption(currentVoiceType) ?? spiritVoiceOptions[0];
 
   return (
     <section className="teacher-action-panel">
@@ -31,7 +34,7 @@ export function TeacherActionPanel({ child, teacherMode, onUpdateChild }: Teache
           </div>
           <div>
             <strong>{child.petName}</strong>
-            <span>{currentSpirit.name} · {currentSlot.zone}</span>
+            <span>{currentSpirit.name} · {currentVoice.label} · {currentSlot.zone}</span>
           </div>
         </div>
         <div className="teacher-field-grid">
@@ -66,6 +69,27 @@ export function TeacherActionPanel({ child, teacherMode, onUpdateChild }: Teache
                 ))}
               </select>
               <ChevronDown size={18} />
+            </span>
+          </label>
+          <label>
+            <span>
+              <Volume2 size={15} />
+              精灵声音
+            </span>
+            <span className="select-wrap">
+              <select
+                id="teacher-voice-type"
+                name="teacherVoiceType"
+                value={currentVoiceType}
+                onChange={(event) => onUpdateChild({ voiceType: Number(event.target.value) })}
+              >
+                {spiritVoiceOptions.map((voice) => (
+                  <option key={voice.voiceType} value={voice.voiceType}>
+                    {voice.label}
+                  </option>
+                ))}
+              </select>
+              <Volume2 size={18} />
             </span>
           </label>
           <label>

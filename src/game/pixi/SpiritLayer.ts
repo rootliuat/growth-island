@@ -13,6 +13,8 @@ interface SpiritNode {
   body: Container;
   artwork?: Container;
   artworkReveal?: ArtworkReveal;
+  artworkLoaded: boolean;
+  loadTimer?: number;
   evolvePulse?: EvolvePulse;
   imageKey?: string;
   loadVersion: number;
@@ -124,23 +126,38 @@ export class SpiritLayer {
     node.body.rotation = upgraded ? -0.035 : 0;
   }
 
-  updateFrame(ticker: Ticker) {
+  updateFrame(ticker: Ticker, options: { selectedOnly?: boolean } = {}) {
     this.elapsed += ticker.deltaMS / 1000;
     this.nodes.forEach((node, childId) => {
       if (!node.root.visible) return;
+      if (options.selectedOnly && childId !== this.selectedChildId) return;
+      const selected = childId === this.selectedChildId;
       const breath = 1 + Math.sin(this.elapsed * 2.2 + node.root.x * 0.004) * 0.028;
       const targetRoot = this.getTargetScale(childId);
       const rootScale = node.root.scale.x + (targetRoot - node.root.scale.x) * Math.min(1, ticker.deltaMS / 160);
       node.root.scale.set(rootScale);
       const pulse = this.updateEvolvePulse(node, childId, ticker.deltaMS);
       node.body.scale.set(node.body.scale.x + (breath * pulse.scale - node.body.scale.x) * pulse.lerp);
-      node.body.y = -Math.abs(Math.sin(this.elapsed * 1.6 + node.root.x * 0.01)) * 5 + pulse.y;
+      const floatPhase = this.elapsed * (selected ? 1.85 : 1.6) + node.root.x * 0.01;
+      const closeFocusFloat = selected && this.zoom >= 1.08;
+      const floatY = closeFocusFloat ? -5 - Math.sin(floatPhase) * 5 : -Math.abs(Math.sin(floatPhase)) * 5;
+      node.body.y = floatY + pulse.y;
       node.body.rotation += (pulse.rotation - node.body.rotation) * 0.12;
       node.halo.rotation += 0.006 * ticker.deltaTime;
       node.halo.visible = pulse.haloVisible;
       node.halo.alpha = pulse.haloAlpha;
       this.updateArtworkReveal(node, ticker.deltaMS);
     });
+  }
+
+  getSelectedAnimationSnapshot() {
+    const node = this.nodes.get(this.selectedChildId);
+    if (!node) return undefined;
+    return {
+      visible: node.root.visible,
+      bodyY: Number(node.body.y.toFixed(2)),
+      scale: Number(node.body.scale.x.toFixed(3)),
+    };
   }
 
   updateZoom(zoom: number) {
@@ -159,7 +176,7 @@ export class SpiritLayer {
     root.label = spirit.id;
     root.eventMode = "static";
     root.cursor = "pointer";
-    root.hitArea = new Rectangle(-70, -118, 140, 154);
+    root.hitArea = new Rectangle(-88, -132, 176, 184);
     root.on("pointertap", () => {
       this.onSelect(spirit.id);
       const target = getDoorFocusTarget(spirit.doorPosition, cameraConfig.spiritZoom);
@@ -188,16 +205,16 @@ export class SpiritLayer {
     });
 
     const levelBadge = new Container();
-    levelBadge.x = -47;
-    levelBadge.y = -60;
+    levelBadge.x = -50;
+    levelBadge.y = -63;
     const badgeBg = new Graphics()
-      .roundRect(-24, -13, 48, 26, 13)
+      .roundRect(-32, -17, 64, 34, 17)
       .fill(0xffe7a8)
       .stroke({ width: 2.5, color: spirit.accent, alpha: 0.58 });
     const badgeText = new Text({
       text: `Lv.${spirit.child.level}`,
-      resolution: 2,
-      style: { fontFamily: "Georgia, Microsoft YaHei", fontSize: 12, fontWeight: "900", fill: 0x573a25 },
+      resolution: 3,
+      style: { fontFamily: "Georgia, Microsoft YaHei", fontSize: 17, fontWeight: "900", fill: 0x573a25 },
     });
     badgeText.label = "level-text";
     badgeText.anchor.set(0.5);
@@ -209,26 +226,43 @@ export class SpiritLayer {
     moodDot.tint = this.moodTint(spirit.mood);
 
     root.addChild(halo, body, levelBadge, moodDot);
-    const node = { root, halo, body, levelBadge, moodDot, rank: spirit.child.rank, level: spirit.child.level, loadVersion: 0 };
+    const node = {
+      root,
+      halo,
+      body,
+      levelBadge,
+      moodDot,
+      rank: spirit.child.rank,
+      level: spirit.child.level,
+      loadVersion: 0,
+      artworkLoaded: false,
+    };
     this.updateArtwork(node, spirit);
     return node;
   }
 
   private updateArtwork(node: SpiritNode, spirit: WorldSpirit) {
     const imageKey = spirit.imageKey ?? `fallback:${spirit.child.state}:${spirit.accent}`;
-    if (node.imageKey === imageKey) return;
+    const shouldPrioritizePendingLoad = spirit.id === this.selectedChildId && node.imageKey === imageKey && !node.artworkLoaded;
+    if (node.imageKey === imageKey && !shouldPrioritizePendingLoad) return;
 
-    node.imageKey = imageKey;
-    node.loadVersion += 1;
+    if (node.imageKey !== imageKey) {
+      node.imageKey = imageKey;
+      node.loadVersion += 1;
+      node.artworkLoaded = false;
+    }
     const loadVersion = node.loadVersion;
     if (!spirit.imageUrl) {
       this.showFallback(node, spirit);
       return;
     }
+    const imageUrl = spirit.imageUrl;
     if (!node.artwork) this.showFallback(node, spirit);
 
-    makeSpiritSprite(spirit.imageUrl, getSpiritTargetWidth(spirit.child.state))
-      .then((sprite: Sprite) => {
+    window.clearTimeout(node.loadTimer);
+    const loadArtwork = () => {
+      node.loadTimer = undefined;
+      makeSpiritSprite(imageUrl, getSpiritTargetWidth(spirit.child.state)).then((sprite: Sprite) => {
         if (node.body.destroyed || loadVersion !== node.loadVersion) {
           sprite.destroy();
           return;
@@ -250,17 +284,36 @@ export class SpiritLayer {
           startY: 42,
           targetY: 10,
         };
-      })
-      .catch(() => undefined);
+        node.artworkLoaded = true;
+        window.dispatchEvent(new CustomEvent("growth-island-asset-loaded"));
+      }).catch(() => undefined);
+    };
+
+    const loadDelay = shouldPrioritizePendingLoad ? 0 : this.getArtworkLoadDelay(spirit);
+    if (loadDelay < 0) return;
+    if (loadDelay > 0) {
+      node.loadTimer = window.setTimeout(loadArtwork, loadDelay);
+      return;
+    }
+    loadArtwork();
   }
 
   private showFallback(node: SpiritNode, spirit: WorldSpirit) {
+    window.clearTimeout(node.loadTimer);
+    node.loadTimer = undefined;
     node.artwork?.destroy();
     const fallback = this.drawFallback(spirit);
     fallback.y = -22;
     node.body.addChild(fallback);
     node.artwork = fallback;
     node.artworkReveal = undefined;
+  }
+
+  private getArtworkLoadDelay(spirit: WorldSpirit) {
+    if (spirit.id === this.selectedChildId) return 0;
+    const priority = Math.max(1, Math.min(35, spirit.child.rank));
+    if (priority <= 4) return 260 + priority * 120;
+    return -1;
   }
 
   private updateArtworkReveal(node: SpiritNode, deltaMS: number) {
@@ -396,7 +449,7 @@ export class SpiritLayer {
 
   private shouldShowSpirit(childId: string, node: SpiritNode) {
     if (childId === this.selectedChildId) return true;
-    if (this.zoom >= 1.32) return false;
+    if (this.zoom >= 1.08) return false;
     if (this.zoom < 0.72) return true;
     return this.zoomScale >= 0.9 || node.rank <= 3 || node.level >= 7;
   }

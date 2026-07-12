@@ -1,15 +1,14 @@
-const categoryRules = [
-  { category: "家国情怀", keywords: ["国旗", "祖国", "家乡", "北海", "老街", "升旗"] },
-  { category: "意志坚韧", keywords: ["坚持", "没有放弃", "继续", "练习", "完成", "努力"] },
-  { category: "积极阳光", keywords: ["帮助", "分享", "开心", "鼓励", "谢谢", "朋友", "同学"] },
-  { category: "勇毅有力", keywords: ["勇敢", "保护", "尝试", "挑战", "大胆", "站出来"] },
-  { category: "激浊扬清", keywords: ["垃圾", "整理", "干净", "环保", "收拾", "清理", "归位"] },
-  { category: "开拓创新", keywords: ["想到", "办法", "发明", "搭建", "创造", "新的"] },
-  { category: "尊矩守法", keywords: ["排队", "规则", "轮流", "不抢", "等待", "安静", "遵守"] },
-];
+/**
+ * [INPUT]: 依赖 shared/moral-rules.json 的类别、正向与风险关键词。
+ * [OUTPUT]: 对外提供 evaluateMoralText 确定性德育评估函数。
+ * [POS]: server 的本地规则兜底引擎，被 beihai-api 的 Provider 降级路径消费。
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
 
-const deductKeywords = ["抢", "推", "打", "吵", "乱扔", "插队", "不排队", "弄坏", "没有遵守"];
-const strongKeywords = ["主动", "一直", "很多", "大家", "第一次", "勇敢", "坚持完成"];
+import { readFileSync } from "node:fs";
+
+const moralRules = JSON.parse(readFileSync(new URL("../shared/moral-rules.json", import.meta.url), "utf8"));
+const { categoryRules, deductKeywords, strongKeywords } = moralRules;
 
 export function evaluateMoralText(text) {
   const normalized = String(text || "").trim();

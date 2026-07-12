@@ -10,8 +10,14 @@ export class LabelLayer {
   private readonly regionLabels: Container[] = [];
   private readonly spiritLabels = new Map<string, Container>();
   private readonly spiritMeta = new Map<string, { rank: number; level: number; hasActivity: boolean; x: number; y: number }>();
+  private readonly spiritLabelLayer = new Container();
+  private interactionMode = false;
+  private lastZoom = 1;
+  private lastSelectedChildId = "";
 
   constructor(private readonly layer: Container) {
+    this.spiritLabelLayer.label = "spirit-labels";
+    this.spiritLabelLayer.sortableChildren = true;
     regions.forEach((region) => {
       const node = new Container();
       node.x = region.signPosition.x;
@@ -38,6 +44,7 @@ export class LabelLayer {
       this.regionLabels.push(node);
       this.layer.addChild(node);
     });
+    this.layer.addChild(this.spiritLabelLayer);
   }
 
   update(data: WorldMapData) {
@@ -53,7 +60,7 @@ export class LabelLayer {
       if (!node) {
         node = this.createSpiritLabel();
         this.spiritLabels.set(spirit.id, node);
-        this.layer.addChild(node);
+        this.spiritLabelLayer.addChild(node);
       }
       node.x = spirit.spritePosition.x + assetScaleRules.label.selectedNameOffset.x;
       node.y = spirit.spritePosition.y + assetScaleRules.label.selectedNameOffset.y;
@@ -70,7 +77,14 @@ export class LabelLayer {
   }
 
   updateZoom(zoom: number, selectedChildId: string) {
+    this.lastZoom = zoom;
+    this.lastSelectedChildId = selectedChildId;
+    if (this.interactionMode) {
+      this.applyInteractionVisibility(selectedChildId);
+      return;
+    }
     const selectedMeta = this.spiritMeta.get(selectedChildId);
+    const overviewFindMode = zoom <= 0.72;
     this.regionLabels.forEach((label) => {
       label.visible = zoom < 1.2;
       label.alpha = zoom < 0.72 ? 1 : 0.76;
@@ -83,16 +97,32 @@ export class LabelLayer {
         selectedMeta && meta
           ? Math.abs(meta.x - selectedMeta.x) < 360 && Math.abs(meta.y - selectedMeta.y) < 280
           : false;
-      label.visible = selected || (zoom >= 1.36 && nearSelected);
-      label.alpha = selected ? 1 : 0.72;
-      label.scale.set(selected ? (zoom >= 1.42 ? 0.94 : 0.86) : 0.72);
+      label.visible = selected || overviewFindMode || (zoom >= 1.36 && nearSelected);
+      label.alpha = selected ? 1 : overviewFindMode ? 0.68 : 0.72;
+      label.scale.set(selected ? (zoom >= 1.42 ? 0.98 : 0.9) : overviewFindMode ? 0.56 : 0.72);
+      label.zIndex = selected ? 20 : overviewFindMode ? 2 : 1;
+      const currentRing = label.getChildByLabel("current-ring") as Graphics | undefined;
+      if (currentRing) currentRing.visible = selected;
       const bubble = label.getChildByLabel("activity-bubble");
       if (bubble) bubble.visible = selected && Boolean(meta?.hasActivity) && zoom >= 1.48;
     });
   }
 
+  setInteractionMode(active: boolean) {
+    if (active === this.interactionMode) return;
+    this.interactionMode = active;
+    if (active) {
+      this.applyInteractionVisibility(this.lastSelectedChildId);
+      return;
+    }
+    this.updateZoom(this.lastZoom, this.lastSelectedChildId);
+  }
+
   private createSpiritLabel() {
     const node = new Container();
+    const currentRing = new Graphics();
+    currentRing.label = "current-ring";
+    currentRing.visible = false;
     const bg = new Graphics();
     bg.label = "name-bg";
     const text = new Text({
@@ -126,7 +156,7 @@ export class LabelLayer {
     bubbleText.anchor.set(0.5);
     bubble.addChild(bubbleBg, tokenBg, tokenText, bubbleText);
 
-    node.addChild(bg, text, bubble);
+    node.addChild(currentRing, bg, text, bubble);
     return node;
   }
 
@@ -227,12 +257,21 @@ export class LabelLayer {
     if (text) text.text = spirit.child.name;
     if (bg) {
       const width = Math.max(68, Math.min(118, (text?.width ?? 56) + 28));
+      const currentRing = node.getChildByLabel("current-ring") as Graphics | undefined;
+      if (currentRing) {
+        currentRing.clear();
+        currentRing
+          .roundRect(-width / 2 - 7, -20, width + 14, 39, 19)
+          .fill({ color: 0xfff3c8, alpha: 0.2 })
+          .stroke({ width: 3, color: spirit.accent, alpha: 0.56 });
+        currentRing.ellipse(0, 18, width * 0.43, 8).fill({ color: palette.inkShadow, alpha: 0.1 });
+      }
       bg.clear();
       bg.ellipse(0, 15, width * 0.36, 7).fill({ color: palette.inkShadow, alpha: 0.1 });
       bg.roundRect(-width / 2, -16, width, 31, 15).fill(0xfff6d7).stroke({
-        width: 2,
+        width: 2.5,
         color: spirit.accent,
-        alpha: 0.32,
+        alpha: 0.42,
       });
       bg.circle(-width / 2 + 13, -1, 3).fill({ color: spirit.accent, alpha: 0.58 });
       bg.circle(width / 2 - 13, -1, 3).fill({ color: spirit.accent, alpha: 0.58 });
@@ -245,9 +284,10 @@ export class LabelLayer {
       bubble.visible = Boolean(spirit.lastActivity);
       const note = spirit.lastActivity ? this.cleanActivity(spirit.lastActivity) : "";
       const delta = spirit.lastActivityDelta ?? 0;
+      const selfServiceEnergy = Boolean(spirit.lastActivity?.includes("自助成长") && delta > 0);
       const positive = delta >= 0;
       bubbleText.text = note;
-      tokenText.text = delta === 0 ? "记录" : delta > 0 ? `+${delta}` : `${delta}`;
+      tokenText.text = selfServiceEnergy ? "能量" : delta === 0 ? "记录" : delta > 0 ? `+${delta}` : `${delta}`;
       const tokenWidth = Math.max(42, tokenText.width + 16);
       const width = Math.max(112, Math.min(160, bubbleText.width + tokenWidth + 24));
       const tokenX = -width / 2 + tokenWidth / 2 + 10;
@@ -265,7 +305,7 @@ export class LabelLayer {
       });
       tokenBg.clear();
       tokenBg.roundRect(tokenX - tokenWidth / 2, -11, tokenWidth, 22, 11)
-        .fill(positive ? palette.positive : palette.negative)
+        .fill(selfServiceEnergy ? palette.accent : positive ? palette.positive : palette.negative)
         .stroke({ width: 2, color: 0xfff6d7, alpha: 0.8 });
       tokenBg.circle(tokenX + tokenWidth / 2 - 8, -2, 3).fill({ color: 0xffffff, alpha: 0.48 });
       tokenText.x = tokenX;
@@ -276,9 +316,33 @@ export class LabelLayer {
   }
 
   private cleanActivity(reason: string) {
+    const cleaned = reason
+      .replace(/^演示数据[:：]?\s*/, "")
+      .replace(/^课堂记录[:：]?\s*/, "")
+      .replace(/^对话[:：]?\s*/, "")
+      .replace(/^语音记录[:：]?\s*/, "")
+      .trim();
     if (reason.includes("撤销")) return "撤销记录";
-    if (reason.includes("减分") || reason.includes("扣分")) return "调整记录";
-    if (reason.includes("加分")) return "成长记录";
-    return reason.replace(/^演示数据[:：]?\s*/, "").slice(0, 8);
+    if (cleaned.includes("减分") || cleaned.includes("扣分")) return "行为提醒";
+    if (cleaned.includes("自助成长")) return "进精灵";
+    if (cleaned.includes("已有成长")) return "成长记录";
+    if (cleaned.includes("快速加分")) return "课堂记录";
+    return cleaned.replace(/\s*[+＋-]\d+\s*XP?$/i, "").slice(0, 8);
+  }
+
+  private applyInteractionVisibility(selectedChildId: string) {
+    this.regionLabels.forEach((label) => {
+      label.visible = false;
+    });
+    this.spiritLabels.forEach((label, childId) => {
+      const selected = childId === selectedChildId;
+      label.visible = selected;
+      label.alpha = selected ? 0.92 : 0;
+      label.scale.set(selected ? 0.9 : 0.72);
+      const bubble = label.getChildByLabel("activity-bubble");
+      if (bubble) bubble.visible = false;
+      const currentRing = label.getChildByLabel("current-ring") as Graphics | undefined;
+      if (currentRing) currentRing.visible = selected;
+    });
   }
 }

@@ -1,3 +1,10 @@
+/**
+ * [INPUT]: 依赖 CameraController、LayerManager 和各 Pixi 动态/交互地图 Layer。
+ * [OUTPUT]: 对外提供 WorldScene 类，组合区域、路径、道具、小屋、精灵、标签、特效、数据更新、动画更新、聚焦和静态缓存。
+ * [POS]: game/pixi 的场景编排 Module，被 PixiWorld 驱动。
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
+
 import { Container, Ticker } from "pixi.js";
 import { getDoorFocusTarget } from "../assetScaleRules";
 import { cameraConfig } from "../cameraConfig";
@@ -8,7 +15,6 @@ import { CameraController } from "./CameraController";
 import { DecorationLayer } from "./DecorationLayer";
 import { EffectLayer } from "./EffectLayer";
 import { HomeLayer } from "./HomeLayer";
-import { IslandLayer } from "./IslandLayer";
 import { LabelLayer } from "./LabelLayer";
 import { LayerManager } from "./LayerManager";
 import { OceanLayer } from "./OceanLayer";
@@ -16,44 +22,59 @@ import { PathLayer } from "./PathLayer";
 import { RegionLayer } from "./RegionLayer";
 import { SpiritLayer } from "./SpiritLayer";
 
+function isSelfServiceEnergyReason(reason?: string) {
+  return Boolean(reason?.startsWith("自助成长："));
+}
+
+function regionEnergyCacheKey(items: WorldMapData["regionEnergy"]) {
+  return items
+    .map((item) => `${item.regionId}:${item.count}:${item.current ? 1 : 0}:${item.color}:${item.displayText}`)
+    .join("|");
+}
+
 export class WorldScene {
   readonly root = new Container();
   readonly layers = new LayerManager();
   readonly ocean: OceanLayer;
   readonly regions: RegionLayer;
+  readonly decorations: DecorationLayer;
   readonly effects: EffectLayer;
   readonly homes: HomeLayer;
   readonly spirits: SpiritLayer;
   readonly labels: LabelLayer;
+  private readonly cachedStaticLayers: Container[];
   private data?: WorldMapData;
   private lastLedgerId?: string;
+  private regionEnergyKey = "";
   private animationElapsed = 0;
   private lastZoom = Number.NaN;
   private readonly animationStepMs = 1000 / 30;
-  private readonly staticCacheTimers: number[] = [];
+  private readonly staticCacheResolution = 1;
+  private pendingDecorationCacheRefresh = false;
+  private interactionVisualMode = false;
 
   constructor(
     private readonly camera: CameraController,
     private readonly callbacks: WorldMapCallbacks,
   ) {
     this.ocean = new OceanLayer(this.layers.get("ocean"));
-    new IslandLayer(this.layers.get("island"));
     this.regions = new RegionLayer(this.layers.get("regions"), this.layers.get("labels"), this.focusRegionPoint);
     new PathLayer(this.layers.get("paths"));
-    new DecorationLayer(this.layers.get("decorations"), {
+    this.decorations = new DecorationLayer(this.layers.get("decorations"), {
       onFocusPoint: this.focusPoint,
       onOpenDialogue: this.callbacks.onOpenDialogue,
+      onOpenModule: this.callbacks.onOpenModule,
+      onPrepareMoralSpeak: this.callbacks.onPrepareMoralSpeak,
       onOpenPk: this.callbacks.onOpenPk,
     });
     this.effects = new EffectLayer(this.layers.get("effects"));
     this.homes = new HomeLayer(this.layers.get("homes"), this.selectChild, this.focusPoint);
     this.spirits = new SpiritLayer(this.layers.get("spirits"), this.selectChild, this.focusPoint);
     this.labels = new LabelLayer(this.layers.get("labels"));
+    this.cachedStaticLayers = [this.layers.staticRoot];
+    this.enableStaticLayerCache();
     this.camera.viewport.addChild(this.layers.root);
     this.root.addChild(this.camera.viewport);
-    [1800, 3600].forEach((delay) => {
-      this.staticCacheTimers.push(window.setTimeout(() => this.cacheStaticMapLayers(), delay));
-    });
   }
 
   updateData(data: WorldMapData) {
@@ -63,8 +84,18 @@ export class WorldScene {
     this.homes.update(data);
     this.spirits.update(data);
     this.labels.update(data);
+    const nextRegionEnergyKey = regionEnergyCacheKey(data.regionEnergy);
+    if (nextRegionEnergyKey !== this.regionEnergyKey) {
+      this.regionEnergyKey = nextRegionEnergyKey;
+      this.regions.setEnergy(data.regionEnergy);
+      this.refreshStaticLayerCache();
+    }
     const selected = data.spirits.find((spirit) => spirit.id === data.selectedChildId);
-    this.effects.setSelectedGuide(undefined, selected?.accent);
+    const selectedSelfServiceEnergy = isSelfServiceEnergyReason(selected?.lastActivity) && (selected?.lastActivityDelta ?? 0) > 0;
+    this.effects.setSelectedGuide(
+      selected?.lastActivityDelta && selected.lastActivityDelta > 0 && !selectedSelfServiceEnergy ? selected.spritePosition : undefined,
+      selected?.accent,
+    );
     this.updateZoomState(true);
 
     if (previousSelected && data.selectedChildId !== previousSelected) {
@@ -83,7 +114,12 @@ export class WorldScene {
         const previousTarget = previousData.spirits.find((spirit) => spirit.id === target.id);
         const changedStage = !!previousTarget && (previousTarget.child.level !== target.child.level || previousTarget.child.state !== target.child.state);
         const upgraded = !!previousTarget && target.child.xp >= previousTarget.child.xp;
-        this.effects.emitXp(target.spritePosition, data.lastLedger.delta);
+        const selfServiceEnergy = isSelfServiceEnergyReason(data.lastLedger.reason) && data.lastLedger.delta > 0;
+        if (selfServiceEnergy) {
+          this.effects.emitEnergyArrival(target.spritePosition, target.homePosition, target.accent);
+        } else {
+          this.effects.emitXp(target.spritePosition, data.lastLedger.delta);
+        }
         if (changedStage) this.spirits.evolve(target.id, upgraded);
         else this.spirits.bounce(target.id);
         this.homes.pulse(target.id);
@@ -92,8 +128,8 @@ export class WorldScene {
     }
   }
 
-  update(ticker: Ticker) {
-    this.updateZoomState();
+  update(ticker: Ticker, interactionActive = false, selectedIdleOnly = false) {
+    this.setInteractionVisualMode(interactionActive);
     this.animationElapsed += ticker.deltaMS;
     if (this.animationElapsed < this.animationStepMs) return;
 
@@ -103,10 +139,38 @@ export class WorldScene {
     } as Ticker;
     this.animationElapsed = 0;
 
+    this.updateZoomState(false, interactionActive);
+    if (!interactionActive) this.flushPendingDecorationCacheRefresh();
+    if (interactionActive || selectedIdleOnly) {
+      this.spirits.updateFrame(frame, { selectedOnly: true });
+      return;
+    }
+
     this.regions.update(frame, this.camera.zoom);
     this.effects.update(frame);
     this.homes.updateFrame(frame.deltaMS);
     this.spirits.updateFrame(frame);
+  }
+
+  getSelectedSpiritAnimationSnapshot() {
+    return this.spirits.getSelectedAnimationSnapshot();
+  }
+
+  getDecorationLodSnapshot() {
+    return this.decorations.getLodSnapshot();
+  }
+
+  refreshStaticLayerCache() {
+    this.cachedStaticLayers.forEach((layer) => layer.updateCacheTexture());
+  }
+
+  setInteractionVisualMode(interactionActive: boolean) {
+    if (interactionActive === this.interactionVisualMode) return;
+    this.interactionVisualMode = interactionActive;
+    this.labels.setInteractionMode(interactionActive);
+    this.layers.get("decorations").renderable = true;
+    this.layers.get("labels").renderable = true;
+    this.layers.get("effects").renderable = !interactionActive;
   }
 
   focusFullIsland() {
@@ -145,32 +209,42 @@ export class WorldScene {
   private focusRegionPoint = (regionId: RegionId, x: number, y: number, zoom: number) => {
     const region = regionsById.get(regionId);
     this.regions.setActive(regionId);
+    this.refreshStaticLayerCache();
     this.camera.focus({ x, y, zoom: region?.id === "growth-plaza" ? 1.05 : zoom });
   };
 
-  private updateZoomState(force = false) {
+  private updateZoomState(force = false, interactionActive = false) {
     const zoom = this.camera.zoom;
-    if (!force && Math.abs(zoom - this.lastZoom) < 0.002) return;
-    this.lastZoom = zoom;
-    this.homes.updateZoom(zoom);
-    this.spirits.updateZoom(zoom);
-    if (this.data) this.labels.updateZoom(zoom, this.data.selectedChildId);
+    const zoomChanged = force || Math.abs(zoom - this.lastZoom) >= 0.002;
+    if (zoomChanged) {
+      this.lastZoom = zoom;
+      this.homes.updateZoom(zoom);
+      this.spirits.updateZoom(zoom);
+      if (this.data) this.labels.updateZoom(zoom, this.data.selectedChildId);
+    }
+    if (interactionActive && !force) return;
+    const decorationsChanged = this.decorations.updateZoom(zoom);
+    if (!decorationsChanged) return;
+    if (interactionActive) {
+      this.pendingDecorationCacheRefresh = true;
+      return;
+    }
+    this.refreshStaticLayerCache();
   }
 
-  private cacheStaticMapLayers() {
-    (["ocean", "island", "paths"] as const).forEach((name) => {
-      const layer = this.layers.get(name);
-      if (layer.destroyed || layer.children.length === 0) return;
-      if (layer.isCachedAsTexture) {
-        layer.updateCacheTexture();
-        return;
-      }
-      layer.cacheAsTexture({ resolution: 1, antialias: false });
+  private flushPendingDecorationCacheRefresh() {
+    if (!this.pendingDecorationCacheRefresh) return;
+    this.pendingDecorationCacheRefresh = false;
+    this.refreshStaticLayerCache();
+  }
+
+  private enableStaticLayerCache() {
+    this.cachedStaticLayers.forEach((layer) => {
+      layer.cacheAsTexture({ resolution: this.staticCacheResolution, antialias: false });
     });
   }
 
   destroy() {
-    this.staticCacheTimers.forEach((timer) => window.clearTimeout(timer));
     this.layers.destroy();
     this.root.destroy({ children: true });
   }

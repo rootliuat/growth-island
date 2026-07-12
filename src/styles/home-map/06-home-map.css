@@ -1,0 +1,156 @@
+/**
+ * [INPUT]: 依赖 ../01-tokens.css 以及前序 cascade 片段。
+ * [OUTPUT]: 对外提供首页海岛地图、HUD、底部精灵队列和能量星座第 6 段样式。
+ * [POS]: styles/home-map 的 cascade 片段 6/6，由 ../index.css 按顺序导入。
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
+
+
+.xp-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: color-mix(in srgb, var(--spirit-accent, #59b97c) 78%, #f2c94c);
+  box-shadow: inset 0 -3px 0 rgba(53, 82, 74, 0.14);
+}
+
+.evolution-board {
+  padding: 8px;
+}
+
+.evolution-track span {
+  min-height: 32px;
+  font-size: 9px;
+}
+
+.growth-action-drawer {
+  margin-top: 10px;
+  padding: 9px;
+  border: 2px solid rgba(214, 208, 190, 0.66);
+  border-radius: 18px;
+  background: #fff7d8;
+  box-shadow: inset 0 -5px 0 rgba(123, 128, 101, 0.08);
+}
+
+.growth-action-drawer summary,
+.agent-suggestion summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  list-style: none;
+  cursor: pointer;
+}
+
+.growth-action-drawer summary::-webkit-details-marker,
+.agent-suggestion summary::-webkit-details-marker {
+  display: none;
+}
+
+.growth-action-drawer summary span,
+.agent-suggestion summary {
+  color: #35524a;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.growth-action-drawer summary span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.growth-action-drawer summary strong,
+.agent-suggestion summary small {
+  color: #8a6b3d;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.score-actions {
+  margin-top: 9px;
+}
+
+.quest-actions {
+  margin-top: 8px;
+}
+
+.gain-button,
+.deduct-button,
+.quest-actions button {
+  min-height: 35px;
+}
+
+.agent-suggestion {
+  padding: 10px;
+}
+
+.agent-suggestion > p {
+  margin: 9px 0 0;
+}
+
+.spirit-dock.collapsed {
+  grid-template-columns: 172px minmax(0, 1fr);
+  align-items: center;
+  padding: 7px 9px;
+}
+
+.spirit-dock.collapsed .dock-tools {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  min-width: 0;
+}
+
+.spirit-dock.collapsed .dock-tools-head {
+  width: 100%;
+}
+
+.spirit-dock.collapsed .dock-tools-head strong {
+  max-width: 94px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.spirit-dock.collapsed .dock-tools-head strong small {
+  display: none;
+}
+
+.spirit-dock.collapsed .dock-search,
+.spirit-dock.collapsed .dock-filters {
+  display: none;
+}
+
+.spirit-dock.collapsed .dock-scroll {
+  display: flex;
+  min-height: 54px;
+  padding: 5px 8px;
+  border-radius: 16px;
+}
+
+.spirit-dock.collapsed .dock-spirit {
+  flex-basis: 62px;
+  min-height: 54px;
+  padding: 4px;
+  border-radius: 18px;
+}
+
+.spirit-dock.collapsed .dock-spirit strong,
+.spirit-dock.collapsed .dock-spirit em,
+.spirit-dock.collapsed .dock-spirit::before,
+.spirit-dock.collapsed .dock-spirit.active::after {
+  display: none;
+}
+
+.spirit-dock.collapsed .dock-spirit.active {
+  transform: translateY(-4px);
+}
+
+.spirit-dock.collapsed .dock-avatar {
+  width: 46px;
+  height: 46px;
+}
+
+.spirit-dock.collapsed .dock-avatar img {
+  max-width: 54px;
+  max-height: 54px;
+}

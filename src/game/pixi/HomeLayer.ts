@@ -17,6 +17,17 @@ interface HomeNode {
   hovered: boolean;
 }
 
+interface HomeModelPropSpec {
+  idSuffix: string;
+  url: string;
+  x: number;
+  y: number;
+  width: number;
+  rotation?: number;
+  alpha?: number;
+  front?: boolean;
+}
+
 export class HomeLayer {
   private readonly homeNodes = new Map<string, HomeNode>();
   private selectedChildId = "";
@@ -77,9 +88,9 @@ export class HomeLayer {
       const selected = node.root.label === this.selectedChildId;
       node.halo.visible = selected && zoom < 1.32;
       node.plaque.visible = false;
-      node.decor.visible = selected || (zoom >= 1.18 && zoom < 1.45);
+      node.decor.visible = selected || (zoom >= 1.12 && zoom < 1.72);
       node.prompt.visible = node.hovered && zoom >= 1.05;
-      node.beacon.visible = node.hovered && zoom < 1.24;
+      node.beacon.visible = (selected || node.hovered) && zoom < 1.24;
       node.root.alpha = zoom < 0.72 && !selected ? 0.94 : 1;
     });
   }
@@ -113,6 +124,7 @@ export class HomeLayer {
     node.addChild(halo, focusGlow, body);
 
     const { decor, plaque } = this.drawLevelDecor(home);
+    this.addHomeModelProps(decor, home, this.homeModelPropSpecs(home));
     const prompt = this.drawHomePrompt(home);
     const beacon = this.drawSelectedBeacon(home);
     decor.visible = false;
@@ -166,6 +178,98 @@ export class HomeLayer {
       anchorY: 0.56,
       alpha: 0.98,
     });
+  }
+
+  private addHomeModelProps(body: Container, home: WorldHome, props: HomeModelPropSpec[]) {
+    props.forEach((prop, index) => {
+      addAssetSprite(body, {
+        id: `${home.id}-${prop.idSuffix}`,
+        url: prop.url,
+        x: prop.x,
+        y: prop.y,
+        width: prop.width,
+        rotation: prop.rotation,
+        alpha: prop.alpha ?? 0.88,
+        anchorY: 0.72,
+        loadDelayMs: this.homeModelPropLoadDelay(home, index),
+      });
+    });
+  }
+
+  private homeModelPropSpecs(home: WorldHome): HomeModelPropSpec[] {
+    const variant = this.variant(home);
+    const side = variant % 2 === 0 ? -1 : 1;
+    const props: HomeModelPropSpec[] = [];
+    if (home.type === "treehouse") {
+      props.push({
+        idSuffix: variant % 3 === 0 ? "fruit-tree-prop" : "bush-prop",
+        url: variant % 3 === 0 ? v4MapAssets.p15PropTreeFruit : v4MapAssets.p15PropBush,
+        x: side * 76,
+        y: 62,
+        width: variant % 3 === 0 ? 62 : 54,
+        rotation: side * -0.06,
+      });
+    } else if (home.type === "shell" || home.type === "pearl") {
+      props.push({
+        idSuffix: home.type === "pearl" ? "pearl-rock-prop" : "shell-plant-prop",
+        url: home.type === "pearl" ? v4MapAssets.p16PropRockPlatform2 : v4MapAssets.p15PropPlantSmall,
+        x: side * 72,
+        y: 70,
+        width: home.type === "pearl" ? 54 : 48,
+        rotation: side * 0.08,
+      });
+    } else if (home.type === "tent") {
+      props.push({
+        idSuffix: "camp-crate-prop",
+        url: variant % 2 === 0 ? v4MapAssets.p16PropCrate : v4MapAssets.p16PropBagOpen,
+        x: side * 70,
+        y: 76,
+        width: 46,
+        rotation: side * -0.08,
+      });
+    } else if (home.type === "garden") {
+      props.push({
+        idSuffix: "garden-bench-prop",
+        url: variant % 2 === 0 ? v4MapAssets.p16PropBench1 : v4MapAssets.p16PropBench2,
+        x: side * 72,
+        y: 74,
+        width: 58,
+        rotation: side * 0.1,
+      });
+    } else {
+      props.push({
+        idSuffix: "cottage-fence-prop",
+        url: variant % 2 === 0 ? v4MapAssets.p15PropFenceMiddle : v4MapAssets.p15PropFence1,
+        x: side * 76,
+        y: 72,
+        width: 64,
+        rotation: side * 0.1,
+      });
+    }
+
+    const growthTokens = [
+      { idSuffix: "star-pad-prop", url: v4MapAssets.p15PropStar, width: 40 },
+      { idSuffix: "heart-pad-prop", url: v4MapAssets.p16PropHeart, width: 40 },
+      { idSuffix: "gem-pad-prop", url: v4MapAssets.p15PropGemGreen, width: 38 },
+      { idSuffix: "fruit-pad-prop", url: v4MapAssets.p16PropFruit, width: 36 },
+    ];
+    const token = growthTokens[(variant + home.level) % growthTokens.length];
+    props.push({
+      ...token,
+      x: -side * (home.type === "treehouse" ? 58 : 64),
+      y: 83,
+      rotation: -side * 0.08,
+      alpha: home.level >= 2 ? 0.9 : 0.74,
+      front: true,
+    });
+    return props;
+  }
+
+  private homeModelPropLoadDelay(home: WorldHome, index: number) {
+    if (home.childId === this.selectedChildId) return 0;
+    const numericId = Number.parseInt(home.id.replace(/\D/g, ""), 10);
+    const order = Number.isFinite(numericId) ? numericId : 18;
+    return 680 + Math.min(34, order) * 42 + index * 90;
   }
 
   private drawHome(g: Graphics, home: WorldHome) {
@@ -491,15 +595,15 @@ export class HomeLayer {
     const labelName = home.childName;
     const text = new Text({
       text: labelName,
-      resolution: 2,
-      style: { fontFamily: "Microsoft YaHei, PingFang SC", fontSize: 13, fontWeight: "800", fill: palette.textMain },
+      resolution: 3,
+      style: { fontFamily: "Microsoft YaHei, PingFang SC", fontSize: 16, fontWeight: "900", fill: palette.textMain },
     });
     text.anchor.set(0.5);
     text.x = 8;
-    const width = Math.max(78, text.width + 34);
+    const width = Math.max(82, text.width + 36);
     const bg = new Graphics();
     bg.ellipse(0, 18, width * 0.34, 7).fill({ color: palette.inkShadow, alpha: 0.12 });
-    bg.roundRect(-width / 2, -14, width, 28, 12).fill(0xfff6d7).stroke({
+    bg.roundRect(-width / 2, -16, width, 32, 14).fill(0xfff6d7).stroke({
       width: 2,
       color: home.accent,
       alpha: 0.42,
@@ -513,11 +617,10 @@ export class HomeLayer {
   private drawSelectedBeacon(home: WorldHome) {
     const beacon = new Container();
     beacon.y = -104;
-    const labelName = home.petName.replace(/的小伙伴$/, "").replace(/的小精灵$/, "");
     const text = new Text({
-      text: `${labelName}的小屋`,
-      resolution: 2,
-      style: { fontFamily: "Microsoft YaHei, PingFang SC", fontSize: 14, fontWeight: "900", fill: palette.textMain },
+      text: home.childName,
+      resolution: 3,
+      style: { fontFamily: "Microsoft YaHei, PingFang SC", fontSize: 18, fontWeight: "900", fill: palette.textMain },
     });
     text.anchor.set(0.5);
     text.x = 12;

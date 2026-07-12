@@ -12,7 +12,7 @@ export function TeacherBar({ teacherMode, onToggleTeacherMode, childrenCount, sy
     connecting: { label: "连接数据", icon: <LoaderCircle size={18} /> },
     online: { label: "已保存", icon: <Cloud size={18} /> },
     saving: { label: "保存中", icon: <LoaderCircle size={18} /> },
-    offline: { label: "离线演示", icon: <CloudOff size={18} /> },
+    offline: { label: "离线模式", icon: <CloudOff size={18} /> },
   }[syncStatus];
 
   return (
@@ -21,7 +21,7 @@ export function TeacherBar({ teacherMode, onToggleTeacherMode, childrenCount, sy
         <div className="brand-mark">北</div>
         <div>
           <h1>北海成长岛</h1>
-          <p>班级宠物养成与德育 XP 系统</p>
+          <p>班级精灵成长与德育能量系统</p>
         </div>
       </div>
       <div className="toolbar-pills">

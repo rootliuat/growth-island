@@ -117,8 +117,8 @@ const baseRegions: MapRegion[] = [
   },
   {
     id: "math-arena",
-    name: "数学竞技场",
-    description: "20 以内算术 PK 入口",
+    name: "贝壳算术湾",
+    description: "20 以内算术点亮入口",
     center: { x: 1240, y: 1190 },
     radiusX: 390,
     radiusY: 170,

@@ -1,0 +1,681 @@
+/**
+ * [INPUT]: 依赖 ../01-tokens.css 以及前序 cascade 片段。
+ * [OUTPUT]: 对外提供后续模块、移动端和白板触控最终覆盖第 8 段样式。
+ * [POS]: styles/modules 的 cascade 片段 8/14，由 ../index.css 按顺序导入。
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
+
+
+.teacher-workbench-page .workbench-header {
+  min-height: 48px;
+}
+
+.workbench-harbor-status {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+}
+
+.workbench-harbor-status .module-eyebrow,
+.workbench-harbor-status em {
+  min-height: 30px;
+  border: 1px solid rgba(45, 159, 178, 0.18);
+  border-radius: 999px;
+  background: rgba(255, 248, 234, 0.9);
+}
+
+.workbench-harbor-status .module-eyebrow {
+  padding: 0 10px;
+  color: var(--workbench-sea);
+  font-size: 12px;
+}
+
+.workbench-harbor-status strong,
+.workbench-harbor-status em {
+  overflow: hidden;
+  color: var(--workbench-sea);
+  font-weight: 950;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workbench-harbor-status strong {
+  font-size: 18px;
+}
+
+.workbench-harbor-status em {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 9px;
+  color: rgba(23, 76, 90, 0.72);
+  font-size: 12px;
+  font-style: normal;
+}
+
+.teacher-workbench-page .workbench-home-button {
+  color: #fffdf4;
+  border-color: rgba(23, 76, 90, 0.18);
+  background: var(--workbench-sea);
+  white-space: nowrap;
+}
+
+.teacher-workbench-page .workbench-board-layout {
+  grid-template-columns: minmax(0, 1fr) clamp(344px, 21vw, 390px);
+}
+
+.teacher-workbench-page .workbench-class-board,
+.teacher-workbench-page .workbench-score-drawer {
+  border-color: var(--workbench-border);
+  background: rgba(255, 248, 234, 0.88);
+  box-shadow: 0 16px 34px rgba(23, 76, 90, 0.09);
+}
+
+.teacher-workbench-page .workbench-class-grid {
+  grid-template-columns: repeat(auto-fill, minmax(236px, 1fr));
+  gap: 12px;
+}
+
+.teacher-workbench-page .workbench-student-card {
+  border-color: rgba(214, 177, 106, 0.34);
+  background: rgba(255, 253, 244, 0.88);
+}
+
+.teacher-workbench-page .workbench-student-card.active {
+  border-color: rgba(45, 159, 178, 0.58);
+  background:
+    linear-gradient(180deg, rgba(135, 216, 208, 0.18), rgba(255, 248, 234, 0.9));
+  box-shadow: 0 0 0 3px rgba(45, 159, 178, 0.12), inset 0 -4px 0 rgba(246, 179, 82, 0.12);
+}
+
+.teacher-workbench-page .student-card-avatar {
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at 50% 20%, rgba(255, 253, 244, 0.92), transparent 42%),
+    linear-gradient(180deg, #fff8ea, #f4d99b55);
+}
+
+.teacher-workbench-page .student-card-topline em {
+  color: var(--workbench-sea);
+  border: 1px solid rgba(59, 125, 83, 0.18);
+  background: rgba(223, 242, 230, 0.82);
+}
+
+.teacher-workbench-page .student-card-focus {
+  min-width: 42px;
+  color: var(--workbench-sea);
+  border-color: rgba(23, 76, 90, 0.12);
+  background: rgba(255, 248, 234, 0.86);
+}
+
+.teacher-workbench-page .workbench-score-drawer {
+  gap: 10px;
+  padding: 12px;
+}
+
+.teacher-workbench-page .workbench-selected-child.compact,
+.teacher-workbench-page .workbench-recent-feedback,
+.teacher-workbench-page .deduct-confirm-panel,
+.teacher-workbench-page .workbench-ai-panel,
+.teacher-workbench-page .workbench-review-panel,
+.teacher-workbench-page .workbench-record-list article,
+.teacher-workbench-page .workbench-review-list article,
+.teacher-workbench-page .workbench-result-card {
+  border: 1px solid rgba(214, 177, 106, 0.32);
+  background: rgba(255, 253, 244, 0.88);
+}
+
+.teacher-workbench-page .workbench-selected-child.compact {
+  grid-template-columns: 66px minmax(0, 1fr);
+  padding: 9px;
+}
+
+.teacher-workbench-page .workbench-selected-child.compact .workbench-child-avatar {
+  width: 66px;
+  height: 66px;
+  border-radius: 22px;
+}
+
+.teacher-workbench-page .workbench-selected-child.compact strong {
+  color: var(--workbench-sea);
+  font-size: 22px;
+}
+
+.teacher-workbench-page .workbench-profile-button {
+  color: var(--workbench-sea);
+  border-color: rgba(45, 159, 178, 0.18);
+  background: rgba(135, 216, 208, 0.2);
+}
+
+.teacher-workbench-page .batch-score-grid button {
+  min-height: 40px;
+  border: 0;
+  border-radius: 14px;
+  color: #fffdf4;
+  background: var(--workbench-sea);
+}
+
+.teacher-workbench-page .template-grid {
+  gap: 8px;
+}
+
+.teacher-workbench-page .template-grid button {
+  min-height: 60px;
+  border-color: rgba(214, 177, 106, 0.36);
+  background: rgba(255, 248, 234, 0.86);
+}
+
+.teacher-workbench-page .template-grid button span {
+  color: #13966d;
+  font-size: 18px;
+}
+
+.teacher-workbench-page .manual-score-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.teacher-workbench-page .manual-score-grid button {
+  min-height: 40px;
+  border-radius: 14px;
+}
+
+.teacher-workbench-page .manual-score-grid .watch-template {
+  color: #7a332d;
+  background: #fff0df;
+}
+
+.teacher-workbench-page .workbench-ai-panel,
+.teacher-workbench-page .workbench-review-panel {
+  padding: 10px;
+}
+
+.teacher-workbench-page .transcript-samples {
+  display: flex;
+  gap: 7px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.teacher-workbench-page .transcript-samples button {
+  flex: 0 0 auto;
+  max-width: 178px;
+  min-height: 34px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.teacher-workbench-page .workbench-transcript textarea {
+  min-height: 72px;
+}
+
+.teacher-workbench-page .workbench-record-list strong,
+.teacher-workbench-page .workbench-recent-feedback em {
+  display: -webkit-box;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+@media (max-width: 1160px) {
+  .teacher-workbench-page .workbench-board-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 720px) {
+  .teacher-workbench-page {
+    padding-bottom: 96px;
+  }
+
+  .teacher-workbench-page .workbench-header {
+    gap: 8px;
+  }
+
+  .teacher-workbench-page .workbench-harbor-status strong {
+    max-width: 56px;
+    font-size: 16px;
+  }
+
+  .teacher-workbench-page .workbench-home-button {
+    min-width: 104px;
+    padding-inline: 10px;
+  }
+
+  .teacher-workbench-page .workbench-class-board {
+    order: 1;
+  }
+
+  .teacher-workbench-page .workbench-score-drawer {
+    order: 2;
+    gap: 9px;
+    padding: 10px;
+  }
+
+  .teacher-workbench-page .workbench-selected-child.compact {
+    grid-template-columns: 58px minmax(0, 1fr);
+  }
+
+  .teacher-workbench-page .workbench-selected-child.compact .workbench-child-avatar {
+    width: 58px;
+    height: 58px;
+    border-radius: 19px;
+  }
+
+  .teacher-workbench-page .workbench-recent-feedback {
+    grid-template-columns: 50px minmax(0, 1fr);
+    padding: 8px;
+  }
+
+  .teacher-workbench-page .workbench-recent-feedback .workbench-undo-button {
+    min-height: 34px;
+  }
+
+  .teacher-workbench-page .template-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .teacher-workbench-page .template-grid button {
+    min-height: 56px;
+  }
+
+  .teacher-workbench-page .workbench-ai-panel,
+  .teacher-workbench-page .workbench-review-panel {
+    padding: 9px;
+  }
+}
+
+/* P0/P1 text diet: compact module HUD and secondary teacher tools. */
+.module-screen-shell .shell-scene-command-bar {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  min-height: 42px;
+  gap: 8px;
+  padding: 5px 6px;
+  border-radius: 14px;
+  background: rgba(255, 248, 234, 0.92);
+  box-shadow: none;
+}
+
+.module-screen-shell .shell-top-hud .shell-scene-chip {
+  display: none;
+}
+
+.module-screen-shell .scene-command-home {
+  min-height: 44px;
+  padding: 0 11px;
+  border-radius: 12px;
+  box-shadow: none;
+}
+
+.module-screen-shell .scene-command-status {
+  flex: 0 1 auto;
+  justify-content: end;
+}
+
+.module-screen-shell .scene-command-chip {
+  min-height: 28px;
+  max-width: 136px;
+  padding: 0 8px;
+  border-color: rgba(214, 177, 106, 0.28);
+  background: rgba(255, 253, 244, 0.76);
+}
+
+.module-screen-shell .scene-command-chip.reward {
+  background: #fff0bf;
+}
+
+.module-compact-header {
+  min-height: 40px;
+  gap: 10px;
+  margin: -4px 0 0;
+}
+
+.module-compact-header .module-eyebrow {
+  min-height: 26px;
+  padding: 0 8px;
+  border-width: 1px;
+  color: #174c5a;
+  background: rgba(135, 216, 208, 0.2);
+  font-size: 12px;
+}
+
+.module-compact-header .module-eyebrow svg {
+  width: 15px;
+  height: 15px;
+}
+
+.module-compact-header h1 {
+  font-size: 18px;
+}
+
+.module-compact-header :is(.roll-call-home-button, .voice-home-button, .reward-home-button, .organization-home-button, .workbench-home-button) {
+  min-height: 44px;
+  padding: 0 11px;
+  border-radius: 12px;
+}
+
+.teacher-workbench-page .workbench-header.module-compact-header {
+  min-height: 40px;
+  margin: -4px 0 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.teacher-workbench-page .workbench-score-drawer {
+  gap: 8px;
+}
+
+.teacher-workbench-page .workbench-selected-child.compact,
+.teacher-workbench-page .workbench-recent-feedback,
+.teacher-workbench-page .deduct-confirm-panel,
+.teacher-workbench-page .workbench-secondary-details,
+.teacher-workbench-page .workbench-result-card,
+.teacher-workbench-page .workbench-record-list article,
+.teacher-workbench-page .workbench-review-list article {
+  border-width: 1px;
+  border-radius: 14px;
+  box-shadow: none;
+}
+
+.teacher-workbench-page .workbench-selected-child.compact {
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 9px;
+  padding: 8px;
+}
+
+.teacher-workbench-page .workbench-selected-child.compact .workbench-child-avatar {
+  width: 56px;
+  height: 56px;
+  border-width: 2px;
+  border-radius: 18px;
+}
+
+.teacher-workbench-page .workbench-selected-child.compact strong {
+  font-size: 19px;
+}
+
+.teacher-workbench-page .workbench-profile-button {
+  min-height: 30px;
+  margin-top: 4px;
+  padding: 0 9px;
+}
+
+.teacher-workbench-page .workbench-recent-feedback {
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 7px 9px;
+  padding: 8px;
+}
+.teacher-workbench-page .workbench-recent-feedback > span {
+  min-width: 48px;
+  min-height: 34px;
+  border-radius: 11px;
+  font-size: 13px;
+}
+
+.teacher-workbench-page .workbench-recent-feedback .workbench-undo-button {
+  min-height: 34px;
+  padding: 0 10px;
+  font-size: 12px;
+}
+
+.teacher-workbench-page .workbench-section-title {
+  min-height: 44px;
+}
+
+.teacher-workbench-page .batch-score-grid button {
+  min-height: 44px;
+  border-radius: 12px;
+}
+
+.teacher-workbench-page .template-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.teacher-workbench-page .template-grid button {
+  min-height: 48px;
+  padding: 8px;
+  border-width: 1px;
+  border-radius: 12px;
+}
+
+.teacher-workbench-page .template-grid button span {
+  font-size: 14px;
+}
+
+.teacher-workbench-page .workbench-secondary-details,
+.teacher-workbench-page .manual-score-pad {
+  display: grid;
+  gap: 8px;
+  padding: 7px 0 0;
+  border-top: 1px solid rgba(214, 177, 106, 0.34);
+}
+
+.teacher-workbench-page .workbench-secondary-details > summary,
+.teacher-workbench-page .manual-score-pad > summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+.teacher-workbench-page .workbench-secondary-details > summary::-webkit-details-marker,
+.teacher-workbench-page .manual-score-pad > summary::-webkit-details-marker {
+  display: none;
+}
+
+.teacher-workbench-page .workbench-secondary-details:not([open]) {
+  padding-bottom: 0;
+}
+
+.teacher-workbench-page :is(.workbench-secondary-details, .manual-score-pad):not([open]) > :not(summary) {
+  display: none !important;
+}
+
+.teacher-workbench-page .workbench-secondary-details:not([open]) > summary span,
+.teacher-workbench-page .manual-score-pad:not([open]) > summary span {
+  color: rgba(23, 76, 90, 0.72);
+  background: rgba(255, 240, 191, 0.72);
+}
+
+.teacher-workbench-page .workbench-ai-panel,
+.teacher-workbench-page .workbench-review-panel {
+  padding: 7px 0 0;
+  background: transparent;
+}
+
+.teacher-workbench-page .transcript-samples button {
+  min-height: 44px;
+  border-width: 1px;
+}
+
+.teacher-workbench-page .manual-score-grid button {
+  min-height: 44px;
+}
+
+.teacher-workbench-page .workbench-transcript textarea {
+  min-height: 64px;
+}
+
+.roll-call-page .roll-call-side {
+  grid-template-rows: auto auto auto;
+  align-content: start;
+}
+
+.roll-call-page .roll-call-secondary-details,
+.voice-record-page .voice-secondary-details {
+  min-width: 0;
+  border-width: 1px;
+  border-radius: 16px;
+  box-shadow: none;
+}
+
+.roll-call-page .roll-call-secondary-details > summary,
+.voice-record-page .voice-secondary-details > summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+.roll-call-page .roll-call-secondary-details > summary::-webkit-details-marker,
+.voice-record-page .voice-secondary-details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.roll-call-page .roll-call-secondary-details:not([open]) > :not(summary),
+.voice-record-page .voice-secondary-details:not([open]) > :not(summary) {
+  display: none !important;
+}
+
+.roll-call-page .roll-call-secondary-details:not([open]) {
+  padding: 8px 12px;
+}
+
+.roll-call-page .roll-call-filter-title,
+.roll-call-page .roll-call-list-title,
+.voice-record-page .voice-subtitle {
+  min-height: 44px;
+}
+
+.roll-call-page .roll-call-list-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+
+.voice-record-page {
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.voice-record-page .voice-result-panel {
+  overflow: auto;
+}
+
+.voice-record-page .voice-secondary-details {
+  padding: 0;
+  border: 1px solid rgba(214, 177, 106, 0.36);
+  background: rgba(255, 253, 244, 0.72);
+}
+
+.voice-record-page .voice-secondary-details > :not(summary) {
+  margin: 0 12px 12px;
+}
+
+.voice-record-page .voice-history-panel {
+  display: grid;
+  gap: 8px;
+  background: rgba(255, 253, 244, 0.72);
+}
+
+.voice-record-page .voice-history-list {
+  max-height: 190px;
+  overflow: auto;
+}
+
+@media (max-width: 900px) {
+  .module-screen-shell .shell-scene-command-bar {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .module-screen-shell .scene-command-status {
+    grid-column: auto;
+    justify-content: end;
+    overflow-x: auto;
+    padding-bottom: 1px;
+  }
+
+  .module-screen-shell .scene-command-chip.reward {
+    display: inline-flex;
+  }
+}
+
+@media (max-width: 720px) {
+  .module-screen-shell .shell-scene-command-bar {
+    min-height: 40px;
+    gap: 6px;
+    padding: 5px;
+  }
+
+  .module-screen-shell .scene-command-chip {
+    max-width: 44vw;
+  }
+
+  .module-compact-header {
+    min-height: 38px;
+  }
+
+  .module-compact-header > div {
+    gap: 6px;
+  }
+
+  .module-compact-header .module-eyebrow {
+    max-width: 86px;
+  }
+
+  .module-compact-header h1 {
+    font-size: 16px;
+  }
+
+  .teacher-workbench-page .workbench-score-drawer {
+    order: 1;
+    gap: 7px;
+  }
+
+  .teacher-workbench-page .workbench-class-board {
+    order: 2;
+    max-height: 390px;
+  }
+
+  .teacher-workbench-page .workbench-class-grid {
+    grid-auto-rows: minmax(92px, auto);
+    max-height: 360px;
+  }
+
+  .teacher-workbench-page .template-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .roll-call-page .roll-call-filter-panel,
+  .roll-call-page .roll-call-list-panel {
+    padding: 8px 10px;
+  }
+
+  .voice-record-page .voice-result-panel {
+    max-height: none;
+  }
+
+  .voice-record-page {
+    grid-template-rows: auto auto;
+    overflow: auto;
+  }
+
+  .voice-record-page .voice-record-layout {
+    grid-template-rows: auto auto;
+    min-height: auto;
+    overflow: visible;
+  }
+
+  .voice-record-page .voice-record-workbench,
+  .voice-record-page .voice-result-panel {
+    overflow: visible;
+  }
+}
+
+/* P7 math light-up: arithmetic as shell-light progress, not combat. */
+.math-arena-page {
+  --arena-sea: #174c5a;
+  --arena-lagoon: #2d9fb2;
+  --arena-foam: #87d8d0;
+  --arena-shell: #fff8ea;
+  --arena-cream: #fffdf4;
+  --arena-sand: #f4d99b;
+  --arena-gold: #f6b352;
+  --arena-coral: #ff7a59;
+  --arena-leaf: #3b7d53;
+  --arena-border: rgba(214, 177, 106, 0.42);
+  background:
+    radial-gradient(circle at 18% 8%, rgba(135, 216, 208, 0.36), transparent 30%),
+    radial-gradient(circle at 88% 24%, rgba(246, 179, 82, 0.22), transparent 28%),
+    linear-gradient(180deg, #e8f6ef 0%, #f7efd8 100%);
+}

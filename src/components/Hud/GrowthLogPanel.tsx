@@ -11,11 +11,25 @@ interface GrowthLogPanelProps {
 }
 
 const sourceLabels: Record<LedgerRecord["source"], string> = {
-  manual: "手动调整",
-  "dialogue-agent": "对话识别",
-  "math-pk": "数学 PK",
+  manual: "老师贝壳",
+  "dialogue-agent": "贝壳建议",
+  "math-pk": "算术点亮",
   undo: "撤销记录",
 };
+
+function getRecordLabel(record: LedgerRecord) {
+  const reason = record.reason
+    .replace(/^演示数据[:：]?\s*/, "")
+    .replace(/^课堂记录[:：]?\s*/, "")
+    .replace(/^语音记录[:：]?\s*/, "")
+    .replace(/^复核通过[:：]?\s*/, "")
+    .trim();
+  if (record.source === "math-pk") return "数学光路点亮";
+  if (reason.includes("快速加分") || reason.includes("课堂积极回应")) return "课堂成长点亮";
+  if (reason.includes("自助成长")) return "能量进精灵";
+  if (record.delta < 0) return "老师提醒";
+  return reason.replace(/\s*[+＋-]\d+\s*XP?$/i, "").slice(0, 18) || "成长贝壳";
+}
 
 function formatRecordTime(createdAt: string) {
   const date = new Date(createdAt);
@@ -38,7 +52,7 @@ export function GrowthLogPanel({
             <ClipboardCheck size={18} />
             复核卷轴
           </span>
-          <small>Agent 建议</small>
+          <small>贝壳建议</small>
           <em>{pendingReviews.length}</em>
         </summary>
         <ReviewQueue
@@ -66,9 +80,9 @@ export function GrowthLogPanel({
           <div className="record-scroll-list">
             {recentRecords.slice(0, 4).map((record) => (
               <article className={record.delta >= 0 ? "record-row positive" : "record-row negative"} key={record.id}>
-                <span className="record-token">{record.delta > 0 ? `+${record.delta}` : record.delta}</span>
+                <span className="record-token">{record.delta > 0 ? "点亮" : "提醒"}</span>
                 <div className="record-main">
-                  <p>{record.reason}</p>
+                  <p>{getRecordLabel(record)}</p>
                   <div className="record-meta">
                     <ShieldCheck size={13} />
                     <span>{record.category ?? sourceLabels[record.source]}</span>

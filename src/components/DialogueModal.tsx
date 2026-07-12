@@ -44,7 +44,7 @@ export function DialogueModal({ child, onClose, onSubmit }: DialogueModalProps) 
           <MessageCircle size={28} />
           <div>
             <h2>和 {child.petName} 说一说</h2>
-            <p>当前是 mock：先用文本模拟 ASR + DeepSeek 判断</p>
+            <p>先把今天的成长说清楚，老师再看。</p>
           </div>
         </div>
 
@@ -66,16 +66,15 @@ export function DialogueModal({ child, onClose, onSubmit }: DialogueModalProps) 
 
         <button className="submit-dialogue" onClick={submit} disabled={submitting}>
           <WandSparkles size={22} />
-          {submitting ? "Agent 判断中" : "让德育 Agent 判断"}
+          {submitting ? "贝壳在听" : "生成贝壳建议"}
         </button>
 
         {result && (
           <div className="dialogue-result">
-            <strong>{result.status === "auto_posted" ? "已自动入账" : "进入复核/手动兜底"}</strong>
+            <strong>{result.status === "auto_posted" ? "能量已点亮" : "请老师帮忙看"}</strong>
             <p>{result.reasonForChild}</p>
             <span>
-              {result.category ?? "未分类"} · {result.xpDelta > 0 ? "+" : ""}
-              {result.xpDelta} XP · {Math.round(result.confidence * 100)}%
+              {result.category ?? "成长"} · {result.xpDelta > 0 ? "可点亮" : "待老师看"}
             </span>
           </div>
         )}

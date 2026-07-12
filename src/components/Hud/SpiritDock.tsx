@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronUp, Search } from "lucide-react";
+import { Box, ChevronDown, Search, Users } from "lucide-react";
 import type { CSSProperties } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ChildWithProgress, SpiritDefinition } from "../../types";
@@ -9,11 +9,12 @@ interface SpiritDockProps {
   spiritsById: Map<string, SpiritDefinition>;
   selectedChildId: string;
   onSelectChild: (childId: string) => void;
+  onOpenShowcase?: (childId: string) => void;
 }
 
-const regionFilters = ["全部", "红树林", "贝壳湾", "珍珠湾", "小镇", "老街", "竞技场"];
+const regionFilters = ["全部", "红树林", "贝壳湾", "珍珠湾", "小镇", "老街", "算术湾"];
 
-export function SpiritDock({ childrenWithProgress, spiritsById, selectedChildId, onSelectChild }: SpiritDockProps) {
+export function SpiritDock({ childrenWithProgress, spiritsById, selectedChildId, onSelectChild, onOpenShowcase }: SpiritDockProps) {
   const dockScrollRef = useRef<HTMLDivElement | null>(null);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("全部");
@@ -44,41 +45,71 @@ export function SpiritDock({ childrenWithProgress, spiritsById, selectedChildId,
 
   const selectedSpirit = selectedChild ? spiritsById.get(selectedChild.spiritId) : undefined;
   const selectedAsset = selectedSpirit ? getSpiritAsset(selectedSpirit, selectedChild.state) : undefined;
+  const selectedRoleLabel = "找我";
+  const selectedAriaLabel = "已选孩子";
+  const selectedStatus = "点我说";
+  const dockClasses = [
+    "spirit-dock",
+    collapsed ? "collapsed is-collapsed" : "expanded is-expanded",
+    childrenWithProgress.length > 18 ? "has-many-children" : "",
+  ].filter(Boolean).join(" ");
+  const selectChildFromRoster = (childId: string) => {
+    onSelectChild(childId);
+    setCollapsed(true);
+  };
 
   if (collapsed) {
     return (
-      <section className="spirit-dock collapsed">
+      <section className={dockClasses}>
         <button
           type="button"
           className="dock-selected-summary"
           style={{ "--dock-accent": selectedSpirit?.accent ?? "#6ebf8b" } as CSSProperties}
+          data-selected-role="current"
+          data-self-service-entry="dock-current"
+          aria-label={`${selectedAriaLabel}：${selectedChild.name}，点自己的精灵说成长`}
           onClick={() => onSelectChild(selectedChild.id)}
         >
           <span className="dock-avatar">
-            {selectedAsset?.url ? <img src={selectedAsset.url} alt="" /> : selectedChild.name.slice(0, 1)}
+            {selectedAsset?.url ? <img src={selectedAsset.url} alt="" /> : <span className="dock-avatar-label">{selectedChild.name.slice(0, 1)}</span>}
           </span>
-          <strong>{selectedChild.name}</strong>
-          <em>Lv.{selectedChild.level}</em>
+          <span className="dock-summary-copy">
+            <small>{selectedRoleLabel}</small>
+            <strong title={selectedChild.name}>{selectedChild.name}</strong>
+          </span>
+          <em className="dock-summary-status">{selectedStatus}</em>
         </button>
-        <button className="dock-collapse" type="button" onClick={() => setCollapsed(false)}>
-          <ChevronUp size={16} />
-          展开
+        <button
+          className="dock-collapse"
+          type="button"
+          aria-expanded="false"
+          aria-label="展开全班孩子"
+          onClick={() => setCollapsed(false)}
+        >
+          <Users size={17} />
+          全班
         </button>
       </section>
     );
   }
 
   return (
-    <section className="spirit-dock">
+    <section className={dockClasses}>
       <div className="dock-tools">
         <div className="dock-tools-head">
           <strong>
-            {collapsed ? `${selectedChild.name} · Lv.${selectedChild.level}` : "精灵队伍"}
+            全班
             <small>{filtered.length}/{childrenWithProgress.length}</small>
           </strong>
-          <button className="dock-collapse" onClick={() => setCollapsed((current) => !current)}>
-            {collapsed ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-            {collapsed ? "展开" : "收起"}
+          <button
+            className="dock-collapse"
+            type="button"
+            aria-expanded="true"
+            aria-label="收起全班孩子"
+            onClick={() => setCollapsed((current) => !current)}
+          >
+            <ChevronDown size={16} />
+            收起
           </button>
         </div>
         <div className="dock-search">
@@ -86,19 +117,46 @@ export function SpiritDock({ childrenWithProgress, spiritsById, selectedChildId,
           <input
             id="spirit-dock-search"
             name="spiritDockSearch"
-            aria-label="搜索幼儿或精灵"
+            aria-label="搜索孩子名字"
             value={query}
-            placeholder="搜索幼儿或精灵"
+            placeholder="搜名字…"
             onChange={(event) => setQuery(event.target.value)}
           />
         </div>
         <div className="dock-filters">
           {regionFilters.map((item) => (
-            <button key={item} className={item === filter ? "active" : ""} onClick={() => setFilter(item)}>
+            <button key={item} type="button" className={item === filter ? "active" : ""} onClick={() => setFilter(item)}>
               {item}
             </button>
           ))}
         </div>
+      </div>
+      <div
+        role="group"
+        className="dock-selected-summary expanded"
+        style={{ "--dock-accent": selectedSpirit?.accent ?? "#6ebf8b" } as CSSProperties}
+        data-selected-role="current"
+        aria-label={`${selectedAriaLabel}：${selectedChild.name}，查看自己的精灵，全班${childrenWithProgress.length}人`}
+      >
+        <span className="dock-avatar">
+          {selectedAsset?.url ? <img src={selectedAsset.url} alt="" /> : <span className="dock-avatar-label">{selectedChild.name.slice(0, 1)}</span>}
+        </span>
+        <span className="dock-selected-copy">
+          <strong>{selectedChild.name}</strong>
+          <em>{selectedStatus}</em>
+          <small>全班 {childrenWithProgress.length}</small>
+        </span>
+        {onOpenShowcase ? (
+          <button
+            type="button"
+            className="dock-showcase-button spirit-showcase-button"
+            aria-label={`查看${selectedChild.name}的3D精灵`}
+            onClick={() => onOpenShowcase(selectedChild.id)}
+          >
+            <Box size={15} />
+            3D
+          </button>
+        ) : null}
       </div>
       <div className="dock-scroll" ref={dockScrollRef}>
         {filtered.map((child) => {
@@ -109,13 +167,16 @@ export function SpiritDock({ childrenWithProgress, spiritsById, selectedChildId,
               key={child.id}
               className={child.id === selectedChildId ? "dock-spirit active" : "dock-spirit"}
               aria-current={child.id === selectedChildId ? "true" : undefined}
-              onClick={() => onSelectChild(child.id)}
+              aria-label={`${child.id === selectedChildId ? "已选孩子" : "选择孩子"}：${child.name}，点自己的精灵说成长`}
+              data-selected-role={child.id === selectedChildId ? "current" : undefined}
+              data-self-service-entry="dock-roster"
+              onClick={() => selectChildFromRoster(child.id)}
             >
               <span className="dock-avatar" style={{ "--dock-accent": spirit?.accent ?? "#6ebf8b" } as CSSProperties}>
-                {asset?.url ? <img src={asset.url} alt="" /> : child.name.slice(0, 1)}
+                {asset?.url ? <img src={asset.url} alt="" /> : <span className="dock-avatar-label">{child.name.slice(0, 1)}</span>}
               </span>
               <strong>{child.name}</strong>
-              <em>Lv.{child.level}</em>
+              <em>点我说</em>
             </button>
           );
         })}

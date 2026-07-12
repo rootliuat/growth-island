@@ -1,3 +1,10 @@
+/**
+ * [INPUT]: 依赖 pixi-viewport、Pixi Application/Ticker、cameraConfig 和地图尺寸。
+ * [OUTPUT]: 对外提供 CameraController 类，管理地图 viewport、聚焦、缩放、相机动画和 DOM 静态层变换快照。
+ * [POS]: game/pixi 的相机 Adapter，被 PixiWorld 和 WorldScene 消费。
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
+
 import { Ticker } from "pixi.js";
 import { Viewport } from "pixi-viewport";
 import type { Application } from "pixi.js";
@@ -33,8 +40,6 @@ export class CameraController {
     this.viewport
       .drag({ mouseButtons: "left" })
       .pinch()
-      .wheel({ smooth: 3 })
-      .decelerate({ friction: 0.92 })
       .clamp({ direction: "all", underflow: "center" })
       .clampZoom({ minScale: cameraConfig.minZoom, maxScale: cameraConfig.maxZoom });
   }
@@ -101,5 +106,13 @@ export class CameraController {
 
   get zoom() {
     return this.viewport.scale.x;
+  }
+
+  getCssTransform() {
+    return {
+      x: this.viewport.x,
+      y: this.viewport.y,
+      scale: this.viewport.scale.x,
+    };
   }
 }

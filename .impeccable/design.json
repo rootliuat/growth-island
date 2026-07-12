@@ -1,0 +1,205 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-06-03T14:50:15+08:00",
+  "title": "Design System: 北海成长岛",
+  "extensions": {
+    "colorMeta": {
+      "deep-sea": {
+        "role": "primary",
+        "displayName": "Deep Sea Ink",
+        "canonical": "#174C5A",
+        "tonalRamp": ["#062027", "#0D333C", "#174C5A", "#236879", "#2F8799", "#69B8C4", "#A8DDE3", "#E7F7F8"]
+      },
+      "lagoon": {
+        "role": "primary",
+        "displayName": "Lagoon HUD",
+        "canonical": "#2D9FB2",
+        "tonalRamp": ["#06282E", "#0D4650", "#1F7484", "#2D9FB2", "#49BDCC", "#87D8D0", "#C6F0EC", "#EEFCFA"]
+      },
+      "foam": {
+        "role": "secondary",
+        "displayName": "Foam Light",
+        "canonical": "#87D8D0",
+        "tonalRamp": ["#123B38", "#23645F", "#3B8D86", "#5EB8B0", "#87D8D0", "#B4ECE8", "#D9F7F4", "#F2FEFC"]
+      },
+      "shell-panel": {
+        "role": "neutral",
+        "displayName": "Shell Panel",
+        "canonical": "#FFF8EA",
+        "tonalRamp": ["#372918", "#6B512E", "#A17C44", "#D6B16A", "#F4D99B", "#FFF0BF", "#FFF8EA", "#FFFDF4"]
+      },
+      "coral-action": {
+        "role": "tertiary",
+        "displayName": "Coral Action",
+        "canonical": "#FF7A59",
+        "tonalRamp": ["#3A120B", "#692112", "#9D3924", "#D95F55", "#FF7A59", "#FFB18F", "#FFD7C8", "#FFF1E8"]
+      },
+      "xp-gold": {
+        "role": "secondary",
+        "displayName": "XP Gold",
+        "canonical": "#F6B352",
+        "tonalRamp": ["#332006", "#65400D", "#9B671F", "#C98B4F", "#F6B352", "#FFD47E", "#FFE7B0", "#FFF6D9"]
+      },
+      "leaf-success": {
+        "role": "secondary",
+        "displayName": "Leaf Success",
+        "canonical": "#3B7D53",
+        "tonalRamp": ["#071B10", "#143321", "#245237", "#3B7D53", "#59A979", "#92CFA7", "#CDEBD5", "#F0FAF2"]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "应用名、模块标题和当前孩子名牌，固定字号，不使用流体大标题。"
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "老师端记录、表单和说明，孩子端少用。"
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "dock、chip、状态和短按钮。"
+      }
+    },
+    "shadows": [
+      {
+        "name": "map-lift",
+        "value": "0 26px 80px rgba(4, 20, 29, 0.34)",
+        "purpose": "全岛地图外壳。"
+      },
+      {
+        "name": "panel-lift",
+        "value": "0 16px 34px rgba(23, 76, 90, 0.09)",
+        "purpose": "模块主面板和老师记录港。"
+      },
+      {
+        "name": "soft-hud-lift",
+        "value": "0 10px 26px rgba(20, 28, 25, 0.055)",
+        "purpose": "状态条、次级面板和低优先级 HUD。"
+      },
+      {
+        "name": "inset-shell-press",
+        "value": "inset 0 -3px 0 rgba(214, 177, 106, 0.16)",
+        "purpose": "可点击贝壳卡和模板按钮。"
+      }
+    ],
+    "motion": [
+      {
+        "name": "state-fast",
+        "value": "140ms ease",
+        "purpose": "按钮 hover、选中边框和轻量状态切换。"
+      },
+      {
+        "name": "state-medium",
+        "value": "180ms ease",
+        "purpose": "卡片背景、精灵头像和列表选择。"
+      },
+      {
+        "name": "energy-breath",
+        "value": "2.4s ease-in-out",
+        "purpose": "当前能量槽和成长反馈呼吸状态，reduced motion 下关闭。"
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "wide",
+        "value": "1160px"
+      },
+      {
+        "name": "compact",
+        "value": "820px"
+      },
+      {
+        "name": "mobile",
+        "value": "720px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Coral Self-Service Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "孩子触发说成长和领能量的主动作。",
+      "html": "<button class=\"ds-btn-coral\">说成长</button>",
+      "css": ".ds-btn-coral { min-height: 44px; padding: 0 14px; border: 1px solid rgba(197, 74, 46, 0.28); border-radius: 14px; color: #fff8ea; background: #ff7a59; font: 900 14px/1 Microsoft YaHei, PingFang SC, sans-serif; transition: transform 140ms ease, filter 140ms ease; } .ds-btn-coral:hover { filter: brightness(0.98); transform: translateY(-1px); } .ds-btn-coral:focus-visible { outline: 3px solid rgba(246, 179, 82, 0.72); outline-offset: 3px; }"
+    },
+    {
+      "name": "Leaf Confirm Button",
+      "kind": "button",
+      "refersTo": "button-confirm",
+      "description": "老师通过、确认和完成的正向动作。",
+      "html": "<button class=\"ds-btn-confirm\">通过</button>",
+      "css": ".ds-btn-confirm { min-height: 44px; padding: 0 14px; border: 1px solid rgba(31, 107, 76, 0.28); border-radius: 14px; color: #fff8ea; background: #3b7d53; font: 900 14px/1 Microsoft YaHei, PingFang SC, sans-serif; transition: transform 140ms ease, filter 140ms ease; } .ds-btn-confirm:hover { filter: brightness(1.03); transform: translateY(-1px); } .ds-btn-confirm:focus-visible { outline: 3px solid rgba(246, 179, 82, 0.72); outline-offset: 3px; }"
+    },
+    {
+      "name": "Shell Status Chip",
+      "kind": "chip",
+      "refersTo": "chip-status",
+      "description": "当前孩子、等级、同步、待确认等短状态。",
+      "html": "<span class=\"ds-chip\">Lv.3 · 领能量</span>",
+      "css": ".ds-chip { display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 0 10px; border: 1px solid rgba(214, 177, 106, 0.42); border-radius: 999px; color: #174c5a; background: #fff8ea; font: 900 12px/1 Microsoft YaHei, PingFang SC, sans-serif; }"
+    },
+    {
+      "name": "Shell Panel",
+      "kind": "card",
+      "refersTo": "panel-shell",
+      "description": "老师工具和模块面板的标准容器。",
+      "html": "<section class=\"ds-shell-panel\"><strong>老师记录港</strong><p>补记贝壳</p></section>",
+      "css": ".ds-shell-panel { display: grid; gap: 8px; padding: 16px; border: 1px solid rgba(214, 177, 106, 0.42); border-radius: 20px; color: #174c5a; background: rgba(255, 248, 234, 0.94); box-shadow: 0 16px 34px rgba(23, 76, 90, 0.09); font-family: Microsoft YaHei, PingFang SC, sans-serif; } .ds-shell-panel strong { font-size: 18px; line-height: 1.16; } .ds-shell-panel p { margin: 0; color: #5f746d; font-size: 14px; line-height: 1.45; }"
+    },
+    {
+      "name": "Teacher Review Corner Card",
+      "kind": "custom",
+      "refersTo": "panel-shell",
+      "description": "老师轻监管的角落确认卡。",
+      "html": "<aside class=\"ds-review-card\"><span>友爱 +20</span><strong>小北</strong><div><button>通过</button><button>改</button><button>稍后</button></div></aside>",
+      "css": ".ds-review-card { width: 260px; display: grid; gap: 10px; padding: 12px; border: 1px solid rgba(214, 177, 106, 0.42); border-radius: 18px; color: #174c5a; background: rgba(255, 248, 234, 0.96); box-shadow: 0 16px 34px rgba(23, 76, 90, 0.09); font-family: Microsoft YaHei, PingFang SC, sans-serif; } .ds-review-card span { width: fit-content; padding: 6px 10px; border-radius: 999px; color: #fff8ea; background: #f6b352; font-size: 12px; font-weight: 950; } .ds-review-card strong { font-size: 16px; } .ds-review-card div { display: grid; grid-template-columns: 1fr 0.7fr 0.9fr; gap: 6px; } .ds-review-card button { min-height: 36px; border: 1px solid rgba(214, 177, 106, 0.42); border-radius: 12px; color: #174c5a; background: #fffdf4; font-weight: 900; } .ds-review-card button:first-child { color: #fff8ea; border-color: rgba(31, 107, 76, 0.28); background: #3b7d53; } .ds-review-card button:focus-visible { outline: 3px solid rgba(246, 179, 82, 0.72); outline-offset: 3px; }"
+    },
+    {
+      "name": "Bottom Dock Item",
+      "kind": "nav",
+      "refersTo": "chip-status",
+      "description": "底部模块 dock，孩子入口优先，老师工具收起。",
+      "html": "<button class=\"ds-dock-item\"><span>🏝</span><strong>地图</strong></button>",
+      "css": ".ds-dock-item { min-width: 70px; min-height: 48px; display: grid; place-items: center; gap: 2px; padding: 6px 9px; border: 1px solid rgba(214, 177, 106, 0.42); border-radius: 14px; color: #174c5a; background: #fff8ea; font-family: Microsoft YaHei, PingFang SC, sans-serif; } .ds-dock-item span { font-size: 18px; line-height: 1; } .ds-dock-item strong { font-size: 12px; line-height: 1; } .ds-dock-item:hover { background: #fffdf4; } .ds-dock-item:focus-visible { outline: 3px solid rgba(45, 159, 178, 0.34); outline-offset: 3px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "海岛成长座舱",
+    "overview": "北海成长岛的界面是课堂白板上的沿海游戏座舱。主画面先服务孩子：看到全岛、找到自己的精灵、点麦克风说成长、看见能量进入精灵和成长树。老师工具存在，但默认靠边、收起、紧凑。",
+    "keyCharacteristics": ["Map first", "Child first", "Compact HUD", "Tactile feedback", "Calm classroom"],
+    "rules": [
+      {
+        "name": "The Coral Rarity Rule",
+        "body": "珊瑚色只给当前最重要的孩子或老师动作，单屏不要同时出现多个珊瑚主按钮。",
+        "section": "colors"
+      },
+      {
+        "name": "The Whiteboard Scale Rule",
+        "body": "真实产品界面不要用 36-48px 大标题，主界面标题通常在 18-24px。",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat Teacher Tool Rule",
+        "body": "老师工具可以清楚，但不要堆大阴影。选中态优先用边框、底色和 outline。",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do 让地图和精灵成为首页第一视觉。",
+      "Do 把 说成长 和 领能量 放在孩子能直接触发的位置。",
+      "Do 把老师记录港、贝壳记录台、账本、岛务和设置收进老师工具。",
+      "Do 用金色光点、能量槽、精灵反应和成长树点亮表达 XP 结果。"
+    ],
+    "donts": [
+      "Don't 做成 SaaS 后台或数据管理系统。",
+      "Don't 做成老师积分表套一层可爱皮肤。",
+      "Don't 使用 AI 生成感的大卡片、大标题、重复副标题布局。",
+      "Don't 使用紫蓝渐变、过度玻璃拟态、塑料质感按钮。",
+      "Don't 使用以打斗、PK、攻击反馈为主的游戏 UI。",
+      "Don't 让孩子阅读大量说明文字的流程页。",
+      "Don't 把老师操作放在首页主视觉中心的课堂管理台。"
+    ]
+  }
+}

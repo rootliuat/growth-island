@@ -1,0 +1,668 @@
+/**
+ * [INPUT]: 依赖 ../01-tokens.css 以及前序 cascade 片段。
+ * [OUTPUT]: 对外提供后续模块、移动端和白板触控最终覆盖第 1 段样式。
+ * [POS]: styles/modules 的 cascade 片段 1/14，由 ../index.css 按顺序导入。
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
+
+/* P0 module cleanup: compact workflow panels instead of landing-page feature blocks. */
+.module-page {
+  overflow-x: hidden;
+}
+
+.module-page .module-hero {
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 300px);
+  gap: 12px;
+}
+
+.module-page .module-hero-copy {
+  align-items: center;
+  min-height: 44px;
+}
+
+.module-page .module-actions {
+  gap: 8px;
+  margin-top: 0;
+}
+
+.module-page .module-primary-action,
+.module-page .module-secondary-action,
+.module-page .island-link-panel button {
+  min-height: 44px;
+  border-radius: 999px;
+}
+
+.module-page .module-current-child {
+  gap: 4px;
+  padding: 14px 16px;
+  border-width: 1px;
+  border-radius: 18px;
+  background: #fffdf6;
+  box-shadow: 0 10px 24px rgba(31, 51, 45, 0.07);
+}
+
+.module-page .module-current-child strong {
+  font-size: 22px;
+}
+
+.module-page .module-current-child em {
+  padding-top: 6px;
+  font-size: 12px;
+}
+
+.module-page .module-lower-grid {
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 340px);
+  gap: 12px;
+}
+
+.module-page .module-panel {
+  border-width: 1px;
+  border-radius: 18px;
+  background: #fffdf6;
+  box-shadow: 0 10px 24px rgba(31, 51, 45, 0.07);
+}
+
+.module-page .module-panel-title {
+  font-size: 16px;
+}
+
+.module-page .module-panel ul {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.module-page .module-panel li {
+  min-height: 44px;
+  border-width: 1px;
+  background: #f7f3df;
+}
+
+@media (max-width: 860px) {
+  .module-page {
+    padding: 12px;
+  }
+
+  .module-page .module-hero,
+  .module-page .module-lower-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .module-page .module-hero-copy,
+  .module-page .module-actions {
+    justify-content: stretch;
+  }
+
+  .module-page .module-primary-action,
+  .module-page .module-secondary-action {
+    flex: 1;
+  }
+
+  .module-page .module-panel ul {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* P0 narrow-screen guard: keep the app usable instead of squeezing desktop columns. */
+@media (max-width: 720px) {
+  .workbench-profile-button,
+  .spirit-profile-button,
+  .manual-score-grid button,
+  .voice-review-actions button,
+  .home-screen-shell .spirit-dock.collapsed .dock-collapse {
+    min-height: 44px;
+  }
+
+  .profile-voice-select {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .profile-voice-select select {
+    width: 100%;
+  }
+
+  .profile-cabin-actions {
+    align-items: stretch;
+  }
+
+  .profile-cabin-actions span,
+  .profile-cabin-actions button {
+    min-height: 40px;
+  }
+
+  .profile-cabin-actions span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .leaderboard-page .leaderboard-plaza-stage {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .leaderboard-selected-token {
+    grid-template-columns: 52px minmax(0, 1fr);
+  }
+
+  .leaderboard-selected-token .leaderboard-selected-avatar {
+    width: 52px;
+    height: 52px;
+  }
+
+  .product-shell,
+  .home-screen-shell {
+    grid-template-columns: 64px minmax(0, 1fr);
+  }
+
+  .product-sidebar,
+  .home-screen-shell .product-sidebar {
+    gap: 8px;
+    min-width: 0;
+    padding: 10px 6px;
+  }
+
+  .sidebar-brand > div:not(.sidebar-brand-mark),
+  .classroom-card,
+  .sidebar-collapse-hint,
+  .module-nav-group > strong,
+  .module-nav button span,
+  .home-screen-shell .sidebar-brand > div:not(.sidebar-brand-mark),
+  .home-screen-shell .classroom-card,
+  .home-screen-shell .module-nav-group > strong,
+  .home-screen-shell .module-nav button span {
+    display: none;
+  }
+
+  .module-nav button,
+  .home-screen-shell .module-nav button {
+    justify-content: center;
+    width: 44px;
+    min-height: 44px;
+    padding: 0;
+  }
+
+  .product-workspace,
+  .product-workspace .app-shell,
+  .product-workspace .game-layout,
+  .module-page {
+    min-width: 0;
+    overflow-x: hidden;
+  }
+
+  .data-header {
+    align-items: stretch;
+    min-height: 100px;
+    gap: 10px;
+  }
+
+  .data-header > div {
+    flex-wrap: wrap;
+  }
+
+  .data-home-button {
+    flex: 0 0 44px;
+  }
+
+  .home-screen-shell .home-module.app-shell {
+    grid-template-rows: minmax(0, 1fr) 76px;
+  }
+
+  .home-screen-shell .game-topbar {
+    top: 12px;
+    right: 12px;
+    display: block;
+    padding: 0;
+  }
+
+  .home-screen-shell .game-brand {
+    gap: 8px;
+  }
+
+  .home-screen-shell .game-brand h1 {
+    display: none;
+  }
+
+  .home-screen-shell .zoom-controls {
+    justify-self: end;
+    gap: 4px;
+    padding: 2px;
+  }
+
+  .home-screen-shell .zoom-controls button {
+    flex: 0 0 44px;
+    width: 44px;
+    min-height: 44px;
+  }
+
+  .map-energy-constellation {
+    top: 10px;
+    left: 10px;
+    width: min(226px, calc(100% - 92px));
+    gap: 6px;
+    padding: 7px;
+    border-radius: 17px;
+  }
+
+  .world-map-shell:not(.moral-stage-idle) .map-energy-constellation {
+    top: 58px;
+  }
+
+  .energy-constellation-head span {
+    min-height: 28px;
+    padding: 0 8px;
+    font-size: 12px;
+  }
+
+  .energy-constellation-head strong {
+    display: none;
+  }
+
+  .energy-slot-row {
+    gap: 4px;
+  }
+
+  .energy-slot-row button {
+    min-height: 32px;
+    padding: 4px 2px;
+  }
+
+  .energy-slot-row button span {
+    display: none;
+  }
+
+  .teacher-workbench-page .workbench-board-layout,
+  .settings-layout,
+  .reward-layout,
+  .shop-layout,
+  .voice-record-layout,
+  .data-layout,
+  .data-backup-panel,
+  .data-insight-panel,
+  .profile-layout,
+  .math-arena-layout,
+  .math-arena-setup,
+  .leaderboard-page .leaderboard-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .teacher-workbench-page .workbench-board-layout {
+    align-self: start;
+    height: auto;
+    overflow: visible;
+    align-items: start;
+  }
+
+  .teacher-workbench-page {
+    grid-template-rows: auto auto;
+    align-content: start;
+    overflow: auto;
+  }
+
+  .workbench-class-board {
+    order: 2;
+    display: block;
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+  }
+
+  .workbench-class-grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-auto-rows: minmax(190px, auto);
+    height: auto;
+    overflow: visible;
+    padding: 4px;
+  }
+
+  .workbench-student-card {
+    height: auto;
+    min-height: 136px;
+    grid-template-rows: 30px minmax(86px, auto);
+  }
+
+  .student-card-main {
+    grid-template-columns: 96px minmax(0, 1fr);
+    grid-template-rows: 1fr;
+    align-items: center;
+    justify-items: start;
+    gap: 10px;
+    text-align: left;
+  }
+
+  .student-card-avatar {
+    width: 96px;
+    height: 82px;
+    align-self: center;
+    border-radius: 18px;
+  }
+
+  .student-card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    height: auto;
+    padding: 0;
+  }
+
+  .workbench-score-drawer,
+  .settings-action-panel,
+  .settings-rule-panel {
+    grid-column: auto;
+    grid-row: auto;
+  }
+
+  .workbench-score-drawer {
+    order: 1;
+  }
+
+  .settings-class-grid,
+  .settings-mode-grid,
+  .settings-rule-grid,
+  .settings-score-rules,
+  .shop-grid-panel,
+  .lottery-prize-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .data-backup-panel {
+    align-items: stretch;
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .data-backup-copy strong,
+  .data-backup-copy p {
+    white-space: normal;
+  }
+
+  .data-backup-metrics,
+  .data-backup-actions,
+  .data-toolbar > div {
+    justify-content: flex-start;
+  }
+
+  .data-backup-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .data-insight-panel {
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .data-restore-review,
+  .data-governance-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .data-restore-deltas,
+  .data-restore-actions {
+    justify-content: flex-start;
+  }
+
+  .data-clear-card > div {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .data-clear-card button {
+    width: 100%;
+  }
+
+  .data-insight-metrics {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .data-category-strip {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .data-category-strip button,
+  .data-scope-tabs button {
+    min-width: 0;
+  }
+
+  .data-backup-actions button {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .data-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .data-toolbar label {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .leaderboard-page .leaderboard-list li button {
+    grid-template-columns: 52px 48px minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .leaderboard-page .leaderboard-level,
+  .leaderboard-page .leaderboard-xp {
+    justify-self: start;
+  }
+}
+
+/* P10 organization module: compact kindergarten operations cockpit. */
+.organization-page {
+  grid-template-rows: auto auto minmax(0, 1fr);
+  color: var(--apple-text);
+  background: var(--apple-page);
+}
+
+.organization-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 52px;
+  gap: 12px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.organization-header > div {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+}
+
+.organization-header .module-eyebrow {
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid rgba(45, 140, 133, 0.18);
+  border-radius: 999px;
+  color: var(--apple-accent);
+  background: var(--apple-accent-soft);
+  font-size: 12px;
+}
+
+.organization-header h1 {
+  margin: 0;
+  overflow: hidden;
+  color: var(--apple-text);
+  font-size: 20px;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.organization-header p {
+  display: none;
+}
+
+.organization-home-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid rgba(26, 112, 77, 0.18);
+  border-radius: 13px;
+  color: #ffffff;
+  background: var(--apple-accent);
+  box-shadow: none;
+  font-family: inherit;
+  font-weight: 900;
+}
+
+.organization-summary {
+  display: grid;
+  grid-template-columns: minmax(170px, 1.25fr) repeat(4, minmax(112px, 0.8fr));
+  gap: 10px;
+}
+
+.organization-summary article,
+.organization-class-panel,
+.organization-classroom-panel,
+.organization-report-panel,
+.organization-curriculum-panel,
+.organization-task-panel {
+  min-width: 0;
+  border: 1px solid var(--apple-border);
+  border-radius: 18px;
+  background: var(--apple-surface);
+  box-shadow: var(--apple-shadow-soft);
+}
+
+.organization-summary article {
+  min-height: 62px;
+  padding: 11px 13px;
+}
+
+.organization-summary span,
+.organization-class-list span,
+.organization-classroom-metrics span,
+.organization-teacher-list span,
+.organization-report-list span,
+.organization-track-list span,
+.organization-task-list span {
+  color: var(--apple-text-soft);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.organization-summary strong,
+.organization-class-list strong,
+.organization-classroom-metrics strong,
+.organization-teacher-list strong,
+.organization-report-list strong,
+.organization-track-list strong,
+.organization-task-list strong {
+  overflow: hidden;
+  color: var(--apple-text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.organization-summary strong {
+  font-size: 20px;
+  line-height: 1.1;
+}
+
+.organization-layout {
+  display: grid;
+  grid-template-columns: minmax(230px, 0.72fr) minmax(320px, 1fr) minmax(320px, 1fr);
+  grid-template-rows: minmax(0, 1fr) minmax(210px, 0.72fr);
+  gap: 14px;
+  min-height: 0;
+}
+
+.organization-class-panel {
+  grid-row: 1 / span 2;
+}
+
+.organization-classroom-panel {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.organization-report-panel {
+  grid-column: 3;
+  grid-row: 1;
+}
+
+.organization-curriculum-panel {
+  grid-column: 2;
+  grid-row: 2;
+}
+
+.organization-task-panel {
+  grid-column: 3;
+  grid-row: 2;
+}
+
+.organization-class-panel,
+.organization-classroom-panel,
+.organization-report-panel,
+.organization-curriculum-panel,
+.organization-task-panel {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  padding: 15px;
+}
+
+.organization-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 11px;
+  border-bottom: 1px solid var(--apple-border);
+  color: var(--apple-text);
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.organization-class-list,
+.organization-teacher-list,
+.organization-report-list,
+.organization-track-list,
+.organization-task-list {
+  display: grid;
+  gap: 9px;
+  min-height: 0;
+  margin-top: 12px;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.organization-class-list button,
+.organization-report-list button,
+.organization-classroom-metrics article,
+.organization-teacher-list article,
+.organization-track-list article,
+.organization-task-list article {
+  min-width: 0;
+  border: 1px solid var(--apple-border);
+  border-radius: 15px;
+  background: var(--apple-surface-solid);
+  box-shadow: none;
+}
+
+.organization-class-list button,
+.organization-report-list button {
+  display: grid;
+  width: 100%;
+  gap: 4px;
+  min-height: 70px;
+  padding: 10px;
+  color: var(--apple-text);
+  font: inherit;
+  text-align: left;
+}
+
+.organization-class-list button.active {
+  border-color: rgba(49, 125, 104, 0.38);
+  background: #eef6f1;
+  box-shadow: 0 0 0 3px rgba(49, 125, 104, 0.08);
+}

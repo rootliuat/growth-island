@@ -22,7 +22,7 @@ export function GameTopBar({
     connecting: { label: "连接数据", icon: <LoaderCircle size={18} /> },
     online: { label: "已保存", icon: <Cloud size={18} /> },
     saving: { label: "保存中", icon: <LoaderCircle size={18} /> },
-    offline: { label: "离线演示", icon: <CloudOff size={18} /> },
+    offline: { label: "离线模式", icon: <CloudOff size={18} /> },
   }[syncStatus];
 
   return (
@@ -31,7 +31,7 @@ export function GameTopBar({
         <div className="game-brand-mark">北</div>
         <div>
           <h1>北海成长岛</h1>
-          <p>精灵家园 · 德育 XP · 数学魔法</p>
+          <p>精灵家园 · 成长能量 · 贝壳算术</p>
         </div>
       </div>
 

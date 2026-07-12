@@ -1,4 +1,4 @@
-import { Copy, Filter, Home, MapPinned, Mic, PlusCircle, RotateCcw, Search, Sparkles, Trophy, Users } from "lucide-react";
+import { Copy, Filter, Home, MapPinned, PlusCircle, RotateCcw, ScrollText, Sparkles, Trophy, Users } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { islandSlots } from "../../data/classroom";
 import { getSpiritAsset } from "../../domain/spiritAssets";
@@ -21,11 +21,11 @@ interface RollCallModuleProps {
 
 const allRegionFilter = "全部区域";
 const levelFilters = [
-  { id: "all", label: "全部等级", matches: () => true },
-  { id: "lv1", label: "Lv.1", matches: (level: number) => level === 1 },
-  { id: "lv2-4", label: "Lv.2-4", matches: (level: number) => level >= 2 && level <= 4 },
-  { id: "lv5-6", label: "Lv.5-6", matches: (level: number) => level >= 5 && level <= 6 },
-  { id: "lv7-8", label: "Lv.7-8", matches: (level: number) => level >= 7 },
+  { id: "all", label: "全部阶段", matches: () => true },
+  { id: "lv1", label: "初亮", matches: (level: number) => level === 1 },
+  { id: "lv2-4", label: "微光", matches: (level: number) => level >= 2 && level <= 4 },
+  { id: "lv5-6", label: "闪亮", matches: (level: number) => level >= 5 && level <= 6 },
+  { id: "lv7-8", label: "满光", matches: (level: number) => level >= 7 },
 ] as const;
 
 type LevelFilterId = (typeof levelFilters)[number]["id"];
@@ -33,7 +33,7 @@ type LevelFilterId = (typeof levelFilters)[number]["id"];
 const slotZoneById = new Map(islandSlots.map((slot) => [slot.id, slot.zone]));
 
 function childSummary(child: ChildWithProgress) {
-  return `Lv.${child.level} · ${child.xp} XP · #${child.rank}`;
+  return `${child.petName} · 精灵能量`;
 }
 
 function getChildRegion(child: ChildWithProgress) {
@@ -42,7 +42,7 @@ function getChildRegion(child: ChildWithProgress) {
 
 function formatRoundText(children: ChildWithProgress[]) {
   return children
-    .map((child, index) => `${index + 1}. ${child.name} · ${child.petName} · ${childSummary(child)}`)
+    .map((child, index) => `${index + 1}. ${child.name} · ${childSummary(child)}`)
     .join("\n");
 }
 
@@ -104,6 +104,10 @@ export function RollCallModule({
     if (!regionOptions.includes(regionFilter)) setRegionFilter(allRegionFilter);
   }, [regionFilter, regionOptions]);
 
+  useEffect(() => {
+    if (currentChildId && !isRolling) setActionStatus(`已抽中 ${currentChild.name}`);
+  }, [currentChild.name, currentChildId, isRolling]);
+
   useEffect(() => clearRollingTimers, []);
 
   const handleDraw = () => {
@@ -134,7 +138,16 @@ export function RollCallModule({
   const handleQuickRecord = () => {
     if (!hasDrawnChild || isRolling) return;
     onQuickRecord(currentChild.id);
-    setActionStatus(`${currentChild.name} +10`);
+    setActionStatus(`已为 ${currentChild.name} 点亮能量`);
+  };
+
+  const handleReset = () => {
+    clearRollingTimers();
+    setIsRolling(false);
+    setRollingChildId(undefined);
+    setActionStatus("");
+    setCopyStatus("");
+    onReset();
   };
 
   const handleCopyRound = async () => {
@@ -154,25 +167,49 @@ export function RollCallModule({
 
   return (
     <section className="module-page roll-call-page" aria-labelledby="roll-call-title">
-      <div className="roll-call-header">
+      <div className="roll-call-header module-compact-header">
         <div>
           <span className="module-eyebrow">
             <Sparkles size={18} />
-            课堂活动
+            点名
           </span>
-          <h1 id="roll-call-title">随机点名</h1>
+          <h1 id="roll-call-title">抽取台</h1>
         </div>
-        <button type="button" className="roll-call-home-button" onClick={() => onFocusChild(currentChild.id)}>
+        <button type="button" className="roll-call-home-button" aria-label={`看${currentChild.name}的精灵`} onClick={() => onFocusChild(currentChild.id)}>
           <Home size={18} />
-          聚焦
+          看精灵
         </button>
       </div>
 
       <div className="roll-call-layout">
-        <section className="roll-call-stage" aria-label="当前抽中孩子">
+        <section className="roll-call-stage" aria-label="抽取台当前结果">
           <div className="roll-call-stage-top">
-            <span>当前抽中</span>
-            <strong>{isRolling ? "滚动抽取中" : calledChildren.length > 0 ? "本轮点名" : "等待开始"}</strong>
+            <span>抽取位</span>
+            <strong>{isRolling ? "贝签滚动中" : calledChildren.length > 0 ? "本轮贝签" : "等待抽取"}</strong>
+          </div>
+
+          <div className="roll-call-command-strip">
+            <div className="roll-call-actions">
+              <button type="button" className="roll-call-primary" onClick={handleDraw} disabled={isPoolEmpty || isRolling}>
+                <Sparkles size={21} />
+                {isRolling ? "抽取中" : isPoolEmpty ? "本轮完成" : "抽取"}
+              </button>
+              <button type="button" className="roll-call-secondary" onClick={handleReset}>
+                <RotateCcw size={19} />
+                换一轮
+              </button>
+            </div>
+
+            <div className="roll-call-record-actions" aria-label="抽中后记录成长行为">
+              <button type="button" onClick={handleQuickRecord} disabled={!hasDrawnChild || isRolling}>
+                <PlusCircle size={19} />
+                {hasDrawnChild ? `${currentChild.name} 点亮` : "送能量"}
+              </button>
+              <button type="button" onClick={() => onOpenVoiceRecord(currentChild.id)} disabled={!hasDrawnChild || isRolling}>
+                <ScrollText size={19} />
+                补贝壳
+              </button>
+            </div>
           </div>
 
           <div className={isRolling ? "roll-call-winner is-rolling" : "roll-call-winner"}>
@@ -189,28 +226,9 @@ export function RollCallModule({
             </div>
           </div>
 
-          <div className="roll-call-actions">
-            <button type="button" className="roll-call-primary" onClick={handleDraw} disabled={isPoolEmpty || isRolling}>
-              <Search size={21} />
-              {isRolling ? "抽取中" : isPoolEmpty ? "已点完" : "开始"}
-            </button>
-            <button type="button" className="roll-call-secondary" onClick={onReset}>
-              <RotateCcw size={19} />
-              重置点名池
-            </button>
-          </div>
-
-          <div className="roll-call-record-actions" aria-label="抽中后记录成长行为">
-            <button type="button" onClick={handleQuickRecord} disabled={!hasDrawnChild || isRolling}>
-              <PlusCircle size={19} />
-              记录 +10
-            </button>
-            <button type="button" onClick={() => onOpenVoiceRecord(currentChild.id)} disabled={!hasDrawnChild || isRolling}>
-              <Mic size={19} />
-              语音记录
-            </button>
-          </div>
-          <p className="roll-call-action-status">{actionStatus}</p>
+          <p className="roll-call-action-status" aria-live="polite">
+            {actionStatus || (hasDrawnChild ? `已抽中 ${currentChild.name}，可送一束能量` : "抽取后可直接送能量")}
+          </p>
 
           <label className="roll-call-toggle" htmlFor="roll-call-exclude-called">
             <input
@@ -220,29 +238,30 @@ export function RollCallModule({
               checked={excludeCalled}
               onChange={onToggleExcludeCalled}
             />
-            <span>排除已点过孩子</span>
+            <span>不重复</span>
           </label>
 
           {isPoolEmpty && (
-            <p className="roll-call-hint">已点完</p>
+            <p className="roll-call-hint">本轮已完成</p>
           )}
         </section>
 
         <aside className="roll-call-side">
-          <section className="roll-call-filter-panel" aria-label="点名池筛选">
-            <div className="roll-call-filter-title">
+          <details className="roll-call-filter-panel roll-call-secondary-details">
+            <summary className="roll-call-filter-title">
               <span>
                 <Filter size={18} />
-                点名池筛选
+                候选范围
               </span>
               <strong>{availableCount}/{filteredChildren.length}</strong>
-            </div>
+            </summary>
             <div className="roll-call-chip-row" aria-label="区域筛选">
               {regionOptions.map((option) => (
                 <button
                   key={option}
                   type="button"
                   className={option === regionFilter ? "active" : undefined}
+                  aria-pressed={option === regionFilter}
                   onClick={() => setRegionFilter(option)}
                   disabled={isRolling}
                 >
@@ -257,6 +276,7 @@ export function RollCallModule({
                   key={option.id}
                   type="button"
                   className={option.id === levelFilter ? "active" : undefined}
+                  aria-pressed={option.id === levelFilter}
                   onClick={() => setLevelFilter(option.id)}
                   disabled={isRolling}
                 >
@@ -264,43 +284,45 @@ export function RollCallModule({
                 </button>
               ))}
             </div>
-          </section>
+          </details>
 
           <div className="roll-call-stats">
             <article>
               <Users size={20} />
-              <span>点名池</span>
+              <span>候选</span>
               <strong>{filteredChildren.length}</strong>
             </article>
             <article>
               <Trophy size={20} />
-              <span>本轮已点</span>
+              <span>已抽</span>
               <strong>{calledChildren.length}</strong>
             </article>
             <article>
               <Sparkles size={20} />
-              <span>可抽取</span>
+              <span>剩余</span>
               <strong>{availableCount}</strong>
             </article>
           </div>
 
-          <section className="roll-call-list-panel">
-            <div className="roll-call-list-title">
+          <details className="roll-call-list-panel roll-call-secondary-details">
+            <summary className="roll-call-list-title">
               <div>
-                <strong>本轮名单</strong>
-                <span>{excludeCalled ? `未点 ${uncalledCount}` : "可重复"}</span>
+                <strong>本轮贝签</strong>
+                <span>{excludeCalled ? `剩余 ${uncalledCount}` : "可重复"}</span>
               </div>
+            </summary>
+            <div className="roll-call-list-actions">
               <button type="button" className="roll-call-copy-button" onClick={handleCopyRound}>
                 <Copy size={17} />
                 复制
               </button>
             </div>
-            {copyStatus && <p className="roll-call-copy-status">{copyStatus}</p>}
+            {copyStatus && <p className="roll-call-copy-status" aria-live="polite">{copyStatus}</p>}
 
             {calledChildren.length === 0 ? (
               <div className="roll-call-empty">
                 <Sparkles size={22} />
-                <p>未开始</p>
+                <p>等待第一枚贝签</p>
               </div>
             ) : (
               <ol className="roll-call-list">
@@ -325,7 +347,7 @@ export function RollCallModule({
                 })}
               </ol>
             )}
-          </section>
+          </details>
         </aside>
       </div>
     </section>

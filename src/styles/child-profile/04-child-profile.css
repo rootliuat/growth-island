@@ -1,0 +1,675 @@
+/**
+ * [INPUT]: 依赖 ../01-tokens.css 以及前序 cascade 片段。
+ * [OUTPUT]: 对外提供精灵小屋、成长档案和孩子档案覆盖第 4 段样式。
+ * [POS]: styles/child-profile 的 cascade 片段 4/5，由 ../index.css 按顺序导入。
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
+
+
+.roll-call-ring {
+  border-color: rgba(235, 203, 122, 0.22);
+  box-shadow: none;
+}
+
+.roll-call-nameplate {
+  border: 1px solid var(--apple-border);
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.roll-call-stage-top strong,
+.roll-call-filter-title strong,
+.workbench-section-title span,
+.profile-section-title span,
+.profile-stat-row strong,
+.roll-call-toggle,
+.sidebar-sync {
+  border: 1px solid rgba(36, 137, 95, 0.14);
+  background: var(--apple-accent-soft);
+  box-shadow: none;
+}
+
+.settings-action-list em {
+  color: var(--apple-text-soft);
+}
+
+.spirit-profile-button,
+.workbench-profile-button {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 32px;
+  margin-top: 8px;
+  padding: 0 11px;
+  border: 1px solid rgba(36, 137, 95, 0.18);
+  border-radius: 999px;
+  color: var(--apple-accent);
+  background: rgba(223, 242, 230, 0.72);
+  box-shadow: none;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.spirit-profile-button:hover,
+.workbench-profile-button:hover {
+  background: rgba(223, 242, 230, 0.96);
+}
+
+/* Minimal Beihai pass: lighter shell, fewer instructional labels. */
+:root {
+  --apple-page: #f3f7f0;
+  --apple-surface: rgba(255, 255, 255, 0.94);
+  --apple-surface-solid: #ffffff;
+  --apple-muted: #efeee8;
+  --apple-border: rgba(26, 31, 29, 0.12);
+  --apple-border-strong: rgba(26, 31, 29, 0.22);
+  --apple-text: #18231f;
+  --apple-text-soft: #68716c;
+  --apple-accent: #17231f;
+  --apple-accent-soft: #eef2ee;
+  --apple-shadow: 0 20px 48px rgba(20, 28, 25, 0.08);
+  --apple-shadow-soft: 0 10px 26px rgba(20, 28, 25, 0.055);
+}
+
+.product-shell {
+  grid-template-columns: 220px minmax(0, 1fr);
+  color: var(--apple-text);
+  background: var(--apple-page);
+}
+
+.product-sidebar {
+  gap: 18px;
+  padding: 18px 14px;
+  border-right: 1px solid #e4e8e1;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: none;
+}
+
+.sidebar-brand {
+  gap: 10px;
+  padding: 0 2px 4px;
+  color: var(--apple-text);
+}
+
+.sidebar-brand-mark {
+  width: 38px;
+  height: 38px;
+  border: 1px solid rgba(49, 125, 104, 0.2);
+  border-radius: 13px;
+  color: #ffffff;
+  background: var(--apple-accent);
+  box-shadow: none;
+}
+
+.sidebar-brand strong {
+  color: var(--apple-text);
+  font-size: 17px;
+}
+
+.sidebar-brand span,
+.classroom-card > span,
+.classroom-card p,
+.sidebar-collapse-hint,
+.template-grid button em,
+.workbench-stat-row em,
+.profile-hero-card > div > span {
+  display: none;
+}
+
+.classroom-card {
+  gap: 10px;
+  padding: 13px;
+  border: 1px solid var(--apple-border);
+  border-radius: 16px;
+  color: var(--apple-text);
+  background: rgba(247, 248, 245, 0.72);
+  box-shadow: none;
+}
+
+.classroom-card strong {
+  color: var(--apple-text);
+  font-size: 14px;
+}
+
+.sidebar-sync {
+  margin-top: 0;
+  padding: 5px 9px;
+  color: var(--apple-text);
+  border: 1px solid var(--apple-border);
+  background: var(--apple-accent-soft);
+  font-size: 11px;
+}
+
+.module-nav-group + .module-nav-group {
+  border-top: 1px solid #e4e8e1;
+}
+
+.module-nav-group > strong {
+  color: #97a29b;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+}
+
+.module-nav button {
+  min-height: 39px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  color: #53605a;
+  font-size: 14px;
+}
+
+.module-nav button:hover {
+  color: var(--apple-text);
+  background: rgba(241, 243, 238, 0.88);
+}
+
+.module-nav button.active {
+  color: #ffffff;
+  border-color: transparent;
+  background: var(--apple-accent);
+  box-shadow: none;
+}
+.module-page {
+  gap: 16px;
+  padding: 24px 26px;
+  background: var(--apple-page);
+}
+
+.workbench-stat-row {
+  gap: 12px;
+}
+
+.workbench-stat-row article {
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto;
+  min-height: 64px;
+  padding: 13px 16px;
+  border-radius: 16px;
+  background: #ffffff;
+}
+
+.workbench-stat-row span {
+  font-size: 13px;
+}
+
+.workbench-stat-row strong {
+  grid-row: 1;
+  font-size: 28px;
+}
+
+.workbench-toolbar,
+.workbench-class-board,
+.workbench-score-drawer,
+.profile-roster-panel,
+.profile-story-panel,
+.profile-insight-panel,
+.roll-call-stage,
+.roll-call-filter-panel,
+.roll-call-list-panel,
+.roll-call-stats article {
+  border: 1px solid var(--apple-border);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: var(--apple-shadow-soft);
+}
+
+.workbench-class-grid {
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 14px;
+}
+
+.workbench-student-card {
+  border-radius: 16px;
+  background: #fffdf8;
+}
+
+.workbench-student-card.active,
+.profile-roster-list button.active,
+.roll-call-list li.is-current button {
+  border-color: rgba(49, 125, 104, 0.38);
+  background: #eef6f1;
+  box-shadow: 0 0 0 3px rgba(49, 125, 104, 0.08);
+}
+
+.student-card-topline {
+  font-size: 12px;
+}
+
+.student-card-avatar {
+  width: min(92%, 190px);
+  border: 0;
+  border-radius: 22px;
+  background: #f8f7f1;
+}
+
+.student-card-meta {
+  gap: 10px;
+}
+
+.student-card-meta strong {
+  font-size: 19px;
+}
+
+.student-card-xp {
+  color: var(--apple-text-soft);
+  font-size: 14px;
+}
+
+.student-card-actions button,
+.batch-score-grid button,
+.manual-score-grid button.gain,
+.roll-call-primary {
+  background: var(--apple-accent);
+}
+
+.workbench-selected-child.compact > div > span,
+.roll-call-action-status {
+  display: none;
+}
+
+.workbench-section-title,
+.profile-section-title,
+.roll-call-filter-title,
+.roll-call-list-title {
+  color: var(--apple-text);
+  font-size: 15px;
+}
+
+.workbench-section-title span,
+.profile-section-title span,
+.roll-call-filter-title strong,
+.roll-call-toggle {
+  border: 1px solid rgba(49, 125, 104, 0.14);
+  background: var(--apple-accent-soft);
+}
+
+.template-grid button {
+  min-height: 74px;
+  gap: 4px;
+  border-radius: 15px;
+}
+
+.template-grid button span {
+  font-size: 20px;
+}
+
+.workbench-result-card p,
+.workbench-record-list p,
+.workbench-review-list p,
+.profile-empty-story p,
+.profile-milestone-card p {
+  color: var(--apple-text-soft);
+  font-size: 13px;
+}
+
+.roll-call-layout {
+  grid-template-columns: minmax(440px, 0.92fr) minmax(430px, 1.08fr);
+}
+
+.roll-call-stage {
+  min-height: 500px;
+  padding: 24px;
+}
+
+.roll-call-avatar {
+  border-width: 1px;
+  border-radius: 34%;
+  background: #f8f7f1;
+}
+
+.roll-call-nameplate {
+  width: min(100%, 360px);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.88);
+}
+
+.roll-call-nameplate strong {
+  font-size: 42px;
+}
+
+.roll-call-home-button,
+.roll-call-primary,
+.roll-call-secondary,
+.roll-call-record-actions button,
+.roll-call-filter-panel button,
+.roll-call-copy-button,
+.workbench-home-button,
+.profile-home-button,
+.workbench-profile-button,
+.spirit-profile-button {
+  border-radius: 13px;
+  box-shadow: none;
+}
+
+.roll-call-list li button {
+  min-height: 62px;
+  background: #ffffff;
+}
+
+.roll-call-row-copy em {
+  color: var(--apple-text-soft);
+}
+
+.profile-layout {
+  grid-template-columns: minmax(220px, 0.52fr) minmax(560px, 1.18fr) minmax(320px, 0.72fr);
+}
+
+.profile-hero-card {
+  grid-template-columns: 116px minmax(0, 1fr);
+  background: #ffffff;
+}
+
+.profile-portrait {
+  width: 116px;
+  height: 116px;
+  border-radius: 30px;
+}
+
+.profile-stat-row strong {
+  border-radius: 999px;
+  color: var(--apple-text);
+  background: var(--apple-muted);
+}
+
+.profile-timeline article,
+.profile-milestone-card article,
+.profile-evidence-card dl,
+.dimension-list article {
+  background: #ffffff;
+}
+
+/* Scroll-safe card states: clear selection without expensive lift or image filters. */
+.workbench-class-grid {
+  perspective: none;
+  padding: 8px 12px 14px 8px;
+}
+
+.workbench-student-card {
+  position: relative;
+  isolation: isolate;
+  overflow: visible;
+  transform: none;
+  transform-origin: 50% 85%;
+  transform-style: flat;
+  transition:
+    border-color 180ms ease,
+    background 180ms ease;
+}
+
+.workbench-student-card::before {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: #ffffff;
+  content: "";
+  opacity: 0;
+  transition: opacity 180ms ease;
+}
+
+.workbench-student-card:hover {
+  z-index: 8;
+  border-color: rgba(49, 125, 104, 0.24);
+  background: #ffffff;
+  will-change: auto;
+  box-shadow: none;
+  transform: none;
+}
+
+.workbench-student-card:hover::before,
+.workbench-student-card.active::before {
+  opacity: 1;
+}
+
+.workbench-student-card.active {
+  z-index: 6;
+  border-color: rgba(49, 125, 104, 0.38);
+  background: #ffffff;
+  will-change: auto;
+  box-shadow: none;
+  transform: none;
+}
+
+.workbench-student-card.active:hover {
+  transform: none;
+}
+
+.workbench-student-card .student-card-topline,
+.workbench-student-card .student-card-main,
+.workbench-student-card .student-card-actions {
+  transform: none;
+}
+
+.workbench-student-card .student-card-avatar {
+  transform: none;
+  transition: transform 180ms ease, filter 180ms ease;
+}
+
+.workbench-student-card .student-card-avatar img {
+  transition: transform 180ms ease, filter 180ms ease;
+}
+
+.workbench-student-card:hover .student-card-avatar {
+  transform: none;
+}
+
+.workbench-student-card:hover .student-card-avatar img {
+  filter: none;
+  transform: none;
+}
+
+/* Red-box cleanup: keep only the operating surface and the real ranked list. */
+.teacher-workbench-page {
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 12px;
+}
+
+.teacher-workbench-page .workbench-header {
+  min-height: 36px;
+}
+
+.teacher-workbench-page .workbench-stat-row,
+.teacher-workbench-page .workbench-toolbar {
+  display: none;
+}
+
+.teacher-workbench-page .workbench-board-layout,
+.leaderboard-page .leaderboard-layout,
+.leaderboard-page .leaderboard-main,
+.leaderboard-page .leaderboard-list-panel {
+  min-height: 0;
+  height: 100%;
+}
+
+.leaderboard-page {
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.leaderboard-page .leaderboard-layout {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.leaderboard-page .leaderboard-main {
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.leaderboard-page .leaderboard-plaza-stage {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) minmax(280px, 0.72fr);
+  align-items: center;
+  gap: 14px;
+  min-height: 112px;
+  padding: 16px;
+  overflow: hidden;
+  border: 1px solid rgba(26, 31, 29, 0.12);
+  border-radius: 20px;
+  background:
+    linear-gradient(135deg, rgba(246, 179, 82, 0.18), rgba(135, 216, 208, 0.18)),
+    #fffdf8;
+  box-shadow: var(--apple-shadow-soft);
+}
+
+.leaderboard-plaza-copy,
+.leaderboard-selected-token {
+  min-width: 0;
+}
+
+.leaderboard-plaza-copy {
+  display: grid;
+  gap: 6px;
+}
+
+.leaderboard-plaza-copy span,
+.leaderboard-selected-token div > span {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  color: var(--apple-accent);
+  background: var(--apple-accent-soft);
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.leaderboard-plaza-copy strong {
+  overflow: hidden;
+  color: var(--apple-text);
+  font-size: 22px;
+  line-height: 1.05;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.leaderboard-plaza-copy em,
+.leaderboard-selected-token em {
+  overflow: hidden;
+  color: var(--apple-text-soft);
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.leaderboard-selected-token {
+  display: grid;
+  grid-template-columns: 62px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  border: 1px solid rgba(49, 125, 104, 0.16);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.leaderboard-selected-token .leaderboard-selected-avatar {
+  width: 62px;
+  height: 62px;
+  border-radius: 18px;
+}
+
+.leaderboard-selected-token strong {
+  display: block;
+  margin-top: 4px;
+  overflow: hidden;
+  color: var(--apple-text);
+  font-size: 19px;
+  line-height: 1.05;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.leaderboard-page .leaderboard-podium,
+.leaderboard-page .leaderboard-side {
+  display: none;
+}
+
+.leaderboard-page .leaderboard-list-panel {
+  padding: 18px;
+}
+
+.leaderboard-page .leaderboard-list-title {
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--apple-border);
+}
+
+.leaderboard-page .leaderboard-list-title span {
+  color: var(--apple-text);
+  font-size: 16px;
+  line-height: 1;
+}
+
+.leaderboard-page .leaderboard-list {
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.leaderboard-page .leaderboard-list li button {
+  grid-template-columns: 64px 56px minmax(0, 1fr) 72px 104px;
+  min-height: 72px;
+  padding: 11px 14px;
+  border-radius: 16px;
+  background: #ffffff;
+}
+
+.leaderboard-page .leaderboard-rank {
+  min-height: 42px;
+  border-radius: 12px;
+  font-size: 18px;
+}
+
+.leaderboard-page .leaderboard-row-avatar {
+  display: grid;
+  width: 50px;
+  height: 50px;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(49, 125, 104, 0.13);
+  border-radius: 16px;
+  background: #f8f7f1;
+  color: var(--apple-accent);
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.leaderboard-page .leaderboard-row-avatar img {
+  width: 94%;
+  height: 94%;
+  object-fit: contain;
+  filter: none;
+}
+
+.leaderboard-page .leaderboard-child-name strong {
+  font-size: 15px;
+}
+
+.leaderboard-page .leaderboard-level,
+.leaderboard-page .leaderboard-xp {
+  color: var(--apple-text);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.leaderboard-page .leaderboard-xp {
+  min-height: 28px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  color: #7a4d20;
+  background: rgba(246, 179, 82, 0.24);
+}
+
+.leaderboard-list button:focus-visible,
+.leaderboard-honor-token:focus-visible,
+.leaderboard-home-button:focus-visible,
+.profile-search input:focus-visible,
+.profile-voice-select select:focus-visible,
+.profile-cabin-actions button:focus-visible {
+  outline: 3px solid rgba(45, 159, 178, 0.34);
+  outline-offset: 3px;
+}

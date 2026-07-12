@@ -1,0 +1,701 @@
+/**
+ * [INPUT]: 依赖 ../01-tokens.css 以及前序 cascade 片段。
+ * [OUTPUT]: 对外提供后续模块、移动端和白板触控最终覆盖第 13 段样式。
+ * [POS]: styles/modules 的 cascade 片段 13/14，由 ../index.css 按顺序导入。
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
+
+/* P10 trial-classroom pass: make idle home calmer and self-selection clearer. */
+.home-screen-shell .map-energy-constellation.moral-idle {
+  width: min(338px, calc(100% - 132px));
+  gap: 6px;
+  padding: 8px 9px;
+  border-width: 1px;
+  border-radius: 18px;
+  background: rgba(255, 248, 234, 0.72);
+  box-shadow: 0 8px 18px rgba(19, 51, 45, 0.09);
+}
+
+.home-screen-shell .map-energy-constellation.moral-idle .energy-constellation-head {
+  gap: 6px;
+}
+
+.home-screen-shell .map-energy-constellation.moral-idle .energy-constellation-head span,
+.home-screen-shell .map-energy-constellation.moral-idle .energy-constellation-head strong {
+  min-height: 28px;
+  padding-inline: 9px;
+}
+
+.home-screen-shell .map-energy-constellation.moral-idle .energy-constellation-head strong {
+  max-width: 176px;
+}
+
+.home-screen-shell .map-energy-constellation.moral-idle .energy-slot-row {
+  display: flex;
+  gap: 6px;
+  overflow: hidden;
+}
+
+.home-screen-shell .map-energy-constellation.moral-idle .energy-card:not(.active):not(.current) {
+  display: none;
+}
+
+.home-screen-shell .map-energy-constellation.moral-idle .energy-card {
+  flex: 0 0 62px;
+  min-height: 58px;
+  padding: 5px 4px;
+  border-radius: 13px;
+}
+
+.home-screen-shell .map-energy-constellation.moral-idle .energy-card b {
+  display: none;
+}
+
+.home-screen-shell .world-map-shell:is(.moral-stage-pendingReview, .moral-stage-success) .map-energy-constellation {
+  top: 76px;
+  left: 14px;
+  width: min(232px, calc(100% - 420px));
+  gap: 6px;
+  padding: 7px;
+  border-width: 1px;
+  border-radius: 17px;
+  background: rgba(255, 248, 234, 0.8);
+  box-shadow: 0 8px 18px rgba(19, 51, 45, 0.1);
+}
+
+.home-screen-shell .world-map-shell:is(.moral-stage-pendingReview, .moral-stage-success) .energy-constellation-head {
+  gap: 5px;
+}
+
+.home-screen-shell .world-map-shell:is(.moral-stage-pendingReview, .moral-stage-success) .energy-constellation-head span,
+.home-screen-shell .world-map-shell:is(.moral-stage-pendingReview, .moral-stage-success) .energy-constellation-head strong {
+  min-height: 28px;
+  padding-inline: 9px;
+  font-size: 12px;
+}
+
+.home-screen-shell .world-map-shell:is(.moral-stage-pendingReview, .moral-stage-success) .energy-constellation-head strong {
+  max-width: 98px;
+}
+
+.home-screen-shell .world-map-shell:is(.moral-stage-pendingReview, .moral-stage-success) .energy-slot-row {
+  gap: 5px;
+}
+
+.home-screen-shell .world-map-shell:is(.moral-stage-pendingReview, .moral-stage-success) .energy-slot-row button.current {
+  flex-basis: 68px;
+  min-height: 54px;
+  padding: 4px;
+}
+
+.home-screen-shell .world-map-shell:is(.moral-stage-pendingReview, .moral-stage-success) .energy-slot-row button.current b {
+  display: none;
+}
+
+@media (max-width: 720px) {
+  .home-screen-shell .world-map-shell:is(.moral-stage-pendingReview, .moral-stage-success) .map-energy-constellation {
+    top: 54px;
+    left: 12px;
+    width: min(168px, calc(100% - 96px));
+  }
+
+  .home-screen-shell .world-map-shell:is(.moral-stage-pendingReview, .moral-stage-success) .energy-constellation-head strong {
+    max-width: 72px;
+  }
+}
+
+.home-screen-shell .map-scene-gate {
+  width: 222px;
+  padding: 8px;
+  border-width: 1px;
+  opacity: 0.64;
+  box-shadow: 0 8px 18px rgba(19, 51, 45, 0.08);
+}
+
+.home-screen-shell .map-scene-gate:hover,
+.home-screen-shell .map-scene-gate:focus-within {
+  opacity: 0.92;
+}
+
+.home-screen-shell .map-scene-gate > strong {
+  display: none;
+}
+
+.home-screen-shell .map-scene-gate > div {
+  gap: 6px;
+}
+
+.home-screen-shell .map-scene-gate button {
+  grid-template-columns: 30px minmax(0, 1fr);
+  grid-template-areas:
+    "icon label"
+    "icon status";
+  min-height: 50px;
+  padding: 6px 8px;
+  border-radius: 14px;
+  box-shadow: inset 0 -2px 0 rgba(122, 74, 50, 0.055);
+}
+
+.home-screen-shell .map-scene-gate button b,
+.home-screen-shell .map-scene-gate button em,
+.home-screen-shell .map-scene-gate button small {
+  display: none;
+}
+
+.home-screen-shell .map-scene-gate button svg {
+  width: 28px;
+  height: 28px;
+}
+
+.home-screen-shell .map-scene-gate button strong {
+  justify-self: start;
+  min-height: 0;
+  padding: 0;
+  color: color-mix(in srgb, var(--scene-accent, #2d9fb2) 78%, #174c5a);
+  background: transparent;
+  font-size: 10px;
+}
+
+.home-screen-shell .map-companion-actions {
+  width: min(252px, calc(100% - 210px));
+  padding: 10px;
+  border-width: 2px;
+  background: rgba(244, 241, 230, 0.94);
+  box-shadow: 0 8px 18px rgba(35, 66, 61, 0.14);
+}
+
+.home-screen-shell .companion-action-kicker {
+  display: none;
+}
+
+.home-screen-shell .map-companion-actions > strong {
+  margin-top: 0;
+  font-size: 20px;
+  text-align: center;
+}
+
+.home-screen-shell .map-companion-actions > div {
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.home-screen-shell .map-companion-actions .map-self-service-action {
+  min-height: 46px;
+}
+
+.home-screen-shell .map-companion-actions button:not(.map-self-service-action) {
+  width: 46px;
+  min-height: 46px;
+  padding: 0;
+  font-size: 0;
+}
+
+.home-screen-shell .map-companion-actions button:not(.map-self-service-action) svg {
+  width: 19px;
+  height: 19px;
+}
+
+.home-screen-shell .dock-summary-copy small {
+  color: #2f7f87;
+}
+
+.home-screen-shell .dock-selected-summary > .dock-summary-status {
+  color: #174c5a;
+  background: rgba(135, 216, 208, 0.28);
+}
+
+.home-screen-shell .module-dock-button:not(.active),
+.home-screen-shell .teacher-tools-drawer summary {
+  box-shadow: none;
+}
+
+.home-screen-shell .module-dock-button:not(.active) {
+  opacity: 0.82;
+}
+
+@media (max-width: 720px) {
+  .home-screen-shell .zoom-controls {
+    display: grid;
+    grid-template-columns: repeat(2, 44px);
+    gap: 5px;
+    padding: 5px;
+    border-radius: 18px;
+  }
+
+  .home-screen-shell .zoom-controls button {
+    width: 44px;
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .home-screen-shell .map-energy-constellation.moral-idle {
+    width: min(210px, calc(100% - 94px));
+    padding: 6px;
+  }
+
+  .home-screen-shell .map-energy-constellation.moral-idle .energy-constellation-head strong {
+    display: none;
+  }
+
+  .home-screen-shell .map-energy-constellation.moral-idle .energy-card {
+    flex-basis: 50px;
+    min-height: 50px;
+  }
+
+  .home-screen-shell .map-scene-gate {
+    right: 8px;
+    bottom: 92px;
+    width: min(196px, calc(100vw - 18px));
+    opacity: 0.58;
+    transform: none;
+  }
+
+  .home-screen-shell .map-scene-gate button {
+    min-height: 44px;
+    padding: 5px 7px;
+  }
+
+  .home-screen-shell .map-scene-gate button svg {
+    width: 26px;
+    height: 26px;
+  }
+
+  .home-screen-shell .map-companion-actions {
+    right: 10px;
+    bottom: 98px;
+    width: min(218px, calc(100vw - 20px));
+  }
+
+  .home-screen-shell .map-companion-actions > strong {
+    font-size: 18px;
+  }
+
+  .home-screen-shell .map-companion-actions button:not(.map-self-service-action) {
+    width: 44px;
+    min-height: 44px;
+  }
+}
+
+/* P11 Three.js effect preview: isolated 3D spirit room, not the classroom flow. */
+.spirit-card-actions .spirit-showcase-button,
+.dock-showcase-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid rgba(23, 76, 90, 0.16);
+  border-radius: 999px;
+  color: #174c5a;
+  background: rgba(255, 248, 234, 0.94);
+  box-shadow: inset 0 -2px 0 rgba(45, 159, 178, 0.12);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 950;
+  line-height: 1;
+  transition: transform 150ms ease, filter 150ms ease, box-shadow 150ms ease;
+  touch-action: manipulation;
+}
+
+.spirit-card-actions .spirit-showcase-button {
+  min-height: 34px;
+  padding: 0 12px;
+}
+
+.spirit-card-actions .spirit-showcase-button:hover,
+.dock-showcase-button:hover {
+  filter: brightness(1.03);
+  transform: translateY(-1px);
+}
+
+.spirit-showcase-button:focus-visible,
+.dock-showcase-button:focus-visible {
+  outline: 3px solid rgba(246, 179, 82, 0.72);
+  outline-offset: 3px;
+}
+
+.home-screen-shell .spirit-dock.collapsed {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
+.home-screen-shell .dock-showcase-button {
+  min-width: 52px;
+  min-height: 44px;
+  padding: 0 10px;
+  color: #174c5a;
+  background: rgba(255, 248, 234, 0.96);
+}
+
+.home-screen-shell .spirit-dock.expanded .dock-selected-summary.expanded {
+  grid-template-columns: 56px minmax(0, 1fr) auto;
+}
+
+.home-screen-shell .spirit-dock.expanded .dock-showcase-button {
+  align-self: center;
+  min-width: 48px;
+  min-height: 38px;
+  padding: 0 9px;
+}
+
+.spirit-showcase-backdrop {
+  position: fixed;
+  z-index: 76;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 22px;
+  background: rgba(8, 40, 48, 0.42);
+}
+
+.spirit-showcase-modal {
+  --showcase-accent: #2d9fb2;
+  display: grid;
+  grid-template-columns: minmax(420px, 1fr) minmax(220px, 300px);
+  grid-template-rows: auto minmax(360px, 1fr);
+  width: min(960px, calc(100vw - 44px));
+  max-height: min(680px, calc(100vh - 44px));
+  gap: 12px;
+  padding: 12px;
+  overflow: hidden;
+  border: 2px solid rgba(255, 248, 234, 0.78);
+  border-radius: 22px;
+  color: #174c5a;
+  background:
+    linear-gradient(180deg, rgba(255, 253, 244, 0.98), rgba(255, 248, 234, 0.98)),
+    #fff8ea;
+  box-shadow: 0 24px 54px rgba(4, 20, 29, 0.28);
+}
+
+.spirit-showcase-head {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+}
+
+.showcase-mark,
+.showcase-close {
+  display: inline-grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border-radius: 14px;
+}
+
+.showcase-mark {
+  color: #fffdf4;
+  background: color-mix(in srgb, var(--showcase-accent) 84%, #174c5a);
+  box-shadow: inset 0 -3px 0 rgba(7, 41, 50, 0.18);
+}
+
+.spirit-showcase-head span,
+.spirit-showcase-side span,
+.showcase-touch-hint span {
+  font-size: 12px;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.spirit-showcase-head strong {
+  display: block;
+  min-width: 0;
+  margin-top: 3px;
+  overflow: hidden;
+  color: #14342e;
+  font-size: 18px;
+  font-weight: 950;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.showcase-close {
+  border: 1px solid rgba(23, 76, 90, 0.12);
+  color: #174c5a;
+  background: #fffdf4;
+  font: inherit;
+}
+
+.showcase-close:hover {
+  filter: brightness(0.98);
+}
+
+/* P13 3D product surfaces: model assets stay off the main classroom map and render in bounded stages. */
+.model-stage-3d {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid rgba(45, 159, 178, 0.22);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 50% 78%, rgba(255, 253, 244, 0.72), transparent 38%),
+    linear-gradient(180deg, rgba(135, 216, 208, 0.28), rgba(244, 217, 155, 0.28)),
+    #fffdf4;
+  contain: layout paint style;
+}
+
+.model-stage-3d::after {
+  position: absolute;
+  right: 12%;
+  bottom: 9%;
+  left: 12%;
+  z-index: 0;
+  height: 18%;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--model-accent, #f6b352) 20%, transparent);
+  content: "";
+  filter: blur(10px);
+  opacity: 0.78;
+  pointer-events: none;
+}
+
+.model-stage-canvas-mount {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+}
+
+.model-stage-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.model-stage-spirit .model-stage-canvas {
+  cursor: grab;
+  touch-action: none;
+}
+
+.model-stage-spirit .model-stage-canvas:active {
+  cursor: grabbing;
+}
+
+.model-stage-reward,
+.model-stage-reward .model-stage-canvas {
+  pointer-events: none;
+}
+
+.model-stage-loader,
+.model-stage-fallback {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  color: #174c5a;
+  font-size: 13px;
+  font-weight: 950;
+  pointer-events: none;
+}
+
+.model-stage-loader {
+  background: rgba(255, 253, 244, 0.58);
+}
+
+.model-stage-fallback {
+  align-content: center;
+  gap: 7px;
+  padding: 16px;
+  text-align: center;
+  background: rgba(255, 253, 244, 0.86);
+}
+
+.model-stage-fallback img,
+.model-stage-fallback > span {
+  display: grid;
+  width: 108px;
+  height: 108px;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(255, 248, 234, 0.92);
+  filter: drop-shadow(0 10px 14px rgba(23, 76, 90, 0.16));
+  object-fit: contain;
+}
+
+.model-stage-fallback > span {
+  color: #174c5a;
+  font-size: 40px;
+  font-weight: 950;
+}
+
+.model-stage-fallback strong {
+  color: #174c5a;
+  font-size: 13px;
+  line-height: 1.15;
+}
+
+.model-stage-fallback em {
+  color: rgba(23, 76, 90, 0.66);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.model-stage-compact {
+  min-height: 76px;
+}
+
+.model-stage-medium {
+  min-height: 178px;
+}
+
+.model-stage-large {
+  min-height: 360px;
+}
+
+.model-stage-reward .model-stage-fallback {
+  gap: 0;
+  padding: 6px;
+}
+
+.model-stage-reward .model-stage-fallback img,
+.model-stage-reward .model-stage-fallback > span {
+  width: 42px;
+  height: 42px;
+  font-size: 22px;
+}
+
+.model-stage-reward .model-stage-fallback strong,
+.model-stage-reward .model-stage-fallback em {
+  display: none;
+}
+
+.shop-page .shop-intent-card {
+  grid-template-columns: 84px 28px minmax(0, 1fr) auto;
+  min-height: 98px;
+}
+
+.shop-reward-preview-3d {
+  grid-column: 1;
+  width: 84px;
+  height: 78px;
+  min-height: 78px;
+  border-radius: 18px;
+  border-color: rgba(214, 177, 106, 0.36);
+  background:
+    radial-gradient(circle at 50% 80%, rgba(255, 253, 244, 0.8), transparent 42%),
+    #fffdf4;
+}
+
+.shop-page .shop-intent-card > svg {
+  grid-column: 2;
+  justify-self: center;
+}
+
+.shop-page .shop-intent-card .shop-intent-copy {
+  grid-column: 3;
+}
+
+.shop-page .shop-intent-card .shop-redeem-button,
+.shop-page .shop-intent-card .shop-return-action {
+  grid-column: 4;
+  white-space: nowrap;
+}
+
+.shop-page .shop-intent-card.is-redeemed::after {
+  z-index: 0;
+}
+
+.shop-reward-preview-3d,
+.shop-page .shop-intent-card > svg,
+.shop-page .shop-intent-card .shop-intent-copy,
+.shop-page .shop-intent-card .shop-redeem-button,
+.shop-page .shop-intent-card .shop-return-action {
+  position: relative;
+  z-index: 1;
+}
+
+.leaderboard-page .leaderboard-selected-token {
+  grid-template-columns: 86px 56px minmax(0, 1fr);
+  align-items: center;
+}
+
+.leaderboard-reward-preview-3d {
+  width: 86px;
+  height: 76px;
+  min-height: 76px;
+  border-radius: 18px;
+  border-color: rgba(246, 179, 82, 0.34);
+  background:
+    radial-gradient(circle at 50% 80%, rgba(255, 240, 191, 0.72), transparent 46%),
+    rgba(255, 253, 244, 0.72);
+}
+
+.leaderboard-page .leaderboard-selected-token .leaderboard-selected-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 17px;
+}
+
+.moral-success-reward-3d {
+  flex: 0 0 58px;
+  width: 58px;
+  height: 58px;
+  min-height: 58px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  pointer-events: none;
+}
+
+.moral-success-reward-3d::after,
+.moral-success-reward-3d .model-stage-loader {
+  display: none;
+}
+
+.spirit-speech-bubble.success strong {
+  max-width: min(270px, calc(100vw - 210px));
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 720px) {
+  .shop-page .shop-intent-card {
+    grid-template-columns: 60px 28px minmax(0, 1fr);
+    min-height: 82px;
+  }
+
+  .shop-reward-preview-3d {
+    width: 60px;
+    height: 58px;
+    min-height: 58px;
+    border-radius: 16px;
+  }
+
+  .shop-page .shop-intent-card .shop-redeem-button,
+  .shop-page .shop-intent-card .shop-return-action {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .leaderboard-page .leaderboard-selected-token {
+    grid-template-columns: 66px minmax(0, 1fr);
+    gap: 9px;
+  }
+
+  .leaderboard-reward-preview-3d {
+    width: 66px;
+    height: 62px;
+    min-height: 62px;
+  }
+
+  .leaderboard-page .leaderboard-selected-token .leaderboard-selected-avatar {
+    display: none;
+  }
+
+  .moral-success-reward-3d {
+    flex-basis: 46px;
+    width: 46px;
+    height: 46px;
+    min-height: 46px;
+  }
+
+  .spirit-speech-bubble.success strong {
+    max-width: calc(100vw - 188px);
+    font-size: 18px;
+  }
+}

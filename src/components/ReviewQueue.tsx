@@ -29,7 +29,7 @@ export function ReviewQueue({ reviews, childrenWithProgress, onApprove, onReject
             </div>
             <em>
               {review.result.category ?? "未分类"} · {review.result.xpDelta > 0 ? "+" : ""}
-              {review.result.xpDelta} XP
+              {review.result.xpDelta} 能量
             </em>
             <p>{review.transcript || review.result.reasonForTeacher}</p>
             <div className="review-actions">

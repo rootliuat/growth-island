@@ -46,6 +46,7 @@ export interface ChildProfile {
   name: string;
   spiritId: string;
   petName: string;
+  voiceType: number;
   slotId: number;
 }
 
@@ -67,7 +68,9 @@ export interface LedgerRecord {
 }
 
 export type LedgerRecordInput = Omit<LedgerRecord, "id" | "createdAt" | "operatorRole" | "aiSuggested" | "reviewStatus"> &
-  Partial<Pick<LedgerRecord, "operatorRole" | "aiSuggested" | "reviewStatus">>;
+  Partial<Pick<LedgerRecord, "operatorRole" | "aiSuggested" | "reviewStatus">> & {
+    teacherAdjustedReview?: boolean;
+  };
 
 export interface ClassroomSnapshot {
   children: ChildProfile[];
@@ -115,4 +118,133 @@ export interface MoralAgentResponse {
   result: MoralEvaluationResult;
   reviewItem: MoralReviewItem;
   snapshot: ClassroomSnapshot;
+  provider?: "deepseek" | "rules" | "mock";
+  model?: string;
+  providerError?: string;
+  usage?: unknown;
+}
+
+export interface SpeechSynthesisResponse {
+  provider: "tencent" | "mock";
+  childId: string;
+  voiceType: number;
+  voiceLabel?: string;
+  codec: "mp3";
+  sampleRate: number;
+  audioBase64: string;
+}
+
+export interface SpeechRecognitionResponse {
+  provider: "tencent" | "mock";
+  text: string;
+  voiceFormat: string;
+  engineModel: string;
+  audioDuration?: number;
+  wordSize?: number;
+  requestId?: string;
+}
+
+export interface ShopRedemption {
+  id: string;
+  childId: string;
+  rewardId: string;
+  rewardName: string;
+  rewardCategory: string;
+  cost: number;
+  status: "requested";
+  createdAt: string;
+}
+
+export interface LotteryDrawRecord {
+  id: string;
+  childId: string;
+  childName: string;
+  prizeId: string;
+  prizeName: string;
+  rarity: "常见" | "惊喜" | "稀有";
+  description: string;
+  status: "drawn";
+  createdAt: string;
+}
+
+export interface SettingsChangeRecord {
+  id: string;
+  key: "teacher-mode" | "settings-save";
+  label: string;
+  value: string;
+  createdAt: string;
+}
+
+export type ParentReportReviewStatus = "draft" | "submitted" | "approved" | "revision_requested";
+
+export interface ParentReportReviewRecord {
+  childId: string;
+  status: ParentReportReviewStatus;
+  updatedAt: string;
+  reviewedBy?: string;
+  note?: string;
+}
+
+export interface OrganizationState {
+  activeCurriculumByClassroomId: Record<string, string>;
+  parentReportReviewsByChildId: Record<string, ParentReportReviewRecord>;
+}
+
+export interface ClassroomBackupSnapshot {
+  product: "beihai-growth-island";
+  schemaVersion: 1;
+  exportedAt: string;
+  children: ChildProfile[];
+  ledger: LedgerRecord[];
+  moralReviews: MoralReviewItem[];
+  shopRedemptions: ShopRedemption[];
+  lotteryDraws: LotteryDrawRecord[];
+  settings: {
+    teacherMode: boolean;
+    settingsChanges: SettingsChangeRecord[];
+  };
+  organization: OrganizationState;
+}
+
+export interface ClassroomBackupSummary {
+  childCount: number;
+  ledgerCount: number;
+  reviewCount: number;
+  shopRedemptionCount: number;
+  lotteryDrawCount: number;
+  settingsChangeCount: number;
+  activeCurriculumCount: number;
+  parentReportReviewCount: number;
+  exportedAt: string;
+}
+
+export interface ClassroomBackupComparison {
+  current: ClassroomBackupSummary;
+  incoming: ClassroomBackupSummary;
+  childDelta: number;
+  ledgerDelta: number;
+  reviewDelta: number;
+  shopRedemptionDelta: number;
+  lotteryDrawDelta: number;
+  settingsChangeDelta: number;
+  activeCurriculumDelta: number;
+  parentReportReviewDelta: number;
+  willReplaceExistingData: boolean;
+}
+
+export interface ClassroomBackupImportPreview {
+  snapshot: ClassroomBackupSnapshot;
+  comparison: ClassroomBackupComparison;
+}
+
+export interface ClassroomDataClearSummary {
+  childCount: number;
+  clearedLedgerCount: number;
+  clearedReviewCount: number;
+  clearedShopRedemptionCount: number;
+  clearedLotteryDrawCount: number;
+  clearedSettingsChangeCount: number;
+  clearedActiveCurriculumCount: number;
+  clearedParentReportReviewCount: number;
+  exportedAt: string;
 }

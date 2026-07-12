@@ -35,6 +35,7 @@ assets/generated/v3/
 assets/generated/v4/
 assets/generated/spirits-cutout-birefnet-dynamic/
 assets/generated/spirits-edgefix-backup-*/
+model/
 *:Zone.Identifier
 
 .agents/skills/*

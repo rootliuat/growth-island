@@ -86,9 +86,10 @@ const ledgerSourceDefaults: Record<
 };
 
 export function normalizeLedgerInput(input: LedgerRecordInput): Omit<LedgerRecord, "id" | "createdAt"> {
+  const { teacherAdjustedReview: _teacherAdjustedReview, ...recordInput } = input;
   const defaults = ledgerSourceDefaults[input.source];
   return {
-    ...input,
+    ...recordInput,
     operatorRole: input.operatorRole ?? defaults.operatorRole,
     aiSuggested: input.aiSuggested ?? defaults.aiSuggested,
     reviewStatus: input.reviewStatus ?? defaults.reviewStatus,

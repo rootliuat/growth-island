@@ -1,11 +1,10 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   BadgeCheck,
   BookOpenText,
   Check,
   ClipboardCheck,
   Home,
-  Mic,
   Minus,
   Plus,
   RotateCcw,
@@ -17,6 +16,7 @@ import {
   X,
 } from "lucide-react";
 import { getSpiritThumbnailAsset } from "../../domain/spiritAssets";
+import { canApproveMoralGrowth, getTeacherHelpText } from "../../domain/virtueEnergy";
 import type {
   ChildWithProgress,
   LedgerRecord,
@@ -39,26 +39,33 @@ interface TeacherWorkbenchModuleProps {
   onRejectSuggestion: (result: MoralEvaluationResult) => void;
   onApproveReview: (reviewId: string) => void;
   onRejectReview: (reviewId: string) => void;
-  onUndoLast: () => void;
+  onUndoLast: (recordId?: string) => void;
   onFocusChild: (childId: string) => void;
   onOpenProfile: (childId: string) => void;
 }
 
-const behaviorTemplates: Array<{
+type BehaviorTemplate = {
   label: string;
   reason: string;
   delta: 10 | 20 | 30 | -10;
   category: VirtueCategory;
-  tone: "positive" | "watch";
-}> = [
-  { label: "主动帮助", reason: "课堂记录：主动帮助同伴", delta: 20, category: "积极阳光", tone: "positive" },
-  { label: "坚持完成", reason: "课堂记录：坚持完成任务", delta: 20, category: "意志坚韧", tone: "positive" },
-  { label: "遵守规则", reason: "课堂记录：遵守排队和活动规则", delta: 10, category: "尊矩守法", tone: "positive" },
-  { label: "大胆尝试", reason: "课堂记录：大胆尝试新的挑战", delta: 20, category: "勇毅有力", tone: "positive" },
-  { label: "创新办法", reason: "课堂记录：想到了新的解决办法", delta: 30, category: "开拓创新", tone: "positive" },
-  { label: "整理归位", reason: "课堂记录：主动整理物品并归位", delta: 10, category: "激浊扬清", tone: "positive" },
-  { label: "老师提醒", reason: "课堂记录：需要老师提醒后调整行为", delta: -10, category: "尊矩守法", tone: "watch" },
+};
+
+const behaviorTemplates: BehaviorTemplate[] = [
+  { label: "主动帮助", reason: "课堂记录：主动帮助同伴", delta: 20, category: "积极阳光" },
+  { label: "坚持完成", reason: "课堂记录：坚持完成任务", delta: 20, category: "意志坚韧" },
+  { label: "遵守规则", reason: "课堂记录：遵守排队和活动规则", delta: 10, category: "尊矩守法" },
+  { label: "大胆尝试", reason: "课堂记录：大胆尝试新的挑战", delta: 20, category: "勇毅有力" },
+  { label: "创新办法", reason: "课堂记录：想到了新的解决办法", delta: 30, category: "开拓创新" },
+  { label: "整理归位", reason: "课堂记录：主动整理物品并归位", delta: 10, category: "激浊扬清" },
 ];
+
+const watchTemplate = {
+  label: "老师提醒",
+  reason: "课堂记录：需要老师提醒后调整行为",
+  delta: -10,
+  category: "尊矩守法",
+} as const;
 
 const transcriptSamples = [
   "我今天主动帮同学收玩具",
@@ -69,6 +76,19 @@ const transcriptSamples = [
 
 function formatDelta(delta: number) {
   return delta > 0 ? `+${delta}` : String(delta);
+}
+
+function formatEnergyDelta(delta: number) {
+  return `${formatDelta(delta)}能量`;
+}
+
+function formatRecordReason(reason: string) {
+  return reason
+    .replace(/^课堂记录：/, "")
+    .replace("快速加分", "补记点亮")
+    .replace("老师确认扣分", "老师确认调整")
+    .replace(/\s*[+＋-]\d+\s*XP?$/i, "")
+    .trim();
 }
 
 function formatRecordTime(createdAt: string) {
@@ -97,65 +117,126 @@ export function TeacherWorkbenchModule({
   const [transcript, setTranscript] = useState(transcriptSamples[0]);
   const [result, setResult] = useState<MoralEvaluationResult | undefined>();
   const [analysisState, setAnalysisState] = useState<"idle" | "analyzing" | "ready" | "confirmed" | "rejected">("idle");
+  const [pendingDeduct, setPendingDeduct] = useState<{
+    delta: -10 | -20 | -30;
+    reason: string;
+    category: VirtueCategory;
+  }>();
+  const [analysisContext, setAnalysisContext] = useState<{
+    childId: string;
+    transcript: string;
+  }>();
+  const analysisRequestRef = useRef(0);
   const childNames = useMemo(() => new Map(childrenWithProgress.map((child) => [child.id, child.name])), [childrenWithProgress]);
   const selectedSpirit = spiritsById.get(selectedChild.spiritId);
   const selectedAsset = selectedSpirit ? getSpiritThumbnailAsset(selectedSpirit, selectedChild.state) : undefined;
   const rankedChildren = useMemo(() => [...childrenWithProgress].sort((a, b) => a.rank - b.rank), [childrenWithProgress]);
   const selectedRecords = recentRecords.filter((record) => record.childId === selectedChild.id).slice(0, 5);
+  const latestUndoableRecord = selectedRecords.find((record) => !record.undoOf);
   const canAnalyze = transcript.trim().length > 0 && analysisState !== "analyzing";
-  const canConfirm = Boolean(result) && analysisState === "ready";
+  const canHandleResult = Boolean(result) && analysisState === "ready";
+  const canConfirm = canHandleResult && canApproveMoralGrowth(result);
 
-  const chooseChild = (childId: string) => {
-    onSelectChild(childId);
-    setResult(undefined);
-    setAnalysisState("idle");
+  const invalidateAnalysis = () => {
+    analysisRequestRef.current += 1;
   };
 
-  const applyTemplate = (template: (typeof behaviorTemplates)[number]) => {
+  useEffect(() => {
+    analysisRequestRef.current += 1;
+    setResult(undefined);
+    setAnalysisContext(undefined);
+    setAnalysisState("idle");
+    setPendingDeduct(undefined);
+  }, [selectedChild.id]);
+
+  const chooseChild = (childId: string) => {
+    invalidateAnalysis();
+    onSelectChild(childId);
+    setResult(undefined);
+    setAnalysisContext(undefined);
+    setAnalysisState("idle");
+    setPendingDeduct(undefined);
+  };
+
+  const applyTemplate = (template: BehaviorTemplate) => {
+    if (template.delta < 0) {
+      setPendingDeduct({ delta: template.delta as -10 | -20 | -30, reason: template.reason, category: template.category });
+      return;
+    }
     onQuickRecord([selectedChild.id], template.delta, template.reason, template.category);
+    setPendingDeduct(undefined);
   };
 
   const scoreSelected = (delta: number, reason: string, category: VirtueCategory) => {
     onQuickRecord([selectedChild.id], delta, reason, category);
+    setPendingDeduct(undefined);
+  };
+
+  const requestDeduct = (delta: -10 | -20 | -30) => {
+    setPendingDeduct({ delta, reason: `课堂记录：老师确认扣分 ${delta}`, category: "尊矩守法" });
+  };
+
+  const confirmDeduct = () => {
+    if (!pendingDeduct) return;
+    onQuickRecord([selectedChild.id], pendingDeduct.delta, pendingDeduct.reason, pendingDeduct.category);
+    setPendingDeduct(undefined);
   };
 
   const updateTranscript = (value: string) => {
+    invalidateAnalysis();
     setTranscript(value);
     setResult(undefined);
+    setAnalysisContext(undefined);
     setAnalysisState("idle");
   };
 
   const submitAnalysis = async () => {
     if (!canAnalyze) return;
+    const requestId = analysisRequestRef.current + 1;
+    const analyzedChildId = selectedChild.id;
+    const analyzedTranscript = transcript.trim();
+    analysisRequestRef.current = requestId;
     setAnalysisState("analyzing");
-    const nextResult = await onAnalyze(selectedChild.id, transcript.trim());
+    const nextResult = await onAnalyze(analyzedChildId, analyzedTranscript);
+    if (analysisRequestRef.current !== requestId) return;
     setResult(nextResult);
+    setAnalysisContext({ childId: analyzedChildId, transcript: analyzedTranscript });
     setAnalysisState("ready");
   };
 
   const confirmResult = () => {
-    if (!result) return;
-    onConfirm(selectedChild.id, transcript.trim(), result);
+    if (!result || !analysisContext) return;
+    if (!canApproveMoralGrowth(result)) return;
+    onConfirm(analysisContext.childId, analysisContext.transcript, result);
+    setAnalysisContext(undefined);
     setAnalysisState("confirmed");
   };
 
   const rejectResult = () => {
     if (!result) return;
     onRejectSuggestion(result);
+    setAnalysisContext(undefined);
     setAnalysisState("rejected");
   };
 
   return (
-    <section className="module-page teacher-workbench-page" aria-label="课堂记录台">
-      <div className="workbench-header">
-        <button type="button" className="workbench-home-button" onClick={() => onFocusChild(selectedChild.id)}>
-          <Home size={18} />
-          聚焦
+    <section className="module-page teacher-workbench-page" aria-label="老师记录港">
+      <div className="workbench-header module-compact-header">
+        <div className="workbench-harbor-status" aria-label="老师记录港状态">
+          <span className="module-eyebrow">
+            <ScrollText size={18} aria-hidden="true" />
+            老师记录港
+          </span>
+          <em>{pendingReviews.length > 0 ? `待看 ${pendingReviews.length}` : "轻补记"}</em>
+        </div>
+        <button type="button" className="workbench-home-button" aria-label={`看${selectedChild.name}的精灵`} onClick={() => onFocusChild(selectedChild.id)}>
+          <Home size={18} aria-hidden="true" />
+          看精灵
         </button>
       </div>
 
       <div className="workbench-board-layout">
-        <section className="workbench-class-board" aria-label="班级精灵加分看板">
+        <section className="workbench-class-board" aria-label="班级精灵补记看板">
           <div className="workbench-class-grid">
             {rankedChildren.map((child) => {
               const spirit = spiritsById.get(child.spiritId);
@@ -163,12 +244,11 @@ export function TeacherWorkbenchModule({
               return (
                 <article key={child.id} className={child.id === selectedChild.id ? "workbench-student-card active" : "workbench-student-card"}>
                   <div className="student-card-topline">
-                    <span>{child.rank <= 3 ? "精灵星" : `#${child.rank}`}</span>
                     <div className="student-card-top-actions">
                       <em>Lv.{child.level}</em>
-                      <button type="button" className="student-card-focus" onClick={() => onFocusChild(child.id)}>
-                        <Home size={13} />
-                        聚焦
+                      <button type="button" className="student-card-focus" aria-label={`看${child.name}的精灵`} onClick={() => onFocusChild(child.id)}>
+                        <Home size={13} aria-hidden="true" />
+                        看精灵
                       </button>
                     </div>
                   </div>
@@ -178,53 +258,59 @@ export function TeacherWorkbenchModule({
                     </span>
                     <span className="student-card-meta">
                       <strong>{child.name}</strong>
-                      <span className="student-card-xp">{child.xp} XP</span>
+                      <span className="student-card-xp">{child.xp} 能量</span>
                     </span>
                   </button>
-                  <div className="student-card-actions">
-                    {[10, 20, 30].map((value) => (
-                      <button
-                        key={value}
-                        type="button"
-                        onClick={() => onQuickRecord([child.id], value, `课堂记录：快速加分 +${value}`, "积极阳光")}
-                      >
-                        <Plus size={15} />
-                        {value}
-                      </button>
-                    ))}
-                  </div>
                 </article>
               );
             })}
           </div>
         </section>
 
-        <aside className="workbench-score-drawer" aria-label="老师加分操作面板">
+        <aside className="workbench-score-drawer" aria-label="成长记录港">
           <div className="workbench-selected-child compact">
             <span className="workbench-child-avatar">
               {selectedAsset?.url ? <img src={selectedAsset.url} alt={`${selectedChild.petName} 精灵`} decoding="async" /> : selectedChild.name.slice(0, 1)}
             </span>
             <div>
+              <span>当前伙伴</span>
               <strong>{selectedChild.name}</strong>
               <em>
-                Lv.{selectedChild.level} · {selectedChild.xp} XP
+                Lv.{selectedChild.level} · {selectedChild.xp} 能量
               </em>
               <button type="button" className="workbench-profile-button" onClick={() => onOpenProfile(selectedChild.id)}>
-                <BookOpenText size={15} />
-                档案
+                <BookOpenText size={15} aria-hidden="true" />
+                小屋
               </button>
             </div>
           </div>
 
+          {latestUndoableRecord ? (
+            <div className={latestUndoableRecord.delta < 0 ? "workbench-recent-feedback negative" : "workbench-recent-feedback"} aria-live="polite">
+              <span>{formatEnergyDelta(latestUndoableRecord.delta)}</span>
+              <div>
+                <strong>
+                  {latestUndoableRecord.delta >= 0 ? "已给" : "已记录"} {selectedChild.name}
+                </strong>
+                <em>{formatRecordReason(latestUndoableRecord.reason)}</em>
+              </div>
+              <button type="button" className="workbench-undo-button" onClick={() => onUndoLast(latestUndoableRecord.id)}>
+                <RotateCcw size={17} />
+                撤销 {selectedChild.name} {formatDelta(latestUndoableRecord.delta)}
+              </button>
+            </div>
+          ) : null}
+
           <div className="workbench-section-title">
             <Sparkles size={18} />
-            <strong>快速奖励</strong>
+            <strong>补记贝壳</strong>
           </div>
           <div className="batch-score-grid">
             {[10, 20, 30].map((value) => (
               <button
                 key={value}
                 type="button"
+                aria-label={`为${selectedChild.name}补记+${value}能量`}
                 onClick={() => scoreSelected(value, `课堂记录：快速加分 +${value}`, "积极阳光")}
               >
                 <Plus size={18} />
@@ -238,7 +324,6 @@ export function TeacherWorkbenchModule({
               <button
                 key={template.label}
                 type="button"
-                className={template.tone === "watch" ? "watch" : undefined}
                 onClick={() => applyTemplate(template)}
               >
                 <span>{formatDelta(template.delta)}</span>
@@ -247,46 +332,59 @@ export function TeacherWorkbenchModule({
             ))}
           </div>
 
-          <div className="manual-score-pad">
-            <div className="workbench-section-title">
+          <details className="manual-score-pad">
+            <summary className="workbench-section-title">
               <UserRound size={18} />
-              <strong>手动 XP</strong>
-            </div>
+              <strong>谨慎记录</strong>
+              <span>要确认</span>
+            </summary>
             <div className="manual-score-grid">
-              {[10, 20, 30].map((value) => (
-                <button
-                  key={value}
-                  type="button"
-                  className="gain"
-                  onClick={() => onQuickRecord([selectedChild.id], value, `课堂记录：手动加分 +${value}`, "积极阳光")}
-                >
-                  <Plus size={18} />
-                  +{value}
-                </button>
-              ))}
+              <button
+                type="button"
+                className="deduct watch-template"
+                onClick={() => applyTemplate(watchTemplate)}
+              >
+                <Minus size={18} />
+                {watchTemplate.label} {formatDelta(watchTemplate.delta)}
+              </button>
               {[-10, -20, -30].map((value) => (
                 <button
                   key={value}
                   type="button"
                   className="deduct"
-                  onClick={() => onQuickRecord([selectedChild.id], value, `课堂记录：老师确认扣分 ${value}`, "尊矩守法")}
+                  onClick={() => requestDeduct(value as -10 | -20 | -30)}
                 >
                   <Minus size={18} />
-                  {value}
+                  扣 {Math.abs(value)}
                 </button>
               ))}
             </div>
-            <button type="button" className="workbench-undo-button" onClick={onUndoLast}>
-              <RotateCcw size={18} />
-              撤销
-            </button>
-          </div>
-
-          <section className="workbench-ai-panel" aria-label="AI 德育建议">
-            <div className="workbench-section-title">
-              <ShieldCheck size={18} />
-              <strong>AI 建议</strong>
+          </details>
+          {pendingDeduct ? (
+            <div className="deduct-confirm-panel" role="alert">
+              <strong>
+                确认给 {selectedChild.name} 调整 {Math.abs(pendingDeduct.delta)} 能量？
+              </strong>
+              <p>{pendingDeduct.reason}</p>
+              <div>
+                <button type="button" className="deduct-confirm" onClick={confirmDeduct}>
+                  <Check size={16} />
+                  确认调整
+                </button>
+                <button type="button" onClick={() => setPendingDeduct(undefined)}>
+                  <X size={16} />
+                  取消
+                </button>
+              </div>
             </div>
+          ) : null}
+
+          <details className="workbench-ai-panel workbench-secondary-details">
+            <summary className="workbench-section-title">
+              <ShieldCheck size={18} />
+              <strong>贝壳建议</strong>
+              <span>{result ? "有建议" : "打开"}</span>
+            </summary>
             <div className="transcript-samples">
               {transcriptSamples.map((sample) => (
                 <button key={sample} type="button" onClick={() => updateTranscript(sample)}>
@@ -299,56 +397,53 @@ export function TeacherWorkbenchModule({
               <textarea
                 id="teacher-workbench-transcript"
                 name="teacherWorkbenchTranscript"
+                aria-label="行为描述"
                 value={transcript}
                 onChange={(event) => updateTranscript(event.target.value)}
               />
             </label>
             <div className="workbench-ai-actions">
-              <button type="button" className="workbench-secondary-action" disabled>
-                <Mic size={18} />
-                录音占位
-              </button>
               <button type="button" className="workbench-primary-action" onClick={submitAnalysis} disabled={!canAnalyze}>
                 <WandSparkles size={18} />
-                {analysisState === "analyzing" ? "分析中" : "提交分析"}
+                {analysisState === "analyzing" ? "判断中…" : "生成建议"}
               </button>
             </div>
             {result ? (
               <article className={result.xpDelta < 0 ? "workbench-result-card negative" : "workbench-result-card"}>
                 <div>
                   <strong>{result.category ?? "待老师选择"}</strong>
-                  <span>{formatDelta(result.xpDelta)} XP</span>
+                  <span>{canApproveMoralGrowth(result) ? formatEnergyDelta(result.xpDelta) : getTeacherHelpText(result)}</span>
                 </div>
                 <p>{result.reasonForTeacher}</p>
                 <div className="workbench-result-actions">
                   <button type="button" onClick={confirmResult} disabled={!canConfirm}>
                     <Check size={17} />
-                    确认入账
+                    {canConfirm ? "记入成长" : "先处理"}
                   </button>
-                  <button type="button" onClick={rejectResult} disabled={!canConfirm}>
+                  <button type="button" onClick={rejectResult} disabled={!canHandleResult}>
                     <X size={17} />
-                    驳回建议
+                    不采用
                   </button>
                 </div>
               </article>
             ) : null}
-          </section>
+          </details>
 
-          <section>
-            <div className="workbench-section-title">
+          <details className="workbench-secondary-details">
+            <summary className="workbench-section-title">
               <BadgeCheck size={18} />
-              <strong>最近记录</strong>
+              <strong>最近入港</strong>
               <span>{selectedRecords.length}</span>
-            </div>
+            </summary>
             <div className="workbench-record-list">
               {selectedRecords.length === 0 ? (
-                <p>暂无记录</p>
+                <p>暂无入账</p>
               ) : (
                 selectedRecords.map((record) => (
                   <article key={record.id} className={record.delta < 0 ? "negative" : undefined}>
                     <span>{formatDelta(record.delta)}</span>
                     <div>
-                      <strong>{record.reason}</strong>
+                      <strong>{formatRecordReason(record.reason)}</strong>
                       <em>
                         {record.category ?? "成长记录"} · {formatRecordTime(record.createdAt)}
                       </em>
@@ -357,41 +452,44 @@ export function TeacherWorkbenchModule({
                 ))
               )}
             </div>
-          </section>
+          </details>
 
-          <section className="workbench-review-panel" aria-label="待复核">
-            <div className="workbench-section-title">
+          <details className="workbench-review-panel workbench-secondary-details">
+            <summary className="workbench-section-title">
               <ClipboardCheck size={18} />
-              <strong>待复核</strong>
+              <strong>待老师看</strong>
               <span>{pendingReviews.length}</span>
-            </div>
+            </summary>
             <div className="workbench-review-list">
               {pendingReviews.length === 0 ? (
-                <p>暂无</p>
+                <p>暂无待确认</p>
               ) : (
-                pendingReviews.slice(0, 5).map((review) => (
-                  <article key={review.id}>
-                    <div>
-                      <strong>{childNames.get(review.childId) ?? "幼儿"}</strong>
-                      <span>{formatDelta(review.result.xpDelta)} XP</span>
-                    </div>
-                    <p>{review.transcript || review.result.reasonForTeacher}</p>
-                    <em>{review.result.category ?? "待分类"}</em>
-                    <div className="workbench-review-actions">
-                      <button type="button" onClick={() => onApproveReview(review.id)}>
-                        <Check size={16} />
-                        通过
-                      </button>
-                      <button type="button" onClick={() => onRejectReview(review.id)}>
-                        <X size={16} />
-                        驳回
-                      </button>
-                    </div>
-                  </article>
-                ))
+                pendingReviews.slice(0, 5).map((review) => {
+                  const canRecord = canApproveMoralGrowth(review.result);
+                  return (
+                    <article key={review.id}>
+                      <div>
+                        <strong>{childNames.get(review.childId) ?? "幼儿"}</strong>
+                        <span>{canRecord ? formatEnergyDelta(review.result.xpDelta) : getTeacherHelpText(review.result)}</span>
+                      </div>
+                      <p>{review.transcript || review.result.reasonForTeacher}</p>
+                      <em>{review.result.category ?? "待分类"}</em>
+                      <div className="workbench-review-actions">
+                        <button type="button" disabled={!canRecord} onClick={() => onApproveReview(review.id)}>
+                          <Check size={16} />
+                          {canRecord ? "记入" : "先处理"}
+                        </button>
+                        <button type="button" onClick={() => onRejectReview(review.id)}>
+                          <X size={16} />
+                          不采用
+                        </button>
+                      </div>
+                    </article>
+                  );
+                })
               )}
             </div>
-          </section>
+          </details>
         </aside>
       </div>
     </section>

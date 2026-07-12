@@ -1,0 +1,681 @@
+/**
+ * [INPUT]: 依赖 ../01-tokens.css 以及前序 cascade 片段。
+ * [OUTPUT]: 对外提供首页海岛地图、HUD、底部精灵队列和能量星座第 3 段样式。
+ * [POS]: styles/home-map 的 cascade 片段 3/6，由 ../index.css 按顺序导入。
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
+
+
+.dock-selected-summary {
+  position: relative;
+  isolation: isolate;
+  min-width: 180px;
+  padding: 8px 14px;
+  border: 2px solid var(--game-border);
+  border-radius: 16px;
+  color: var(--game-ink);
+  font-weight: 900;
+  text-align: center;
+  background: #fff7d8;
+  box-shadow: inset 0 -4px 0 rgba(123, 128, 101, 0.1);
+}
+
+.dock-search {
+  border: 2px solid var(--game-border);
+  border-radius: 15px;
+  background: #fff7d8;
+}
+
+.dock-filters button {
+  border: 2px solid var(--game-border);
+  border-radius: 13px;
+  background: #fff7d8;
+}
+
+.dock-filters button.active {
+  color: #fff9df;
+  background: #2c8f99;
+}
+
+.dock-spirit {
+  flex-basis: 88px;
+  min-height: 96px;
+  border: 2px solid rgba(214, 208, 190, 0.78);
+  border-radius: 18px;
+  background: #fff7d8;
+  box-shadow: inset 0 -5px 0 rgba(123, 128, 101, 0.1), 0 7px 0 rgba(53, 82, 74, 0.08);
+}
+
+.dock-spirit.active {
+  transform: translateY(-6px);
+  color: #fff9df;
+  border-color: #fff3cb;
+  background: #2c8f99;
+  box-shadow: inset 0 -7px 0 rgba(26, 74, 77, 0.24), 0 10px 0 rgba(53, 82, 74, 0.16);
+}
+
+.dock-avatar {
+  border: 3px solid #fff3cb;
+  background: color-mix(in srgb, var(--dock-accent, #6ebf8b) 64%, #fff7d8);
+  box-shadow: inset 0 -5px 0 rgba(53, 82, 74, 0.1), 0 6px 0 rgba(53, 82, 74, 0.1);
+}
+
+.dock-avatar img {
+  max-width: 60px;
+  max-height: 60px;
+  filter: drop-shadow(0 6px 5px rgba(53, 82, 74, 0.18));
+}
+
+@media (max-height: 820px) {
+  .app-shell {
+    grid-template-rows: 64px minmax(0, 1fr) 112px;
+    gap: 8px;
+    padding: 10px 12px;
+  }
+
+  .game-topbar {
+    min-height: 64px;
+    padding: 6px 12px;
+  }
+
+  .game-brand-mark {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    font-size: 29px;
+  }
+
+  .game-brand h1 {
+    font-size: 24px;
+  }
+
+  .game-pill,
+  .teacher-toggle {
+    min-height: 38px;
+    padding: 0 12px;
+  }
+
+  .zoom-controls button {
+    width: 36px;
+    min-height: 36px;
+  }
+
+  .game-layout {
+    grid-template-columns: minmax(780px, 1fr) clamp(322px, 23vw, 370px);
+  }
+
+  .spirit-card {
+    padding: 12px;
+  }
+
+  .spirit-card::before {
+    inset: 8px;
+  }
+
+  .spirit-portrait {
+    height: 112px;
+    margin-top: 2px;
+  }
+
+  .portrait-ring {
+    width: 140px;
+    height: 92px;
+    border-width: 3px;
+  }
+
+  .spirit-portrait img {
+    max-width: 124px;
+    max-height: 116px;
+  }
+
+  .spirit-nameplate h2 {
+    font-size: 20px;
+  }
+
+  .spirit-nameplate p {
+    margin-top: 2px;
+    font-size: 13px;
+  }
+
+  .xp-gem {
+    margin-top: 8px;
+    padding: 8px 10px;
+    border-radius: 14px;
+  }
+
+  .xp-track {
+    height: 10px;
+    margin: 6px 0 4px;
+  }
+
+  .xp-gem p {
+    font-size: 13px;
+  }
+
+  .score-actions {
+    gap: 7px;
+    margin-top: 8px;
+  }
+
+  .gain-button,
+  .deduct-button,
+  .quest-actions button {
+    min-height: 36px;
+    border-radius: 12px;
+  }
+
+  .quest-actions {
+    margin-top: 8px;
+  }
+
+  .growth-log-panel,
+  .teacher-action-panel {
+    padding: 10px;
+  }
+
+  .record-row {
+    margin-top: 7px;
+    padding: 7px;
+  }
+
+  .spirit-dock {
+    grid-template-columns: 250px minmax(0, 1fr);
+    padding: 8px;
+  }
+
+  .dock-search {
+    min-height: 34px;
+  }
+
+  .dock-spirit {
+    flex-basis: 86px;
+    min-height: 88px;
+    padding: 6px 6px;
+  }
+
+  .dock-avatar {
+    width: 48px;
+    height: 48px;
+  }
+
+  .dock-avatar img {
+    max-width: 54px;
+    max-height: 54px;
+  }
+}
+/* Game scroll treatment for review and growth history */
+.growth-log-panel {
+  position: relative;
+  overflow: hidden;
+}
+
+.growth-log-panel::before {
+  position: absolute;
+  inset: 11px;
+  border: 2px solid rgba(255, 255, 255, 0.68);
+  border-radius: 16px;
+  content: "";
+  pointer-events: none;
+}
+
+.review-scroll {
+  position: relative;
+  z-index: 1;
+  margin-bottom: 10px;
+  padding: 9px;
+  border: 2px solid rgba(214, 208, 190, 0.62);
+  border-radius: 16px;
+  background: #fff7d8;
+  box-shadow: inset 0 -5px 0 rgba(123, 128, 101, 0.08);
+}
+
+.review-scroll-head {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.review-scroll-head span,
+.growth-records-head > div,
+.record-meta {
+  display: flex;
+  align-items: center;
+}
+
+.review-scroll-head span,
+.growth-records-head > div {
+  gap: 8px;
+  color: #3f5147;
+  font-weight: 900;
+}
+
+.review-scroll-head small {
+  color: #8a6b3d;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.review-scroll-head em {
+  min-width: 30px;
+  height: 28px;
+  border: 2px solid #fff3cb;
+  background: #c98b4f;
+  box-shadow: inset 0 -4px 0 rgba(123, 76, 46, 0.18);
+}
+
+.growth-records {
+  position: relative;
+  z-index: 1;
+}
+
+.growth-records-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 9px;
+}
+
+.growth-records-head strong {
+  padding: 5px 9px;
+  border: 2px solid rgba(214, 208, 190, 0.72);
+  border-radius: 999px;
+  color: #7b8065;
+  font-size: 12px;
+  background: #fff7d8;
+}
+
+.record-scroll-list {
+  display: grid;
+  gap: 8px;
+}
+
+.record-row {
+  position: relative;
+  grid-template-columns: 52px minmax(0, 1fr);
+  align-items: center;
+  min-height: 54px;
+  margin-top: 0;
+  padding: 8px 10px;
+  overflow: hidden;
+}
+
+.record-row::before {
+  position: absolute;
+  top: 9px;
+  bottom: 9px;
+  left: 4px;
+  width: 5px;
+  border-radius: 999px;
+  background: #59b97c;
+  content: "";
+}
+
+.record-row.negative::before {
+  background: #b96e6e;
+}
+
+.record-token {
+  display: grid;
+  width: 42px;
+  height: 36px;
+  place-items: center;
+  border: 2px solid #fff3cb;
+  border-radius: 14px;
+  color: #fff9df;
+  font-size: 15px;
+  font-weight: 900;
+  background: #59b97c;
+  box-shadow: inset 0 -5px 0 rgba(53, 82, 74, 0.18), 0 4px 0 rgba(53, 82, 74, 0.08);
+}
+
+.record-row.negative .record-token {
+  background: #b96e6e;
+}
+
+.record-main {
+  min-width: 0;
+}
+
+.record-main p {
+  overflow: hidden;
+  color: #4e402d;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.record-meta {
+  gap: 5px;
+  margin-top: 4px;
+  color: #8a6b3d;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.record-meta span {
+  color: inherit;
+  font-size: inherit;
+}
+
+.growth-empty,
+.review-empty {
+  min-height: 46px;
+  border: 2px dashed rgba(214, 208, 190, 0.78);
+  border-radius: 15px;
+  color: #7b8065;
+  background: #fff7d8;
+}
+
+.growth-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.growth-empty p {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.review-row {
+  border: 2px solid rgba(214, 208, 190, 0.68);
+  border-radius: 15px;
+  background: #fff7d8;
+  box-shadow: inset 0 -4px 0 rgba(123, 128, 101, 0.08);
+}
+
+.review-row > div:first-child {
+  align-items: center;
+}
+
+.review-row > em {
+  display: inline-flex;
+  margin-top: 6px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  color: #7b5d2d;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 900;
+  background: #fff0bf;
+}
+
+.review-actions button {
+  border: 2px solid rgba(255, 247, 216, 0.82);
+  box-shadow: inset 0 -4px 0 rgba(53, 82, 74, 0.18);
+}
+
+/* Bottom team bar polish */
+.spirit-dock {
+  position: relative;
+  overflow: visible;
+}
+
+.spirit-dock::before {
+  position: absolute;
+  inset: 8px;
+  border: 2px solid rgba(255, 255, 255, 0.62);
+  border-radius: 17px;
+  content: "";
+  pointer-events: none;
+}
+
+.dock-tools,
+.dock-scroll {
+  position: relative;
+  z-index: 1;
+}
+
+.dock-spirit {
+  position: relative;
+  overflow: visible;
+}
+
+.dock-spirit::before {
+  position: absolute;
+  right: 10px;
+  bottom: 28px;
+  left: 10px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(53, 82, 74, 0.08);
+  content: "";
+}
+
+.dock-spirit.active::after {
+  position: absolute;
+  top: -9px;
+  width: 42px;
+  height: 12px;
+  border: 2px solid #fff3cb;
+  border-radius: 999px;
+  background: #f2c94c;
+  box-shadow: 0 4px 0 rgba(53, 82, 74, 0.12);
+  content: "";
+}
+
+.dock-spirit strong,
+.dock-spirit em {
+  position: relative;
+  z-index: 1;
+}
+
+.dock-avatar {
+  position: relative;
+  z-index: 1;
+}
+
+/* Make the bottom dock read as a game party rail instead of an asset list. */
+.dock-scroll {
+  min-height: 100%;
+  padding: 9px 8px 5px;
+  border: 2px solid rgba(214, 208, 190, 0.54);
+  border-radius: 18px;
+  background: #ebe3cb;
+  box-shadow: inset 0 5px 0 rgba(255, 255, 255, 0.34), inset 0 -7px 0 rgba(123, 128, 101, 0.08);
+}
+
+.dock-scroll::before {
+  position: sticky;
+  left: 0;
+  flex: 0 0 8px;
+  width: 8px;
+  height: 1px;
+  content: "";
+}
+
+.dock-spirit {
+  flex-basis: 94px;
+  scroll-margin-inline: 100px;
+  min-height: 88px;
+  padding: 6px 7px 8px;
+  border-radius: 24px;
+  background: #fff5cb;
+}
+
+.dock-spirit::before {
+  right: 14px;
+  bottom: 30px;
+  left: 14px;
+  height: 7px;
+}
+
+.dock-spirit strong {
+  max-width: 82px;
+  color: #3b4f45;
+  line-height: 1.05;
+}
+
+.dock-spirit em {
+  min-width: 42px;
+  padding: 2px 8px;
+  border: 2px solid rgba(214, 208, 190, 0.72);
+  border-radius: 999px;
+  color: #6e6048;
+  background: #f4f1e6;
+  box-shadow: inset 0 -3px 0 rgba(123, 128, 101, 0.08);
+}
+
+.dock-spirit.active {
+  transform: translateY(-8px);
+}
+
+.dock-spirit.active strong,
+.dock-spirit.active em {
+  color: #fff9df;
+}
+
+.dock-spirit.active em {
+  border-color: rgba(255, 243, 203, 0.86);
+  background: rgba(255, 243, 203, 0.18);
+}
+
+.dock-tools {
+  padding: 2px 2px 3px;
+}
+
+.dock-tools-head strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.dock-tools-head strong small {
+  display: inline-grid;
+  min-width: 48px;
+  min-height: 24px;
+  place-items: center;
+  border: 2px solid rgba(214, 208, 190, 0.72);
+  border-radius: 999px;
+  color: #6d684d;
+  font-size: 12px;
+  background: #fff7d8;
+  box-shadow: inset 0 -3px 0 rgba(123, 128, 101, 0.08);
+}
+
+.dock-tools-head strong::before {
+  display: inline-block;
+  width: 10px;
+  height: 18px;
+  border: 2px solid #fff3cb;
+  border-radius: 999px;
+  background: #2c8f99;
+  box-shadow: inset 0 -4px 0 rgba(26, 74, 77, 0.24);
+  content: "";
+}
+
+.dock-collapse {
+  border: 2px solid #fff3cb;
+  box-shadow: inset 0 -4px 0 rgba(26, 74, 77, 0.2), 0 4px 0 rgba(53, 82, 74, 0.1);
+}
+
+/* Character card pass: flatter game-card structure with stronger hierarchy. */
+.spirit-card {
+  isolation: isolate;
+  background: #f4f1e6;
+}
+
+.spirit-card::after {
+  position: absolute;
+  top: 78px;
+  right: 18px;
+  z-index: 0;
+  width: 14px;
+  height: 68px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--spirit-accent, #76b883) 70%, #fff7d8);
+  box-shadow: 0 20px 0 #fff0bf, 0 40px 0 color-mix(in srgb, var(--spirit-accent, #76b883) 48%, #fff7d8);
+  content: "";
+  opacity: 0.72;
+}
+
+.spirit-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.spirit-card-head span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 0 10px;
+  border: 2px solid rgba(214, 208, 190, 0.7);
+  border-radius: 999px;
+  background: #fff7d8;
+  box-shadow: inset 0 -3px 0 rgba(123, 128, 101, 0.08);
+}
+
+.spirit-portrait {
+  border: 2px solid rgba(214, 208, 190, 0.54);
+  border-radius: 24px;
+  background: #fff0bf;
+  box-shadow: inset 0 -8px 0 rgba(123, 128, 101, 0.08);
+}
+
+.spirit-portrait::before,
+.spirit-portrait::after {
+  position: absolute;
+  border-radius: 999px;
+  content: "";
+  pointer-events: none;
+}
+
+.spirit-portrait::before {
+  bottom: 18px;
+  width: 168px;
+  height: 24px;
+  background: rgba(53, 82, 74, 0.1);
+}
+
+.spirit-portrait::after {
+  top: 14px;
+  left: 22px;
+  width: 18px;
+  height: 18px;
+  background: color-mix(in srgb, var(--spirit-accent, #76b883) 58%, #fff7d8);
+  box-shadow: 246px 34px 0 #f2c94c, 224px 94px 0 #fff7d8;
+}
+
+.portrait-ring {
+  border-width: 5px;
+  box-shadow: inset 0 -10px 0 rgba(123, 128, 101, 0.1), 0 8px 0 rgba(53, 82, 74, 0.1);
+}
+
+.spirit-nameplate {
+  margin-top: 8px;
+  padding: 8px 10px 7px;
+  border: 2px solid rgba(214, 208, 190, 0.58);
+  border-radius: 18px;
+  background: #fff7d8;
+  box-shadow: inset 0 -5px 0 rgba(123, 128, 101, 0.08);
+}
+
+.spirit-meta-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 7px;
+}
+
+.spirit-meta-row span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 26px;
+  padding: 0 7px;
+  border: 2px solid rgba(214, 208, 190, 0.66);
+  border-radius: 999px;
+  color: #5f6d54;
+  font-size: 12px;
+  font-weight: 900;
+  background: #f4f1e6;
+  box-shadow: inset 0 -3px 0 rgba(123, 128, 101, 0.08);
+  white-space: nowrap;
+}

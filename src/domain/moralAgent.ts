@@ -1,17 +1,13 @@
 import type { MoralEvaluationResult, VirtueCategory } from "../types";
+import moralRules from "../../shared/moral-rules.json";
 
-const categoryRules: Array<{ category: VirtueCategory; keywords: string[] }> = [
-  { category: "家国情怀", keywords: ["国旗", "祖国", "家乡", "北海", "老街", "升旗"] },
-  { category: "意志坚韧", keywords: ["坚持", "没有放弃", "继续", "练习", "完成", "努力"] },
-  { category: "积极阳光", keywords: ["帮助", "分享", "开心", "鼓励", "谢谢", "朋友", "同学"] },
-  { category: "勇毅有力", keywords: ["勇敢", "保护", "尝试", "挑战", "大胆", "站出来"] },
-  { category: "激浊扬清", keywords: ["垃圾", "整理", "干净", "环保", "收拾", "清理", "归位"] },
-  { category: "开拓创新", keywords: ["想到", "办法", "发明", "搭建", "创造", "新的"] },
-  { category: "尊矩守法", keywords: ["排队", "规则", "轮流", "不抢", "等待", "安静", "遵守"] },
-];
+interface MoralRuleConfig {
+  categoryRules: Array<{ category: VirtueCategory; keywords: string[] }>;
+  deductKeywords: string[];
+  strongKeywords: string[];
+}
 
-const deductKeywords = ["抢", "推", "打", "吵", "乱扔", "插队", "不排队", "弄坏", "没有遵守"];
-const strongKeywords = ["主动", "一直", "很多", "大家", "第一次", "勇敢", "坚持完成"];
+const { categoryRules, deductKeywords, strongKeywords } = moralRules as MoralRuleConfig;
 
 export function evaluateMoralText(text: string): MoralEvaluationResult {
   const normalized = text.trim();
