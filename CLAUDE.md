@@ -21,6 +21,10 @@ server/ - 本地 Beihai API 与德育分析后端 Adapter。
 docs/ - 产品、视觉、地图、生图、课堂验收与迭代记录。
 </directory>
 
+<directory>
+.github/ - GitHub Actions 与仓库治理配置，提供合并前校验门禁。
+</directory>
+
 <config>
 package.json - npm scripts 与 Vite/React/Pixi/Three 依赖版本。
 </config>

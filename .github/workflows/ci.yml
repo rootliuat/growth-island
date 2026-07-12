@@ -1,0 +1,50 @@
+# [INPUT]: 依赖 package-lock.json 的可复现依赖图，以及 package.json 的 test/build 脚本
+# [OUTPUT]: 对外提供稳定的 validate GitHub 状态检查，供 main 分支保护消费
+# [POS]: .github/workflows 的基础合并门禁，不承载部署、浏览器 QA 或真实 Provider 冒烟
+# [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build production bundle
+        run: npm run build
+
+      - name: Audit high-severity dependencies
+        run: npm audit --audit-level=high
