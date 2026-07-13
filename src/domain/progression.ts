@@ -1,3 +1,10 @@
+/**
+ * [INPUT]: 依赖共享课堂/账本类型和稳定 operationId 输入。
+ * [OUTPUT]: 对外提供 XP、等级、精灵阶段、账本规范化与本地账本记录创建规则。
+ * [POS]: domain 的成长进度真相源，被 App、备份规则和各课堂模块消费。
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
+
 import type { ChildProfile, ChildWithProgress, LedgerRecord, LedgerRecordInput, LedgerSource, SpiritState } from "../types";
 
 export const levelThresholds = [

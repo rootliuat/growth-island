@@ -1,11 +1,21 @@
+/**
+ * [INPUT]: 依赖课堂同步/数据权威状态、教师模式、设置变更记录与导航动作。
+ * [OUTPUT]: 对外提供 SettingsModule，展示本机舵盘、数据去向和成长刻度。
+ * [POS]: components/modules 的教师设置页，承担数据权威状态的完整文字说明。
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
+
 import { BadgeCheck, ClipboardCheck, Compass, Eye, Home, Save, Shield, ShipWheel, Users, Wifi } from "lucide-react";
+import type { ClassroomDataAuthority, SyncStatus } from "../../domain/appState";
 import { levelThresholds } from "../../domain/progression";
 import type { SettingsChangeRecord } from "../../types";
 
 interface SettingsModuleProps {
   childrenCount: number;
   teacherMode: boolean;
-  syncStatus: "connecting" | "online" | "saving" | "offline";
+  syncStatus: SyncStatus;
+  dataAuthority: ClassroomDataAuthority;
+  classroomNotice?: string;
   settingsChanges: SettingsChangeRecord[];
   onToggleTeacherMode: () => void;
   onSaveSettings: () => void;
@@ -17,6 +27,7 @@ const syncLabels = {
   online: "已同步",
   saving: "保存中",
   offline: "离线模式",
+  unavailable: "数据不可用",
 };
 
 const syncToneClass = {
@@ -24,6 +35,7 @@ const syncToneClass = {
   online: "online",
   saving: "saving",
   offline: "offline",
+  unavailable: "unavailable",
 };
 
 function formatSettingTime(value: string) {
@@ -49,6 +61,8 @@ export function SettingsModule({
   childrenCount,
   teacherMode,
   syncStatus,
+  dataAuthority,
+  classroomNotice,
   settingsChanges,
   onToggleTeacherMode,
   onSaveSettings,
@@ -59,6 +73,9 @@ export function SettingsModule({
   const latestChangeLabel = latestChange ? getSettingRecordLabel(latestChange) : "等待校准";
   const latestChangeValue = latestChange ? getSettingRecordValue(latestChange) : "暂无舵盘记录";
   const latestChangeTime = latestChange ? formatSettingTime(latestChange.createdAt) : "本机待保存";
+  const authorityLabel = dataAuthority === "local" ? "仅存本机" : dataAuthority === "unavailable" ? "数据不可用" : syncLabels[syncStatus];
+  const authorityClass = dataAuthority === "local" ? "local-authority" : dataAuthority === "unavailable" ? "unavailable" : syncToneClass[syncStatus];
+  const storageLabel = dataAuthority === "server" ? "服务器已存" : dataAuthority === "local" ? "本机已存" : "保存未确认";
 
   return (
     <section className="module-page settings-page" aria-labelledby="settings-title">
@@ -122,10 +139,11 @@ export function SettingsModule({
               <span>岛上伙伴</span>
               <strong>{childrenCount} 位幼儿</strong>
             </article>
-            <article className={`settings-sync-chip ${syncToneClass[syncStatus]}`}>
+            <article className={`settings-sync-chip ${authorityClass}`}>
               <Wifi size={17} aria-hidden="true" />
-              <span>云朵信号</span>
-              <strong>{syncLabels[syncStatus]}</strong>
+              <span>数据保存</span>
+              <strong>{authorityLabel}</strong>
+              {teacherMode && classroomNotice ? <small>{classroomNotice}</small> : null}
             </article>
           </div>
         </section>
@@ -176,7 +194,7 @@ export function SettingsModule({
           </div>
           <div className="settings-privacy-note">
             <Shield size={18} aria-hidden="true" />
-            <span>本机已存</span>
+            <span>{storageLabel}</span>
           </div>
         </aside>
       </div>

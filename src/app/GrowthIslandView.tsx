@@ -16,7 +16,7 @@ import type { AppModuleId } from "../components/modules/moduleConfig";
 import { WorldMapContainer } from "../components/WorldMap/WorldMapContainer";
 import type { PixiWorldMapHandle } from "../components/WorldMap/PixiWorldMap";
 import type { LotteryPrize, ShopReward } from "../data/rewards";
-import type { SyncStatus } from "../domain/appState";
+import type { ClassroomDataAuthority, SyncStatus } from "../domain/appState";
 import type { GrowthFeedback } from "../domain/growthFeedback";
 import type { MoralSpeakViewState } from "../domain/moralSpeakSession";
 import type {
@@ -160,6 +160,8 @@ export interface GrowthIslandViewRuntime {
   stopMoralSpeakRecording: (cancel?: boolean) => void;
   submitDialogue: (text: string) => Promise<MoralEvaluationResult>;
   syncStatus: SyncStatus;
+  dataAuthority: ClassroomDataAuthority;
+  classroomNotice?: string;
   teacherMode: boolean;
   toggleTeacherModeSetting: () => void;
   undoLast: (recordId?: string) => void;
@@ -183,7 +185,7 @@ export function GrowthIslandView(runtime: GrowthIslandViewRuntime) {
     setActiveModule, setDialogueOpen, setPkPair, setRollCallExcludeCalled, setSelectedChildId,
     setShowcaseChildId, settingsChanges, showcaseChild, showcaseSpirit, showcaseSpiritAsset, shopRedemptions,
     skipMoralSpeakChild, spiritsById, startMoralSpeak, stopMoralSpeakRecording, submitDialogue, syncStatus,
-    teacherMode, toggleTeacherModeSetting, undoLast, updateSelectedChild, worldMapRef,
+    teacherMode, toggleTeacherModeSetting, undoLast, updateSelectedChild, worldMapRef, dataAuthority, classroomNotice,
   } = runtime;
 
   return (
@@ -193,6 +195,8 @@ export function GrowthIslandView(runtime: GrowthIslandViewRuntime) {
       selectedChildName={selectedChild.name}
       selectedChildEnergy={selectedChild.xp}
       syncStatus={syncStatus}
+      dataAuthority={dataAuthority}
+      classroomNotice={classroomNotice}
       onModuleChange={setActiveModule}
       onSelfServiceChild={() => focusChildOnHome(selectedChild.id, { prepareMoralSpeak: true })}
     >
@@ -202,6 +206,8 @@ export function GrowthIslandView(runtime: GrowthIslandViewRuntime) {
           <GameTopBar
             childrenCount={children.length}
             syncStatus={syncStatus}
+            dataAuthority={dataAuthority}
+            classroomNotice={classroomNotice}
             onZoomIn={() => worldMapRef.current?.zoomIn()}
             onZoomOut={() => worldMapRef.current?.zoomOut()}
             onFocusSelected={() => worldMapRef.current?.focusSelected()}
@@ -390,6 +396,8 @@ export function GrowthIslandView(runtime: GrowthIslandViewRuntime) {
           childrenCount={children.length}
           teacherMode={teacherMode}
           syncStatus={syncStatus}
+          dataAuthority={dataAuthority}
+          classroomNotice={classroomNotice}
           settingsChanges={settingsChanges}
           onToggleTeacherMode={toggleTeacherModeSetting}
           onSaveSettings={saveCurrentSettings}

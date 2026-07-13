@@ -1,11 +1,11 @@
 /**
  * [INPUT]: 依赖课堂种子数据、备份领域规则、classroomApi 快照读取与 browser/appStorage。
- * [OUTPUT]: 对外提供 useClassroomSession，集中课堂快照状态、同步、备份和持久化能力。
- * [POS]: app 的课堂数据会话深 Module，是 children/ledger/review 等持久状态的唯一所有者。
+ * [OUTPUT]: 对外提供 useClassroomSession，集中课堂快照、数据权威、降级提交、备份和持久化能力。
+ * [POS]: app 的课堂数据会话深 Module，是课堂持久状态与 server/local/unavailable 权威的唯一所有者。
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   getInitialClassroomBackup,
   getInitialClassroomSource,
@@ -15,7 +15,7 @@ import {
   getInitialShopRedemptions,
   getInitialTeacherMode,
   lotteryDrawsStorageKey,
-  preferLocalClassroomBackup,
+  persistAuthoritativeClassroomBackup,
   saveClassroomBackupToStorage,
   saveOrganizationStateToStorage,
   settingsChangesStorageKey,
@@ -33,10 +33,11 @@ import {
   serializeClassroomBackup,
   summarizeClassroomBackup,
 } from "../domain/classroomBackup";
-import type { SyncStatus } from "../domain/appState";
+import type { ClassroomDataAuthority, SyncStatus } from "../domain/appState";
 import { normalizeLedgerRecord } from "../domain/progression";
-import { fetchClassroomSnapshot } from "../services/classroomApi";
+import { fetchClassroomSnapshot, isClassroomAvailabilityFailure } from "../services/classroomApi";
 import type {
+  ChildProfile,
   ClassroomBackupImportPreview,
   ClassroomBackupSnapshot,
   ClassroomDataClearSummary,
@@ -48,6 +49,19 @@ import type {
   SettingsChangeRecord,
   ShopRedemption,
 } from "../types";
+
+interface LocalClassroomState {
+  children: ChildProfile[];
+  ledger: LedgerRecord[];
+  moralReviews: MoralReviewItem[];
+  shopRedemptions: ShopRedemption[];
+  lotteryDraws: LotteryDrawRecord[];
+  teacherMode: boolean;
+  settingsChanges: SettingsChangeRecord[];
+  organizationState: OrganizationState;
+}
+
+type LocalClassroomChanges = Partial<LocalClassroomState>;
 
 function downloadJson(filename: string, json: string) {
   const blob = new Blob([json], { type: "application/json;charset=utf-8" });
@@ -80,12 +94,32 @@ export function useClassroomSession() {
     () => initialBackup?.organization ?? getInitialOrganizationState(),
   );
   const [syncStatus, setSyncStatus] = useState<SyncStatus>(() => (initialSource === "local" ? "offline" : "connecting"));
+  const [dataAuthority, setDataAuthority] = useState<ClassroomDataAuthority>(() => (initialSource === "local" ? "local" : "server"));
+  const [classroomNotice, setClassroomNotice] = useState<string | undefined>(() =>
+    initialSource === "local" ? "当前使用本机课堂数据；刷新后仍保留本机版本，请定期导出备份。" : undefined,
+  );
+  const dataAuthorityRef = useRef<ClassroomDataAuthority>(initialSource === "local" ? "local" : "server");
+  const currentStateRef = useRef<LocalClassroomState>({
+    children,
+    ledger,
+    moralReviews,
+    shopRedemptions,
+    lotteryDraws,
+    teacherMode,
+    settingsChanges,
+    organizationState,
+  });
+  currentStateRef.current = { children, ledger, moralReviews, shopRedemptions, lotteryDraws, teacherMode, settingsChanges, organizationState };
 
   const applySnapshot = (snapshot: ClassroomSnapshot) => {
+    if (dataAuthorityRef.current !== "server") return false;
     setChildren(snapshot.children);
     setLedger(snapshot.ledger.map(normalizeLedgerRecord));
     setMoralReviews(snapshot.moralReviews ?? []);
+    setDataAuthority("server");
+    setClassroomNotice(undefined);
     setSyncStatus("online");
+    return true;
   };
 
   const createCurrentBackup = () =>
@@ -100,10 +134,56 @@ export function useClassroomSession() {
       organization: organizationState,
     });
 
+  const commitLocalChanges = (
+    update: LocalClassroomChanges | ((current: LocalClassroomState) => LocalClassroomChanges),
+    notice = "服务器保存失败，已切换为本机保存；刷新后不会回到服务器，请尽快导出备份。",
+  ) => {
+    const current = currentStateRef.current;
+    const changes = typeof update === "function" ? update(current) : update;
+    const next = { ...current, ...changes };
+    const backup = createClassroomBackup({
+      children: next.children,
+      ledger: next.ledger,
+      moralReviews: next.moralReviews,
+      shopRedemptions: next.shopRedemptions,
+      lotteryDraws: next.lotteryDraws,
+      teacherMode: next.teacherMode,
+      settingsChanges: next.settingsChanges,
+      organization: next.organizationState,
+    });
+    if (!persistAuthoritativeClassroomBackup(backup).ok) {
+      setDataAuthority("unavailable");
+      dataAuthorityRef.current = "unavailable";
+      setClassroomNotice("本机保存失败，请停止新增课堂记录并立即检查浏览器存储。当前数据未被标记为已保存。");
+      setSyncStatus("unavailable");
+      return false;
+    }
+    currentStateRef.current = next;
+    dataAuthorityRef.current = "local";
+    if (changes.children) setChildren(backup.children);
+    if (changes.ledger) setLedger(backup.ledger.map(normalizeLedgerRecord));
+    if (changes.moralReviews) setMoralReviews(backup.moralReviews);
+    if (changes.shopRedemptions) setShopRedemptions(backup.shopRedemptions.slice(0, 50));
+    if (changes.lotteryDraws) setLotteryDraws(backup.lotteryDraws.slice(0, 50));
+    if (changes.teacherMode !== undefined) setTeacherMode(backup.settings.teacherMode);
+    if (changes.settingsChanges) setSettingsChanges(backup.settings.settingsChanges.slice(0, 50));
+    if (changes.organizationState) setOrganizationState(backup.organization);
+    setDataAuthority("local");
+    setClassroomNotice(notice);
+    setSyncStatus("offline");
+    return true;
+  };
+
+  const markServerWriteUncertain = () => {
+    dataAuthorityRef.current = "unavailable";
+    setDataAuthority("unavailable");
+    setClassroomNotice("服务器保存结果无法确认，已暂停新增记录以避免重复。请检查服务后刷新；现有本机备份仍保留。");
+    setSyncStatus("unavailable");
+  };
+
   const restoreBackup = (input: ClassroomBackupSnapshot) => {
     const backup = normalizeClassroomBackup(input);
-    saveClassroomBackupToStorage(backup);
-    preferLocalClassroomBackup();
+    if (!persistAuthoritativeClassroomBackup(backup).ok) throw new Error("本机备份保存失败");
     saveOrganizationStateToStorage(backup.organization);
     setChildren(backup.children);
     setLedger(backup.ledger.map(normalizeLedgerRecord));
@@ -117,6 +197,9 @@ export function useClassroomSession() {
       backup.children.some((child) => child.id === current) ? current : backup.children[0]?.id ?? initialChildren[0].id,
     );
     setSyncStatus("offline");
+    dataAuthorityRef.current = "local";
+    setDataAuthority("local");
+    setClassroomNotice("当前使用已恢复的本机课堂数据；刷新后仍保留本机版本，请定期导出备份。");
     return summarizeClassroomBackup(backup);
   };
 
@@ -146,8 +229,7 @@ export function useClassroomSession() {
       exportedAt: clearedAt,
     };
     const backup = createClearedClassroomBackup({ children, teacherMode }, clearedAt);
-    saveClassroomBackupToStorage(backup);
-    preferLocalClassroomBackup();
+    if (!persistAuthoritativeClassroomBackup(backup).ok) throw new Error("本机清空结果保存失败");
     saveOrganizationStateToStorage(backup.organization);
     setLedger([]);
     setMoralReviews([]);
@@ -159,6 +241,9 @@ export function useClassroomSession() {
       children.some((child) => child.id === current) ? current : children[0]?.id ?? initialChildren[0].id,
     );
     setSyncStatus("offline");
+    dataAuthorityRef.current = "local";
+    setDataAuthority("local");
+    setClassroomNotice("当前使用已清空的本机课堂数据；刷新后仍保留本机版本，请定期导出备份。");
     return summary;
   };
 
@@ -169,8 +254,16 @@ export function useClassroomSession() {
       .then((snapshot) => {
         if (!cancelled) applySnapshot(snapshot);
       })
-      .catch(() => {
-        if (!cancelled) setSyncStatus("offline");
+      .catch((error) => {
+        if (cancelled) return;
+        if (initialBackup && isClassroomAvailabilityFailure(error)) {
+          commitLocalChanges({}, "服务器暂不可用，已继续使用本机课堂备份；刷新后不会回到服务器，请尽快导出备份。");
+          return;
+        }
+        setDataAuthority("unavailable");
+        dataAuthorityRef.current = "unavailable";
+        setClassroomNotice("课堂数据暂不可用，且没有有效本机备份。请恢复备份或修复服务器后刷新；演示数据不会自动保存。");
+        setSyncStatus("unavailable");
       });
     return () => {
       cancelled = true;
@@ -183,14 +276,15 @@ export function useClassroomSession() {
   useEffect(() => window.localStorage.setItem(lotteryDrawsStorageKey, JSON.stringify(lotteryDraws.slice(0, 50))), [lotteryDraws]);
   useEffect(() => saveOrganizationStateToStorage(organizationState), [organizationState]);
   useEffect(() => {
-    if (syncStatus === "connecting") return;
+    if (syncStatus === "connecting" || dataAuthority === "unavailable") return;
     saveClassroomBackupToStorage(createCurrentBackup());
-  }, [children, ledger, lotteryDraws, moralReviews, organizationState, settingsChanges, shopRedemptions, syncStatus, teacherMode]);
+  }, [children, dataAuthority, ledger, lotteryDraws, moralReviews, organizationState, settingsChanges, shopRedemptions, syncStatus, teacherMode]);
 
   return {
-    state: { children, ledger, moralReviews, organizationState, settingsChanges, shopRedemptions, lotteryDraws, teacherMode, syncStatus, selectedChildId },
+    state: { children, ledger, moralReviews, organizationState, settingsChanges, shopRedemptions, lotteryDraws, teacherMode, syncStatus, selectedChildId, dataAuthority, classroomNotice },
     setters: { setChildren, setLedger, setMoralReviews, setOrganizationState, setSettingsChanges, setShopRedemptions, setLotteryDraws, setTeacherMode, setSyncStatus, setSelectedChildId },
     snapshot: { apply: applySnapshot },
+    authority: { commitLocalChanges, markServerWriteUncertain },
     backup: {
       clear: clearDemoData,
       confirmImport: restoreBackup,

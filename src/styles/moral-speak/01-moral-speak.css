@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 ../01-tokens.css 以及前序 cascade 片段。
- * [OUTPUT]: 对外提供儿童自助说成长、老师确认和成功点亮反馈第 1 段样式。
+ * [OUTPUT]: 对外提供首页聚焦、异常数据权威 chip、说成长与成功点亮反馈第 1 段样式。
  * [POS]: styles/moral-speak 的 cascade 片段 1/2，由 ../index.css 按顺序导入。
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -110,6 +110,19 @@
 .home-screen-shell .game-brand,
 .home-screen-shell .game-brand p,
 .home-screen-shell .game-status-pills {
+  display: none;
+}
+
+.home-screen-shell .game-topbar:has(.authority-status.local-authority),
+.home-screen-shell .game-topbar:has(.authority-status.unavailable-authority),
+.home-screen-shell .game-status-pills:has(.authority-status.local-authority),
+.home-screen-shell .game-status-pills:has(.authority-status.unavailable-authority) {
+  display: flex;
+  gap: 8px;
+}
+
+.home-screen-shell .game-status-pills:has(.authority-status.local-authority) .game-pill:not(.authority-status),
+.home-screen-shell .game-status-pills:has(.authority-status.unavailable-authority) .game-pill:not(.authority-status) {
   display: none;
 }
 

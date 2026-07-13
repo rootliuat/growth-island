@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 classroomBackup 的解析/序列化规则、moduleConfig 的模块清单和浏览器 localStorage。
- * [OUTPUT]: 对外提供 App 启动状态、本地备份及课堂快照来源偏好的读写 Adapter。
+ * [OUTPUT]: 对外提供 App 启动状态、本地备份及单键 authority/revision/backup 权威信封 Adapter。
  * [POS]: browser 的持久化 Adapter，把 localStorage 细节从 App 根接线层移走。
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -22,6 +22,7 @@ import type {
 export const activeModuleStorageKey = "growth-island-active-module";
 export const classroomBackupStorageKey = "growth-island-classroom-backup";
 export const classroomBackupSourceStorageKey = "growth-island-classroom-source";
+export const classroomAuthorityEnvelopeStorageKey = "growth-island-classroom-authority";
 export const teacherModeStorageKey = "growth-island-teacher-mode";
 export const settingsChangesStorageKey = "growth-island-settings-changes";
 export const shopRedemptionsStorageKey = "growth-island-shop-redemptions";
@@ -43,6 +44,8 @@ export function getInitialActiveModule(): AppModuleId {
 
 export function getInitialClassroomBackup(): ClassroomBackupSnapshot | null {
   if (typeof window === "undefined") return null;
+  const envelope = getClassroomAuthorityEnvelope();
+  if (envelope) return envelope.backup;
   const stored = window.localStorage.getItem(classroomBackupStorageKey);
   if (!stored) return null;
   try {
@@ -52,9 +55,27 @@ export function getInitialClassroomBackup(): ClassroomBackupSnapshot | null {
   }
 }
 
+function getClassroomAuthorityEnvelope(): { source: "local"; revision: number; backup: ClassroomBackupSnapshot } | null {
+  if (typeof window === "undefined") return null;
+  const stored = window.localStorage.getItem(classroomAuthorityEnvelopeStorageKey);
+  if (!stored) return null;
+  try {
+    const parsed = JSON.parse(stored) as { source?: unknown; revision?: unknown; backup?: unknown };
+    if (parsed.source !== "local" || !Number.isInteger(parsed.revision) || Number(parsed.revision) < 1) return null;
+    return { source: "local", revision: Number(parsed.revision), backup: parseClassroomBackupJson(JSON.stringify(parsed.backup)) };
+  } catch {
+    return null;
+  }
+}
+
 export function saveClassroomBackupToStorage(snapshot: ClassroomBackupSnapshot) {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(classroomBackupStorageKey, serializeClassroomBackup(snapshot));
+  if (typeof window === "undefined") return false;
+  try {
+    window.localStorage.setItem(classroomBackupStorageKey, serializeClassroomBackup(snapshot));
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function preferLocalClassroomBackup() {
@@ -62,8 +83,20 @@ export function preferLocalClassroomBackup() {
   window.localStorage.setItem(classroomBackupSourceStorageKey, "local");
 }
 
+export function persistAuthoritativeClassroomBackup(snapshot: ClassroomBackupSnapshot) {
+  if (typeof window === "undefined") return { ok: false as const };
+  try {
+    const revision = (getClassroomAuthorityEnvelope()?.revision ?? 0) + 1;
+    window.localStorage.setItem(classroomAuthorityEnvelopeStorageKey, JSON.stringify({ source: "local", revision, backup: snapshot }));
+    return { ok: true as const };
+  } catch {
+    return { ok: false as const };
+  }
+}
+
 export function getInitialClassroomSource(backup: ClassroomBackupSnapshot | null): "local" | "server" {
   if (typeof window === "undefined") return "server";
+  if (getClassroomAuthorityEnvelope() && backup) return "local";
   if (window.localStorage.getItem(classroomBackupSourceStorageKey) !== "local") return "server";
   if (backup) return "local";
   window.localStorage.removeItem(classroomBackupSourceStorageKey);

@@ -1,3 +1,10 @@
+/**
+ * [INPUT]: 依赖本地伪造 DeepSeek、隔离 API 子进程和可控超时/并发时序。
+ * [OUTPUT]: 提供 Provider 成功/降级/超时、评估幂等预检、并发写与 mock 语音回归。
+ * [POS]: tests/server 的 Provider 稳定性端到端测试，验证外部等待不破坏课堂事务。
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
+
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { mkdtemp, rm } from "node:fs/promises";
 import { createServer, type Server } from "node:http";
@@ -13,6 +20,7 @@ let tempDir: string;
 let apiBaseUrl: string;
 let deepSeekMode: "error" | "paused-valid" | "slow" | "valid" = "error";
 let releasePausedDeepSeek: (() => void) | undefined;
+let deepSeekRequestCount = 0;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 
@@ -40,10 +48,13 @@ async function waitForHealth() {
 }
 
 async function postJson<T>(route: string, body: unknown): Promise<T> {
+  const payload = /^\/api\/(?:ledger(?:\/undo)?|agent\/(?:moral-evaluate|reviews\/))/.test(route)
+    ? { ...(body as Record<string, unknown>), operationId: (body as Record<string, unknown>).operationId ?? crypto.randomUUID() }
+    : body;
   const response = await fetch(`${apiBaseUrl}${route}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
+    body: JSON.stringify(payload),
   });
   if (!response.ok) throw new Error(`${route} failed ${response.status}: ${await response.text()}`);
   return response.json() as Promise<T>;
@@ -87,6 +98,7 @@ describe("provider stability safeguards", () => {
         response.writeHead(404).end();
         return;
       }
+      deepSeekRequestCount += 1;
       if (deepSeekMode === "slow") {
         setTimeout(() => {
           response.writeHead(200, { "Content-Type": "application/json" });
@@ -146,6 +158,26 @@ describe("provider stability safeguards", () => {
     expect(response.model).toBe("fake-deepseek");
     expect(response.result).toMatchObject({ category: "积极阳光", xpDelta: 20, status: "pending_review" });
     expect(response.usage).toEqual({ total_tokens: 42 });
+  });
+
+  it("returns a stored moral review before calling DeepSeek again", async () => {
+    deepSeekMode = "valid";
+    const operationId = `stable-moral-${crypto.randomUUID()}`;
+    const body = {
+      childId: "child-11",
+      operatorChildId: "child-01",
+      transcript: "  我今天主动帮同学收玩具  ",
+      operationId,
+    };
+    const before = deepSeekRequestCount;
+
+    const first = await postJson<MoralAgentResponse>("/api/agent/moral-evaluate", body);
+    const duplicate = await postJson<MoralAgentResponse>("/api/agent/moral-evaluate", { ...body, transcript: body.transcript.trim() });
+
+    expect(deepSeekRequestCount).toBe(before + 1);
+    expect(duplicate.reviewItem.id).toBe(first.reviewItem.id);
+    expect(duplicate.result).toEqual(first.result);
+    expect(duplicate.provider).toBe("deepseek");
   });
 
   it("preserves a ledger write completed while DeepSeek evaluation is in flight", async () => {

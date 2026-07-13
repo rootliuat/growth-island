@@ -40,7 +40,7 @@ npm run qa:p4-providers
 
 ## 数据说明
 
-运行数据在 `data/beihai-db.json`，已被 `.gitignore` 排除，不会提交到仓库。服务端缺少该文件时会按内置初始数据创建本地数据库。
+运行数据在 `data/beihai-db.json`，滚动快照在同目录的 `backups/`，均不会提交到仓库。服务端保留最近 20 份已验证快照；主文件损坏时恢复最新有效快照，只有主文件和快照都不存在时才创建内置初始数据。无法恢复时 `/api/health` 仍可用，课堂接口会明确返回 `classroom_degraded` 503。
 
 ## 目录重点
 

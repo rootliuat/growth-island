@@ -1,6 +1,15 @@
+/**
+ * [INPUT]: 依赖真实 Provider 环境变量、隔离 QA 数据库和本地 Beihai API 子进程。
+ * [OUTPUT]: 对外在独占端口执行 Provider 预检、ASR/TTS/德育评估 smoke，并写脱敏报告。
+ * [POS]: scripts 的真实 Provider 链路门禁，使用独立端口和可重复恢复数据边界。
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
+
 import { spawn } from "node:child_process";
 import fs from "node:fs";
+import net from "node:net";
 import path from "node:path";
+import { resetQaDatabase } from "./qa-database.mjs";
 
 const outputDir = path.resolve("qa-artifacts/latest");
 const reportPath = path.join(outputDir, "p4-provider-smoke.json");
@@ -8,6 +17,21 @@ const port = Number(process.env.P4_API_PORT || 5184);
 const baseUrl = `http://127.0.0.1:${port}`;
 const dbPath = path.join(outputDir, "p4-provider-db.json");
 const sampleText = process.env.P4_SAMPLE_TEXT || "我今天主动帮同学收玩具";
+
+function isPortOpen(targetPort) {
+  return new Promise((resolve) => {
+    const socket = net.connect(targetPort, "127.0.0.1");
+    socket.once("connect", () => {
+      socket.destroy();
+      resolve(true);
+    });
+    socket.once("error", () => resolve(false));
+    socket.setTimeout(400, () => {
+      socket.destroy();
+      resolve(false);
+    });
+  });
+}
 
 function redact(text) {
   let value = String(text || "");
@@ -31,7 +55,7 @@ async function waitForHealth() {
   while (Date.now() < deadline) {
     try {
       const response = await fetch(`${baseUrl}/api/health`);
-      if (response.ok) return;
+      if (response.ok) return response.json();
     } catch {
       // Server is still booting.
     }
@@ -55,7 +79,8 @@ async function postJson(route, body) {
 
 async function run() {
   fs.mkdirSync(outputDir, { recursive: true });
-  fs.rmSync(dbPath, { force: true });
+  if (await isPortOpen(port)) throw new Error(`Provider smoke requires free port ${port}; refusing to reuse an unknown service`);
+  resetQaDatabase(dbPath);
 
   const server = spawn(process.execPath, ["server/beihai-api.mjs"], {
     cwd: process.cwd(),
@@ -76,7 +101,9 @@ async function run() {
   });
 
   try {
-    await waitForHealth();
+    const health = await waitForHealth();
+    if (server.exitCode !== null) throw new Error("P4 API exited during startup");
+    if (path.resolve(health.dbPath || "") !== dbPath) throw new Error("Provider smoke connected to an unexpected classroom database");
 
     const firstSpeech = await postJson("/api/speech/speak", {
       childId: "child-01",
@@ -90,6 +117,7 @@ async function run() {
       childId: "child-01",
       operatorChildId: "child-01",
       transcript: asr.text,
+      operationId: `p4-moral-${Date.now()}`,
     });
     const replyText = moral.result?.reasonForChild || "精灵收到了新的成长能量。";
     const replySpeech = await postJson("/api/speech/speak", {

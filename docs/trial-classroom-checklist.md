@@ -13,6 +13,7 @@
 - 在目标白板跑真实麦克风校准：`REAL_MIC_TARGET_COUNT=3 npm run qa:real-mic`
 - 校准通过后跑 10 人连续语音：`REAL_MIC_TARGET_COUNT=10 npm run qa:real-mic`
 - 启动本地项目：`npm run dev`
+- 打开 `http://localhost:5174/api/health`，确认 `classroom.available` 为 `true`；`status` 为 `recovered` 表示本次已从滚动快照恢复，可继续但应立即导出备份。
 - 打开首页：`http://localhost:5173/`
 - 生产预览地址：`http://localhost:4173/`
 - 确认浏览器允许麦克风；没有真实麦克风时，只能用 QA hook 验证 UI 流程，不能证明真实 ASR 可用。
@@ -39,6 +40,9 @@
 - 负向表达：不能直接入账扣分；老师需要 `修正`、`重说` 或 `跳过`。
 - 活跃孩子说话、等待老师、已点亮期间，其他孩子误点地图或底部队伍时，当前孩子不被切走。
 - 老师修正后，确认按钮恢复可用，最终只写入一条正向成长记录。
+- 顶栏显示 `本机保存` 时，课堂可继续，新记录只进入当前浏览器；刷新后不会自动回服务器，老师必须尽快在记录港导出备份。
+- 顶栏显示 `数据不可用` 时，不继续新增课堂记录；先修复服务器或从记录港恢复有效本机备份，演示种子不会自动保存成课堂数据。
+- API 主文件损坏时，进程 health 仍返回 200；有有效快照则 `classroom.status` 为 `recovered`，无有效快照则课堂接口返回带 `classroom_degraded` 的 503。
 
 ## 4. 通过标准
 
@@ -50,6 +54,8 @@
 - success 阶段不叠全局能量 toast；回岛后才提示 `下一位可以点精灵`。
 - 儿童主界面不出现 `XP`、`AI建议`、`置信度`、`确认入账` 等后台词。
 - 自助成长确认后只产生一条 ledger 记录，且包含老师确认信息。
+- 目标白板静止首页保持约 60 FPS；拖动/缩放以物理设备为准，目标不低于 45 FPS，不能用降低地图清晰度掩盖卡顿。
+- 强杀进程后重启，最后一次已确认课堂记录仍存在；破坏主文件后能从最近有效快照恢复。
 
 ## 5. 自动验收命令
 
@@ -60,6 +66,7 @@ node --check scripts/qa-trial.mjs
 node --check scripts/qa-preview-smoke.mjs
 node --check scripts/qa-visual.mjs
 npm run build
+npm test -- tests/server/classroomSnapshotFile.test.mjs tests/server/classroomCrashRecovery.test.ts tests/server/classroomRecoveryApi.test.ts
 npm run qa:trial
 npm run qa:preview-smoke
 ```

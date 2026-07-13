@@ -1,7 +1,7 @@
 /**
- * [INPUT]: 依赖 node:http、classroom-store 课堂数据事务和 classroom-providers 外部能力。
- * [OUTPUT]: 对外提供课堂快照、ledger、复核、儿童资料、Provider 健康状态与结构化语音 HTTP 接口。
- * [POS]: server 的薄 HTTP 入口，负责请求解析、路由、错误映射和进程启动。
+ * [INPUT]: 依赖 node:http、classroom-store 可恢复课堂事务和 classroom-providers 外部能力。
+ * [OUTPUT]: 对外提供课堂快照、ledger、复核、儿童资料、存储/Provider 健康状态与结构化语音 HTTP 接口。
+ * [POS]: server 的薄 HTTP 入口，启动先校验课堂存储，再负责请求解析、路由和错误映射。
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -36,7 +36,7 @@ loadEnvFile(path.join(rootDir, ".env"));
 
 const dbPath = process.env.BEIHAI_DB_PATH || path.join(dataDir, "beihai-db.json");
 const port = Number(process.env.PORT || 5174);
-const store = createClassroomStore({ dbPath, dataDir });
+const store = createClassroomStore({ dbPath });
 const providers = createClassroomProviders();
 
 function sendJson(response, status, body) {
@@ -97,17 +97,36 @@ async function handleUndoLedger(request, response) {
 
 async function handleMoralEvaluate(request, response) {
   const body = await readBody(request);
-  await store.validateMoralParticipants(body.childId, body.operatorChildId);
   const transcript = String(body.transcript || "").trim().slice(0, 500);
-  const evaluation = await providers.evaluateMoralTranscript(transcript);
-  const result = await store.createMoralReview({
+  const operation = {
     childId: body.childId,
     operatorChildId: body.operatorChildId,
     transcript,
+    operationId: body.operationId,
+  };
+  const existing = await store.getMoralReviewByOperation(operation);
+  if (existing) {
+    return sendJson(response, 200, {
+      result: existing.reviewItem.result,
+      reviewItem: existing.reviewItem,
+      snapshot: existing.snapshot,
+      provider: existing.reviewItem.evaluationProvider,
+      model: existing.reviewItem.evaluationModel,
+      providerError: existing.reviewItem.evaluationProviderError,
+      usage: existing.reviewItem.evaluationUsage,
+    });
+  }
+  const evaluation = await providers.evaluateMoralTranscript(transcript);
+  const result = await store.createMoralReview({
+    ...operation,
     result: evaluation.result,
+    evaluationProvider: evaluation.provider,
+    evaluationModel: evaluation.model,
+    evaluationProviderError: evaluation.providerError,
+    evaluationUsage: evaluation.usage,
   });
   return sendJson(response, 200, {
-    result: evaluation.result,
+    result: result.reviewItem.result,
     reviewItem: result.reviewItem,
     snapshot: result.snapshot,
     provider: evaluation.provider,
@@ -129,7 +148,7 @@ async function handleMoralReview(request, response, reviewId, action) {
 async function routeRequest(request, response) {
   const url = new URL(request.url || "/", `http://${request.headers.host || "localhost"}`);
   if (request.method === "GET" && url.pathname === "/api/health") {
-    return sendJson(response, 200, { ok: true, dbPath, providers: providers.getHealth() });
+    return sendJson(response, 200, { ok: true, dbPath, classroom: store.getHealth(), providers: providers.getHealth() });
   }
   if (request.method === "GET" && url.pathname === "/api/classroom") {
     return sendJson(response, 200, await store.getSnapshot());
@@ -179,10 +198,11 @@ const server = createServer(async (request, response) => {
       });
     }
     console.error(error);
-    return sendError(response, 500, error instanceof Error ? error.message : "Internal server error");
+    return sendError(response, 500, "Internal server error");
   }
 });
 
+await store.initialize();
 server.listen(port, "0.0.0.0", () => {
   console.log(`Beihai API listening on http://localhost:${port}`);
   console.log(`Database: ${dbPath}`);

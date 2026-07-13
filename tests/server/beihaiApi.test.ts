@@ -33,8 +33,13 @@ async function waitForHealth() {
 }
 
 async function requestJson<T>(route: string, init?: RequestInit): Promise<T> {
+  const requiresOperationId = init?.method === "POST" && /^\/api\/(?:ledger(?:\/undo)?|agent\/(?:moral-evaluate|reviews\/))/.test(route);
+  const body = requiresOperationId && typeof init?.body === "string"
+    ? JSON.stringify({ ...JSON.parse(init.body), operationId: JSON.parse(init.body).operationId ?? crypto.randomUUID() })
+    : init?.body;
   const response = await fetch(`${baseUrl}${route}`, {
     ...init,
+    body,
     headers: {
       "Content-Type": "application/json",
       ...init?.headers,

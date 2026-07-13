@@ -363,7 +363,21 @@
     padding: 7px 10px;
   }
 
-  .shell-status-chip:not(.active-child),
+  .home-screen-shell .game-topbar:has(.authority-status.local-authority),
+  .home-screen-shell .game-topbar:has(.authority-status.unavailable-authority) {
+    display: grid;
+    width: 112px;
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: end;
+  }
+
+  .home-screen-shell .game-topbar:has(.authority-status.local-authority) .zoom-controls,
+  .home-screen-shell .game-topbar:has(.authority-status.unavailable-authority) .zoom-controls {
+    display: grid;
+    grid-template-columns: repeat(2, 40px);
+  }
+
+  .shell-status-chip:not(.active-child):not(.authority-status),
   .shell-scene-chip {
     display: none;
   }
@@ -404,7 +418,17 @@
 @media (max-width: 720px) {
   .product-shell.game-hud-shell,
   .home-screen-shell {
+    width: 100%;
+    max-width: 100vw;
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .home-screen-shell .product-workspace,
+  .home-screen-shell .home-module.app-shell,
+  .home-screen-shell .game-layout,
+  .home-screen-shell .world-map-shell {
+    width: 100%;
+    max-width: 100%;
   }
 
   .shell-scene-command-bar {

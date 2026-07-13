@@ -12,7 +12,7 @@ mathPk.ts: 数学光路玩法的题目、结果和记录规则。
 moralAgent.ts: 德育文本本地评估规则。
 moralSpeakSession.ts: 儿童自助说成长状态、锁定、session 与审批目标判断。
 organization.ts: 班级任务、课程轨道、UTC 周期窗口和组织态沉淀规则。
-progression.ts: 幼儿 XP、等级、精灵成长状态和流水创建规则。
+progression.ts: 幼儿 XP、等级、精灵成长状态和携带 operationId 的流水创建规则。
 spiritAssets.ts: 精灵图像资产选择与预加载规则。
 spiritVoice.ts: 精灵声音类型与选项规则。
 virtueEnergy.ts: 德育分类、能量标签、颜色和可审批判断。

@@ -10,7 +10,7 @@ MathArenaModule.tsx: 数学光路练习页面。
 ModulePlaceholder.tsx: 未重点产品化模块的占位页面。
 OrganizationModule.tsx: 班级/课程任务现场操作页面。
 RollCallModule.tsx: 随机抽取幼儿页面。
-SettingsModule.tsx: 本机课堂设置页面。
+SettingsModule.tsx: 本机课堂设置页面，向教师完整解释数据权威与保存状态。
 ShopModule.tsx: 小铺奖励兑换页面。
 TeacherWorkbenchModule.tsx: 老师补记和待看工作台。
 VoiceRecordModule.tsx: 贝壳语音记录页面。
