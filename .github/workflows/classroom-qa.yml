@@ -1,5 +1,5 @@
 # [INPUT]: 依赖 package-lock.json、mock Provider、Playwright Chromium 与课堂 QA/preview 脚本
-# [OUTPUT]: 对外提供手动或每日运行的非阻断课堂 QA，并保留 14 天截图与 JSON 报告
+# [OUTPUT]: 对外提供手动或每日运行的非阻断课堂 QA，功能问题判红、渲染性能警告留档，并保留 14 天证据
 # [POS]: .github/workflows 的独立课堂验收，不触发 pull_request，不成为 main 分支保护状态
 # [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
 
@@ -57,6 +57,8 @@ jobs:
         run: npm run build
 
       - name: Run classroom QA
+        id: trial
+        continue-on-error: true
         shell: bash
         run: |
           if [[ "$QA_PROFILE" == "fast" ]]; then
@@ -64,6 +66,33 @@ jobs:
           else
             node scripts/qa-trial.mjs
           fi
+
+      - name: Assess functional QA results
+        if: ${{ !cancelled() }}
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require("node:fs");
+          const reportPath = "qa-artifacts/latest/report.json";
+          const assetPath = "qa-artifacts/latest/trial-assets-report.json";
+          if (!fs.existsSync(reportPath) || !fs.existsSync(assetPath)) {
+            throw new Error("Classroom QA did not produce the required reports");
+          }
+          const report = JSON.parse(fs.readFileSync(reportPath, "utf8"));
+          const assets = JSON.parse(fs.readFileSync(assetPath, "utf8"));
+          const warnings = (report.results || []).flatMap((result) => result.warnings || []);
+          const softwareRenderWarning = /^home (?:frame sample is low: [\d.]+ FPS|active (?:wheel|drag) frame (?:sample is low: [\d.]+ FPS|gap is high: [\d.]+ ms)|sustained drag (?:frame sample is low: [\d.]+ FPS|p99 frame gap is high: [\d.]+ ms))$/;
+          const allowedPerformanceWarnings = warnings.filter((warning) => softwareRenderWarning.test(warning));
+          const blockingWarnings = warnings.filter((warning) => !softwareRenderWarning.test(warning));
+          const blockingAssetFailures = (assets.failures || []).filter(
+            (failure) => !/warningCount must be 0| has warnings:/.test(failure),
+          );
+          if (report.issueCount !== 0 || blockingWarnings.length > 0 || blockingAssetFailures.length > 0) {
+            console.error(JSON.stringify({ issueCount: report.issueCount, blockingWarnings, blockingAssetFailures }, null, 2));
+            process.exit(1);
+          }
+          console.log(`Functional QA passed; ${allowedPerformanceWarnings.length} software-rendering warning(s) retained in artifacts.`);
+          NODE
 
       - name: Run production preview smoke
         if: ${{ !cancelled() }}
@@ -78,6 +107,7 @@ jobs:
             echo
             echo "- Profile: $QA_PROFILE"
             echo "- Trigger: ${{ github.event_name }}"
+            echo "- Raw classroom QA outcome: ${{ steps.trial.outcome }}"
             echo "- Artifacts: screenshots and JSON reports retained for 14 days"
           } >> "$GITHUB_STEP_SUMMARY"
 
