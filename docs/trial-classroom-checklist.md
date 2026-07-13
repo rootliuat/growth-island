@@ -10,6 +10,8 @@
 - 生成白板清晰版地图资源：`npm run assets:map-hidpi`
 - 跑试教自动验收：`npm run qa:trial`
 - 跑生产预览 smoke：`npm run qa:preview-smoke`
+- 在目标白板跑真实麦克风校准：`REAL_MIC_TARGET_COUNT=3 npm run qa:real-mic`
+- 校准通过后跑 10 人连续语音：`REAL_MIC_TARGET_COUNT=10 npm run qa:real-mic`
 - 启动本地项目：`npm run dev`
 - 打开首页：`http://localhost:5173/`
 - 生产预览地址：`http://localhost:4173/`
@@ -77,6 +79,13 @@ npm run qa:preview-smoke
 - 没有图片、地图或 3D 模型资源加载失败。
 - 没有浏览器 console/page error。
 - 报告路径：`qa-artifacts/latest/preview-smoke-report.json`
+
+`npm run qa:real-mic` 通过标准：
+
+- 3 人校准最终 3/3 完成。
+- 10 人连续试教最终 10/10 完成，首次识别至少 9/10。
+- 单次 ASR 不超过 12 秒，老师点亮后每人只产生一条成长账本记录。
+- 报告路径：`qa-artifacts/latest/real-mic-report.json`；报告不得包含音频或完整转写文本。
 
 ## 6. 必看截图
 

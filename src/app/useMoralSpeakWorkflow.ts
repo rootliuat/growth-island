@@ -1,26 +1,29 @@
 /**
- * [INPUT]: 依赖 moralRecorder、classroomApi、德育规则、课堂数据会话写入能力和地图控制句柄。
- * [OUTPUT]: 对外提供 useMoralSpeakWorkflow，返回说成长状态、用户动作、选择守卫和 QA 控制面。
+ * [INPUT]: 依赖 moralRecorder、speechDiagnostics、classroomApi、德育规则、课堂数据会话写入能力和地图控制句柄。
+ * [OUTPUT]: 对外提供 useMoralSpeakWorkflow，返回说成长状态、同音频单次重试、用户动作、选择守卫和 QA 控制面。
  * [POS]: app 的说成长会话深 Module，独占录音资源、session ID、审批锁与状态转换。
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 import { useEffect, useRef, useState, type Dispatch, type RefObject, type SetStateAction } from "react";
 import { blobToBase64, getMoralRecorderSettings, prepareMoralAudioForTranscription } from "../browser/moralRecorder";
+import { finishSpeechDiagnostic, startSpeechDiagnostic, updateSpeechDiagnostic } from "../browser/speechDiagnostics";
 import type { PixiWorldMapHandle } from "../components/WorldMap/PixiWorldMap";
 import type { SyncStatus } from "../domain/appState";
 import type { GrowthFeedback } from "../domain/growthFeedback";
 import { evaluateMoralText } from "../domain/moralAgent";
 import {
   getMoralSpeakLockedChildId,
+  getMoralSpeakFailurePresentation,
   getMoralSpeakSummary,
   isCurrentMoralApprovalTarget,
   isMoralSpeakSessionActive,
   nextMoralSpeakSessionId,
   type MoralSpeakViewState,
+  type MoralSpeakFailureCode,
 } from "../domain/moralSpeakSession";
 import { canApproveMoralGrowth } from "../domain/virtueEnergy";
-import { evaluateMoralRecord, rejectMoralReview, transcribeSpeech } from "../services/classroomApi";
+import { evaluateMoralRecord, isClassroomApiError, rejectMoralReview, transcribeSpeech } from "../services/classroomApi";
 import type {
   ChildWithProgress,
   ClassroomSnapshot,
@@ -57,6 +60,46 @@ export function useMoralSpeakWorkflow(input: MoralSpeakWorkflowInput) {
   const recordingCancelledRef = useRef(false);
   const approvingRef = useRef(false);
   const sessionRef = useRef(0);
+  const diagnosticAttemptRef = useRef<string | undefined>(undefined);
+  const retryAudioRef = useRef<{
+    child: ChildWithProgress;
+    audioBase64: string;
+    voiceFormat: string;
+    attemptId?: string;
+  } | undefined>(undefined);
+
+  const clearRecordedAudio = () => {
+    retryAudioRef.current = undefined;
+  };
+
+  const classifySpeechFailure = (error: unknown, fallback: MoralSpeakFailureCode): MoralSpeakFailureCode => {
+    if (isClassroomApiError(error)) {
+      const knownCodes = new Set<MoralSpeakFailureCode>([
+        "speech_not_configured",
+        "asr_timeout",
+        "asr_upstream",
+        "asr_empty",
+        "asr_rejected",
+      ]);
+      if (knownCodes.has(error.code as MoralSpeakFailureCode)) return error.code as MoralSpeakFailureCode;
+    }
+    if (error instanceof TypeError) return "network_unavailable";
+    return fallback;
+  };
+
+  const setSpeechFailure = (childId: string, code: MoralSpeakFailureCode, retryCount = 0) => {
+    const presentation = getMoralSpeakFailurePresentation(code);
+    const retryMode = retryCount >= 1 && presentation.retryMode === "retranscribe" ? "rerecord" : presentation.retryMode;
+    if (retryMode !== "retranscribe") clearRecordedAudio();
+    updateSpeechDiagnostic(diagnosticAttemptRef.current, { outcome: "error", failureCode: code, retryCount });
+    setState({
+      stage: "error",
+      childId,
+      error: retryMode === "rerecord" && retryCount >= 1 ? "识别还是没连上，请再说一次" : presentation.message,
+      errorCode: code,
+      retryMode,
+    });
+  };
 
   const clearTimers = () => {
     timersRef.current.forEach((timer) => window.clearTimeout(timer));
@@ -112,6 +155,7 @@ export function useMoralSpeakWorkflow(input: MoralSpeakWorkflowInput) {
     clearTimers();
     stopRecording(true);
     approvingRef.current = false;
+    clearRecordedAudio();
     input.clearFeedback();
     setState({ stage: "ready", childId });
   };
@@ -137,6 +181,9 @@ export function useMoralSpeakWorkflow(input: MoralSpeakWorkflowInput) {
     clearTimers();
     stopRecording(true);
     approvingRef.current = false;
+    clearRecordedAudio();
+    if (diagnosticAttemptRef.current) finishSpeechDiagnostic(diagnosticAttemptRef.current, "cancelled");
+    diagnosticAttemptRef.current = undefined;
     setState({ stage: "idle" });
     if (options.focusIsland ?? true) input.worldMapRef.current?.focusFullIsland();
   };
@@ -262,19 +309,57 @@ export function useMoralSpeakWorkflow(input: MoralSpeakWorkflowInput) {
     });
   };
 
-  const processRecordedAudio = async (child: ChildWithProgress, blob: Blob, voiceFormat: string, sessionId: number) => {
+  const recognizePreparedAudio = async (
+    child: ChildWithProgress,
+    audioBase64: string,
+    voiceFormat: string,
+    sessionId: number,
+    retryCount: number,
+    attemptId?: string,
+  ) => {
     if (!isSessionActive(sessionId, child.id)) return;
     setState({ stage: "recognizing", childId: child.id });
+    updateSpeechDiagnostic(attemptId, { outcome: "recognizing", retryCount });
+    const startedAt = performance.now();
+    try {
+      const response = await transcribeSpeech({ audioBase64, voiceFormat });
+      if (!isSessionActive(sessionId, child.id)) return;
+      updateSpeechDiagnostic(attemptId, { asrMs: Math.round(performance.now() - startedAt) });
+      await finishWithTranscript(child, response.text, undefined, sessionId);
+      if (isSessionActive(sessionId, child.id) && stateRef.current.stage !== "error") {
+        updateSpeechDiagnostic(attemptId, { outcome: "pending_review" });
+      }
+    } catch (error) {
+      if (isSessionActive(sessionId, child.id)) {
+        updateSpeechDiagnostic(attemptId, { asrMs: Math.round(performance.now() - startedAt) });
+        setSpeechFailure(child.id, classifySpeechFailure(error, "asr_upstream"), retryCount);
+      }
+    }
+  };
+
+  const processRecordedAudio = async (child: ChildWithProgress, blob: Blob, voiceFormat: string, sessionId: number) => {
+    if (!isSessionActive(sessionId, child.id)) return;
     try {
       const prepared = await prepareMoralAudioForTranscription(blob, voiceFormat);
       const audioBase64 = await blobToBase64(prepared.blob);
       if (!isSessionActive(sessionId, child.id)) return;
-      const response = await transcribeSpeech({ audioBase64, voiceFormat: prepared.voiceFormat });
-      if (!isSessionActive(sessionId, child.id)) return;
-      await finishWithTranscript(child, response.text, undefined, sessionId);
-    } catch {
+      updateSpeechDiagnostic(diagnosticAttemptRef.current, {
+        sourceVoiceFormat: prepared.sourceVoiceFormat,
+        preparedVoiceFormat: prepared.voiceFormat,
+        sourceBytes: prepared.sourceBytes,
+        preparedBytes: prepared.preparedBytes,
+        transcodeMs: prepared.transcodeMs,
+      });
+      retryAudioRef.current = {
+        child,
+        audioBase64,
+        voiceFormat: prepared.voiceFormat,
+        attemptId: diagnosticAttemptRef.current,
+      };
+      await recognizePreparedAudio(child, audioBase64, prepared.voiceFormat, sessionId, 0, diagnosticAttemptRef.current);
+    } catch (error) {
       if (isSessionActive(sessionId, child.id)) {
-        setState({ stage: "error", childId: child.id, error: "没听清，可以再说一次" });
+        setSpeechFailure(child.id, classifySpeechFailure(error, "audio_decode_failed"));
       }
     }
   };
@@ -318,11 +403,12 @@ export function useMoralSpeakWorkflow(input: MoralSpeakWorkflowInput) {
     }
     const settings = getMoralRecorderSettings();
     if (!settings || !navigator.mediaDevices?.getUserMedia) {
-      setState({ stage: "error", childId: child.id, error: "这台设备还不能录音" });
+      setSpeechFailure(child.id, "microphone_unavailable");
       return;
     }
 
     try {
+      diagnosticAttemptRef.current = startSpeechDiagnostic(child.id, settings.mimeType, settings.voiceFormat);
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       if (!isSessionActive(sessionId, child.id)) {
         stream.getTracks().forEach((track) => track.stop());
@@ -341,7 +427,7 @@ export function useMoralSpeakWorkflow(input: MoralSpeakWorkflowInput) {
       recorder.onerror = () => {
         stopTracks();
         if (isSessionActive(sessionId, child.id)) {
-          setState({ stage: "error", childId: child.id, error: "录音中断，请再说一次" });
+          setSpeechFailure(child.id, "recording_failed");
         }
       };
       recorder.onstop = () => {
@@ -357,7 +443,7 @@ export function useMoralSpeakWorkflow(input: MoralSpeakWorkflowInput) {
         if (!isSessionActive(sessionId, recordedChild.id)) return;
         const blob = new Blob(chunks, { type: recorder.mimeType || settings.mimeType || "audio/webm" });
         if (blob.size === 0) {
-          setState({ stage: "error", childId: recordedChild.id, error: "没听清，可以再说一次" });
+          setSpeechFailure(recordedChild.id, "recording_empty");
           return;
         }
         void processRecordedAudio(recordedChild, blob, recordingFormatRef.current, sessionId);
@@ -369,10 +455,14 @@ export function useMoralSpeakWorkflow(input: MoralSpeakWorkflowInput) {
       setState({ stage: "listening", childId: child.id });
       recorder.start();
       schedule(stopRecording, 5500);
-    } catch {
+    } catch (error) {
       stopTracks();
       if (isSessionActive(sessionId, child.id)) {
-        setState({ stage: "error", childId: child.id, error: "请允许麦克风后再试" });
+        const errorName = error instanceof Error ? error.name : "";
+        setSpeechFailure(
+          child.id,
+          errorName === "NotAllowedError" || errorName === "SecurityError" ? "microphone_permission" : "microphone_unavailable",
+        );
       }
     }
   };
@@ -404,9 +494,24 @@ export function useMoralSpeakWorkflow(input: MoralSpeakWorkflowInput) {
   const retry = () => {
     if (approvingRef.current) return;
     const childId = state.childId ?? input.selectedChild.id;
+    const cachedAudio = retryAudioRef.current;
+    if (state.stage === "error" && state.retryMode === "retranscribe" && cachedAudio?.child.id === childId) {
+      const sessionId = beginSession();
+      input.setSelectedChildId(childId);
+      void recognizePreparedAudio(
+        cachedAudio.child,
+        cachedAudio.audioBase64,
+        cachedAudio.voiceFormat,
+        sessionId,
+        1,
+        cachedAudio.attemptId,
+      );
+      return;
+    }
     beginSession();
     stopRecording(true);
     approvingRef.current = false;
+    clearRecordedAudio();
     if (state.stage === "pendingReview") rejectCurrentReview("补说");
     input.setSelectedChildId(childId);
     setState({ stage: "ready", childId });
@@ -469,6 +574,9 @@ export function useMoralSpeakWorkflow(input: MoralSpeakWorkflowInput) {
         ? { ...current, stage: "success", approving: false, result, previousChildName: completedChild.name }
         : current,
     );
+    finishSpeechDiagnostic(diagnosticAttemptRef.current, "approved");
+    diagnosticAttemptRef.current = undefined;
+    clearRecordedAudio();
     input.clearFeedback();
     schedule(() => {
       approvingRef.current = false;
@@ -510,6 +618,7 @@ export function useMoralSpeakWorkflow(input: MoralSpeakWorkflowInput) {
     clearTimers();
     stopRecording(true);
     approvingRef.current = false;
+    clearRecordedAudio();
     rejectCurrentReview("补说");
     const childId = state.childId ?? input.selectedChild.id;
     input.setSelectedChildId(childId);

@@ -162,9 +162,10 @@ export function MoralSpeakOverlay({ child, spirit, state, onStart, onStop, onRet
         </div>
       ) : null}
 
-      {(state.stage === "error" || (state.stage === "pendingReview" && state.result?.xpDelta === 0)) ? (
+      {((state.stage === "error" && state.retryMode !== "none") ||
+      (state.stage === "pendingReview" && state.result?.xpDelta === 0)) ? (
         <button type="button" className="moral-retry-button" onClick={() => onRetry()}>
-          再说一次
+          {state.stage === "error" && state.retryMode === "retranscribe" ? "重新识别" : "再说一次"}
         </button>
       ) : null}
 

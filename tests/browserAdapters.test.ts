@@ -116,6 +116,10 @@ describe("moral recorder provider compatibility", () => {
     const view = new DataView(await prepared.blob.arrayBuffer());
 
     expect(prepared.voiceFormat).toBe("wav");
+    expect(prepared.sourceVoiceFormat).toBe("webm");
+    expect(prepared.sourceBytes).toBe(4);
+    expect(prepared.preparedBytes).toBeGreaterThan(44);
+    expect(prepared.transcodeMs).toBeGreaterThanOrEqual(0);
     expect(prepared.blob.type).toBe("audio/wav");
     expect(readAscii(view, 0, 4)).toBe("RIFF");
     expect(readAscii(view, 8, 4)).toBe("WAVE");
