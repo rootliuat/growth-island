@@ -212,6 +212,14 @@ describe("provider stability safeguards", () => {
   });
 
   it("supports mock speech providers without Tencent credentials", async () => {
+    const health = await getJson<{
+      providers: { speech: { name: string; configured: boolean }; llm: { name: string; configured: boolean } };
+    }>("/api/health");
+    expect(health.providers).toEqual({
+      speech: { name: "mock", configured: true },
+      llm: { name: "deepseek", configured: true },
+    });
+
     const speech = await postJson<SpeechSynthesisResponse>("/api/speech/speak", {
       childId: "child-01",
       text: "精灵收到了新的成长能量。",

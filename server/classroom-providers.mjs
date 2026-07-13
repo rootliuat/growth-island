@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 process.env、全局 fetch、moral-agent 规则与 classroom-store 的声音档案查询。
- * [OUTPUT]: 对外提供 createClassroomProviders、ProviderError 和脱敏错误格式化。
+ * [OUTPUT]: 对外提供 createClassroomProviders、Provider 就绪预检、结构化 ProviderError 和脱敏错误格式化。
  * [POS]: server 的课堂 Provider 深 Module，隐藏腾讯签名、语音调用与 DeepSeek 降级实现。
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -13,10 +13,12 @@ const defaultProviderTimeoutMs = 12_000;
 const virtueCategories = ["家国情怀", "意志坚韧", "积极阳光", "勇毅有力", "激浊扬清", "开拓创新", "尊矩守法"];
 
 export class ProviderError extends Error {
-  constructor(status, message) {
+  constructor(status, message, { code = "provider_failed", retryable = status >= 500 } = {}) {
     super(message);
     this.name = "ProviderError";
     this.status = status;
+    this.code = code;
+    this.retryable = retryable;
   }
 }
 
@@ -110,6 +112,33 @@ function isMockSpeechProvider(env) {
 
 function getSpeechProviderName(env) {
   return isMockSpeechProvider(env) ? "mock" : "tencent";
+}
+
+function getProviderHealth(env) {
+  const speechName = getSpeechProviderName(env);
+  const speechConfigured =
+    speechName === "mock" ||
+    Boolean((env.TENCENT_ASR_SECRET_ID || env.TENCENT_SECRET_ID) && (env.TENCENT_ASR_SECRET_KEY || env.TENCENT_SECRET_KEY));
+  const llmName = env.LLM_PROVIDER === "deepseek" ? "deepseek" : env.LLM_PROVIDER === "mock" ? "mock" : "rules";
+  return {
+    speech: { name: speechName, configured: speechConfigured },
+    llm: { name: llmName, configured: llmName !== "deepseek" || Boolean(env.DEEPSEEK_API_KEY) },
+  };
+}
+
+function classifySpeechError(error, kind) {
+  if (error instanceof ProviderError) return error;
+  const message = formatProviderError(error);
+  if (message.includes("credentials are not configured")) {
+    return new ProviderError(503, message, { code: "speech_not_configured", retryable: false });
+  }
+  if (message.includes("timed out")) {
+    return new ProviderError(503, message, { code: kind === "asr" ? "asr_timeout" : "tts_timeout", retryable: true });
+  }
+  if (message.includes("Invalid audio data") || message.includes("3MB limit")) {
+    return new ProviderError(400, message, { code: "asr_rejected", retryable: false });
+  }
+  return new ProviderError(503, message, { code: kind === "asr" ? "asr_upstream" : "tts_upstream", retryable: true });
 }
 
 async function synthesizeTencentSpeech(env, { text, child, voiceType }) {
@@ -291,15 +320,16 @@ export function createClassroomProviders(env = process.env) {
         audioBase64,
       };
     } catch (error) {
-      if (error instanceof ProviderError) throw error;
-      throw new ProviderError(503, formatProviderError(error));
+      throw classifySpeechError(error, "tts");
     }
   };
 
   const transcribe = async ({ audioBase64, voiceFormat }) => {
     try {
       const result = await transcribeTencentSpeech(env, { audioBase64, voiceFormat });
-      if (!result.text) throw new ProviderError(502, "Tencent ASR returned empty transcript");
+      if (!result.text) {
+        throw new ProviderError(502, "Tencent ASR returned empty transcript", { code: "asr_empty", retryable: false });
+      }
       return {
         provider: getSpeechProviderName(env),
         text: result.text,
@@ -310,13 +340,13 @@ export function createClassroomProviders(env = process.env) {
         requestId: result.requestId,
       };
     } catch (error) {
-      if (error instanceof ProviderError) throw error;
-      throw new ProviderError(503, formatProviderError(error));
+      throw classifySpeechError(error, "asr");
     }
   };
 
   return {
     evaluateMoralTranscript: (transcript) => evaluateMoralTranscript(env, transcript),
+    getHealth: () => getProviderHealth(env),
     speak,
     transcribe,
   };

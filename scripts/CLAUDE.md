@@ -3,6 +3,7 @@
 
 成员清单
 qa-visual.mjs: 视觉 QA 兼容入口，加载 scripts/qa/runner.mjs。
+qa-real-mic.mjs: 真实物理麦克风人工试教门禁，输出无音频、无全文的脱敏报告。
 qa/: 视觉 QA runner、check catalog 和检查实现。
 dev.mjs: 本地 API + Vite 开发服务启动脚本。
 generate-map-hidpi.mjs: 地图高分辨率资产生成脚本。

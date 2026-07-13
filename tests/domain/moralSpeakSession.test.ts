@@ -7,6 +7,7 @@
 
 import { describe, expect, it } from "vitest";
 import {
+  getMoralSpeakFailurePresentation,
   getMoralSpeakLockedChildId,
   getMoralSpeakSummary,
   isCurrentMoralApprovalTarget,
@@ -70,5 +71,19 @@ describe("moralSpeakSession", () => {
     expect(getMoralSpeakSummary(rewardResult, "主动帮忙")).toBe("主动帮忙");
     expect(getMoralSpeakSummary(rewardResult, "")).toBe("友爱能量");
     expect(getMoralSpeakSummary(blockedResult, "不使用")).toBe("请老师帮忙");
+  });
+
+  it("reuses recorded audio only for transient recognition failures", () => {
+    expect(getMoralSpeakFailurePresentation("asr_timeout")).toEqual({
+      message: "识别暂时没连上，请老师重试",
+      retryMode: "retranscribe",
+    });
+    expect(getMoralSpeakFailurePresentation("network_unavailable").retryMode).toBe("retranscribe");
+    expect(getMoralSpeakFailurePresentation("microphone_permission")).toEqual({
+      message: "请允许麦克风后再试",
+      retryMode: "rerecord",
+    });
+    expect(getMoralSpeakFailurePresentation("audio_decode_failed").retryMode).toBe("rerecord");
+    expect(getMoralSpeakFailurePresentation("speech_not_configured").retryMode).toBe("none");
   });
 });

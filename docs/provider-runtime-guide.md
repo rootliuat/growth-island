@@ -17,10 +17,11 @@ click spirit -> focus home -> browser microphone -> MediaRecorder audio blob
 
 The browser records with the first supported format from:
 
-- `audio/webm;codecs=opus`
-- `audio/webm`
 - `audio/mp4`
 - `audio/mpeg`
+- `audio/ogg;codecs=opus`
+- `audio/webm;codecs=opus`
+- `audio/webm`
 
 The frontend sends base64 audio and a `voiceFormat` hint to `/api/speech/transcribe`.
 
@@ -40,6 +41,15 @@ Provider chain validation with real Tencent and DeepSeek credentials:
 ```bash
 npm run qa:p4-providers
 ```
+
+Physical microphone validation on the target whiteboard:
+
+```bash
+REAL_MIC_TARGET_COUNT=3 npm run qa:real-mic
+REAL_MIC_TARGET_COUNT=10 npm run qa:real-mic
+```
+
+The command opens a headed Chrome window. Complete the normal child flow in that window. It writes `qa-artifacts/latest/real-mic-report.json` with formats, byte counts, timings, failure codes, retry counts, and ledger totals. It never stores audio or full transcripts.
 
 `npm run qa:visual` does not require a microphone. It uses a QA-only hook to exercise the review UI consistently in CI.
 
@@ -166,4 +176,5 @@ Expected output includes the mock transcript and the page reaches `pendingReview
 - Do not expose Tencent or DeepSeek secrets in logs, screenshots, or QA artifacts.
 - Do not treat `npm run qa:visual` as proof that real ASR works; it verifies the UI flow.
 - Treat `npm run qa:p4-providers` as proof that the configured provider chain is working in the current environment.
+- Treat `npm run qa:real-mic` as the physical-device release gate: 3/3 calibration, then 10/10 eventual completion with at least 9/10 first-pass recognition.
 - For physical classroom deployment, verify the whiteboard browser can grant microphone permission and that Tencent ASR accepts the browser's recorded format.

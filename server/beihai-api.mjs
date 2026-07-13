@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 node:http、classroom-store 课堂数据事务和 classroom-providers 外部能力。
- * [OUTPUT]: 对外提供课堂快照、ledger、复核、儿童资料与语音 HTTP 接口。
+ * [OUTPUT]: 对外提供课堂快照、ledger、复核、儿童资料、Provider 健康状态与结构化语音 HTTP 接口。
  * [POS]: server 的薄 HTTP 入口，负责请求解析、路由、错误映射和进程启动。
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -49,8 +49,8 @@ function sendJson(response, status, body) {
   response.end(JSON.stringify(body));
 }
 
-function sendError(response, status, message) {
-  sendJson(response, status, { error: message });
+function sendError(response, status, message, details = {}) {
+  sendJson(response, status, { error: message, ...details });
 }
 
 async function readBody(request) {
@@ -129,7 +129,7 @@ async function handleMoralReview(request, response, reviewId, action) {
 async function routeRequest(request, response) {
   const url = new URL(request.url || "/", `http://${request.headers.host || "localhost"}`);
   if (request.method === "GET" && url.pathname === "/api/health") {
-    return sendJson(response, 200, { ok: true, dbPath });
+    return sendJson(response, 200, { ok: true, dbPath, providers: providers.getHealth() });
   }
   if (request.method === "GET" && url.pathname === "/api/classroom") {
     return sendJson(response, 200, await store.getSnapshot());
@@ -173,7 +173,10 @@ const server = createServer(async (request, response) => {
     return await routeRequest(request, response);
   } catch (error) {
     if (error instanceof ClassroomStoreError || error instanceof ProviderError) {
-      return sendError(response, error.status, error.message);
+      return sendError(response, error.status, error.message, {
+        ...(error.code ? { code: error.code } : {}),
+        ...(typeof error.retryable === "boolean" ? { retryable: error.retryable } : {}),
+      });
     }
     console.error(error);
     return sendError(response, 500, error instanceof Error ? error.message : "Internal server error");

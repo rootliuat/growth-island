@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖浏览器 MediaRecorder 与 FileReader。
- * [OUTPUT]: 对外提供腾讯兼容录音格式选择、WebM 转 WAV 和 Blob base64 转换 Adapter。
+ * [OUTPUT]: 对外提供腾讯兼容录音格式选择、WebM 转 WAV、脱敏转码指标和 Blob base64 转换 Adapter。
  * [POS]: browser 的麦克风录音 Adapter，被 App 的说成长流程消费。
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -77,8 +77,17 @@ async function transcodeWebmToWav(blob: Blob) {
 }
 
 export async function prepareMoralAudioForTranscription(blob: Blob, voiceFormat: string) {
-  if (voiceFormat !== "webm") return { blob, voiceFormat };
-  return { blob: await transcodeWebmToWav(blob), voiceFormat: "wav" };
+  const startedAt = typeof performance === "undefined" ? Date.now() : performance.now();
+  const preparedBlob = voiceFormat === "webm" ? await transcodeWebmToWav(blob) : blob;
+  const finishedAt = typeof performance === "undefined" ? Date.now() : performance.now();
+  return {
+    blob: preparedBlob,
+    voiceFormat: voiceFormat === "webm" ? "wav" : voiceFormat,
+    sourceVoiceFormat: voiceFormat,
+    sourceBytes: blob.size,
+    preparedBytes: preparedBlob.size,
+    transcodeMs: Math.max(0, Math.round(finishedAt - startedAt)),
+  };
 }
 
 export function blobToBase64(blob: Blob) {
