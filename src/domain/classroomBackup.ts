@@ -1,3 +1,10 @@
+/**
+ * [INPUT]: 依赖 progression、spiritVoice、types 的课堂与组织数据契约。
+ * [OUTPUT]: 对外提供本地课堂备份创建、校验、序列化、比较、摘要与清空规则。
+ * [POS]: domain 的课堂备份真相源，被浏览器存储 Adapter 和数据管理模块消费。
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
+
 import { normalizeLedgerRecord } from "./progression";
 import { getDefaultSpiritVoiceType, normalizeSpiritVoiceType } from "./spiritVoice";
 import type {
@@ -132,6 +139,7 @@ function normalizeLedger(value: unknown, childIds: Set<string>): LedgerRecord[] 
       createdAt: asString(record.createdAt, `ledger[${index}].createdAt`),
       undone: record.undone === true,
       undoOf: optionalString(record.undoOf),
+      operationId: optionalString(record.operationId),
     });
   });
 }
@@ -173,6 +181,9 @@ function normalizeMoralReviews(value: unknown, childIds: Set<string>): MoralRevi
       reviewedAt: optionalString(review.reviewedAt),
       reviewedByChildId: optionalString(review.reviewedByChildId),
       ledgerRecordId: optionalString(review.ledgerRecordId),
+      operationId: optionalString(review.operationId),
+      approvalOperationId: optionalString(review.approvalOperationId),
+      rejectionOperationId: optionalString(review.rejectionOperationId),
       rejectionReason: optionalString(review.rejectionReason),
     };
   });

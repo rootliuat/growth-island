@@ -2,7 +2,7 @@
 > L2 | 父级: /CLAUDE.md
 
 成员清单
-GameTopBar.tsx: 首页顶部课堂状态 HUD。
+GameTopBar.tsx: 首页顶部课堂状态 HUD，白板常驻显示真实数据去向。
 GrowthFeedbackOverlay.tsx: 全局成长反馈浮层，只消费 growthFeedback 视图契约。
 GrowthLogPanel.tsx: 成长记录和待看队列 HUD 面板。
 HudPanelTabs.tsx: HUD 面板 tab 定义。

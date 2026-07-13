@@ -1,7 +1,15 @@
+/**
+ * [INPUT]: 依赖隔离 QA 数据库、Beihai API、Vite、视觉 QA runner 与试教资源门禁。
+ * [OUTPUT]: 对外在独占端口执行可选课堂 checks 与资源校验，并以退出码汇总结果。
+ * [POS]: scripts 的试教 QA 编排入口，负责测试服务生命周期和恢复快照隔离。
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
+
 import { spawn } from "node:child_process";
 import fs from "node:fs";
 import net from "node:net";
 import path from "node:path";
+import { resetQaDatabase } from "./qa-database.mjs";
 
 const outputDir = path.resolve("qa-artifacts/latest");
 const qaChecks = process.env.TRIAL_QA_CHECKS || "home,moral-speak-flow,classroom-touch-loop,spirit-showcase-3d";
@@ -64,7 +72,6 @@ async function stopBackground(processInfo) {
 }
 
 async function startApi() {
-  if (await isPortOpen(apiPort)) return { name: "api", reused: true };
   return spawnBackground("api", process.execPath, ["server/beihai-api.mjs"], {
     PORT: String(apiPort),
     BEIHAI_DB_PATH: dbPath,
@@ -72,8 +79,7 @@ async function startApi() {
 }
 
 async function startVite() {
-  if (await isPortOpen(vitePort)) return { name: "vite", reused: true };
-  return spawnBackground("vite", process.execPath, ["node_modules/vite/bin/vite.js", "--host", "127.0.0.1", "--port", String(vitePort)], {
+  return spawnBackground("vite", process.execPath, ["node_modules/vite/bin/vite.js", "--host", "127.0.0.1", "--port", String(vitePort), "--strictPort"], {
     VITE_API_BASE_URL: apiBaseUrl,
   });
 }
@@ -95,7 +101,10 @@ function runForeground(name, command, args, env) {
 
 async function run() {
   fs.mkdirSync(outputDir, { recursive: true });
-  fs.rmSync(dbPath, { force: true });
+  if (await isPortOpen(apiPort) || await isPortOpen(vitePort)) {
+    throw new Error(`Trial QA requires free ports ${apiPort} and ${vitePort}; refusing to reuse an unknown service`);
+  }
+  resetQaDatabase(dbPath);
 
   const api = await startApi();
   const vite = await startVite();
@@ -104,6 +113,9 @@ async function run() {
   try {
     await waitForHttp(`${apiBaseUrl}/api/health`, "API health");
     await waitForHttp(baseUrl, "Vite dev server");
+    if (spawned.some((service) => service.child.exitCode !== null)) throw new Error("Trial QA service exited during startup");
+    const health = await fetch(`${apiBaseUrl}/api/health`).then((response) => response.json());
+    if (path.resolve(health.dbPath || "") !== dbPath) throw new Error("Trial QA connected to an unexpected classroom database");
     console.log(`Trial QA checks: ${qaChecks}`);
     await runForeground("visual QA", process.execPath, ["scripts/qa-visual.mjs"], {
       QA_BASE_URL: baseUrl,

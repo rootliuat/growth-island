@@ -1,5 +1,13 @@
+/**
+ * [INPUT]: 依赖模块配置、课堂同步/数据权威状态与 React shell 子树。
+ * [OUTPUT]: 对外提供 AppShell，渲染模块顶栏、常驻数据权威 chip、工作区和底部 dock。
+ * [POS]: components 的产品外壳，所有非首页模块共享其导航与课堂状态语义。
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
+
 import { useEffect, useState, type ReactNode } from "react";
 import { ChevronUp, Cloud, CloudOff, Home, LoaderCircle, MoreHorizontal, Sprout, Trophy, Users } from "lucide-react";
+import type { ClassroomDataAuthority, SyncStatus } from "../domain/appState";
 import { moduleConfigs, type AppModuleId } from "./modules/moduleConfig";
 
 interface AppShellProps {
@@ -7,7 +15,9 @@ interface AppShellProps {
   childrenCount: number;
   selectedChildName: string;
   selectedChildEnergy: number;
-  syncStatus: "connecting" | "online" | "saving" | "offline";
+  syncStatus: SyncStatus;
+  dataAuthority: ClassroomDataAuthority;
+  classroomNotice?: string;
   onModuleChange: (moduleId: AppModuleId) => void;
   onSelfServiceChild: () => void;
   children: ReactNode;
@@ -18,6 +28,7 @@ const syncMeta = {
   online: { label: "已同步", Icon: Cloud },
   saving: { label: "保存中", Icon: LoaderCircle },
   offline: { label: "离线", Icon: CloudOff },
+  unavailable: { label: "数据不可用", Icon: CloudOff },
 };
 
 const dockModules = moduleConfigs.filter((module) => module.hudGroup === "dock");
@@ -45,13 +56,20 @@ export function AppShell({
   selectedChildName,
   selectedChildEnergy,
   syncStatus,
+  dataAuthority,
+  classroomNotice,
   onModuleChange,
   onSelfServiceChild,
   children,
 }: AppShellProps) {
   const isHome = activeModule === "home";
   const activeModuleConfig = moduleConfigs.find((module) => module.id === activeModule) ?? moduleConfigs[0];
-  const SyncIcon = syncMeta[syncStatus].Icon;
+  const authorityMeta = dataAuthority === "local"
+    ? { label: "本机保存", Icon: CloudOff, className: "local-authority" }
+    : dataAuthority === "unavailable"
+      ? { label: "数据不可用", Icon: CloudOff, className: "unavailable-authority" }
+      : { ...syncMeta[syncStatus], className: syncStatus };
+  const SyncIcon = authorityMeta.Icon;
   const teacherToolActive = allTeacherToolModules.some((module) => module.id === activeModule);
   const [teacherDrawerOpen, setTeacherDrawerOpen] = useState(false);
   const teacherDrawerClassName = [
@@ -90,9 +108,15 @@ export function AppShell({
             {childrenCount} 名幼儿
           </span>
           <span className="shell-status-chip active-child" title={selectedChildName}>{selectedChildName}</span>
-          <span className={`shell-status-chip sync ${syncStatus}`}>
+          <span
+            className={`shell-status-chip sync authority-status ${authorityMeta.className}`}
+            role="status"
+            aria-live="polite"
+            aria-label={classroomNotice ?? authorityMeta.label}
+            title={classroomNotice}
+          >
             <SyncIcon size={16} />
-            {syncMeta[syncStatus].label}
+            {authorityMeta.label}
           </span>
         </div>
 

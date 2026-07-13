@@ -1,12 +1,12 @@
 /**
- * [INPUT]: 依赖 JSON 文件路径、node:fs 原子改名能力和课堂领域写入参数。
- * [OUTPUT]: 对外提供 createClassroomStore、ClassroomStoreError 与精灵声音档案查询。
- * [POS]: server 的课堂数据事务深 Module，独占课堂快照读改写和业务一致性规则。
+ * [INPUT]: 依赖 classroom-snapshot-file 的可恢复持久化、JSON 文件路径和课堂领域写入参数。
+ * [OUTPUT]: 对外提供 createClassroomStore、ClassroomStoreError、幂等 operationId 事务、存储健康状态与声音查询。
+ * [POS]: server 的课堂数据事务深 Module，独占串行读改写、操作去重和业务一致性规则。
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 import { randomUUID } from "node:crypto";
-import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { createClassroomSnapshotFile, ClassroomSnapshotFileError } from "./classroom-snapshot-file.mjs";
 
 const virtueCategories = ["家国情怀", "意志坚韧", "积极阳光", "勇毅有力", "激浊扬清", "开拓创新", "尊矩守法"];
 const teacherAdjustmentDeltas = new Set([10, 20, 30]);
@@ -27,17 +27,85 @@ const ledgerSourceDefaults = {
   "math-pk": { operatorRole: "system", aiSuggested: false, reviewStatus: "not_required" },
   undo: { operatorRole: "teacher", aiSuggested: false, reviewStatus: "not_required" },
 };
+const maxOperationIdLength = 128;
 
 export class ClassroomStoreError extends Error {
-  constructor(status, message) {
+  constructor(status, message, { code, retryable } = {}) {
     super(message);
     this.name = "ClassroomStoreError";
     this.status = status;
+    this.code = code;
+    this.retryable = retryable;
   }
 }
 
-function fail(status, message) {
-  throw new ClassroomStoreError(status, message);
+function fail(status, message, details) {
+  throw new ClassroomStoreError(status, message, details);
+}
+
+function normalizeOperationId(value) {
+  if (typeof value !== "string" || value.length === 0 || value.length > maxOperationIdLength || value.trim() !== value) {
+    fail(400, "Invalid operationId");
+  }
+  return value;
+}
+
+function canonicalize(value) {
+  if (Array.isArray(value)) return value.map(canonicalize);
+  if (!value || typeof value !== "object") return value;
+  return Object.fromEntries(Object.keys(value).sort().map((key) => [key, canonicalize(value[key])]));
+}
+
+function operationFingerprint(type, payload) {
+  return JSON.stringify([type, canonicalize(payload)]);
+}
+
+function findOperations(db, operationId) {
+  if (!operationId) return [];
+  const matches = [];
+  db.ledger.forEach((record) => {
+    if (record.operationId !== operationId) return;
+    matches.push({
+      type: record.operationType ?? (record.source === "undo" ? "ledger.undo" : "ledger.create"),
+      fingerprint: record.operationFingerprint,
+    });
+  });
+  db.moralReviews.forEach((review) => {
+    if (review.operationId === operationId) {
+      matches.push({ type: review.operationType ?? "moral.review.create", fingerprint: review.operationFingerprint });
+    }
+    if (review.approvalOperationId === operationId) {
+      matches.push({ type: review.approvalOperationType ?? "moral.review.approve", fingerprint: review.approvalOperationFingerprint });
+    }
+    if (review.rejectionOperationId === operationId) {
+      matches.push({ type: review.rejectionOperationType ?? "moral.review.reject", fingerprint: review.rejectionOperationFingerprint });
+    }
+  });
+  return matches;
+}
+
+function isDuplicateOperation(db, operationId, type, fingerprint) {
+  const matches = findOperations(db, operationId);
+  if (matches.length === 0) return false;
+  if (matches.every((match) => match.type === type && match.fingerprint === fingerprint)) return true;
+  fail(409, "operationId was already used for a different request", { code: "idempotency_conflict", retryable: false });
+}
+
+function getMoralReviewOperation(db, input) {
+  const child = db.children.find((item) => item.id === input.childId);
+  const operator = db.children.find((item) => item.id === input.operatorChildId);
+  if (!child) fail(404, "Child not found");
+  if (!operator) fail(400, "Invalid operatorChildId");
+  const transcript = typeof input.transcript === "string" ? input.transcript.trim().slice(0, 500) : "";
+  if (!transcript) fail(400, "Invalid transcript");
+  const operationId = normalizeOperationId(input.operationId);
+  const operationType = "moral.review.create";
+  const fingerprint = operationFingerprint(operationType, {
+    childId: child.id,
+    operatorChildId: operator.id,
+    transcript,
+  });
+  return { child, operator, transcript, operationId, operationType, fingerprint };
 }
 
 function canApproveMoralGrowth(result) {
@@ -176,6 +244,19 @@ function normalizeLedgerRecord(record) {
   };
 }
 
+function prepareDatabase(db) {
+  if (!db || typeof db !== "object" || Array.isArray(db)) return db;
+  db.revision = Number.isInteger(db.revision) && db.revision >= 0 ? db.revision : 0;
+  if (Array.isArray(db.children)) {
+    db.children = db.children.map((child) => ({
+      ...child,
+      voiceType: normalizeVoiceType(child.voiceType) ?? getDefaultSpiritVoiceType(child),
+    }));
+  }
+  if (Array.isArray(db.ledger)) db.ledger = db.ledger.map(normalizeLedgerRecord);
+  return db;
+}
+
 function getXp(childId, ledger) {
   return Math.max(
     0,
@@ -218,6 +299,9 @@ function createLedgerEntry(db, input) {
       typeof input.aiSuggested === "boolean" ? input.aiSuggested : ledgerSourceDefaults[input.source]?.aiSuggested ?? false,
     reviewStatus: normalizeReviewStatus(input.source, input.reviewStatus),
     reviewId: typeof input.reviewId === "string" ? input.reviewId : undefined,
+    operationId: input.operationId,
+    operationType: input.operationType,
+    operationFingerprint: input.operationFingerprint,
     createdAt: new Date().toISOString(),
   };
   db.ledger.unshift(record);
@@ -253,8 +337,9 @@ function adjustPendingReview(pendingReview, child, body, delta) {
   }
 }
 
-export function createClassroomStore({ dbPath, dataDir }) {
+export function createClassroomStore({ dbPath, snapshotFile }) {
   let transactionTail = Promise.resolve();
+  const persistence = snapshotFile ?? createClassroomSnapshotFile({ dbPath, createDefaultDatabase, prepareDatabase });
 
   function runTransaction(task) {
     const transaction = transactionTail.then(task);
@@ -265,43 +350,31 @@ export function createClassroomStore({ dbPath, dataDir }) {
     return transaction;
   }
 
+  function rethrowPersistenceError(error) {
+    if (!(error instanceof ClassroomSnapshotFileError)) throw error;
+    const status = error.code === "classroom_degraded" || error.code === "classroom_write_failed" ? 503 : 500;
+    fail(status, error.message, { code: error.code, retryable: error.retryable });
+  }
+
   async function writeDatabase(db) {
-    await mkdir(dataDir, { recursive: true });
-    db.updatedAt = new Date().toISOString();
-    const tempPath = `${dbPath}.${process.pid}.tmp`;
-    await writeFile(tempPath, `${JSON.stringify(db, null, 2)}\n`, "utf8");
-    await rename(tempPath, dbPath);
+    try {
+      const committed = await persistence.commit(db);
+      db.updatedAt = committed.updatedAt;
+    } catch (error) {
+      rethrowPersistenceError(error);
+    }
   }
 
   async function readDatabase() {
     try {
-      const db = JSON.parse(await readFile(dbPath, "utf8"));
-      let changed = false;
-      db.children ??= [];
-      db.children = db.children.map((child) => {
-        const voiceType = normalizeVoiceType(child.voiceType) ?? getDefaultSpiritVoiceType(child);
-        if (child.voiceType === voiceType) return child;
-        changed = true;
-        return { ...child, voiceType };
-      });
-      db.ledger = (db.ledger ?? []).map(normalizeLedgerRecord);
-      if (!Array.isArray(db.moralReviews)) {
-        db.moralReviews = [];
-        changed = true;
-      }
-      if (db.moralReviews.length === 0) {
-        db.moralReviews = [createDemoPendingReview()];
-        changed = true;
-      }
-      if (changed) await writeDatabase(db);
-      return db;
+      return await persistence.read();
     } catch (error) {
-      if (error?.code !== "ENOENT") throw error;
-      const db = createDefaultDatabase();
-      await writeDatabase(db);
-      return db;
+      rethrowPersistenceError(error);
     }
   }
+
+  const initialize = () => persistence.initialize();
+  const getHealth = () => persistence.getHealth();
 
   const getSnapshot = () => runTransaction(async () => snapshot(await readDatabase()));
 
@@ -360,6 +433,25 @@ export function createClassroomStore({ dbPath, dataDir }) {
 
       let delta = Number(body.delta);
       if (!Number.isInteger(delta) || delta < -100 || delta > 100) fail(400, "Invalid delta");
+      const operationId = normalizeOperationId(body.operationId);
+      const operationType = "ledger.create";
+      const fingerprint = operationFingerprint(operationType, {
+        aiSuggested: body.aiSuggested,
+        category: body.category,
+        childId: child.id,
+        delta,
+        operatorChildId: operator.id,
+        operatorRole: body.operatorRole,
+        reason: String(body.reason || "成长记录").slice(0, 160),
+        reviewId: body.reviewId,
+        reviewStatus: body.reviewStatus,
+        source: body.source,
+        teacherAdjustedReview: body.teacherAdjustedReview === true,
+      });
+      if (isDuplicateOperation(db, operationId, operationType, fingerprint)) {
+        await persistence.ensureCurrentSnapshot();
+        return { created: true, snapshot: snapshot(db), duplicate: true };
+      }
       const pendingReview = getPendingReviewForLedger(db, body.reviewId);
       if (body.source === "dialogue-agent" || body.reviewId) {
         if (body.reviewId && body.source !== "dialogue-agent") {
@@ -373,7 +465,15 @@ export function createClassroomStore({ dbPath, dataDir }) {
         return { created: false, snapshot: snapshot(db, { notice: "xp_floor" }) };
       }
 
-      const record = createLedgerEntry(db, { ...body, childId: child.id, operatorChildId: operator.id, delta });
+      const record = createLedgerEntry(db, {
+        ...body,
+        childId: child.id,
+        operatorChildId: operator.id,
+        delta,
+        operationId,
+        operationType,
+        operationFingerprint: fingerprint,
+      });
       if (record?.reviewId) {
         const review = pendingReview ?? getPendingReviewForLedger(db, record.reviewId);
         if (review) {
@@ -381,6 +481,9 @@ export function createClassroomStore({ dbPath, dataDir }) {
           review.reviewedAt = new Date().toISOString();
           review.reviewedByChildId = operator.id;
           review.ledgerRecordId = record.id;
+          review.approvalOperationId = record.operationId;
+          review.approvalOperationType = operationType;
+          review.approvalOperationFingerprint = fingerprint;
         }
       }
       await writeDatabase(db);
@@ -394,6 +497,16 @@ export function createClassroomStore({ dbPath, dataDir }) {
       if (!operator) fail(400, "Invalid operatorChildId");
       const target = db.ledger.find((record) => record.id === body.recordId);
       if (!target) fail(404, "Record not found");
+      const operationId = normalizeOperationId(body.operationId);
+      const operationType = "ledger.undo";
+      const fingerprint = operationFingerprint(operationType, {
+        operatorChildId: operator.id,
+        recordId: target.id,
+      });
+      if (isDuplicateOperation(db, operationId, operationType, fingerprint)) {
+        await persistence.ensureCurrentSnapshot();
+        return snapshot(db);
+      }
       if (target.undone || target.undoOf || target.source === "undo") fail(409, "Record cannot be undone");
       target.undone = true;
       db.ledger.unshift({
@@ -409,6 +522,9 @@ export function createClassroomStore({ dbPath, dataDir }) {
         reviewStatus: "not_required",
         createdAt: new Date().toISOString(),
         undoOf: target.id,
+        operationId,
+        operationType,
+        operationFingerprint: fingerprint,
       });
       await writeDatabase(db);
       return snapshot(db);
@@ -417,22 +533,41 @@ export function createClassroomStore({ dbPath, dataDir }) {
   const createMoralReview = (input) =>
     runTransaction(async () => {
       const db = await readDatabase();
-      const child = db.children.find((item) => item.id === input.childId);
-      const operator = db.children.find((item) => item.id === input.operatorChildId);
-      if (!child) fail(404, "Child not found");
-      if (!operator) fail(400, "Invalid operatorChildId");
+      const { child, operator, transcript, operationId, operationType, fingerprint } = getMoralReviewOperation(db, input);
+      if (isDuplicateOperation(db, operationId, operationType, fingerprint)) {
+        const existing = db.moralReviews.find((review) => review.operationId === operationId);
+        await persistence.ensureCurrentSnapshot();
+        return { reviewItem: existing, snapshot: snapshot(db), duplicate: true };
+      }
       const reviewItem = {
         id: randomUUID(),
         childId: child.id,
         operatorChildId: operator.id,
-        transcript: input.transcript,
+        transcript,
         result: input.result,
+        evaluationProvider: input.evaluationProvider,
+        evaluationModel: input.evaluationModel,
+        evaluationProviderError: input.evaluationProviderError,
+        evaluationUsage: input.evaluationUsage,
         status: "pending_review",
         createdAt: new Date().toISOString(),
+        operationId,
+        operationType,
+        operationFingerprint: fingerprint,
       };
       db.moralReviews.unshift(reviewItem);
       await writeDatabase(db);
       return { reviewItem, snapshot: snapshot(db) };
+    });
+
+  const getMoralReviewByOperation = (input) =>
+    runTransaction(async () => {
+      const db = await readDatabase();
+      const { operationId, operationType, fingerprint } = getMoralReviewOperation(db, input);
+      if (!isDuplicateOperation(db, operationId, operationType, fingerprint)) return undefined;
+      const reviewItem = db.moralReviews.find((review) => review.operationId === operationId);
+      await persistence.ensureCurrentSnapshot();
+      return { reviewItem, snapshot: snapshot(db), duplicate: true };
     });
 
   const approveMoralReview = (reviewId, body) =>
@@ -442,11 +577,24 @@ export function createClassroomStore({ dbPath, dataDir }) {
       if (!operator) fail(400, "Invalid operatorChildId");
       const review = db.moralReviews.find((item) => item.id === reviewId);
       if (!review) fail(404, "Review not found");
+      const operationId = normalizeOperationId(body.operationId);
+      const operationType = "moral.review.approve";
+      const fingerprint = operationFingerprint(operationType, {
+        operatorChildId: operator.id,
+        reviewId: review.id,
+      });
+      if (isDuplicateOperation(db, operationId, operationType, fingerprint)) {
+        await persistence.ensureCurrentSnapshot();
+        return snapshot(db);
+      }
       if (review.status !== "pending_review") fail(409, "Review already handled");
       if (!canApproveMoralGrowth(review.result)) fail(400, "Review requires teacher adjustment before approval");
       review.status = "approved";
       review.reviewedAt = new Date().toISOString();
       review.reviewedByChildId = operator.id;
+      review.approvalOperationId = operationId;
+      review.approvalOperationType = operationType;
+      review.approvalOperationFingerprint = fingerprint;
       if (review.result?.xpDelta && review.result.xpDelta !== 0) {
         const record = createLedgerEntry(db, {
           childId: review.childId,
@@ -459,6 +607,9 @@ export function createClassroomStore({ dbPath, dataDir }) {
           aiSuggested: true,
           reviewStatus: "approved",
           reviewId: review.id,
+          operationId,
+          operationType,
+          operationFingerprint: fingerprint,
         });
         if (record) review.ledgerRecordId = record.id;
       }
@@ -473,11 +624,25 @@ export function createClassroomStore({ dbPath, dataDir }) {
       if (!operator) fail(400, "Invalid operatorChildId");
       const review = db.moralReviews.find((item) => item.id === reviewId);
       if (!review) fail(404, "Review not found");
+      const operationId = normalizeOperationId(body.operationId);
+      const operationType = "moral.review.reject";
+      const fingerprint = operationFingerprint(operationType, {
+        operatorChildId: operator.id,
+        rejectionReason: String(body.rejectionReason || "老师复核后驳回").slice(0, 120),
+        reviewId: review.id,
+      });
+      if (isDuplicateOperation(db, operationId, operationType, fingerprint)) {
+        await persistence.ensureCurrentSnapshot();
+        return snapshot(db);
+      }
       if (review.status !== "pending_review") fail(409, "Review already handled");
       review.status = "rejected";
       review.reviewedAt = new Date().toISOString();
       review.reviewedByChildId = operator.id;
       review.rejectionReason = String(body.rejectionReason || "老师复核后驳回").slice(0, 120);
+      review.rejectionOperationId = operationId;
+      review.rejectionOperationType = operationType;
+      review.rejectionOperationFingerprint = fingerprint;
       await writeDatabase(db);
       return snapshot(db);
     });
@@ -487,7 +652,10 @@ export function createClassroomStore({ dbPath, dataDir }) {
     createLedger,
     createMoralReview,
     getChild,
+    getHealth,
+    getMoralReviewByOperation,
     getSnapshot,
+    initialize,
     patchChild,
     rejectMoralReview,
     undoLedger,

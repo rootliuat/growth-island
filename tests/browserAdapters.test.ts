@@ -8,8 +8,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   classroomBackupSourceStorageKey,
+  classroomAuthorityEnvelopeStorageKey,
   getInitialClassroomBackup,
   getInitialClassroomSource,
+  persistAuthoritativeClassroomBackup,
   preferLocalClassroomBackup,
   saveClassroomBackupToStorage,
 } from "../src/browser/appStorage";
@@ -18,6 +20,7 @@ import { createClassroomBackup } from "../src/domain/classroomBackup";
 
 class MemoryStorage implements Storage {
   private readonly values = new Map<string, string>();
+  readonly writes: string[] = [];
 
   get length() {
     return this.values.size;
@@ -40,13 +43,14 @@ class MemoryStorage implements Storage {
   }
 
   setItem(key: string, value: string) {
+    this.writes.push(key);
     this.values.set(key, value);
   }
 }
 
-function makeBackup() {
+function makeBackup(name = "安安") {
   return createClassroomBackup({
-    children: [{ id: "child-a", name: "安安", spiritId: "01", petName: "小浪花", voiceType: 101016, slotId: 1 }],
+    children: [{ id: "child-a", name, spiritId: "01", petName: "小浪花", voiceType: 101016, slotId: 1 }],
     ledger: [],
     moralReviews: [],
     shopRedemptions: [],
@@ -86,6 +90,29 @@ describe("classroom browser storage", () => {
     preferLocalClassroomBackup();
 
     expect(getInitialClassroomSource(null)).toBe("server");
+  });
+
+  it("persists a valid backup before selecting local authority", () => {
+    const localStorage = new MemoryStorage();
+    vi.stubGlobal("window", { localStorage });
+
+    expect(persistAuthoritativeClassroomBackup(makeBackup())).toEqual({ ok: true });
+    expect(localStorage.writes.at(-1)).toBe(classroomAuthorityEnvelopeStorageKey);
+    expect(getInitialClassroomSource(getInitialClassroomBackup())).toBe("local");
+  });
+
+  it("reports local persistence failure instead of claiming authority", () => {
+    const localStorage = new MemoryStorage();
+    vi.stubGlobal("window", { localStorage });
+    expect(persistAuthoritativeClassroomBackup(makeBackup("旧版本"))).toEqual({ ok: true });
+    const setItem = localStorage.setItem.bind(localStorage);
+    vi.spyOn(localStorage, "setItem").mockImplementation((key, value) => {
+      if (key === classroomAuthorityEnvelopeStorageKey) throw new Error("quota");
+      setItem(key, value);
+    });
+    expect(persistAuthoritativeClassroomBackup(makeBackup("新版本"))).toEqual({ ok: false });
+    expect(getInitialClassroomBackup()?.children[0]?.name).toBe("旧版本");
+    expect(getInitialClassroomSource(getInitialClassroomBackup())).toBe("local");
   });
 });
 

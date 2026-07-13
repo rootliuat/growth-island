@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖真实腾讯凭据、物理麦克风、Playwright Chrome 和应用 real-mic 诊断窗口。
- * [OUTPUT]: 对外执行人工白板语音试教并写入脱敏 real-mic-report.json。
+ * [OUTPUT]: 对外在独占端口执行人工白板语音试教并写入脱敏 real-mic-report.json。
  * [POS]: scripts 的人工发布门禁，不进入 CI，不保存音频或完整转写文本。
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -10,6 +10,7 @@ import fs from "node:fs";
 import net from "node:net";
 import path from "node:path";
 import { chromium } from "playwright";
+import { resetQaDatabase } from "./qa-database.mjs";
 
 const outputDir = path.resolve("qa-artifacts/latest");
 const reportPath = path.join(outputDir, "real-mic-report.json");
@@ -66,17 +67,13 @@ function spawnBackground(name, command, args, env) {
 }
 
 async function startServices() {
-  const api = (await isPortOpen(apiPort))
-    ? { reused: true }
-    : spawnBackground("api", process.execPath, ["server/beihai-api.mjs"], {
-        PORT: String(apiPort),
-        BEIHAI_DB_PATH: dbPath,
-      });
-  const vite = (await isPortOpen(vitePort))
-    ? { reused: true }
-    : spawnBackground("vite", process.execPath, ["node_modules/vite/bin/vite.js", "--host", "127.0.0.1", "--port", String(vitePort)], {
-        VITE_API_BASE_URL: apiBaseUrl,
-      });
+  const api = spawnBackground("api", process.execPath, ["server/beihai-api.mjs"], {
+    PORT: String(apiPort),
+    BEIHAI_DB_PATH: dbPath,
+  });
+  const vite = spawnBackground("vite", process.execPath, ["node_modules/vite/bin/vite.js", "--host", "127.0.0.1", "--port", String(vitePort), "--strictPort"], {
+    VITE_API_BASE_URL: apiBaseUrl,
+  });
   return [api, vite];
 }
 
@@ -93,12 +90,18 @@ function median(values) {
 async function run() {
   fs.mkdirSync(outputDir, { recursive: true });
   fs.rmSync(reportPath, { force: true });
+  if (await isPortOpen(apiPort) || await isPortOpen(vitePort)) {
+    throw new Error(`Real-mic QA requires free ports ${apiPort} and ${vitePort}; refusing to reuse an unknown service`);
+  }
+  resetQaDatabase(dbPath);
   const startedAt = new Date().toISOString();
   const services = await startServices();
   let browser;
   try {
     const health = await waitForJson(`${apiBaseUrl}/api/health`, "API health");
     await waitForJson(baseUrl, "Vite");
+    if (services.some((service) => service.child.exitCode !== null)) throw new Error("Real-mic QA service exited during startup");
+    if (path.resolve(health.dbPath || "") !== dbPath) throw new Error("Real-mic QA connected to an unexpected classroom database");
     if (!health.providers?.speech?.configured) throw new Error("Tencent ASR credentials are not configured for the running API");
 
     browser = await chromium.launch({

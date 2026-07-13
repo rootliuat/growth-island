@@ -25,55 +25,21 @@ import { createGrowthTaskLedgerInput, isGrowthTaskCompletionInCurrentCadence, pu
 import { makeLedgerRecord } from "./domain/progression";
 import { getSpiritAsset } from "./domain/spiritAssets";
 import { canApproveMoralGrowth, getChildEnergyLabel } from "./domain/virtueEnergy";
-import {
-  approveMoralReview,
-  createLedgerRecord,
-  isClassroomApiError,
-  patchChildProfile,
-  rejectMoralReview,
-  undoLedgerRecord,
-} from "./services/classroomApi";
-import type {
-  ChildProfile,
-  ChildWithProgress,
-  LedgerRecordInput,
-  LotteryDrawRecord,
-  MoralEvaluationResult,
-  SettingsChangeRecord,
-  ShopRedemption,
-  VirtueCategory,
-} from "./types";
+import { approveMoralReview, createLedgerRecord, isClassroomAvailabilityFailure, isDefiniteClassroomUnavailable, patchChildProfile, rejectMoralReview, undoLedgerRecord } from "./services/classroomApi";
+import type { ChildProfile, ChildWithProgress, LedgerRecordInput, LotteryDrawRecord, MoralEvaluationResult, SettingsChangeRecord, ShopRedemption, VirtueCategory } from "./types";
 
 export function App() {
   const worldMapRef = useRef<PixiWorldMapHandle | null>(null);
   const homeFocusTimerRefs = useRef<number[]>([]);
   const growthTaskInFlightRef = useRef(new Set<string>());
   const classroom = useClassroomSession();
-  const {
-    children,
-    ledger,
-    moralReviews,
-    organizationState,
-    settingsChanges,
-    shopRedemptions,
-    lotteryDraws,
-    teacherMode,
-    syncStatus,
-    selectedChildId,
-  } = classroom.state;
-  const {
-    setChildren,
-    setLedger,
-    setMoralReviews,
-    setOrganizationState,
-    setSettingsChanges,
-    setShopRedemptions,
-    setLotteryDraws,
-    setTeacherMode,
-    setSyncStatus,
-    setSelectedChildId,
-  } = classroom.setters;
+  const { children, ledger, moralReviews, organizationState, settingsChanges, shopRedemptions, lotteryDraws,
+    teacherMode, syncStatus, selectedChildId, dataAuthority, classroomNotice } = classroom.state;
+  const { setChildren, setMoralReviews, setOrganizationState, setSettingsChanges, setShopRedemptions,
+    setLotteryDraws, setTeacherMode, setSyncStatus, setSelectedChildId } = classroom.setters;
   const applySnapshot = classroom.snapshot.apply;
+  const commitLocalChanges = classroom.authority.commitLocalChanges;
+  const markServerWriteUncertain = classroom.authority.markServerWriteUncertain;
   const createCurrentClassroomBackup = classroom.backup.create;
   const restoreClassroomBackup = classroom.backup.restore;
   const exportClassroomBackup = classroom.backup.export;
@@ -104,20 +70,8 @@ export function App() {
       }),
     [children, ledger, moralReviews, pkPair, selectedChildId, showcaseChildId],
   );
-  const {
-    spiritsById,
-    childrenWithProgress,
-    selectedChild,
-    selectedSpirit,
-    showcaseChild,
-    showcaseSpirit,
-    allRecentRecords,
-    bigScreenRecentRecords,
-    recentRecords,
-    pkPlayer,
-    pkOpponent,
-    pendingReviews,
-  } = appView;
+  const { spiritsById, childrenWithProgress, selectedChild, selectedSpirit, showcaseChild, showcaseSpirit,
+    allRecentRecords, bigScreenRecentRecords, recentRecords, pkPlayer, pkOpponent, pendingReviews } = appView;
   const assetVersion = useSpiritAssetPreload({ activeModule, children: childrenWithProgress, selectedChild, spiritsById });
   const selectedSpiritAsset = useMemo(
     () => getSpiritAsset(selectedSpirit, selectedChild.state),
@@ -158,6 +112,8 @@ export function App() {
     showFeedback: showGrowthFeedback,
     syncStatus,
     worldMapRef,
+    commitLocalMoralReviews: (update) => commitLocalChanges((current) => ({ moralReviews: update(current.moralReviews) })),
+    markServerWriteUncertain,
   });
   const moralSpeak = moralWorkflow.state;
   const {
@@ -176,8 +132,6 @@ export function App() {
     submitDialogue,
   } = moralWorkflow.actions;
   const guardMoralSpeakChildSelection = moralWorkflow.guardSelection;
-
-
   useEffect(() => {
     window.localStorage.setItem(activeModuleStorageKey, activeModule);
   }, [activeModule]);
@@ -192,8 +146,6 @@ export function App() {
       clearHomeFocusTimers();
     };
   }, []);
-
-
   useEffect(() => {
     const existingIds = new Set(children.map((child) => child.id));
 
@@ -205,43 +157,60 @@ export function App() {
   }, [children]);
 
   async function commitLedger(input: LedgerRecordInput) {
-    const feedbackChild = childrenWithProgress.find((child) => child.id === input.childId);
-    if (feedbackChild && input.delta !== 0) {
-      const isSelfServiceEnergy = input.delta > 0 && input.reason.startsWith("自助成长：");
-      if (!isSelfServiceEnergy) {
-        showGrowthFeedback({
-          kind: "xp",
-          tone: input.delta > 0 ? "positive" : "watch",
-          title: input.delta > 0 ? `${feedbackChild.name} 能量进精灵` : `${feedbackChild.name} 需要老师提醒`,
-          detail: `${getShortFeedbackReason(input.reason)} · 精灵能量变亮`,
-          delta: input.delta,
-          childName: feedbackChild.name,
-        });
-      }
-    }
-
-    if (syncStatus === "offline") {
-      const isSafeOfflineDialogueRecord = input.source === "dialogue-agent" && input.delta > 0 && Boolean(input.category);
-      if ((input.source === "dialogue-agent" || input.reviewId) && !isSafeOfflineDialogueRecord) {
+    const operation = { ...input, operationId: input.operationId ?? crypto.randomUUID() };
+    const showCommitFeedback = () => {
+      const feedbackChild = childrenWithProgress.find((child) => child.id === operation.childId);
+      if (!feedbackChild || operation.delta === 0 || operation.delta > 0 && operation.reason.startsWith("自助成长：")) return;
+      showGrowthFeedback({
+        kind: "xp",
+        tone: operation.delta > 0 ? "positive" : "watch",
+        title: operation.delta > 0 ? `${feedbackChild.name} 能量进精灵` : `${feedbackChild.name} 需要老师提醒`,
+        detail: `${getShortFeedbackReason(operation.reason)} · 精灵能量变亮`,
+        delta: operation.delta,
+        childName: feedbackChild.name,
+      });
+    };
+    const commitOffline = () => {
+      const isSafeOfflineDialogueRecord = operation.source === "dialogue-agent" && operation.delta > 0 && Boolean(operation.category);
+      if ((operation.source === "dialogue-agent" || operation.reviewId) && !isSafeOfflineDialogueRecord) {
         throw new Error("复核记录需要连接后再入账");
       }
-      const record = makeLedgerRecord(input);
-      setLedger((current) => [record, ...current]);
+      const record = makeLedgerRecord(operation);
+      if (!commitLocalChanges((current) => ({
+        ledger: current.ledger.some((item) => item.operationId === operation.operationId) ? current.ledger : [record, ...current.ledger],
+        moralReviews: operation.reviewId
+          ? current.moralReviews.map((review) =>
+              review.id === operation.reviewId
+                ? { ...review, status: "approved", reviewedAt: new Date().toISOString(), reviewedByChildId: operation.operatorChildId, ledgerRecordId: record.id }
+                : review,
+            )
+          : current.moralReviews,
+      }))) throw new Error("本机课堂数据保存失败");
+    };
+    if (syncStatus === "unavailable") throw new Error("课堂数据暂不可用");
+    if (syncStatus === "offline") {
+      commitOffline();
+      showCommitFeedback();
       return;
     }
 
     setSyncStatus("saving");
     try {
-      const snapshot = await createLedgerRecord(input);
-      applySnapshot(snapshot);
-    } catch (error) {
-      if (isClassroomApiError(error) && (input.source === "dialogue-agent" || input.reviewId)) {
-        setSyncStatus("online");
-        throw error;
+      const snapshot = await createLedgerRecord(operation);
+      if (!applySnapshot(snapshot)) {
+        markServerWriteUncertain();
+        throw new TypeError("课堂数据权威已变化");
       }
-      setSyncStatus("offline");
-      const record = makeLedgerRecord(input);
-      setLedger((current) => [record, ...current]);
+      showCommitFeedback();
+    } catch (error) {
+      if (isDefiniteClassroomUnavailable(error)) {
+        commitOffline();
+        showCommitFeedback();
+        return;
+      }
+      if (isClassroomAvailabilityFailure(error)) markServerWriteUncertain();
+      else setSyncStatus("online");
+      throw error;
     }
   }
 
@@ -255,7 +224,7 @@ export function App() {
       source: "math-pk",
       category: "积极阳光",
       reason: "数学光路点亮 +30",
-    });
+    }).catch(() => undefined);
   };
 
   const undoLast = (recordId?: string) => {
@@ -264,53 +233,77 @@ export function App() {
       : recentRecords.find((record) => !record.undoOf);
     if (!target) return;
     const targetChild = childrenWithProgress.find((child) => child.id === target.childId) ?? selectedChild;
-    showGrowthFeedback({
-      kind: "xp",
-      tone: target.delta > 0 ? "watch" : "positive",
-      title: `撤销 ${targetChild.name} 的成长光点`,
-      detail: "老师已处理",
-      delta: -target.delta,
-      childName: targetChild.name,
+    if (syncStatus === "unavailable") return;
+    const operationId = crypto.randomUUID();
+    const showUndoFeedback = () => showGrowthFeedback({
+      kind: "xp", tone: target.delta > 0 ? "watch" : "positive", title: `撤销 ${targetChild.name} 的成长光点`,
+      detail: "老师已处理", delta: -target.delta, childName: targetChild.name,
     });
+    const commitLocalUndo = () => {
+      const undo = makeLedgerRecord({
+        childId: target.childId,
+        operatorChildId: selectedChild.id,
+        operatorRole: "teacher",
+        delta: -target.delta,
+        source: "undo",
+        category: target.category,
+        reason: `撤销：${target.reason}`,
+        undoOf: target.id,
+        operationId,
+      });
+      const committed = commitLocalChanges((current) => ({
+        ledger: current.ledger.some((record) => record.operationId === operationId)
+          ? current.ledger
+          : [undo, ...current.ledger.map((record) => (record.id === target.id ? { ...record, undone: true } : record))],
+      }));
+      if (committed) showUndoFeedback();
+    };
     if (syncStatus !== "offline") {
       setSyncStatus("saving");
-      undoLedgerRecord(target.id, selectedChild.id)
-        .then(applySnapshot)
-        .catch(() => setSyncStatus("offline"));
+      undoLedgerRecord(target.id, selectedChild.id, operationId)
+        .then((snapshot) => (applySnapshot(snapshot) ? showUndoFeedback() : markServerWriteUncertain()))
+        .catch((error) => {
+          if (isDefiniteClassroomUnavailable(error)) commitLocalUndo();
+          else if (isClassroomAvailabilityFailure(error)) markServerWriteUncertain();
+          else setSyncStatus("online");
+        });
       return;
     }
-
-    const undo = makeLedgerRecord({
-      childId: target.childId,
-      operatorChildId: selectedChild.id,
-      operatorRole: "teacher",
-      delta: -target.delta,
-      source: "undo",
-      category: target.category,
-      reason: `撤销：${target.reason}`,
-      undoOf: target.id,
-    });
-    setLedger((current) => current.map((record) => (record.id === target.id ? { ...record, undone: true } : record)).concat(undo));
+    commitLocalUndo();
   };
 
   const updateSelectedChild = (patch: Partial<ChildProfile>) => {
-    setChildren((current) => current.map((child) => (child.id === selectedChild.id ? { ...child, ...patch } : child)));
-    showGrowthFeedback({
+    if (syncStatus === "unavailable") return;
+    const nextChildren = children.map((child) => (child.id === selectedChild.id ? { ...child, ...patch } : child));
+    setChildren(nextChildren);
+    const showProfileFeedback = () => showGrowthFeedback({
       kind: "status",
       tone: "neutral",
       title: `${selectedChild.name} 小屋已更新`,
       detail: selectedChild.petName,
       childName: selectedChild.name,
     });
-    if (syncStatus === "offline") return;
+    if (syncStatus === "offline") {
+      if (commitLocalChanges({ children: nextChildren })) showProfileFeedback();
+      return;
+    }
 
     setSyncStatus("saving");
     patchChildProfile(selectedChild.id, patch)
-      .then(applySnapshot)
-      .catch(() => setSyncStatus("offline"));
+      .then((snapshot) => (applySnapshot(snapshot) ? showProfileFeedback() : markServerWriteUncertain()))
+      .catch((error) => {
+        if (isDefiniteClassroomUnavailable(error)) {
+          if (commitLocalChanges({ children: nextChildren })) showProfileFeedback();
+        } else if (isClassroomAvailabilityFailure(error)) markServerWriteUncertain();
+        else {
+          setChildren(children);
+          setSyncStatus("online");
+        }
+      });
   };
 
   const approveReview = (reviewId: string) => {
+    if (syncStatus === "unavailable") return;
     const reviewForFeedback = moralReviews.find((item) => item.id === reviewId);
     if (reviewForFeedback && !canApproveMoralGrowth(reviewForFeedback.result)) {
       const childName = childrenWithProgress.find((child) => child.id === reviewForFeedback.childId)?.name;
@@ -325,7 +318,8 @@ export function App() {
     const feedbackChild = reviewForFeedback
       ? childrenWithProgress.find((child) => child.id === reviewForFeedback.childId)
       : undefined;
-    if (reviewForFeedback && feedbackChild && canApproveMoralGrowth(reviewForFeedback.result)) {
+    const showApprovalFeedback = () => {
+      if (!reviewForFeedback || !feedbackChild || !canApproveMoralGrowth(reviewForFeedback.result)) return;
       const delta = reviewForFeedback.result.xpDelta;
       showGrowthFeedback({
         kind: "xp",
@@ -335,9 +329,9 @@ export function App() {
         delta,
         childName: feedbackChild.name,
       });
-    }
-
-    if (syncStatus === "offline") {
+    };
+    const operationId = crypto.randomUUID();
+    const commitLocalApproval = () => {
       const review = moralReviews.find((item) => item.id === reviewId);
       const record =
         review && canApproveMoralGrowth(review.result)
@@ -352,11 +346,12 @@ export function App() {
               aiSuggested: true,
               reviewStatus: "approved",
               reviewId: review.id,
+              operationId,
             })
           : undefined;
-      if (record) setLedger((ledgerRecords) => [record, ...ledgerRecords]);
-      setMoralReviews((current) =>
-        current.map((item) =>
+      const committed = commitLocalChanges((current) => ({
+        ledger: record && !current.ledger.some((item) => item.operationId === operationId) ? [record, ...current.ledger] : current.ledger,
+        moralReviews: current.moralReviews.map((item) =>
           item.id === reviewId
             ? {
                 ...item,
@@ -364,28 +359,41 @@ export function App() {
                 reviewedAt: new Date().toISOString(),
                 reviewedByChildId: selectedChild.id,
                 ledgerRecordId: record?.id ?? item.ledgerRecordId,
+                approvalOperationId: operationId,
               }
             : item,
         ),
-      );
+      }));
+      if (committed) showApprovalFeedback();
+    };
+    if (syncStatus === "offline") {
+      commitLocalApproval();
       return;
     }
 
     setSyncStatus("saving");
-    approveMoralReview(reviewId, selectedChild.id).then(applySnapshot).catch(() => setSyncStatus("offline"));
+    approveMoralReview(reviewId, selectedChild.id, operationId)
+      .then((snapshot) => (applySnapshot(snapshot) ? showApprovalFeedback() : markServerWriteUncertain()))
+      .catch((error) => {
+        if (isDefiniteClassroomUnavailable(error)) commitLocalApproval();
+        else if (isClassroomAvailabilityFailure(error)) markServerWriteUncertain();
+        else setSyncStatus("online");
+      });
   };
 
   const rejectReview = (reviewId: string) => {
+    if (syncStatus === "unavailable") return;
     const review = moralReviews.find((item) => item.id === reviewId);
-    showGrowthFeedback({
+    const showRejectionFeedback = () => showGrowthFeedback({
       kind: "status",
       tone: "watch",
       title: "复核已驳回",
       detail: review ? childrenWithProgress.find((child) => child.id === review.childId)?.name : undefined,
     });
-    if (syncStatus === "offline") {
-      setMoralReviews((current) =>
-        current.map((review) =>
+    const operationId = crypto.randomUUID();
+    const commitLocalRejection = () =>
+      commitLocalChanges((current) => ({
+        moralReviews: current.moralReviews.map((review) =>
           review.id === reviewId
             ? {
                 ...review,
@@ -393,15 +401,25 @@ export function App() {
                 reviewedAt: new Date().toISOString(),
                 reviewedByChildId: selectedChild.id,
                 rejectionReason: "老师复核后驳回",
+                rejectionOperationId: operationId,
               }
             : review,
         ),
-      );
+      }));
+    if (syncStatus === "offline") {
+      if (commitLocalRejection()) showRejectionFeedback();
       return;
     }
 
     setSyncStatus("saving");
-    rejectMoralReview(reviewId, selectedChild.id).then(applySnapshot).catch(() => setSyncStatus("offline"));
+    rejectMoralReview(reviewId, selectedChild.id, "老师复核后驳回", operationId)
+      .then((snapshot) => (applySnapshot(snapshot) ? showRejectionFeedback() : markServerWriteUncertain()))
+      .catch((error) => {
+        if (isDefiniteClassroomUnavailable(error)) {
+          if (commitLocalRejection()) showRejectionFeedback();
+        } else if (isClassroomAvailabilityFailure(error)) markServerWriteUncertain();
+        else setSyncStatus("online");
+      });
   };
 
   const focusChildOnHome = (childId = selectedChild.id, options?: { prepareMoralSpeak?: boolean }) => {
@@ -764,6 +782,7 @@ export function App() {
     setDialogueOpen, setPkPair, setRollCallExcludeCalled, setSelectedChildId, setShowcaseChildId,
     settingsChanges, showcaseChild, showcaseSpirit, showcaseSpiritAsset, shopRedemptions, skipMoralSpeakChild,
     spiritsById, startMoralSpeak, stopMoralSpeakRecording, submitDialogue, syncStatus, teacherMode,
+    dataAuthority, classroomNotice,
     toggleTeacherModeSetting, undoLast, updateSelectedChild, worldMapRef,
   }} />;
 }

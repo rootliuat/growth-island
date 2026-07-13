@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 ../01-tokens.css 以及前序 cascade 片段。
- * [OUTPUT]: 对外提供后续模块、移动端和白板触控最终覆盖第 2 段样式。
+ * [OUTPUT]: 对外提供后续模块、数据权威状态、移动端和白板触控最终覆盖第 2 段样式。
  * [POS]: styles/modules 的 cascade 片段 2/14，由 ../index.css 按顺序导入。
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -431,6 +431,18 @@
 
 .shell-status-chip.sync.offline {
   color: #8a3b2d;
+  background: #ffe3d8;
+}
+
+.shell-status-chip.sync.local-authority {
+  color: #7a3f2f;
+  border-color: rgba(217, 95, 85, 0.34);
+  background: #fff0df;
+}
+
+.shell-status-chip.sync.unavailable-authority {
+  color: #7a2f27;
+  border-color: rgba(178, 62, 51, 0.42);
   background: #ffe3d8;
 }
 

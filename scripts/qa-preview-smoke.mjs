@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 Vite 生产 manifest/预览、Beihai API、Playwright 与系统 Chrome 的首页运行环境
- * [OUTPUT]: 输出生产首页冒烟截图、运行状态与运行图级懒加载边界报告，并以退出码暴露失败
+ * [OUTPUT]: 在独占端口输出生产首页冒烟截图、运行状态与运行图级懒加载边界报告，并以退出码暴露失败
  * [POS]: scripts 的生产构建验收入口，验证首页可用性及 Three.js/非首页运行图不被提前加载
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -10,6 +10,7 @@ import fs from "node:fs";
 import net from "node:net";
 import path from "node:path";
 import { chromium } from "playwright";
+import { resetQaDatabase } from "./qa-database.mjs";
 
 const outputDir = path.resolve("qa-artifacts/latest");
 const reportPath = path.join(outputDir, "preview-smoke-report.json");
@@ -107,7 +108,6 @@ async function stopProcess(processInfo) {
 }
 
 async function startApi() {
-  if (await isPortOpen(apiPort)) return { name: "api", reused: true, output: [] };
   return spawnProcess("api", process.execPath, ["server/beihai-api.mjs"], {
     PORT: String(apiPort),
     BEIHAI_DB_PATH: dbPath,
@@ -115,8 +115,7 @@ async function startApi() {
 }
 
 async function startPreview() {
-  if (await isPortOpen(previewPort)) return { name: "preview", reused: true, output: [] };
-  return spawnProcess("preview", process.execPath, ["node_modules/vite/bin/vite.js", "preview", "--host", "127.0.0.1", "--port", String(previewPort)], {
+  return spawnProcess("preview", process.execPath, ["node_modules/vite/bin/vite.js", "preview", "--host", "127.0.0.1", "--port", String(previewPort), "--strictPort"], {
     VITE_API_BASE_URL: apiBaseUrl,
   });
 }
@@ -211,7 +210,10 @@ async function runBrowserSmoke() {
 
 async function run() {
   fs.mkdirSync(outputDir, { recursive: true });
-  fs.rmSync(dbPath, { force: true });
+  if (await isPortOpen(apiPort) || await isPortOpen(previewPort)) {
+    throw new Error(`Preview smoke requires free ports ${apiPort} and ${previewPort}; refusing to reuse an unknown service`);
+  }
+  resetQaDatabase(dbPath);
 
   const api = await startApi();
   const preview = await startPreview();
@@ -220,6 +222,9 @@ async function run() {
   try {
     await waitForHttp(`${apiBaseUrl}/api/health`, "API health");
     await waitForHttp(previewBaseUrl, "Vite preview");
+    if (spawned.some((service) => service.child.exitCode !== null)) throw new Error("Preview smoke service exited during startup");
+    const health = await fetch(`${apiBaseUrl}/api/health`).then((response) => response.json());
+    if (path.resolve(health.dbPath || "") !== dbPath) throw new Error("Preview smoke connected to an unexpected classroom database");
     const browser = await runBrowserSmoke();
     const failures = [];
     if (!browser.state.hasRoot) failures.push("React root did not render");

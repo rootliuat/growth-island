@@ -23,7 +23,14 @@ import {
   type MoralSpeakFailureCode,
 } from "../domain/moralSpeakSession";
 import { canApproveMoralGrowth } from "../domain/virtueEnergy";
-import { evaluateMoralRecord, isClassroomApiError, rejectMoralReview, transcribeSpeech } from "../services/classroomApi";
+import {
+  evaluateMoralRecord,
+  isClassroomApiError,
+  isClassroomAvailabilityFailure,
+  isDefiniteClassroomUnavailable,
+  rejectMoralReview,
+  transcribeSpeech,
+} from "../services/classroomApi";
 import type {
   ChildWithProgress,
   ClassroomSnapshot,
@@ -34,10 +41,12 @@ import type {
 } from "../types";
 
 interface MoralSpeakWorkflowInput {
-  applySnapshot: (snapshot: ClassroomSnapshot) => void;
+  applySnapshot: (snapshot: ClassroomSnapshot) => boolean;
   children: ChildWithProgress[];
   clearFeedback: () => void;
   commitLedger: (input: LedgerRecordInput) => Promise<void>;
+  commitLocalMoralReviews: (update: (current: MoralReviewItem[]) => MoralReviewItem[]) => boolean;
+  markServerWriteUncertain: () => void;
   selectedChild: ChildWithProgress;
   setLastEvaluation: Dispatch<SetStateAction<MoralEvaluationResult | undefined>>;
   setMoralReviews: Dispatch<SetStateAction<MoralReviewItem[]>>;
@@ -211,19 +220,30 @@ export function useMoralSpeakWorkflow(input: MoralSpeakWorkflowInput) {
   };
 
   const submitDialogue = async (text: string) => {
+    if (input.syncStatus === "unavailable") throw new Error("课堂数据暂不可用");
     if (input.syncStatus !== "offline") {
       input.setSyncStatus("saving");
+      const operationId = crypto.randomUUID();
       try {
         const response = await evaluateMoralRecord({
           childId: input.selectedChild.id,
           operatorChildId: input.selectedChild.id,
           transcript: text,
+          operationId,
         });
         input.setLastEvaluation(response.result);
-        input.applySnapshot(response.snapshot);
+        if (!input.applySnapshot(response.snapshot)) throw new TypeError("课堂数据权威已变化");
         return response.result;
-      } catch {
-        input.setSyncStatus("offline");
+      } catch (error) {
+        if (isDefiniteClassroomUnavailable(error)) {
+          // 明确在写入前不可用，可以安全进入本机规则。
+        } else if (isClassroomAvailabilityFailure(error)) {
+          input.markServerWriteUncertain();
+          throw error;
+        } else {
+          input.setSyncStatus("online");
+          throw error;
+        }
       }
     }
 
@@ -237,8 +257,9 @@ export function useMoralSpeakWorkflow(input: MoralSpeakWorkflowInput) {
       result,
       status: "pending_review",
       createdAt: new Date().toISOString(),
+      operationId: crypto.randomUUID(),
     };
-    input.setMoralReviews((current) => [review, ...current]);
+    if (!input.commitLocalMoralReviews((current) => [review, ...current])) throw new Error("本机课堂数据保存失败");
     return result;
   };
 
@@ -255,20 +276,37 @@ export function useMoralSpeakWorkflow(input: MoralSpeakWorkflowInput) {
       return;
     }
 
+    if (input.syncStatus === "unavailable") {
+      setState({ stage: "error", childId: child.id, error: "课堂数据暂不可用，请老师先恢复备份" });
+      return;
+    }
     if (input.syncStatus !== "offline") {
       input.setSyncStatus("saving");
+      const operationId = crypto.randomUUID();
       try {
-        const response = await evaluateMoralRecord({ childId: child.id, operatorChildId: child.id, transcript: cleanTranscript });
+        const response = await evaluateMoralRecord({ childId: child.id, operatorChildId: child.id, transcript: cleanTranscript, operationId });
         if (!isSessionActive(sessionId, child.id)) {
+          const rejectionOperationId = crypto.randomUUID();
           try {
-            input.applySnapshot(await rejectMoralReview(response.reviewItem.id, child.id, "已取消"));
-          } catch {
-            input.setSyncStatus("offline");
+            const snapshot = await rejectMoralReview(response.reviewItem.id, child.id, "已取消", rejectionOperationId);
+            if (!input.applySnapshot(snapshot)) input.markServerWriteUncertain();
+          } catch (error) {
+            if (isDefiniteClassroomUnavailable(error)) {
+              input.commitLocalMoralReviews(() =>
+                (response.snapshot.moralReviews ?? []).map((review) => review.id === response.reviewItem.id
+                  ? { ...review, status: "rejected", rejectionReason: "已取消", rejectionOperationId }
+                  : review),
+              );
+            } else if (isClassroomAvailabilityFailure(error)) input.markServerWriteUncertain();
+            else input.setSyncStatus("online");
           }
           return;
         }
         input.setLastEvaluation(response.result);
-        input.applySnapshot(response.snapshot);
+        if (!input.applySnapshot(response.snapshot)) {
+          input.markServerWriteUncertain();
+          return;
+        }
         input.setSelectedChildId(child.id);
         input.clearFeedback();
         setState({
@@ -280,8 +318,18 @@ export function useMoralSpeakWorkflow(input: MoralSpeakWorkflowInput) {
           reviewId: response.reviewItem.id,
         });
         return;
-      } catch {
-        input.setSyncStatus("offline");
+      } catch (error) {
+        if (isDefiniteClassroomUnavailable(error)) {
+          // 明确未进入课堂写事务，下面安全写入本机复核。
+        } else if (isClassroomAvailabilityFailure(error)) {
+          input.markServerWriteUncertain();
+          setState({ stage: "error", childId: child.id, error: "保存结果待确认，请老师检查服务后刷新" });
+          return;
+        } else {
+          input.setSyncStatus("online");
+          setState({ stage: "error", childId: child.id, error: "复核请求未通过，请老师检查后重试" });
+          return;
+        }
       }
     }
 
@@ -296,8 +344,12 @@ export function useMoralSpeakWorkflow(input: MoralSpeakWorkflowInput) {
       result,
       status: "pending_review",
       createdAt: new Date().toISOString(),
+      operationId: crypto.randomUUID(),
     };
-    input.setMoralReviews((current) => [review, ...current]);
+    if (!input.commitLocalMoralReviews((current) => [review, ...current])) {
+      setState({ stage: "error", childId: child.id, error: "本机保存失败，请老师先导出数据" });
+      return;
+    }
     input.clearFeedback();
     setState({
       stage: "pendingReview",
@@ -376,7 +428,7 @@ export function useMoralSpeakWorkflow(input: MoralSpeakWorkflowInput) {
       status: "pending_review",
       createdAt: new Date().toISOString(),
     };
-    input.setMoralReviews((current) => [review, ...current]);
+    if (!input.commitLocalMoralReviews((current) => [review, ...current])) return;
     input.clearFeedback();
     setState({
       stage: "pendingReview",
@@ -471,7 +523,9 @@ export function useMoralSpeakWorkflow(input: MoralSpeakWorkflowInput) {
     if (approvingRef.current) return;
     const reviewId = state.reviewId;
     if (!reviewId) return;
-    input.setMoralReviews((current) =>
+    if (input.syncStatus === "unavailable") return;
+    const operationId = crypto.randomUUID();
+    const updateReviews = (current: MoralReviewItem[]): MoralReviewItem[] =>
       current.map((review) =>
         review.id === reviewId
           ? {
@@ -480,15 +534,24 @@ export function useMoralSpeakWorkflow(input: MoralSpeakWorkflowInput) {
               reviewedAt: new Date().toISOString(),
               reviewedByChildId: input.selectedChild.id,
               rejectionReason: reason,
+              rejectionOperationId: operationId,
             }
           : review,
-      ),
-    );
-    if (input.syncStatus === "offline") return;
+      );
+    if (input.syncStatus === "offline") {
+      input.commitLocalMoralReviews(updateReviews);
+      return;
+    }
     input.setSyncStatus("saving");
-    rejectMoralReview(reviewId, input.selectedChild.id, reason)
-      .then(input.applySnapshot)
-      .catch(() => input.setSyncStatus("offline"));
+    rejectMoralReview(reviewId, input.selectedChild.id, reason, operationId)
+      .then((snapshot) => {
+        if (!input.applySnapshot(snapshot)) input.markServerWriteUncertain();
+      })
+      .catch((error) => {
+        if (isDefiniteClassroomUnavailable(error)) input.commitLocalMoralReviews(updateReviews);
+        else if (isClassroomAvailabilityFailure(error)) input.markServerWriteUncertain();
+        else input.setSyncStatus("online");
+      });
   };
 
   const retry = () => {

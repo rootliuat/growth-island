@@ -1,3 +1,10 @@
+/**
+ * [INPUT]: 不依赖运行时 Module，集中描述前端跨模块共享数据形状。
+ * [OUTPUT]: 对外提供课堂、账本、复核、备份、组织、精灵和 Provider 响应类型契约。
+ * [POS]: src 的共享类型边界，被 app/domain/components/services 消费，不承载业务实现。
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
+
 export type VirtueCategory =
   | "家国情怀"
   | "意志坚韧"
@@ -65,6 +72,7 @@ export interface LedgerRecord {
   createdAt: string;
   undone?: boolean;
   undoOf?: string;
+  operationId?: string;
 }
 
 export type LedgerRecordInput = Omit<LedgerRecord, "id" | "createdAt" | "operatorRole" | "aiSuggested" | "reviewStatus"> &
@@ -111,6 +119,9 @@ export interface MoralReviewItem {
   reviewedAt?: string;
   reviewedByChildId?: string;
   ledgerRecordId?: string;
+  operationId?: string;
+  approvalOperationId?: string;
+  rejectionOperationId?: string;
   rejectionReason?: string;
 }
 

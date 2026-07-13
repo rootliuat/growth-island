@@ -316,6 +316,10 @@
 }
 
 @media (max-width: 720px) {
+  .home-screen-shell .home-module:has(.world-map-shell.moral-stage-pendingReview) .game-topbar .zoom-controls {
+    display: none;
+  }
+
   .home-screen-shell .world-map-shell:not(.moral-stage-idle) .map-energy-constellation {
     width: min(184px, calc(100% - 92px));
   }
