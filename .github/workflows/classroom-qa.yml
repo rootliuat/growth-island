@@ -1,0 +1,91 @@
+# [INPUT]: 依赖 package-lock.json、mock Provider、Playwright Chromium 与课堂 QA/preview 脚本
+# [OUTPUT]: 对外提供手动或每日运行的非阻断课堂 QA，并保留 14 天截图与 JSON 报告
+# [POS]: .github/workflows 的独立课堂验收，不触发 pull_request，不成为 main 分支保护状态
+# [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+
+name: Classroom QA
+
+on:
+  schedule:
+    - cron: "0 20 * * *"
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: Classroom QA coverage
+        required: true
+        default: full
+        type: choice
+        options:
+          - full
+          - fast
+
+permissions:
+  contents: read
+
+concurrency:
+  group: classroom-qa-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  classroom-qa:
+    name: classroom-qa
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      LLM_PROVIDER: rules
+      SPEECH_PROVIDER: mock
+      MOCK_ASR_TEXT: 我今天主动帮同学收玩具
+      QA_PROFILE: ${{ inputs.profile || 'full' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Build production bundle
+        run: npm run build
+
+      - name: Run classroom QA
+        shell: bash
+        run: |
+          if [[ "$QA_PROFILE" == "fast" ]]; then
+            npm run qa:trial:fast
+          else
+            node scripts/qa-trial.mjs
+          fi
+
+      - name: Run production preview smoke
+        if: ${{ !cancelled() }}
+        run: npm run qa:preview-smoke
+
+      - name: Write run summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "## Classroom QA"
+            echo
+            echo "- Profile: $QA_PROFILE"
+            echo "- Trigger: ${{ github.event_name }}"
+            echo "- Artifacts: screenshots and JSON reports retained for 14 days"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload classroom QA artifacts
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: classroom-qa-${{ github.run_id }}-${{ github.run_attempt }}
+          path: qa-artifacts/latest/
+          if-no-files-found: warn
+          retention-days: 14
