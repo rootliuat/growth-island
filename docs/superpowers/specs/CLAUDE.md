@@ -7,6 +7,7 @@
 2026-07-12-app-deep-modules-design.md: App 课堂数据会话、说成长会话、QA Adapter 与展示装配的结构等价拆分设计。
 2026-07-12-ci-guardrails-design.md: Node 22 最小 CI、稳定校验上下文与 main 分支保护设计。
 2026-07-12-p2-review-fixes-design.md: 三项 P2 审查问题的教师修正、周期窗口与分类统计一致性设计。
+2026-07-13-trial-stability-design.md: 真实白板语音、性能、快照恢复与独立课堂 QA 的顺序交付设计。
 
 法则: 规格只描述已确认范围；每个风险都有对应回归信号。
 
