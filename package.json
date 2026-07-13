@@ -10,7 +10,7 @@
     "typecheck": "tsc -b",
     "test": "vitest run",
     "test:watch": "vitest",
-    "build": "npm run typecheck && vite build",
+    "build": "npm run typecheck && vite build && node scripts/check-build-budget.mjs",
     "qa:visual": "node scripts/qa-visual.mjs",
     "qa:trial": "npm run build && node scripts/qa-trial.mjs",
     "qa:trial:fast": "TRIAL_QA_CHECKS=home,moral-speak-flow TRIAL_REQUIRED_RESULTS=home/whiteboard,moral-speak-flow/whiteboard,moral-speak-flow/mobile node scripts/qa-trial.mjs",

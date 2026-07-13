@@ -1,31 +1,17 @@
 /**
- * [INPUT]: 依赖现有 HUD、地图、产品 Module、课堂运行时数据与用户动作。
- * [OUTPUT]: 对外提供 GrowthIslandView 展示 Adapter 与 GrowthIslandViewRuntime 契约。
- * [POS]: app 的纯展示装配层，负责模块路由、弹层和 HUD 组件树，不拥有业务状态。
+ * [INPUT]: 依赖首页 HUD/地图、懒加载产品 Module、课堂运行时数据与用户动作。
+ * [OUTPUT]: 对外提供 GrowthIslandView 展示 Adapter、稳定 Suspense 边界与 GrowthIslandViewRuntime 契约。
+ * [POS]: app 的纯展示装配层，负责首页同步装配和非首页按需路由，不拥有业务状态。
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
-import type { Dispatch, RefObject, SetStateAction } from "react";
+import { lazy, Suspense, type Dispatch, type RefObject, type SetStateAction } from "react";
 import { AppShell } from "../components/AppShell";
-import { DialogueModal } from "../components/DialogueModal";
 import { GameTopBar } from "../components/Hud/GameTopBar";
 import { GrowthFeedbackOverlay } from "../components/Hud/GrowthFeedbackOverlay";
 import { SpiritDetailPanel } from "../components/Hud/SpiritDetailPanel";
 import { SpiritDock } from "../components/Hud/SpiritDock";
-import { SpiritShowcase3D } from "../components/Hud/SpiritShowcase3D";
-import { MathPkModal } from "../components/MathPkModal";
-import { ChildProfileModule } from "../components/modules/ChildProfileModule";
-import { DataManagementModule } from "../components/modules/DataManagementModule";
-import { LeaderboardModule } from "../components/modules/LeaderboardModule";
-import { LotteryModule } from "../components/modules/LotteryModule";
-import { MathArenaModule } from "../components/modules/MathArenaModule";
 import { ModulePlaceholder } from "../components/modules/ModulePlaceholder";
-import { OrganizationModule } from "../components/modules/OrganizationModule";
-import { RollCallModule } from "../components/modules/RollCallModule";
-import { SettingsModule } from "../components/modules/SettingsModule";
-import { ShopModule } from "../components/modules/ShopModule";
-import { TeacherWorkbenchModule } from "../components/modules/TeacherWorkbenchModule";
-import { VoiceRecordModule } from "../components/modules/VoiceRecordModule";
 import type { AppModuleId } from "../components/modules/moduleConfig";
 import { WorldMapContainer } from "../components/WorldMap/WorldMapContainer";
 import type { PixiWorldMapHandle } from "../components/WorldMap/PixiWorldMap";
@@ -50,6 +36,53 @@ import type {
   SpiritDefinition,
   VirtueCategory,
 } from "../types";
+
+const ChildProfileModule = lazy(() =>
+  import("../components/modules/ChildProfileModule").then((module) => ({ default: module.ChildProfileModule })),
+);
+const DialogueModal = lazy(() => import("../components/DialogueModal").then((module) => ({ default: module.DialogueModal })));
+const DataManagementModule = lazy(() =>
+  import("../components/modules/DataManagementModule").then((module) => ({ default: module.DataManagementModule })),
+);
+const LeaderboardModule = lazy(() =>
+  import("../components/modules/LeaderboardModule").then((module) => ({ default: module.LeaderboardModule })),
+);
+const LotteryModule = lazy(() =>
+  import("../components/modules/LotteryModule").then((module) => ({ default: module.LotteryModule })),
+);
+const MathArenaModule = lazy(() =>
+  import("../components/modules/MathArenaModule").then((module) => ({ default: module.MathArenaModule })),
+);
+const MathPkModal = lazy(() => import("../components/MathPkModal").then((module) => ({ default: module.MathPkModal })));
+const OrganizationModule = lazy(() =>
+  import("../components/modules/OrganizationModule").then((module) => ({ default: module.OrganizationModule })),
+);
+const RollCallModule = lazy(() =>
+  import("../components/modules/RollCallModule").then((module) => ({ default: module.RollCallModule })),
+);
+const SettingsModule = lazy(() =>
+  import("../components/modules/SettingsModule").then((module) => ({ default: module.SettingsModule })),
+);
+const ShopModule = lazy(() => import("../components/modules/ShopModule").then((module) => ({ default: module.ShopModule })));
+const SpiritShowcase3D = lazy(() =>
+  import("../components/Hud/SpiritShowcase3D").then((module) => ({ default: module.SpiritShowcase3D })),
+);
+const TeacherWorkbenchModule = lazy(() =>
+  import("../components/modules/TeacherWorkbenchModule").then((module) => ({ default: module.TeacherWorkbenchModule })),
+);
+const VoiceRecordModule = lazy(() =>
+  import("../components/modules/VoiceRecordModule").then((module) => ({ default: module.VoiceRecordModule })),
+);
+
+function ModuleLoadingFallback() {
+  return (
+    <section className="module-page scene-placeholder-page" role="status" aria-live="polite" aria-busy="true">
+      <section className="scene-empty-stage">
+        <strong>小岛活动正在打开</strong>
+      </section>
+    </section>
+  );
+}
 
 export interface GrowthIslandViewRuntime {
   activeModule: AppModuleId;
@@ -163,6 +196,7 @@ export function GrowthIslandView(runtime: GrowthIslandViewRuntime) {
       onModuleChange={setActiveModule}
       onSelfServiceChild={() => focusChildOnHome(selectedChild.id, { prepareMoralSpeak: true })}
     >
+      <Suspense fallback={<ModuleLoadingFallback />}>
       {activeModule === "home" ? (
         <section className="home-module app-shell" aria-label="北海成长岛首页">
           <GameTopBar
@@ -369,30 +403,35 @@ export function GrowthIslandView(runtime: GrowthIslandViewRuntime) {
           onReturnHome={returnToHome}
         />
       )}
+      </Suspense>
 
-      {dialogueOpen && <DialogueModal child={selectedChild} onClose={() => setDialogueOpen(false)} onSubmit={submitDialogue} />}
+      <Suspense fallback={null}>
+        {dialogueOpen ? <DialogueModal child={selectedChild} onClose={() => setDialogueOpen(false)} onSubmit={submitDialogue} /> : null}
 
-      {pkPair && pkPlayer && pkOpponent && (
-        <MathPkModal
-          player={pkPlayer}
-          opponent={pkOpponent}
-          spiritsById={spiritsById}
-          onClose={() => {
-            setSelectedChildId(pkPlayer.id);
-            setPkPair(null);
-          }}
-          onWin={recordMathPkWin}
-        />
-      )}
+        {pkPair && pkPlayer && pkOpponent ? (
+          <MathPkModal
+            player={pkPlayer}
+            opponent={pkOpponent}
+            spiritsById={spiritsById}
+            onClose={() => {
+              setSelectedChildId(pkPlayer.id);
+              setPkPair(null);
+            }}
+            onWin={recordMathPkWin}
+          />
+        ) : null}
+      </Suspense>
 
-      {showcaseChild && showcaseSpirit ? (
-        <SpiritShowcase3D
-          child={showcaseChild}
-          spirit={showcaseSpirit}
-          spiritAssetUrl={showcaseSpiritAsset?.url}
-          onClose={() => setShowcaseChildId(undefined)}
-        />
-      ) : null}
+      <Suspense fallback={null}>
+        {showcaseChild && showcaseSpirit ? (
+          <SpiritShowcase3D
+            child={showcaseChild}
+            spirit={showcaseSpirit}
+            spiritAssetUrl={showcaseSpiritAsset?.url}
+            onClose={() => setShowcaseChildId(undefined)}
+          />
+        ) : null}
+      </Suspense>
 
       <GrowthFeedbackOverlay feedback={growthFeedback} />
     </AppShell>

@@ -1,3 +1,10 @@
+/**
+ * [INPUT]: 依赖 React 生命周期、PixiWorld 运行时、地图布局与课堂孩子/账本数据。
+ * [OUTPUT]: 对外提供 PixiWorldMap 组件与 PixiWorldMapHandle 命令接口。
+ * [POS]: components/WorldMap 的懒加载运行时桥，负责挂载/销毁 Pixi 世界并同步 React 状态。
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
+
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef } from "react";
 import { PixiWorld } from "../../game/pixi/PixiWorld";
 import { buildWorldMapData } from "../../game/layout";

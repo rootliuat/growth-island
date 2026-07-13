@@ -1,3 +1,10 @@
+/**
+ * [INPUT]: 依赖 v4 道具 placement、Pixi 容器/图形、地图焦点配置和模块入口动作。
+ * [OUTPUT]: 对外提供 DecorationLayer，管理海岛热点、烘焙道具 LOD 与手势态细节降载。
+ * [POS]: game/pixi 的道具交互层，被 WorldScene 编排，保留关键热点并延迟非必要模型。
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
+
 import { Container, Graphics, Rectangle, Text } from "pixi.js";
 import { assetScaleRules } from "../assetScaleRules";
 import { palette } from "../artDirection";
@@ -44,6 +51,7 @@ export class DecorationLayer {
   private delayedBakedMapPropCount = 0;
   private delayedDecorationCount = 0;
   private detailPropMode = false;
+  private interactionMode = false;
   private readonly bakedMapPropRoots: { root: Container; detailOnly: boolean }[] = [];
 
   constructor(
@@ -94,9 +102,17 @@ export class DecorationLayer {
     this.detailPropMode = nextDetailMode;
     this.bakedMapPropRoots.forEach(({ root, detailOnly }) => {
       if (!detailOnly) return;
-      root.visible = nextDetailMode;
+      root.visible = nextDetailMode && !this.interactionMode;
     });
     return true;
+  }
+
+  setInteractionMode(active: boolean) {
+    if (active === this.interactionMode) return;
+    this.interactionMode = active;
+    this.bakedMapPropRoots.forEach(({ root, detailOnly }) => {
+      if (detailOnly) root.visible = this.detailPropMode && !active;
+    });
   }
 
   getLodSnapshot() {

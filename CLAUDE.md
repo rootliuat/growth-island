@@ -30,6 +30,10 @@ package.json - npm scripts 与 Vite/React/Pixi/Three 依赖版本。
 </config>
 
 <config>
+vite.config.ts - Vite React 构建入口，提供稳定 vendor 分包与生产 manifest。
+</config>
+
+<config>
 tsconfig.json - TypeScript strict 编译规则与项目 include 范围。
 </config>
 

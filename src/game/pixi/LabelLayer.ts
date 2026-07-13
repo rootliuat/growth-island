@@ -1,3 +1,10 @@
+/**
+ * [INPUT]: 依赖地图区域、精灵运行数据、v4 标牌资产与 Pixi 文本/图形容器。
+ * [OUTPUT]: 对外提供 LabelLayer，管理区域标牌、精灵状态标签及手势态精简显示。
+ * [POS]: game/pixi 的语义标注层，被 WorldScene 编排并在交互时保留当前孩子定位。
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
+
 import { Container, Graphics, Text } from "pixi.js";
 import { assetScaleRules, getRegionSignWidth } from "../assetScaleRules";
 import { palette } from "../artDirection";

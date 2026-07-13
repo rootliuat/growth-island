@@ -25,7 +25,7 @@ npm run dev
 npm run build
 ```
 
-当前生成精灵图资产体积较大，构建会提示 chunk 体积警告，但构建可通过。后续需要把精灵图片改成按需加载和缩略图加载。
+首页使用 WebP 精灵缩略图，非首页模块和 Three.js 展示按需加载。构建仍会提示可选 Three.js chunk 较大，但它不会进入首页请求；`npm run build` 会基于生产 manifest 校验动态入口，并递归约束初始、Pixi 增量与首页静态 JS 预算。
 
 ## 测试与 QA
 
