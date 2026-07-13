@@ -1,3 +1,10 @@
+/**
+ * [INPUT]: 依赖 Vite 生产 manifest/预览、Beihai API、Playwright 与系统 Chrome 的首页运行环境
+ * [OUTPUT]: 输出生产首页冒烟截图、运行状态与运行图级懒加载边界报告，并以退出码暴露失败
+ * [POS]: scripts 的生产构建验收入口，验证首页可用性及 Three.js/非首页运行图不被提前加载
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
+
 import { spawn } from "node:child_process";
 import fs from "node:fs";
 import net from "node:net";
@@ -11,6 +18,41 @@ const apiPort = Number(process.env.PREVIEW_SMOKE_API_PORT || 5174);
 const previewBaseUrl = `http://127.0.0.1:${previewPort}`;
 const apiBaseUrl = `http://127.0.0.1:${apiPort}`;
 const dbPath = path.join(outputDir, "preview-smoke-db.json");
+const manifestPath = path.resolve("dist/.vite/manifest.json");
+const systemChromePath = process.env.PLAYWRIGHT_CHROME_PATH
+  || (fs.existsSync("/usr/bin/google-chrome") ? "/usr/bin/google-chrome" : undefined);
+
+function collectRuntimeChunks(manifest, rootKey, collected = new Set()) {
+  if (collected.has(rootKey)) return collected;
+  const chunk = manifest[rootKey];
+  if (!chunk) throw new Error(`Missing manifest entry: ${rootKey}`);
+  collected.add(rootKey);
+  (chunk.imports ?? []).forEach((key) => collectRuntimeChunks(manifest, key, collected));
+  if (rootKey !== "index.html") {
+    (chunk.dynamicImports ?? []).forEach((key) => collectRuntimeChunks(manifest, key, collected));
+  }
+  return collected;
+}
+
+function getDeferredChunkFiles() {
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+  const entry = manifest["index.html"];
+  if (!entry?.isEntry) throw new Error("Production manifest is missing index.html entry");
+  const pixiKey = entry.dynamicImports?.find((key) => manifest[key]?.name === "PixiWorldMap");
+  if (!pixiKey) throw new Error("Production manifest is missing PixiWorldMap dynamic entry");
+
+  const allowedHomeKeys = collectRuntimeChunks(manifest, pixiKey);
+  collectRuntimeChunks(manifest, "index.html", allowedHomeKeys);
+  const deferredKeys = new Set();
+  entry.dynamicImports
+    .filter((key) => key !== pixiKey)
+    .forEach((key) => collectRuntimeChunks(manifest, key, deferredKeys));
+
+  return [...deferredKeys]
+    .filter((key) => !allowedHomeKeys.has(key))
+    .map((key) => `/${manifest[key].file}`)
+    .sort();
+}
 
 function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -80,7 +122,11 @@ async function startPreview() {
 }
 
 async function runBrowserSmoke() {
-  const browser = await chromium.launch({ headless: true });
+  const deferredChunkFiles = getDeferredChunkFiles();
+  const browser = await chromium.launch({
+    headless: true,
+    ...(systemChromePath ? { executablePath: systemChromePath } : {}),
+  });
   const context = await browser.newContext({
     viewport: { width: 1850, height: 1150 },
     deviceScaleFactor: 1,
@@ -89,6 +135,7 @@ async function runBrowserSmoke() {
   const consoleErrors = [];
   const failedRequests = [];
   const resourceFailures = [];
+  const loadedScripts = [];
 
   page.on("console", (message) => {
     if (message.type() === "error") consoleErrors.push(message.text());
@@ -101,6 +148,11 @@ async function runBrowserSmoke() {
     if (/\.(?:avif|gif|glb|gltf|jpe?g|png|svg|webp)(?:\?|$)/i.test(url)) {
       resourceFailures.push({ url, failure });
     }
+  });
+  page.on("response", (response) => {
+    const request = response.request();
+    if (request.resourceType() !== "script" && !/\.js(?:\?|$)/i.test(response.url())) return;
+    loadedScripts.push(new URL(response.url()).pathname);
   });
 
   try {
@@ -137,7 +189,20 @@ async function runBrowserSmoke() {
       };
     });
 
-    return { state, screenshot, consoleErrors, failedRequests, resourceFailures };
+    const uniqueLoadedScripts = [...new Set(loadedScripts)].sort();
+    const deferredChunkSet = new Set(deferredChunkFiles);
+    const unexpectedEagerChunks = uniqueLoadedScripts.filter((scriptPath) => deferredChunkSet.has(scriptPath));
+
+    return {
+      state,
+      screenshot,
+      consoleErrors,
+      failedRequests,
+      resourceFailures,
+      loadedScripts: uniqueLoadedScripts,
+      deferredChunkFiles,
+      unexpectedEagerChunks,
+    };
   } finally {
     await context.close();
     await browser.close();
@@ -166,6 +231,7 @@ async function run() {
     if (browser.state.hasHorizontalOverflow) failures.push("horizontal overflow detected");
     if (browser.resourceFailures.length) failures.push(`${browser.resourceFailures.length} image/model resource request(s) failed`);
     if (browser.consoleErrors.length) failures.push(`${browser.consoleErrors.length} browser console/page error(s)`);
+    if (browser.unexpectedEagerChunks.length) failures.push(`${browser.unexpectedEagerChunks.length} lazy chunk(s) loaded eagerly on home`);
 
     const report = {
       generatedAt: new Date().toISOString(),
@@ -177,6 +243,9 @@ async function run() {
       consoleErrors: browser.consoleErrors,
       failedRequests: browser.failedRequests,
       resourceFailures: browser.resourceFailures,
+      loadedScripts: browser.loadedScripts,
+      deferredChunkFiles: browser.deferredChunkFiles,
+      unexpectedEagerChunks: browser.unexpectedEagerChunks,
       ok: failures.length === 0,
       failures,
     };

@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 CameraController、LayerManager 和各 Pixi 动态/交互地图 Layer。
- * [OUTPUT]: 对外提供 WorldScene 类，组合区域、路径、道具、小屋、精灵、标签、特效、数据更新、动画更新、聚焦和静态缓存。
+ * [OUTPUT]: 对外提供 WorldScene 类，组合地图图层、手势态降载、数据/动画更新、聚焦和静态缓存。
  * [POS]: game/pixi 的场景编排 Module，被 PixiWorld 驱动。
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -141,7 +141,8 @@ export class WorldScene {
 
     this.updateZoomState(false, interactionActive);
     if (!interactionActive) this.flushPendingDecorationCacheRefresh();
-    if (interactionActive || selectedIdleOnly) {
+    if (interactionActive) return;
+    if (selectedIdleOnly) {
       this.spirits.updateFrame(frame, { selectedOnly: true });
       return;
     }
@@ -168,8 +169,7 @@ export class WorldScene {
     if (interactionActive === this.interactionVisualMode) return;
     this.interactionVisualMode = interactionActive;
     this.labels.setInteractionMode(interactionActive);
-    this.layers.get("decorations").renderable = true;
-    this.layers.get("labels").renderable = true;
+    this.decorations.setInteractionMode(interactionActive);
     this.layers.get("effects").renderable = !interactionActive;
   }
 

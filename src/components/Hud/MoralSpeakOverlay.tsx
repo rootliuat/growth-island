@@ -1,5 +1,5 @@
 /**
- * [INPUT]: 依赖 moralSpeakSession 的视图状态，依赖 virtueEnergy 的能量色彩，依赖 3D 奖励预览。
+ * [INPUT]: 依赖 moralSpeakSession 的视图状态与 virtueEnergy 的能量色彩。
  * [OUTPUT]: 对外提供 MoralSpeakOverlay 组件。
  * [POS]: HUD 的儿童自助说成长浮层，只负责渲染与按钮回调，不持有流程状态。
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -10,7 +10,6 @@ import type { CSSProperties } from "react";
 import type { MoralSpeakStage, MoralSpeakViewState } from "../../domain/moralSpeakSession";
 import { canApproveMoralGrowth, getChildEnergyColor, getChildEnergyLabel } from "../../domain/virtueEnergy";
 import type { ChildWithProgress, SpiritDefinition } from "../../types";
-import { RewardModelPreview3D } from "./SpiritModelStage3D";
 
 interface MoralSpeakOverlayProps {
   child?: ChildWithProgress;
@@ -140,16 +139,6 @@ export function MoralSpeakOverlay({ child, spirit, state, onStart, onStop, onRet
           <i className="energy-confirm-burst" aria-hidden="true" style={{ pointerEvents: "none" }} />
           <i className="energy-arrival-orb" aria-hidden="true" style={{ pointerEvents: "none" }} />
           <i className="moral-energy-sparks" aria-hidden="true" />
-          <RewardModelPreview3D
-            modelKey="growth-star"
-            label="成长星光"
-            accent={accent}
-            className="moral-success-reward-3d"
-            motion="success"
-            hideFallback
-            hideLoading
-            size="compact"
-          />
           <Sparkles size={24} />
           <strong>{energyLabel}能量点亮精灵</strong>
         </div>

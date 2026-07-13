@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 v4MapAssets、assetScaleRules、mapConfig 和 mapLayout 提供主岛底图坐标与资产 URL。
- * [OUTPUT]: 对外提供 DomStaticMapLayer 类，把不可点击的海岛底图渲染到 DOM 静态层并同步相机变换。
+ * [OUTPUT]: 对外提供 DomStaticMapLayer 类，把海岛底图渲染到 DOM 静态层并去重同步相机变换。
  * [POS]: game/pixi 的静态底图 Adapter，承接 IslandLayer 的大面积底图职责，让 Pixi 专注动态与交互层。
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -58,6 +58,7 @@ function buildStaticIslandAssets(): StaticIslandAsset[] {
 
 export class DomStaticMapLayer {
   private readonly root: HTMLDivElement;
+  private lastTransform = "";
 
   constructor(host: HTMLDivElement) {
     host.querySelectorAll(".pixi-static-map-layer").forEach((node) => node.remove());
@@ -71,7 +72,10 @@ export class DomStaticMapLayer {
   }
 
   sync(transform: CameraCssTransform) {
-    this.root.style.transform = `translate3d(${transform.x}px, ${transform.y}px, 0) scale(${transform.scale})`;
+    const nextTransform = `translate3d(${transform.x}px, ${transform.y}px, 0) scale(${transform.scale})`;
+    if (nextTransform === this.lastTransform) return;
+    this.lastTransform = nextTransform;
+    this.root.style.transform = nextTransform;
   }
 
   destroy() {

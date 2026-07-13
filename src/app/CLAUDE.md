@@ -2,7 +2,7 @@
 > L2 | 父级: /src/CLAUDE.md
 
 成员清单
-GrowthIslandView.tsx: 纯展示 Adapter，装配 HUD、地图、产品 Module、弹层和活动模块路由。
+GrowthIslandView.tsx: 纯展示 Adapter，同步装配首页并以稳定 lazy/Suspense 边界按需加载活动 Module 与弹层。
 useClassroomSession.ts: 课堂数据会话深 Module，集中快照、同步、备份和浏览器持久化。
 useMoralSpeakWorkflow.ts: 说成长会话深 Module，集中录音、识别、复核、审批锁和陈旧响应保护。
 useGrowthIslandQaBridge.ts: 开发期 QA Adapter，维持 window.__growthIsland* 自动化 Interface。
