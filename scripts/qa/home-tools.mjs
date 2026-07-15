@@ -389,6 +389,39 @@ export async function measureHomeDrag(page, options = {}) {
   return { ...activeFrameRate, renderState, settledRenderState };
 }
 
+const selectedSpiritMotionMinRange = 3;
+const selectedSpiritMotionMinSamples = 7;
+const selectedSpiritMotionMaxSamples = 15;
+const selectedSpiritMotionSampleMs = 220;
+
+function summarizeSelectedSpiritMotion(samples) {
+  const visibleSamples = samples.filter(
+    (sample) => sample?.selectedSpiritVisible && Number.isFinite(sample?.selectedSpiritBodyY),
+  );
+  const yValues = visibleSamples.map((sample) => sample.selectedSpiritBodyY);
+  return {
+    range: yValues.length ? Number((Math.max(...yValues) - Math.min(...yValues)).toFixed(2)) : 0,
+    visible: visibleSamples.length > 0,
+  };
+}
+
+async function collectSelectedSpiritMotion(page) {
+  const samples = [];
+  while (samples.length < selectedSpiritMotionMaxSamples) {
+    samples.push(await inspectPixiRenderState(page));
+    const motion = summarizeSelectedSpiritMotion(samples);
+    if (
+      samples.length >= selectedSpiritMotionMinSamples &&
+      motion.visible &&
+      motion.range >= selectedSpiritMotionMinRange
+    ) {
+      return { ...motion, samples };
+    }
+    if (samples.length < selectedSpiritMotionMaxSamples) await page.waitForTimeout(selectedSpiritMotionSampleMs);
+  }
+  return { ...summarizeSelectedSpiritMotion(samples), samples };
+}
+
 export async function measureSelectedSpiritIdleMotion(page) {
   const target = await page.evaluate(() => {
     const ids = window.__growthIslandChildIds ?? [];
@@ -399,16 +432,9 @@ export async function measureSelectedSpiritIdleMotion(page) {
   });
   if (!target.selected) return { ok: false, reason: "qa child selection hook failed", target };
   await page.waitForSelector(".pixi-world-canvas[data-render-state='idle-animating']", { timeout: 6500 }).catch(() => undefined);
-  const samples = [];
-  for (let index = 0; index < 7; index += 1) {
-    samples.push(await inspectPixiRenderState(page));
-    await page.waitForTimeout(220);
-  }
-  const yValues = samples.map((sample) => sample?.selectedSpiritBodyY).filter((value) => Number.isFinite(value));
-  const range = yValues.length ? Number((Math.max(...yValues) - Math.min(...yValues)).toFixed(2)) : 0;
-  const visible = samples.some((sample) => sample?.selectedSpiritVisible);
+  const { range, samples, visible } = await collectSelectedSpiritMotion(page);
   return {
-    ok: visible && range >= 3,
+    ok: visible && range >= selectedSpiritMotionMinRange,
     target,
     visible,
     range,
@@ -438,17 +464,10 @@ export async function measureSelectedSpiritWheelIdleMotion(page) {
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.wheel(0, -260);
   await page.waitForSelector(".pixi-world-canvas[data-render-state='idle-animating']", { timeout: 6500 }).catch(() => undefined);
-  const samples = [];
-  for (let index = 0; index < 7; index += 1) {
-    samples.push(await inspectPixiRenderState(page));
-    await page.waitForTimeout(220);
-  }
-  const yValues = samples.map((sample) => sample?.selectedSpiritBodyY).filter((value) => Number.isFinite(value));
-  const range = yValues.length ? Number((Math.max(...yValues) - Math.min(...yValues)).toFixed(2)) : 0;
-  const visible = samples.some((sample) => sample?.selectedSpiritVisible);
+  const { range, samples, visible } = await collectSelectedSpiritMotion(page);
   const stayedAnimating = samples.some((sample) => sample?.state === "idle-animating");
   return {
-    ok: visible && stayedAnimating && range >= 3,
+    ok: visible && stayedAnimating && range >= selectedSpiritMotionMinRange,
     target,
     visible,
     stayedAnimating,

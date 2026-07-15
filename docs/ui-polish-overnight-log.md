@@ -1459,6 +1459,7 @@ P2:
 
 - GitHub run `29388970729` completed the raw classroom runner, asset report, production preview smoke, summary, and artifact upload, but functional assessment found 13 report issues.
 - GitHub run `29390655699` confirmed that every failed turn had a valid settled center hit and that the handoff fix worked; the remaining 12 recorder failures were not pointer misses.
+- GitHub run `29393087661` confirmed all 16 moral/classroom turns with valid pre-click recording, settled-center, pointer-stop, and handoff evidence. Its only issue was an unrelated ultra-wide selected-spirit sample at `2.81px` while the reported positions still moved continuously from `-2.81` to `0` and back to `-2.74`.
 - On software-rendered CI, the wrong-child and geometry probes can exceed the product's 5.5-second auto-stop window. The mock recorder then became inactive without emitting `onstop`, leaving the UI in `listening`; the later real pointer click could no longer call `stop()` again. Faster mobile and local turns completed before the timeout, which explains their success.
 - A mobile success turn exposed a separate real feedback race: an old success-state wrong-child guard could overwrite the final idle “下一位” handoff before React committed the reset.
 
@@ -1467,6 +1468,7 @@ P2:
 - Animated QA activation now moves the pointer outside, moves it into the initial center, waits 220 ms for the 180 ms hover transition, resamples the settled center, verifies its hit target, and clicks through the real pointer path.
 - The recorder mock requests a bounded 30-second development-only auto-stop window before app startup; production and production previews keep the original 5.5-second classroom behavior.
 - Every moral and classroom turn reports settled-center misses, premature auto-stops, and missing pointer-triggered recorder stops as distinct failures.
+- Selected-spirit motion keeps the existing `3px` functional threshold and seven-sample minimum, but slow renderers may continue up to fifteen samples. Healthy motion exits as soon as it proves the threshold; a truly stopped animation still fails after the bounded window.
 - Successful moral approval now schedules the existing handoff feedback one browser task after the idle reset, so stale success-DOM guard feedback finishes first without weakening the child-selection guard.
 - Added the reviewed design contract at `docs/superpowers/specs/2026-07-15-classroom-qa-ci-stability-design.md`.
 
@@ -1480,3 +1482,6 @@ P2:
 - `npm run qa:trial`: all seven default whiteboard/mobile results passed with 0 issues and 0 warnings; trial assets passed.
 - `npm run qa:preview-smoke`: passed against the production manifest and preview server.
 - Read-only review exposed a 220ms stop-attribution window and two GEB gaps; stop evidence now samples immediately before the real click, and the L2/L3 contracts record the development-only QA window.
+- GitHub run `29393087661` proved the recording fix remotely: all 16 moral/classroom turns passed every pointer, stop, ledger, and handoff assertion; only the phase-sensitive ultra-wide home motion sample remained.
+- A 20x CPU-throttled browser harness kept a truly stalled animation below threshold for all 15 samples, while healthy motion passed without lowering the existing `3px` gate. Whiteboard and ultra home checks then passed with 0 functional issues.
+- Follow-up read-only review confirmed visible-only range calculation, exact 7–15 sample bounds, the nominal `3.08s` span, wheel-animation proof, unchanged report schema, and no product behavior change; no findings remained.
