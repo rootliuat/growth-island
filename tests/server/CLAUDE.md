@@ -15,5 +15,6 @@ providerStability.test.ts: Provider 超时、降级、语音 mock、评估幂等
 变更日志
 2026-07-12: 新增 classroom-store Interface 回归，锁定原子失败与事务队列恢复。
 2026-07-13: 新增课堂文件快照恢复与耐久失败回归。
+2026-07-15: 轮转测试保留真实 fsync，并使用 15 秒单测预算容纳 CI 共享磁盘延迟。
 
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md

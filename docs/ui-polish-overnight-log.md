@@ -1415,3 +1415,4 @@ P2:
 - `npm run qa:preview-smoke`: passed.
 - Pre/post reports kept the same result keys, recursive field schema, issue list, and warning list.
 - Read-only review found no runtime or report-contract regression; follow-up made the `Buffer` dependency explicit and aligned runner/operations L3 plus the nested QA L2 parent and migration status with the code.
+- GitHub CI exposed the snapshot-rotation durability test crossing Vitest's 5-second default on shared storage; the real fsync coverage remains unchanged and only that test receives a 15-second timeout.
