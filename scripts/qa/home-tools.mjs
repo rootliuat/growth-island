@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 Playwright Page、Pixi canvas QA data-* 契约和浏览器 performance API。
  * [OUTPUT]: 对外提供首页地图清晰度、拖拽、缩放、精灵浮动和 soak 性能测量工具。
- * [POS]: scripts/qa 的首页性能工具 Module，被 runner.mjs 的断言编排消费。
+ * [POS]: scripts/qa 的首页性能工具 Module，被 runner 与 operations-flows 的页面编排消费。
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -551,4 +551,3 @@ export async function measureHomePerformanceSoak(page, options = {}) {
     settledRenderState,
   };
 }
-

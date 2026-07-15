@@ -68,7 +68,7 @@ describe("classroom snapshot file", () => {
     expect(await backupPaths(dbPath)).toHaveLength(20);
     expect(file.getHealth().validSnapshotCount).toBe(20);
     expect((await file.read()).children[0].name).toBe("孩子24");
-  });
+  }, 15_000);
 
   it("quarantines a corrupt main file and restores the newest valid snapshot", async () => {
     const { dbPath, file } = await createFile();

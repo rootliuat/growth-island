@@ -1391,3 +1391,28 @@ P2:
 - `npm run build`: passed with the existing `three.module` large chunk warning.
 - `QA_BASE_URL=http://127.0.0.1:5173 QA_CHECKS=home npm run qa:visual`: whiteboard and ultra passed with 0 issues and 0 warnings.
 - `QA_BASE_URL=http://127.0.0.1:5173 QA_CHECKS=home-performance-soak QA_SOAK_MS=30000 QA_SOAK_SAMPLE_MS=10000 npm run qa:visual`: whiteboard passed with 0 issues and 0 warnings.
+
+## P25.1 classroom operations QA split
+
+### Scope
+
+- Continued the strict-structure-equivalent QA runner split without changing check names, order, browser actions, assertion text, report schema, artifact paths, or product behavior.
+
+### Implementation Notes
+
+- Added `scripts/qa/operations-flows.mjs` as the bounded home for data management, organization, settings, generic module, and mobile operations flows.
+- Kept browser lifecycle, check dispatch, issue aggregation, screenshots, and report serialization in `scripts/qa/runner.mjs`.
+- Preserved the extracted function bodies byte-for-byte apart from adding ESM exports; dependencies are explicit imports from `home-tools.mjs` and `data-management-assertions.mjs`.
+- Reduced `scripts/qa/runner.mjs` from 5,413 to 4,722 lines; the new Module is 710 lines and remains below the repository 800-line limit.
+
+### Validation
+
+- `node --check scripts/qa/runner.mjs && node --check scripts/qa/operations-flows.mjs && git diff --check`: passed.
+- `npm test`: 16 files and 79 tests passed.
+- `npm run build`: passed; build budgets stayed at initial `315.6 KB`, Pixi `452.3 KB`, and home `767.9 KB`.
+- Operations QA (`data-management`, `organization`, `settings`, and their mobile checks): six results passed with 0 issues and 0 warnings.
+- `npm run qa:trial`: seven default whiteboard/mobile results passed with 0 issues and 0 warnings; trial assets passed.
+- `npm run qa:preview-smoke`: passed.
+- Pre/post reports kept the same result keys, recursive field schema, issue list, and warning list.
+- Read-only review found no runtime or report-contract regression; follow-up made the `Buffer` dependency explicit and aligned runner/operations L3 plus the nested QA L2 parent and migration status with the code.
+- GitHub CI exposed the snapshot-rotation durability test crossing Vitest's 5-second default on shared storage; the real fsync coverage remains unchanged and only that test receives a 15-second timeout.
