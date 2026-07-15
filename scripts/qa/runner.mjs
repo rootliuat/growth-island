@@ -622,11 +622,16 @@ async function exerciseSingleMoralSpeak(page, screenshots = {}) {
     ).length;
     return { selfServiceRecordCount };
   }, { selectedChildId: readyDetails.selectedChildId });
-  const listeningTouch = await inspectTouchAndOverlap(page);
   const listeningWrongSelection = await attemptWrongDockChildSelection(page);
   const listeningWrongMapSelection = await attemptWrongMapChildSelection(page);
-  await page.locator(".moral-wave-state").click();
+  const listeningTouch = await inspectTouchAndOverlap(page);
+  const recorderStopCountBefore = await page.evaluate(() => window.__growthIslandRecorderStopCountForQa ?? 0);
+  await clickQaButtonAtCurrentCenter(page, ".moral-wave-state");
   await page.waitForTimeout(120);
+  const recordingStoppedByPointer = await page.evaluate(
+    (previousCount) => window.__growthIslandRecorderStopCountForQa === previousCount + 1,
+    recorderStopCountBefore,
+  );
   const listeningDetails = {
     ...listeningState,
     ...listeningLedger,
@@ -634,6 +639,7 @@ async function exerciseSingleMoralSpeak(page, screenshots = {}) {
     touchGeometry: listeningTouch,
     wrongSelection: listeningWrongSelection,
     wrongMapSelection: listeningWrongMapSelection,
+    recordingStoppedByPointer,
   };
 
   await page.waitForFunction(() => typeof window.__growthIslandSetMoralRecognizingForQa === "function", null, {
@@ -1061,6 +1067,15 @@ async function inspectExpandedDockGeometry(page) {
   return geometry;
 }
 
+async function clickQaButtonAtCurrentCenter(page, selector) {
+  const button = page.locator(selector).first();
+  const point = await button.evaluate((element) => {
+    const rect = element.getBoundingClientRect();
+    return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+  });
+  await page.mouse.click(point.x, point.y);
+}
+
 async function attemptWrongDockChildSelection(page) {
   const expandButton = page.locator(".spirit-dock.collapsed .dock-collapse").first();
   const expandedForProbe = (await expandButton.count()) > 0;
@@ -1206,6 +1221,7 @@ async function installMoralRecorderMock(page) {
 
       stop() {
         this.state = "inactive";
+        window.__growthIslandRecorderStopCountForQa = (window.__growthIslandRecorderStopCountForQa ?? 0) + 1;
       }
     }
 
@@ -3421,6 +3437,10 @@ async function inspectPage(browser, check, viewport) {
     { label: "moral pending expanded dock", geometry: moralFlowDetails?.pending?.expandedDockTouchGeometry },
     { label: "moral success", geometry: moralFlowDetails?.success?.touchGeometry },
     { label: "classroom loop ready", geometry: classroomLoopDetails?.ready?.touchGeometry },
+    ...(classroomLoopDetails?.children ?? []).map((child, index) => ({
+      label: `classroom loop child ${index + 1} listening`,
+      geometry: child.listening?.touchGeometry,
+    })),
     { label: "classroom loop pending", geometry: classroomLoopDetails?.pending?.touchGeometry },
     { label: "classroom loop success", geometry: classroomLoopDetails?.success?.touchGeometry },
     { label: "long transcript review", geometry: moralReviewSafetyDetails?.longTranscript?.touchGeometry },
@@ -3786,6 +3806,9 @@ async function inspectPage(browser, check, viewport) {
       if (childFlow.listening?.selfServiceRecordCount !== childFlow.ready?.selfServiceRecordCount) {
         issues.push(`moral speak child ${index + 1} entered ledger during listening`);
       }
+      if (!childFlow.listening?.recordingStoppedByPointer) {
+        issues.push(`moral speak child ${index + 1} pointer did not stop recording`);
+      }
       if (!childFlow.listening?.wrongSelection?.guarded) {
         issues.push(`moral speak child ${index + 1} listening allowed wrong-child selection`);
       }
@@ -3880,6 +3903,9 @@ async function inspectPage(browser, check, viewport) {
       if (!childFlow.final?.returnedToFullIsland) issues.push(`classroom loop child ${index + 1} did not return full island`);
       if (childFlow.final?.hasQueuedNextTurnUi) issues.push(`classroom loop child ${index + 1} showed queued next-child UI`);
       if (!childFlow.final?.singleLedgerWrite) issues.push(`classroom loop child ${index + 1} ledger write count mismatch`);
+      if (!childFlow.listening?.recordingStoppedByPointer) {
+        issues.push(`classroom loop child ${index + 1} pointer did not stop recording`);
+      }
       if (!childFlow.listening?.wrongSelection?.guarded) {
         issues.push(`classroom loop child ${index + 1} listening allowed wrong-child selection`);
       }

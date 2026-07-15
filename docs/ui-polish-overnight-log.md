@@ -1,3 +1,10 @@
+<!--
+[INPUT]: 依赖仓库实现、构建测试结果与课堂 QA 报告。
+[OUTPUT]: 对外提供 UI、性能、恢复与 QA 改进的连续变更日志。
+[POS]: docs 的工程演进记录，承接每轮实现范围、设计理由与验证证据。
+[PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+-->
+
 # UI Polish Overnight Log
 
 ## Checkpoint 0 - Baseline
@@ -1416,3 +1423,27 @@ P2:
 - Pre/post reports kept the same result keys, recursive field schema, issue list, and warning list.
 - Read-only review found no runtime or report-contract regression; follow-up made the `Buffer` dependency explicit and aligned runner/operations L3 plus the nested QA L2 parent and migration status with the code.
 - GitHub CI exposed the snapshot-rotation durability test crossing Vitest's 5-second default on shared storage; the real fsync coverage remains unchanged and only that test receives a 15-second timeout.
+
+## P25.2 scheduled classroom QA stabilization
+
+### Scope
+
+- Fixed the common cause behind the 2026-07-13 and 2026-07-14 scheduled Classroom QA failures without weakening classroom assertions or changing product behavior.
+- Kept the existing ten-child loop, physical touch geometry, center-point hit testing, overlap checks, check names, report schema, and artifact paths intact.
+
+### Implementation Notes
+
+- The listening control combines an infinite waveform animation with a hover transform. After the wrong-child guard probe expands and collapses the dock, Playwright's pointer actionability check could wait indefinitely for the control to become geometrically stable even though its size, visibility, and center hit target had already passed inspection.
+- After the wrong-child guard probes, the QA runner now rechecks touch geometry and center-point hit targets, samples the button's current center, and sends a real pointer click at that coordinate. This removes the locator stability deadlock without bypassing pointer dispatch or current-layout hit testing.
+- The recorder mock counts `stop()` calls, and every child flow reports an issue unless the pointer click stopped exactly that recording. All ten listening states now participate in the final touch-geometry issue aggregation.
+- No `force` click, timeout increase, assertion removal, CSS change, or production QA hook was added.
+
+### Validation
+
+- `node --check scripts/qa/runner.mjs && git diff --check`: passed.
+- Two isolated `classroom-touch-loop/whiteboard` trial runs passed consecutively; 20 child turns completed with 0 issues and 0 warnings, and both asset gates passed.
+- `npm test`: 16 files and 79 tests passed.
+- `npm run build`: passed; build budgets stayed at initial `315.6 KB`, Pixi `452.3 KB`, and home `767.9 KB`.
+- `npm run qa:trial`: all seven default whiteboard/mobile results passed with 0 issues and 0 warnings; trial assets passed.
+- `npm run qa:preview-smoke`: passed against the production manifest and preview server.
+- Read-only follow-up review confirmed the real pointer path, per-recording stop proof, ten-child listening geometry aggregation, and documentation accuracy; no blocking findings remained.
