@@ -644,13 +644,15 @@ export function useMoralSpeakWorkflow(input: MoralSpeakWorkflowInput) {
     schedule(() => {
       approvingRef.current = false;
       returnToIslandIdle();
-      input.showFeedback({
-        kind: "status",
-        tone: "neutral",
-        title: "下一位可以点精灵",
-        detail: "孩子自己选择精灵继续",
-        childName: completedChild.name,
-      });
+      schedule(() => {
+        input.showFeedback({
+          kind: "status",
+          tone: "neutral",
+          title: "下一位可以点精灵",
+          detail: "孩子自己选择精灵继续",
+          childName: completedChild.name,
+        });
+      }, 0);
     }, 2400);
   };
 
