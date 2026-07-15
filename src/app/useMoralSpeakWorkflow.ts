@@ -1,5 +1,5 @@
 /**
- * [INPUT]: 依赖 moralRecorder、speechDiagnostics、classroomApi、德育规则、课堂数据会话写入能力和地图控制句柄。
+ * [INPUT]: 依赖 moralRecorder、speechDiagnostics、classroomApi、德育规则、课堂数据会话写入能力、地图控制句柄和开发期 QA 录音窗口。
  * [OUTPUT]: 对外提供 useMoralSpeakWorkflow，返回说成长状态、同音频单次重试、用户动作、选择守卫和 QA 控制面。
  * [POS]: app 的说成长会话深 Module，独占录音资源、session ID、审批锁与状态转换。
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -55,6 +55,19 @@ interface MoralSpeakWorkflowInput {
   showFeedback: (feedback: Omit<GrowthFeedback, "id">) => void;
   syncStatus: SyncStatus;
   worldMapRef: RefObject<PixiWorldMapHandle | null>;
+}
+
+interface MoralSpeakQaWindow extends Window {
+  __growthIslandForceMoralMicErrorForQa?: boolean;
+  __growthIslandMoralAutoStopMsForQa?: number;
+}
+
+const moralAutoStopMs = 5_500;
+
+function getMoralAutoStopMs() {
+  const requestedMs = (window as MoralSpeakQaWindow).__growthIslandMoralAutoStopMsForQa;
+  if (!import.meta.env.DEV || typeof requestedMs !== "number" || !Number.isFinite(requestedMs)) return moralAutoStopMs;
+  return Math.min(60_000, Math.max(moralAutoStopMs, requestedMs));
 }
 
 export function useMoralSpeakWorkflow(input: MoralSpeakWorkflowInput) {
@@ -448,7 +461,7 @@ export function useMoralSpeakWorkflow(input: MoralSpeakWorkflowInput) {
     if (!isSessionActive(sessionId, child.id)) return;
     input.setSelectedChildId(child.id);
 
-    const qaWindow = window as unknown as { __growthIslandForceMoralMicErrorForQa?: boolean };
+    const qaWindow = window as MoralSpeakQaWindow;
     if (import.meta.env.DEV && qaWindow.__growthIslandForceMoralMicErrorForQa) {
       setState({ stage: "error", childId: child.id, error: "麦克风没准备好，请老师帮忙" });
       return;
@@ -506,7 +519,7 @@ export function useMoralSpeakWorkflow(input: MoralSpeakWorkflowInput) {
       }
       setState({ stage: "listening", childId: child.id });
       recorder.start();
-      schedule(stopRecording, 5500);
+      schedule(stopRecording, getMoralAutoStopMs());
     } catch (error) {
       stopTracks();
       if (isSessionActive(sessionId, child.id)) {

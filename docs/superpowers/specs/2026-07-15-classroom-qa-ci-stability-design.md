@@ -1,7 +1,7 @@
 <!--
 [INPUT]: 依赖 2026-07-15 远端 Classroom QA 报告、说成长会话状态机与动画触控契约。
-[OUTPUT]: 对外提供 CI 指针激活与成功交接反馈竞态的最小修复设计。
-[POS]: specs 的课堂 QA 稳定性补充规格，约束 runner 与说成长反馈时序的协同修复。
+[OUTPUT]: 对外提供 CI 指针激活、QA 录音窗口与成功交接反馈竞态的最小修复设计。
+[POS]: specs 的课堂 QA 稳定性补充规格，约束 runner 与说成长录音、反馈时序的协同修复。
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
 -->
 
@@ -16,6 +16,8 @@ Make the remote Classroom QA prove the real pointer path without depending on Pl
 Before every animated listening-button activation, the runner moves the pointer outside the control, samples its center, moves into it, waits beyond the 180 ms hover transition, and samples the settled center again. It then sends a real mouse click at that coordinate. The report records whether the settled center still hit the button and whether exactly one recorder `stop()` followed; all moral-flow and ten-child classroom turns treat either failure as a functional issue.
 
 This preserves current-layout size, overlap, center-hit, pointer dispatch, and callback evidence. It does not use force click, DOM click, keyboard substitution, or a longer locator timeout.
+
+The synthetic wrong-child and geometry probes may exceed the product's 5.5-second automatic recording window on software-rendered CI. Development QA therefore requests a bounded 30-second recording window before the session starts. Production ignores this hook and keeps 5.5 seconds. The report also proves that no recorder stop occurred between entering listening and the pointer activation, so a future timeout regression cannot be misreported as a missed click.
 
 ## Handoff feedback
 
@@ -32,3 +34,4 @@ Successful approval still returns to the full island after 2.4 seconds. The work
 
 - Synchronously updating `stateRef` during reset could let a click from stale success DOM select another child after the state becomes idle.
 - Accepting keyboard activation or relaxing the handoff assertion would hide real whiteboard interaction failures.
+- Increasing the production auto-stop would change classroom behavior merely to accommodate synthetic QA work; only the development hook may extend it.
