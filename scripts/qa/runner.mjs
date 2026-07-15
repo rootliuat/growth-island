@@ -626,7 +626,7 @@ async function exerciseSingleMoralSpeak(page, screenshots = {}) {
   const listeningWrongMapSelection = await attemptWrongMapChildSelection(page);
   const listeningTouch = await inspectTouchAndOverlap(page);
   const recorderStopCountBefore = await page.evaluate(() => window.__growthIslandRecorderStopCountForQa ?? 0);
-  await clickQaButtonAtCurrentCenter(page, ".moral-wave-state");
+  const pointerActivation = await clickQaButtonAtSettledCenter(page, ".moral-wave-state");
   await page.waitForTimeout(120);
   const recordingStoppedByPointer = await page.evaluate(
     (previousCount) => window.__growthIslandRecorderStopCountForQa === previousCount + 1,
@@ -639,6 +639,7 @@ async function exerciseSingleMoralSpeak(page, screenshots = {}) {
     touchGeometry: listeningTouch,
     wrongSelection: listeningWrongSelection,
     wrongMapSelection: listeningWrongMapSelection,
+    pointerActivation,
     recordingStoppedByPointer,
   };
 
@@ -1067,13 +1068,25 @@ async function inspectExpandedDockGeometry(page) {
   return geometry;
 }
 
-async function clickQaButtonAtCurrentCenter(page, selector) {
+async function clickQaButtonAtSettledCenter(page, selector) {
   const button = page.locator(selector).first();
-  const point = await button.evaluate((element) => {
+  const readCenter = () => button.evaluate((element) => {
     const rect = element.getBoundingClientRect();
     return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
   });
-  await page.mouse.click(point.x, point.y);
+  await page.mouse.move(0, 0);
+  const initial = await readCenter();
+  await page.mouse.move(initial.x, initial.y);
+  await page.waitForTimeout(220);
+  const settled = await button.evaluate((element) => {
+    const rect = element.getBoundingClientRect();
+    const x = rect.left + rect.width / 2;
+    const y = rect.top + rect.height / 2;
+    const hit = document.elementFromPoint(x, y);
+    return { x, y, centerHit: Boolean(hit && (hit === element || element.contains(hit))) };
+  });
+  await page.mouse.click(settled.x, settled.y);
+  return { initial, settled };
 }
 
 async function attemptWrongDockChildSelection(page) {
@@ -3809,6 +3822,9 @@ async function inspectPage(browser, check, viewport) {
       if (!childFlow.listening?.recordingStoppedByPointer) {
         issues.push(`moral speak child ${index + 1} pointer did not stop recording`);
       }
+      if (!childFlow.listening?.pointerActivation?.settled?.centerHit) {
+        issues.push(`moral speak child ${index + 1} settled pointer center missed recording control`);
+      }
       if (!childFlow.listening?.wrongSelection?.guarded) {
         issues.push(`moral speak child ${index + 1} listening allowed wrong-child selection`);
       }
@@ -3905,6 +3921,9 @@ async function inspectPage(browser, check, viewport) {
       if (!childFlow.final?.singleLedgerWrite) issues.push(`classroom loop child ${index + 1} ledger write count mismatch`);
       if (!childFlow.listening?.recordingStoppedByPointer) {
         issues.push(`classroom loop child ${index + 1} pointer did not stop recording`);
+      }
+      if (!childFlow.listening?.pointerActivation?.settled?.centerHit) {
+        issues.push(`classroom loop child ${index + 1} settled pointer center missed recording control`);
       }
       if (!childFlow.listening?.wrongSelection?.guarded) {
         issues.push(`classroom loop child ${index + 1} listening allowed wrong-child selection`);

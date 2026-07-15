@@ -1429,7 +1429,7 @@ P2:
 ### Scope
 
 - Fixed the common cause behind the 2026-07-13 and 2026-07-14 scheduled Classroom QA failures without weakening classroom assertions or changing product behavior.
-- Kept the existing ten-child loop, physical touch geometry, center-point hit testing, overlap checks, check names, report schema, and artifact paths intact.
+- Kept the existing ten-child loop, physical touch geometry, center-point hit testing, overlap checks, check names, top-level report schema, and artifact paths intact; listening details gained additive pointer-stop evidence.
 
 ### Implementation Notes
 
@@ -1447,3 +1447,34 @@ P2:
 - `npm run qa:trial`: all seven default whiteboard/mobile results passed with 0 issues and 0 warnings; trial assets passed.
 - `npm run qa:preview-smoke`: passed against the production manifest and preview server.
 - Read-only follow-up review confirmed the real pointer path, per-recording stop proof, ten-child listening geometry aggregation, and documentation accuracy; no blocking findings remained.
+
+## P25.3 remote classroom QA timing follow-up
+
+### Scope
+
+- Followed the merged P25.2 change through a manual full Classroom QA run on GitHub instead of treating local success as the terminal signal.
+- Kept the same product layout, copy, ledger, Provider, classroom data, check names, top-level report schema, and artifact paths; listening details gained additive settled-pointer evidence.
+
+### Remote Findings
+
+- GitHub run `29388970729` completed the raw classroom runner, asset report, production preview smoke, summary, and artifact upload, but functional assessment found 13 report issues.
+- CI pointer state differed from local state: after the first turn, the mouse could remain over the next animated control, so immediate center sampling raced its hover transform and the click missed the recorder callback.
+- A mobile success turn exposed a separate real feedback race: an old success-state wrong-child guard could overwrite the final idle “下一位” handoff before React committed the reset.
+
+### Implementation Notes
+
+- Animated QA activation now moves the pointer outside, moves it into the initial center, waits 220 ms for the 180 ms hover transition, resamples the settled center, verifies its hit target, and clicks through the real pointer path.
+- Every moral and classroom turn reports both settled-center misses and missing recorder stops.
+- Successful moral approval now schedules the existing handoff feedback one browser task after the idle reset, so stale success-DOM guard feedback finishes first without weakening the child-selection guard.
+- Added the reviewed design contract at `docs/superpowers/specs/2026-07-15-classroom-qa-ci-stability-design.md`.
+
+### Validation
+
+- `node --check scripts/qa/runner.mjs && git diff --check`: passed.
+- `npm test`: 16 files and 79 tests passed.
+- `npm run build`: passed; build budgets stayed at initial `315.6 KB`, Pixi `452.3 KB`, and home `767.9 KB`.
+- Combined desktop/mobile moral flow plus ten-child classroom loop: 16 turns passed with 0 issues and 0 warnings; every settled center, recorder stop, and handoff flag was true.
+- A second isolated ten-child classroom loop passed with 0 issues and 0 warnings; trial assets passed.
+- `npm run qa:trial`: all seven default whiteboard/mobile results passed with 0 issues and 0 warnings; trial assets passed.
+- `npm run qa:preview-smoke`: passed against the production manifest and preview server.
+- Read-only review found no pointer, timer, handoff, XP ledger, report-gate, or GEB blocking issue; both documentation accuracy findings were corrected before commit.
