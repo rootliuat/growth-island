@@ -272,68 +272,114 @@
   gap: 5px;
 }
 
-.teacher-review-transcript-line {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: start;
-  gap: 7px;
-  margin: 0;
-  padding: 8px 9px;
-  border: 1px solid rgba(214, 177, 106, 0.28);
-  border-radius: 13px;
-  color: #174c5a;
-  background: rgba(255, 253, 244, 0.72);
-  font-size: 12px;
-  font-weight: 850;
-  line-height: 1.34;
-}
-
-.teacher-review-transcript-line span {
-  display: inline-flex;
-  min-height: 22px;
-  align-items: center;
-  padding: 0 7px;
-  border-radius: 999px;
-  color: #fffdf4;
-  background: #2d9fb2;
-  font-size: 11px;
-  font-weight: 950;
-  line-height: 1;
-}
-
 .review-transcript {
   display: grid;
   gap: 7px;
   min-width: 0;
+  padding-top: 0;
+  border-top: 0;
 }
 
 .review-transcript summary {
-  display: inline-flex;
-  width: fit-content;
-  min-height: 32px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  width: 100%;
+  min-width: 0;
+  min-height: 52px;
   align-items: center;
-  padding: 0 10px;
+  gap: 8px;
+  padding: 7px 9px;
   border: 1px solid rgba(214, 177, 106, 0.34);
-  border-radius: 999px;
-  color: rgba(23, 76, 90, 0.72);
-  background: rgba(255, 253, 244, 0.74);
+  border-radius: 13px;
+  color: #174c5a;
+  background: rgba(255, 253, 244, 0.78);
   font-size: 12px;
-  font-weight: 950;
+  font-weight: 850;
+  line-height: 1.34;
   cursor: pointer;
   list-style: none;
+  overflow-wrap: anywhere;
 }
 
 .review-transcript summary::-webkit-details-marker {
   display: none;
 }
 
-.review-transcript summary::after {
-  margin-left: 6px;
-  content: "展开";
+.review-transcript-label,
+.review-transcript-toggle {
+  display: inline-flex;
+  min-height: 28px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 950;
+  line-height: 1;
 }
 
-.review-transcript[open] summary::after {
-  content: "收起";
+.review-transcript-label {
+  color: #174c5a;
+  background: rgba(135, 216, 208, 0.38);
+}
+
+.review-transcript-toggle {
+  min-width: 44px;
+  color: rgba(23, 76, 90, 0.76);
+  background: rgba(244, 217, 155, 0.54);
+}
+
+.teacher-review-transcript-preview {
+  display: -webkit-box;
+  min-width: 0;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.review-transcript-toggle .when-expanded {
+  display: none;
+}
+
+.review-transcript[open] .review-transcript-toggle .when-collapsed {
+  display: none;
+}
+
+.review-transcript[open] .review-transcript-toggle .when-expanded {
+  display: inline;
+}
+
+.review-transcript > .teacher-review-transcript-line {
+  display: block;
+  margin: 0;
+  padding: 9px 10px;
+  overflow: visible;
+  border-left: 3px solid rgba(45, 159, 178, 0.5);
+  border-radius: 0 10px 10px 0;
+  color: #174c5a;
+  background: rgba(255, 253, 244, 0.56);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  -webkit-line-clamp: unset;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.review-transcript:not([open]) > .teacher-review-transcript-line,
+.review-transcript:not([open]) > .review-confidence {
+  display: none;
+}
+
+.teacher-review-corner-card:has(.review-transcript[open]) {
+  max-width: calc(100% - 24px);
+  max-height: min(680px, calc(100dvh - 32px));
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .teacher-review-actions[data-mode="approve"] {
@@ -405,6 +451,10 @@
 }
 
 @media (max-width: 720px) {
+  .teacher-review-transcript-preview {
+    -webkit-line-clamp: 2;
+  }
+
   .scene-command-home {
     min-height: 44px;
   }

@@ -309,9 +309,11 @@
   outline-offset: 3px;
 }
 
-.home-screen-shell .teacher-review-corner-card:has(.review-edit-popover[open]) {
+.home-screen-shell .teacher-review-corner-card:has(.review-edit-popover[open]),
+.home-screen-shell .teacher-review-corner-card:has(.review-transcript[open]) {
   max-height: min(560px, calc(100% - 112px));
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
   overscroll-behavior: contain;
 }
 
@@ -559,7 +561,8 @@
     font-size: 16px;
   }
 
-  .home-screen-shell .teacher-review-corner-card:has(.review-edit-popover[open]) {
+  .home-screen-shell .teacher-review-corner-card:has(.review-edit-popover[open]),
+  .home-screen-shell .teacher-review-corner-card:has(.review-transcript[open]) {
     max-height: min(680px, calc(100% - 92px));
   }
 
@@ -629,16 +632,22 @@
   }
 
   .home-screen-shell .teacher-review-corner-card {
-    max-height: min(270px, calc(100% - 160px));
+    max-height: min(390px, calc(100% - 160px));
   }
 
-  .home-screen-shell .teacher-review-corner-card:has(.review-edit-popover[open]) {
+  .home-screen-shell .home-module:has(.world-map-shell:not(.moral-stage-idle)):has(.spirit-dock.expanded) .teacher-review-corner-card {
+    max-height: min(390px, calc(100% - 116px));
+  }
+
+  .home-screen-shell .teacher-review-corner-card:has(.review-edit-popover[open]),
+  .home-screen-shell .teacher-review-corner-card:has(.review-transcript[open]) {
     top: auto;
     right: 12px;
     bottom: 92px;
     left: 12px;
     max-height: min(300px, calc(100% - 220px));
-    overflow: auto;
+    overflow-x: hidden;
+    overflow-y: auto;
     overscroll-behavior: contain;
   }
 

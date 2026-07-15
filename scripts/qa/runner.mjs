@@ -239,6 +239,7 @@ async function inspectTouchAndOverlap(page) {
       return rect;
     };
     const isVisible = (element) => {
+      if (element.closest("details:not([open])") && !element.closest("summary")) return false;
       const style = getComputedStyle(element);
       const rect = visibleRect(element);
       return style.display !== "none" && style.visibility !== "hidden" && Boolean(rect);
@@ -1282,6 +1283,8 @@ async function inspectMoralSelfServiceState(page) {
       .join("");
     const teacherCard = document.querySelector(".teacher-review-corner-card");
     const teacherRect = teacherCard?.getBoundingClientRect();
+    const transcriptPreview = teacherCard?.querySelector(".teacher-review-transcript-preview");
+    const transcriptPreviewStyle = transcriptPreview ? getComputedStyle(transcriptPreview) : undefined;
     const turnChip = document.querySelector(".moral-turn-chip");
     const turnChipRect = turnChip?.getBoundingClientRect();
     const focusPlaque = document.querySelector(".map-focus-plaque");
@@ -1340,6 +1343,9 @@ async function inspectMoralSelfServiceState(page) {
           teacherRect.right <= innerWidth + 1 &&
           teacherRect.bottom <= innerHeight + 1
         : true,
+      teacherTranscriptVisible: transcriptPreview ? isVisible(transcriptPreview) : false,
+      teacherTranscriptText: transcriptPreview?.textContent?.trim() ?? "",
+      teacherTranscriptLineClamp: transcriptPreviewStyle?.webkitLineClamp ?? "",
       childBubbleText: document.querySelector(".spirit-speech-bubble")?.textContent?.replace(/\s+/g, "") ?? "",
       focusPlaqueVisible: focusPlaque ? isVisible(focusPlaque) : false,
       energyBoardVisible: energyBoard ? isVisible(energyBoard) : false,
@@ -1363,9 +1369,21 @@ async function exerciseMoralReviewSafety(page, pendingScreenshot, adjustedScreen
   const longTranscriptLayout = await page.evaluate(() => {
     const card = document.querySelector(".teacher-review-corner-card");
     const transcript = document.querySelector(".teacher-review-transcript-line");
+    const preview = document.querySelector(".teacher-review-transcript-preview");
     const rect = card?.getBoundingClientRect();
+    const previewRect = preview?.getBoundingClientRect();
+    const previewStyle = preview ? getComputedStyle(preview) : undefined;
     return {
       hasTranscriptLine: Boolean(transcript),
+      previewVisible: Boolean(
+        previewRect &&
+          previewStyle?.display !== "none" &&
+          previewStyle?.visibility !== "hidden" &&
+          previewRect.width > 0 &&
+          previewRect.height > 0,
+      ),
+      previewText: preview?.textContent?.trim() ?? "",
+      previewLineClamp: previewStyle?.webkitLineClamp ?? "",
       cardRect: rect
         ? {
             x: Math.round(rect.x),
@@ -1382,6 +1400,61 @@ async function exerciseMoralReviewSafety(page, pendingScreenshot, adjustedScreen
       cardScrolls: card ? card.scrollHeight > card.clientHeight + 1 : false,
     };
   });
+  const longTranscriptSummary = page.locator(".teacher-review-corner-card .review-transcript summary");
+  await longTranscriptSummary.click();
+  await page.waitForSelector(".teacher-review-corner-card .review-transcript[open]", { timeout: 2000 });
+  const longTranscriptExpanded = await page.evaluate((expectedTranscript) => {
+    const card = document.querySelector(".teacher-review-corner-card");
+    const details = card?.querySelector(".review-transcript");
+    const full = details?.querySelector(".teacher-review-transcript-line");
+    const cardRect = card?.getBoundingClientRect();
+    const fullRect = full?.getBoundingClientRect();
+    const fullStyle = full ? getComputedStyle(full) : undefined;
+    return {
+      open: details?.hasAttribute("open") ?? false,
+      fullText: full?.textContent?.trim() ?? "",
+      fullVisible: Boolean(
+        cardRect &&
+          fullRect &&
+          fullStyle?.display !== "none" &&
+          fullRect.top >= cardRect.top - 1 &&
+          fullRect.bottom <= cardRect.bottom + 1,
+      ),
+      fullUnclipped: Boolean(full && full.scrollHeight <= full.clientHeight + 1),
+      textMatches: full?.textContent?.trim() === expectedTranscript,
+      cardScrolls: Boolean(card && card.scrollHeight > card.clientHeight + 1),
+    };
+  }, longTranscript.transcript);
+  const longTranscriptActionsReachable = await page.evaluate(() => {
+    const card = document.querySelector(".teacher-review-corner-card");
+    if (!(card instanceof HTMLElement)) return false;
+    card.scrollTop = card.scrollHeight;
+    const cardRect = card.getBoundingClientRect();
+    const actions = [
+      ...card.querySelectorAll(
+        ".teacher-review-actions > button, .teacher-review-actions > .review-edit-popover > summary",
+      ),
+    ];
+    return actions.length === 5 && actions.every((action) => {
+      const rect = action.getBoundingClientRect();
+      const visibleHeight = Math.min(rect.bottom, cardRect.bottom) - Math.max(rect.top, cardRect.top);
+      return rect.height >= 44 && visibleHeight >= 44;
+    });
+  });
+  await page.evaluate(() => {
+    const card = document.querySelector(".teacher-review-corner-card");
+    if (card instanceof HTMLElement) card.scrollTop = 0;
+  });
+  await longTranscriptSummary.click();
+  await page.waitForFunction(
+    () => !document.querySelector(".teacher-review-corner-card .review-transcript")?.hasAttribute("open"),
+    null,
+    { timeout: 2000 },
+  );
+  const longTranscriptCollapsed = await page.evaluate(() => ({
+    open: document.querySelector(".teacher-review-corner-card .review-transcript")?.hasAttribute("open") ?? false,
+    toggleText: document.querySelector(".teacher-review-corner-card .review-transcript summary")?.textContent ?? "",
+  }));
   await page.locator(".teacher-review-corner-card .skip").click();
   await page.waitForFunction(() => window.__growthIslandMoralSpeakStage === "idle", null, { timeout: 3500 });
 
@@ -1618,6 +1691,9 @@ async function exerciseMoralReviewSafety(page, pendingScreenshot, adjustedScreen
       start: longStart,
       touchGeometry: longTranscriptTouch,
       layout: longTranscriptLayout,
+      expanded: longTranscriptExpanded,
+      actionsReachable: longTranscriptActionsReachable,
+      collapsed: longTranscriptCollapsed,
     },
     readyRescue: {
       started: readyStarted,
@@ -2577,6 +2653,123 @@ async function exerciseProfileMoralReady(page) {
   };
 }
 
+async function exerciseProfileMoralReview(page) {
+  const input = await page.evaluate(() => ({
+    childId: window.__growthIslandSelectedChildId,
+    transcript: "我今天主动帮同学收玩具，还提醒大家排队等一等。",
+    summary: "帮助同伴",
+  }));
+  if (!input.childId) return { ok: false, reason: "missing selected child" };
+
+  const start = await startQaMoralReview(page, input);
+  const summary = page.locator(".profile-cabin-stage .review-transcript summary");
+  await summary.waitFor({ state: "visible", timeout: 3000 });
+  const collapsed = await page.evaluate((expectedTranscript) => {
+    const cabin = document.querySelector(".profile-cabin-stage");
+    const card = cabin?.querySelector(".teacher-review-corner-card");
+    const details = card?.querySelector(".review-transcript");
+    const preview = details?.querySelector(".teacher-review-transcript-preview");
+    const summaryElement = details?.querySelector("summary");
+    const cabinRect = cabin?.getBoundingClientRect();
+    const cardRect = card?.getBoundingClientRect();
+    const previewRect = preview?.getBoundingClientRect();
+    const summaryRect = summaryElement?.getBoundingClientRect();
+    const hit = summaryRect
+      ? document.elementFromPoint(summaryRect.left + summaryRect.width / 2, summaryRect.top + summaryRect.height / 2)
+      : undefined;
+    const inside = (inner, outer) =>
+      Boolean(
+        inner &&
+          outer &&
+          inner.left >= outer.left - 1 &&
+          inner.right <= outer.right + 1 &&
+          inner.top >= outer.top - 1 &&
+          inner.bottom <= outer.bottom + 1,
+      );
+    return {
+      open: details?.hasAttribute("open") ?? false,
+      cardInCabin: inside(cardRect, cabinRect),
+      previewInCard: inside(previewRect, cardRect),
+      previewTextMatches: preview?.textContent?.trim() === expectedTranscript,
+      previewLineClamp: preview ? getComputedStyle(preview).webkitLineClamp : "",
+      summaryCenterHit: Boolean(hit && summaryElement && (hit === summaryElement || summaryElement.contains(hit))),
+    };
+  }, input.transcript);
+
+  await summary.click();
+  await page.waitForSelector(".profile-cabin-stage .review-transcript[open]", { timeout: 2000 });
+  const expanded = await page.evaluate((expectedTranscript) => {
+    const cabin = document.querySelector(".profile-cabin-stage");
+    const card = cabin?.querySelector(".teacher-review-corner-card");
+    const details = card?.querySelector(".review-transcript");
+    const full = details?.querySelector(".teacher-review-transcript-line");
+    if (card instanceof HTMLElement && full instanceof HTMLElement) {
+      card.scrollTop = Math.max(0, full.offsetTop - 8);
+    }
+    const cardRect = card?.getBoundingClientRect();
+    const fullRect = full?.getBoundingClientRect();
+    const visibleHeight = cardRect && fullRect
+      ? Math.min(cardRect.bottom, fullRect.bottom) - Math.max(cardRect.top, fullRect.top)
+      : 0;
+    return {
+      open: details?.hasAttribute("open") ?? false,
+      fullTextMatches: full?.textContent?.trim() === expectedTranscript,
+      fullVisible: Boolean(fullRect && visibleHeight >= Math.min(fullRect.height, 44)),
+      fullUnclipped: Boolean(full && full.scrollHeight <= full.clientHeight + 1),
+      cardScrollable: Boolean(card && card.scrollHeight > card.clientHeight + 1),
+    };
+  }, input.transcript);
+  const actionsReachable = await page.evaluate(() => {
+    const card = document.querySelector(".profile-cabin-stage .teacher-review-corner-card");
+    if (!(card instanceof HTMLElement)) return false;
+    card.scrollTop = card.scrollHeight;
+    const cardRect = card.getBoundingClientRect();
+    const actions = [
+      ...card.querySelectorAll(
+        ".teacher-review-actions > button, .teacher-review-actions > .review-edit-popover > summary",
+      ),
+    ];
+    return actions.length === 5 && actions.every((action) => {
+      const rect = action.getBoundingClientRect();
+      const visibleHeight = Math.min(rect.bottom, cardRect.bottom) - Math.max(rect.top, cardRect.top);
+      return rect.height >= 44 && visibleHeight >= 44;
+    });
+  });
+  await page.evaluate(() => {
+    const card = document.querySelector(".profile-cabin-stage .teacher-review-corner-card");
+    if (card instanceof HTMLElement) card.scrollTop = 0;
+  });
+  await summary.click();
+  await page.waitForFunction(
+    () => !document.querySelector(".profile-cabin-stage .review-transcript")?.hasAttribute("open"),
+    null,
+    { timeout: 2000 },
+  );
+  await page.locator(".profile-cabin-stage .teacher-review-actions .skip").click();
+  await page.waitForSelector(".profile-cabin-stage.moral-stage-idle", { timeout: 3000 }).catch(() => undefined);
+
+  const expectedClamp = await page.evaluate(() => (innerWidth <= 720 ? "2" : "3"));
+  return {
+    ok:
+      start.started === true &&
+      !collapsed.open &&
+      collapsed.cardInCabin &&
+      collapsed.previewInCard &&
+      collapsed.previewTextMatches &&
+      collapsed.previewLineClamp === expectedClamp &&
+      collapsed.summaryCenterHit &&
+      expanded.open &&
+      expanded.fullTextMatches &&
+      expanded.fullVisible &&
+      expanded.fullUnclipped &&
+      actionsReachable,
+    start,
+    collapsed,
+    expanded,
+    actionsReachable,
+  };
+}
+
 async function exerciseProfileLockedSelectionGuard(page) {
   const start = page.locator(".profile-moral-start").first();
   if ((await start.count()) === 0) return { ok: false, reason: "missing start button" };
@@ -2669,6 +2862,7 @@ async function exerciseProfileFlow(page, workbenchProfileScreenshot, homeProfile
     const profile = await inspectCurrentProfile(page);
     const moralReady = await exerciseProfileMoralReady(page);
     const moralSelectionGuard = await exerciseProfileLockedSelectionGuard(page);
+    const moralReview = await exerciseProfileMoralReview(page);
     await page.screenshot({ path: workbenchProfileScreenshot, fullPage: false });
 
     await page.locator(".profile-home-button").click();
@@ -2690,6 +2884,7 @@ async function exerciseProfileFlow(page, workbenchProfileScreenshot, homeProfile
       homeHadSelectedChild: Boolean(name) && homeText.includes(name),
       moralReady,
       moralSelectionGuard,
+      moralReview,
       fromWorkbench: profile,
       fromHome,
       homeProfileScreenshot,
@@ -2721,6 +2916,7 @@ async function exerciseProfileFlow(page, workbenchProfileScreenshot, homeProfile
   const fromWorkbench = await inspectCurrentProfile(page);
   const moralReady = await exerciseProfileMoralReady(page);
   const moralSelectionGuard = await exerciseProfileLockedSelectionGuard(page);
+  const moralReview = await exerciseProfileMoralReview(page);
   await page.screenshot({ path: workbenchProfileScreenshot, fullPage: false });
 
   await page.locator(".profile-home-button").click();
@@ -2742,6 +2938,7 @@ async function exerciseProfileFlow(page, workbenchProfileScreenshot, homeProfile
     homeHadSelectedChild: Boolean(name) && homeText.includes(name),
     moralReady,
     moralSelectionGuard,
+    moralReview,
     fromWorkbench,
     fromHome,
     homeProfileScreenshot,
@@ -3495,8 +3692,41 @@ async function inspectPage(browser, check, viewport) {
   if (moralReviewSafetyDetails?.longTranscript?.layout?.hasTranscriptLine === false) {
     issues.push("long transcript review line missing");
   }
+  if (moralReviewSafetyDetails && !moralReviewSafetyDetails.longTranscript?.layout?.previewVisible) {
+    issues.push("long transcript review preview is not visible by default");
+  }
+  if (moralReviewSafetyDetails && !moralReviewSafetyDetails.longTranscript?.layout?.previewText?.includes("主动帮同学收玩具")) {
+    issues.push("long transcript review preview does not expose recognized speech");
+  }
+  const expectedPreviewClamp = common.viewport.width <= 720 ? "2" : "3";
+  if (moralReviewSafetyDetails && moralReviewSafetyDetails.longTranscript?.layout?.previewLineClamp !== expectedPreviewClamp) {
+    issues.push(
+      `long transcript review preview clamp mismatch: ${moralReviewSafetyDetails.longTranscript?.layout?.previewLineClamp || "none"}`,
+    );
+  }
   if (moralReviewSafetyDetails?.longTranscript?.layout?.cardContained === false) {
     issues.push("long transcript review card outside viewport");
+  }
+  if (moralReviewSafetyDetails && !moralReviewSafetyDetails.longTranscript?.expanded?.open) {
+    issues.push("long transcript review did not expand");
+  }
+  if (
+    moralReviewSafetyDetails &&
+    (!moralReviewSafetyDetails.longTranscript?.expanded?.fullVisible ||
+      !moralReviewSafetyDetails.longTranscript?.expanded?.fullUnclipped ||
+      !moralReviewSafetyDetails.longTranscript?.expanded?.textMatches)
+  ) {
+    issues.push("long transcript review full text is hidden, clipped, or incomplete");
+  }
+  if (moralReviewSafetyDetails && !moralReviewSafetyDetails.longTranscript?.actionsReachable) {
+    issues.push("long transcript review actions are not fully reachable after expansion");
+  }
+  if (
+    moralReviewSafetyDetails &&
+    (moralReviewSafetyDetails.longTranscript?.collapsed?.open ||
+      !moralReviewSafetyDetails.longTranscript?.collapsed?.toggleText?.includes("全文"))
+  ) {
+    issues.push("long transcript review did not collapse back to its summary");
   }
 
   if (check.kind === "spirit-showcase") {
@@ -3706,6 +3936,12 @@ async function inspectPage(browser, check, viewport) {
       issues.push("moral speak teacher card missing confirmation actions");
     }
     if (!moralFlowDetails?.pending?.hasTeacherStatus) issues.push("moral speak teacher card missing light status");
+    if (!moralFlowDetails?.pending?.teacherTranscriptVisible) {
+      issues.push("moral speak recognized transcript is not visible before teacher action");
+    }
+    if (!moralFlowDetails?.pending?.teacherTranscriptText?.includes("我今天主动帮同学收玩具")) {
+      issues.push("moral speak teacher card does not show the recognized transcript");
+    }
     if (!moralFlowDetails?.pending?.wrongSelection?.guarded) {
       issues.push("moral speak pending review allowed wrong-child selection");
     }
@@ -3841,6 +4077,9 @@ async function inspectPage(browser, check, viewport) {
         issues.push(`moral speak child ${index + 1} listening allowed wrong-child map selection`);
       }
       if (childFlow.pending?.stage !== "pendingReview") issues.push(`moral speak child ${index + 1} review stage missing`);
+      if (!childFlow.pending?.teacherTranscriptVisible) {
+        issues.push(`moral speak child ${index + 1} transcript is not visible before teacher action`);
+      }
       for (const [stateName, flow] of [
         ["ready", childFlow.ready],
         ["listening", childFlow.listening],
@@ -3913,6 +4152,9 @@ async function inspectPage(browser, check, viewport) {
       if (childFlow.ready?.stage !== "ready") issues.push(`classroom loop child ${index + 1} ready stage missing`);
       if (childFlow.listening?.stage !== "listening") issues.push(`classroom loop child ${index + 1} listening stage missing`);
       if (childFlow.pending?.stage !== "pendingReview") issues.push(`classroom loop child ${index + 1} pending review missing`);
+      if (!childFlow.pending?.teacherTranscriptVisible) {
+        issues.push(`classroom loop child ${index + 1} transcript is not visible before teacher action`);
+      }
       if (childFlow.success?.stage !== "success") issues.push(`classroom loop child ${index + 1} success stage missing`);
       for (const [stateName, flow] of [
         ["ready", childFlow.ready],
@@ -4360,6 +4602,9 @@ async function inspectPage(browser, check, viewport) {
     }
     if (!profileFlowDetails?.moralSelectionGuard?.ok) {
       issues.push("profile flow active moral speak was hidden by roster selection");
+    }
+    if (!profileFlowDetails?.moralReview?.ok) {
+      issues.push("profile flow transcript review is clipped, hidden, or unreachable in the cabin");
     }
     if (
       profileFlowDetails?.fromWorkbench?.selectedChildId &&
