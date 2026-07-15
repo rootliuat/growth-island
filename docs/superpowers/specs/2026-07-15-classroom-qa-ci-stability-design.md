@@ -21,7 +21,7 @@ The synthetic wrong-child and geometry probes may exceed the product's 5.5-secon
 
 ## Slow-renderer motion gate
 
-The selected spirit still needs to move through at least 3 pixels while visible. Sampling starts with the existing seven observations, then continues only when the threshold has not yet been reached, up to fifteen observations at the same 220 ms cadence. A healthy animation exits as soon as it proves the existing range; a stopped animation remains below the same threshold and fails after the bounded 3.3-second window.
+The selected spirit still needs to move through at least 3 pixels while visible. Sampling starts with the existing seven observations, then continues only when the threshold has not yet been reached, up to fifteen observations at the same 220 ms cadence. A healthy animation exits as soon as it proves the existing range; a stopped animation remains below the same threshold and fails after the 15th observation. The nominal first-to-last observation span is `14 × 220 ms = 3.08 seconds`.
 
 This removes the fixed-window phase race seen at 7 FPS, where coherent positions moved from `-2.81` to `0` and back to `-2.74` but narrowly missed the threshold. It does not lower the threshold, alter the production Pixi ticker or animation curve, or convert a functional issue into a warning.
 
