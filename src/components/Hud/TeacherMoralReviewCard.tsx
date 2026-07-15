@@ -1,3 +1,10 @@
+/**
+ * [INPUT]: 依赖 React 的 useMemo/useState、德育能量领域规则、精灵能量分类，以及老师复核动作回调。
+ * [OUTPUT]: 对外提供 TeacherMoralReviewCard 组件，展示孩子转写证据并派发确认、修正、稍后、重说和跳过动作。
+ * [POS]: components/Hud 的老师说成长复核卡，被首页地图与孩子小屋共同复用。
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
+
 import { Check, Clock3, Mic, Shell, SkipForward, Wrench } from "lucide-react";
 import { useMemo, useState, type CSSProperties } from "react";
 import { virtueCategories } from "../../data/spirits";
@@ -47,7 +54,7 @@ export function TeacherMoralReviewCard({
   const style = { "--moral-accent": accent } as CSSProperties;
   const energyLabel = getChildEnergyLabel(safeCategory);
   const helpText = getTeacherHelpText(result);
-  const transcriptPreview = transcript?.trim() || "未收到文字";
+  const transcriptText = transcript?.trim() || "未识别到文字，请孩子重说";
   const actionLocked = busy === true;
 
   return (
@@ -62,6 +69,22 @@ export function TeacherMoralReviewCard({
           {canApprove ? getChildEnergyResultText(result) : helpText}
         </span>
       </div>
+
+      <details className="review-transcript">
+        <summary>
+          <span className="review-transcript-label">孩子说</span>
+          <span className="teacher-review-transcript-preview">{transcriptText}</span>
+          <span className="review-transcript-toggle" aria-hidden="true">
+            <span className="when-collapsed">全文</span>
+            <span className="when-expanded">收起</span>
+          </span>
+        </summary>
+        <p className="teacher-review-transcript-line">{transcriptText}</p>
+        <div className="review-confidence">
+          <span>识别置信度</span>
+          <em>{Math.round(result.confidence * 100)}%</em>
+        </div>
+      </details>
 
       <div className="teacher-review-actions" data-mode={canApprove ? "approve" : "adjust"}>
         {canApprove ? (
@@ -127,20 +150,6 @@ export function TeacherMoralReviewCard({
           跳过
         </button>
       </div>
-
-      <details className="review-transcript">
-        <summary>记录</summary>
-        <p className="teacher-review-transcript-line">
-          <span>听到</span>
-          {transcriptPreview}
-        </p>
-        {canApprove ? (
-          <div className="review-confidence">
-            <span>确认后能量进精灵</span>
-            <em>{Math.round(result.confidence * 100)}%</em>
-          </div>
-        ) : null}
-      </details>
     </aside>
   );
 }

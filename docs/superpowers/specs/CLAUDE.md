@@ -13,6 +13,7 @@
 2026-07-12-p2-review-fixes-design.md: 三项 P2 审查问题的教师修正、周期窗口与分类统计一致性设计。
 2026-07-13-trial-stability-design.md: 真实白板语音、性能、快照恢复与独立课堂 QA 的顺序交付设计。
 2026-07-15-classroom-qa-ci-stability-design.md: 远端课堂 QA 指针激活、开发期录音窗口、成功交接反馈与慢渲染动效门禁的最小修复设计。
+2026-07-15-review-transcript-visibility-design.md: 老师复核卡默认展示孩子识别摘要、全文与响应式边界的最小设计。
 
 法则: 规格只描述已确认范围；每个风险都有对应回归信号。
 
