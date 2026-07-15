@@ -615,6 +615,7 @@ async function exerciseSingleMoralSpeak(page, screenshots = {}) {
 
   await page.locator(".moral-mic-button").click();
   await page.waitForFunction(() => window.__growthIslandMoralSpeakStage === "listening", null, { timeout: 5000 });
+  const recorderStopCountAtListeningStart = await page.evaluate(() => window.__growthIslandRecorderStopCountForQa ?? 0);
   const listeningState = await inspectMoralSelfServiceState(page);
   const listeningLedger = await page.evaluate(({ selectedChildId }) => {
     const selfServiceRecordCount = (window.__growthIslandLedger ?? []).filter(
@@ -625,12 +626,13 @@ async function exerciseSingleMoralSpeak(page, screenshots = {}) {
   const listeningWrongSelection = await attemptWrongDockChildSelection(page);
   const listeningWrongMapSelection = await attemptWrongMapChildSelection(page);
   const listeningTouch = await inspectTouchAndOverlap(page);
-  const recorderStopCountBefore = await page.evaluate(() => window.__growthIslandRecorderStopCountForQa ?? 0);
-  const pointerActivation = await clickQaButtonAtSettledCenter(page, ".moral-wave-state");
+  const pointerActivation = await clickRecordingControlAtSettledCenter(page, ".moral-wave-state");
+  const recordingStayedActiveUntilPointer =
+    pointerActivation.recorderStopCountBeforeClick === recorderStopCountAtListeningStart;
   await page.waitForTimeout(120);
   const recordingStoppedByPointer = await page.evaluate(
     (previousCount) => window.__growthIslandRecorderStopCountForQa === previousCount + 1,
-    recorderStopCountBefore,
+    pointerActivation.recorderStopCountBeforeClick,
   );
   const listeningDetails = {
     ...listeningState,
@@ -640,6 +642,7 @@ async function exerciseSingleMoralSpeak(page, screenshots = {}) {
     wrongSelection: listeningWrongSelection,
     wrongMapSelection: listeningWrongMapSelection,
     pointerActivation,
+    recordingStayedActiveUntilPointer,
     recordingStoppedByPointer,
   };
 
@@ -1068,7 +1071,7 @@ async function inspectExpandedDockGeometry(page) {
   return geometry;
 }
 
-async function clickQaButtonAtSettledCenter(page, selector) {
+async function clickRecordingControlAtSettledCenter(page, selector) {
   const button = page.locator(selector).first();
   const readCenter = () => button.evaluate((element) => {
     const rect = element.getBoundingClientRect();
@@ -1085,8 +1088,9 @@ async function clickQaButtonAtSettledCenter(page, selector) {
     const hit = document.elementFromPoint(x, y);
     return { x, y, centerHit: Boolean(hit && (hit === element || element.contains(hit))) };
   });
+  const recorderStopCountBeforeClick = await page.evaluate(() => window.__growthIslandRecorderStopCountForQa ?? 0);
   await page.mouse.click(settled.x, settled.y);
-  return { initial, settled };
+  return { initial, settled, recorderStopCountBeforeClick };
 }
 
 async function attemptWrongDockChildSelection(page) {
@@ -1215,6 +1219,8 @@ async function attemptWrongMapChildSelection(page) {
 
 async function installMoralRecorderMock(page) {
   await page.addInitScript(() => {
+    window.__growthIslandMoralAutoStopMsForQa = 30_000;
+
     class QaMediaRecorder {
       static isTypeSupported() {
         return true;
@@ -3822,6 +3828,9 @@ async function inspectPage(browser, check, viewport) {
       if (!childFlow.listening?.recordingStoppedByPointer) {
         issues.push(`moral speak child ${index + 1} pointer did not stop recording`);
       }
+      if (!childFlow.listening?.recordingStayedActiveUntilPointer) {
+        issues.push(`moral speak child ${index + 1} recording stopped before pointer activation`);
+      }
       if (!childFlow.listening?.pointerActivation?.settled?.centerHit) {
         issues.push(`moral speak child ${index + 1} settled pointer center missed recording control`);
       }
@@ -3921,6 +3930,9 @@ async function inspectPage(browser, check, viewport) {
       if (!childFlow.final?.singleLedgerWrite) issues.push(`classroom loop child ${index + 1} ledger write count mismatch`);
       if (!childFlow.listening?.recordingStoppedByPointer) {
         issues.push(`classroom loop child ${index + 1} pointer did not stop recording`);
+      }
+      if (!childFlow.listening?.recordingStayedActiveUntilPointer) {
+        issues.push(`classroom loop child ${index + 1} recording stopped before pointer activation`);
       }
       if (!childFlow.listening?.pointerActivation?.settled?.centerHit) {
         issues.push(`classroom loop child ${index + 1} settled pointer center missed recording control`);

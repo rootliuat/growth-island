@@ -1458,13 +1458,15 @@ P2:
 ### Remote Findings
 
 - GitHub run `29388970729` completed the raw classroom runner, asset report, production preview smoke, summary, and artifact upload, but functional assessment found 13 report issues.
-- CI pointer state differed from local state: after the first turn, the mouse could remain over the next animated control, so immediate center sampling raced its hover transform and the click missed the recorder callback.
+- GitHub run `29390655699` confirmed that every failed turn had a valid settled center hit and that the handoff fix worked; the remaining 12 recorder failures were not pointer misses.
+- On software-rendered CI, the wrong-child and geometry probes can exceed the product's 5.5-second auto-stop window. The mock recorder then became inactive without emitting `onstop`, leaving the UI in `listening`; the later real pointer click could no longer call `stop()` again. Faster mobile and local turns completed before the timeout, which explains their success.
 - A mobile success turn exposed a separate real feedback race: an old success-state wrong-child guard could overwrite the final idle “下一位” handoff before React committed the reset.
 
 ### Implementation Notes
 
 - Animated QA activation now moves the pointer outside, moves it into the initial center, waits 220 ms for the 180 ms hover transition, resamples the settled center, verifies its hit target, and clicks through the real pointer path.
-- Every moral and classroom turn reports both settled-center misses and missing recorder stops.
+- The recorder mock requests a bounded 30-second development-only auto-stop window before app startup; production and production previews keep the original 5.5-second classroom behavior.
+- Every moral and classroom turn reports settled-center misses, premature auto-stops, and missing pointer-triggered recorder stops as distinct failures.
 - Successful moral approval now schedules the existing handoff feedback one browser task after the idle reset, so stale success-DOM guard feedback finishes first without weakening the child-selection guard.
 - Added the reviewed design contract at `docs/superpowers/specs/2026-07-15-classroom-qa-ci-stability-design.md`.
 
@@ -1477,4 +1479,4 @@ P2:
 - A second isolated ten-child classroom loop passed with 0 issues and 0 warnings; trial assets passed.
 - `npm run qa:trial`: all seven default whiteboard/mobile results passed with 0 issues and 0 warnings; trial assets passed.
 - `npm run qa:preview-smoke`: passed against the production manifest and preview server.
-- Read-only review found no pointer, timer, handoff, XP ledger, report-gate, or GEB blocking issue; both documentation accuracy findings were corrected before commit.
+- Read-only review exposed a 220ms stop-attribution window and two GEB gaps; stop evidence now samples immediately before the real click, and the L2/L3 contracts record the development-only QA window.
