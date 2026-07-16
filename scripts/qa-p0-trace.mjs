@@ -1,9 +1,18 @@
+/**
+ * [INPUT]: 依赖运行中的 Growth Island、Playwright 系统 Chrome、CDP tracing 与首页/教师台交互。
+ * [OUTPUT]: 对外提供首页 wheel 与教师台滚动的 renderer、FPS、帧间隔和 Chrome trace 汇总报告。
+ * [POS]: scripts 的按需性能诊断入口，不进入普通 CI，由服务生命周期 helper 托管运行。
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
+
 import { chromium } from "playwright";
 import fs from "node:fs";
 import path from "node:path";
 
 const baseUrl = process.env.QA_BASE_URL || "http://127.0.0.1:5173";
 const outputDir = path.resolve("qa-artifacts/latest");
+const systemChromePath = process.env.PLAYWRIGHT_CHROME_PATH
+  || (fs.existsSync("/usr/bin/google-chrome") ? "/usr/bin/google-chrome" : undefined);
 
 fs.mkdirSync(outputDir, { recursive: true });
 
@@ -116,6 +125,16 @@ async function inspectHome(page) {
   await page.waitForLoadState("networkidle");
   await waitForPixiIdle(page);
 
+  const renderer = await page.evaluate(() => {
+    const canvas = document.querySelector(".pixi-world-canvas");
+    const gl = canvas instanceof HTMLCanvasElement ? canvas.getContext("webgl2") || canvas.getContext("webgl") : undefined;
+    const debugInfo = gl?.getExtension("WEBGL_debug_renderer_info");
+    return {
+      vendor: debugInfo ? gl?.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL) : undefined,
+      renderer: debugInfo ? gl?.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) : undefined,
+    };
+  });
+
   const frameSample = await measureFrameRate(page, ".world-map-stage");
   const trace = await collectTrace(page, "p0-home-wheel", async () => {
     const canvas = page.locator(".pixi-world-canvas").first();
@@ -127,7 +146,7 @@ async function inspectHome(page) {
   await waitForPixiIdle(page);
   await page.waitForTimeout(300);
   const postWheelFrameSample = await measureFrameRate(page, ".world-map-stage");
-  return { frameSample, postWheelFrameSample, ...trace };
+  return { renderer, frameSample, postWheelFrameSample, ...trace };
 }
 
 async function inspectTeacher(page) {
@@ -153,7 +172,7 @@ async function inspectTeacher(page) {
   return { frameSample, ...trace };
 }
 
-const browser = await chromium.launch({ headless: true });
+const browser = await chromium.launch({ headless: true, ...(systemChromePath ? { executablePath: systemChromePath } : {}) });
 const page = await browser.newPage({ viewport: { width: 1850, height: 1150 }, deviceScaleFactor: 1 });
 
 try {
@@ -163,6 +182,7 @@ try {
     generatedAt: new Date().toISOString(),
     baseUrl,
     home: {
+      renderer: homeTrace.renderer,
       frameSample: homeTrace.frameSample,
       postWheelFrameSample: homeTrace.postWheelFrameSample,
       tracePath: homeTrace.tracePath,

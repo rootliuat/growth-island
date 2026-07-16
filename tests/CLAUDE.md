@@ -4,6 +4,7 @@
 成员清单
 browserAdapters.test.ts: 浏览器录音与 localStorage Adapter 回归，保护腾讯音频格式和本地快照启动来源。
 classroomApi.test.ts: HTTP Adapter 结构化错误回归，保护语音错误码与可重试语义。
+releaseGate.test.mjs: 生产发布门禁纯函数回归，保护 HTTPS、腾讯 ASR、45 FPS、清晰度和逐儿童单账本。
 domain/: 领域规则回归测试，覆盖 ledger、德育 Agent、组织、成长等级、能量和说成长 session。
 server/: 本地 API 与 provider 稳定性测试，保护数据读写和外部服务兜底。
 

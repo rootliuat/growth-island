@@ -22,6 +22,10 @@ docs/ - 产品、视觉、地图、生图、课堂验收与迭代记录。
 </directory>
 
 <directory>
+deploy/ - HTTPS 单实例部署模板，约束 Nginx、systemd、持久磁盘与 Provider 环境。
+</directory>
+
+<directory>
 .github/ - GitHub Actions 与仓库治理配置，提供合并前校验门禁。
 </directory>
 
@@ -30,7 +34,11 @@ package.json - npm scripts 与 Vite/React/Pixi/Three 依赖版本。
 </config>
 
 <config>
-vite.config.ts - Vite React 构建入口，提供稳定 vendor 分包与生产 manifest。
+vite.config.ts - Vite React 构建入口，提供稳定 vendor 分包、生产 manifest 与本地同源 API 代理。
+</config>
+
+<config>
+vite.config.js / vite.config.d.ts - TypeScript 构建生成的 Vite 配置运行镜像与类型镜像，不手工维护。
 </config>
 
 <config>

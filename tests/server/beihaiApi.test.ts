@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 Node 子进程启动本地 Beihai API，依赖临时课堂快照与 HTTP 请求。
- * [OUTPUT]: 提供课堂账本、撤销、德育复核审批与教师修正的端到端回归测试。
+ * [OUTPUT]: 提供 health 版本、请求体上限、课堂账本、撤销、德育复核审批与教师修正端到端回归。
  * [POS]: tests/server 的 API 业务护栏，验证公开 HTTP 契约到课堂数据事务的完整链路。
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -66,6 +66,8 @@ describe("Beihai API business safeguards", () => {
         DEEPSEEK_API_KEY: "",
         LLM_PROVIDER: "",
         PORT: String(port),
+        RELEASE_VERSION: "test-release",
+        REQUEST_BODY_LIMIT_BYTES: "1000000",
       },
     });
     await waitForHealth();
@@ -74,6 +76,33 @@ describe("Beihai API business safeguards", () => {
   afterAll(async () => {
     server?.kill("SIGTERM");
     if (tempDir) await rm(tempDir, { recursive: true, force: true });
+  });
+
+  it("exposes the release version without provider secrets", async () => {
+    const response = await fetch(`${baseUrl}/api/health`);
+    const health = await response.json();
+    expect(health).toMatchObject({ ok: true, releaseVersion: "test-release" });
+    expect(JSON.stringify(health)).not.toContain(process.env.TENCENT_SECRET_KEY || "secret-that-is-not-present");
+  });
+
+  it("rejects oversized audio JSON with 413 before Provider work", async () => {
+    const response = await fetch(`${baseUrl}/api/speech/transcribe`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ audioBase64: "a".repeat(1_000_100), voiceFormat: "wav" }),
+    });
+    expect(response.status).toBe(413);
+    await expect(response.json()).resolves.toMatchObject({ error: "Request body too large" });
+  });
+
+  it("rejects malformed JSON with a structured 400", async () => {
+    const response = await fetch(`${baseUrl}/api/speech/transcribe`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "{not-json",
+    });
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toMatchObject({ error: "Invalid JSON body" });
   });
 
   it("creates ledger entries and records undo entries without counting undone XP", async () => {

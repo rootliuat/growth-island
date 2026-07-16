@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 Vite 生产 manifest/预览、Beihai API、Playwright 与系统 Chrome 的首页运行环境
- * [OUTPUT]: 在独占端口输出生产首页冒烟截图、运行状态与运行图级懒加载边界报告，并以退出码暴露失败
- * [POS]: scripts 的生产构建验收入口，验证首页可用性及 Three.js/非首页运行图不被提前加载
+ * [OUTPUT]: 在独占端口输出生产首页、同源 API、运行状态与运行图懒加载边界报告，并以退出码暴露失败
+ * [POS]: scripts 的生产构建验收入口，验证首页可用性、同源部署及 Three.js/非首页运行图不被提前加载
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -116,7 +116,7 @@ async function startApi() {
 
 async function startPreview() {
   return spawnProcess("preview", process.execPath, ["node_modules/vite/bin/vite.js", "preview", "--host", "127.0.0.1", "--port", String(previewPort), "--strictPort"], {
-    VITE_API_BASE_URL: apiBaseUrl,
+    BEIHAI_API_PROXY_TARGET: apiBaseUrl,
   });
 }
 
@@ -135,6 +135,7 @@ async function runBrowserSmoke() {
   const failedRequests = [];
   const resourceFailures = [];
   const loadedScripts = [];
+  const apiRequests = [];
 
   page.on("console", (message) => {
     if (message.type() === "error") consoleErrors.push(message.text());
@@ -152,6 +153,10 @@ async function runBrowserSmoke() {
     const request = response.request();
     if (request.resourceType() !== "script" && !/\.js(?:\?|$)/i.test(response.url())) return;
     loadedScripts.push(new URL(response.url()).pathname);
+  });
+  page.on("request", (request) => {
+    const url = new URL(request.url());
+    if (url.pathname.startsWith("/api/")) apiRequests.push({ origin: url.origin, pathname: url.pathname });
   });
 
   try {
@@ -185,12 +190,14 @@ async function runBrowserSmoke() {
         hasCurrentChildName: /安安|贝贝|晨晨|朵朵|恩恩|帆帆|年年/.test(visibleText),
         hasSelfServiceCopy: visibleText.includes("说成长"),
         hasHorizontalOverflow: document.body.scrollWidth > document.documentElement.clientWidth,
+        isSecureContext,
       };
     });
 
     const uniqueLoadedScripts = [...new Set(loadedScripts)].sort();
     const deferredChunkSet = new Set(deferredChunkFiles);
     const unexpectedEagerChunks = uniqueLoadedScripts.filter((scriptPath) => deferredChunkSet.has(scriptPath));
+    const crossOriginApiRequests = apiRequests.filter((request) => request.origin !== new URL(previewBaseUrl).origin);
 
     return {
       state,
@@ -201,6 +208,8 @@ async function runBrowserSmoke() {
       loadedScripts: uniqueLoadedScripts,
       deferredChunkFiles,
       unexpectedEagerChunks,
+      apiRequests,
+      crossOriginApiRequests,
     };
   } finally {
     await context.close();
@@ -237,6 +246,8 @@ async function run() {
     if (browser.resourceFailures.length) failures.push(`${browser.resourceFailures.length} image/model resource request(s) failed`);
     if (browser.consoleErrors.length) failures.push(`${browser.consoleErrors.length} browser console/page error(s)`);
     if (browser.unexpectedEagerChunks.length) failures.push(`${browser.unexpectedEagerChunks.length} lazy chunk(s) loaded eagerly on home`);
+    if (!browser.apiRequests.length) failures.push("home did not request the classroom API");
+    if (browser.crossOriginApiRequests.length) failures.push(`${browser.crossOriginApiRequests.length} API request(s) escaped same-origin proxy`);
 
     const report = {
       generatedAt: new Date().toISOString(),
@@ -251,6 +262,8 @@ async function run() {
       loadedScripts: browser.loadedScripts,
       deferredChunkFiles: browser.deferredChunkFiles,
       unexpectedEagerChunks: browser.unexpectedEagerChunks,
+      apiRequests: browser.apiRequests,
+      crossOriginApiRequests: browser.crossOriginApiRequests,
       ok: failures.length === 0,
       failures,
     };

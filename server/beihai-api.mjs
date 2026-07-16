@@ -1,6 +1,6 @@
 /**
- * [INPUT]: 依赖 node:http、classroom-store 可恢复课堂事务和 classroom-providers 外部能力。
- * [OUTPUT]: 对外提供课堂快照、ledger、复核、儿童资料、存储/Provider 健康状态与结构化语音 HTTP 接口。
+ * [INPUT]: 依赖 node:http、HOST/PORT/请求体上限、classroom-store 可恢复事务和 classroom-providers 外部能力。
+ * [OUTPUT]: 对外提供可限界监听的课堂快照、ledger、复核、儿童资料、健康状态与结构化语音 HTTP 接口。
  * [POS]: server 的薄 HTTP 入口，启动先校验课堂存储，再负责请求解析、路由和错误映射。
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -35,9 +35,20 @@ function loadEnvFile(filePath) {
 loadEnvFile(path.join(rootDir, ".env"));
 
 const dbPath = process.env.BEIHAI_DB_PATH || path.join(dataDir, "beihai-db.json");
+const host = process.env.HOST || "0.0.0.0";
 const port = Number(process.env.PORT || 5174);
+const requestedBodyLimit = Number(process.env.REQUEST_BODY_LIMIT_BYTES || 5 * 1024 * 1024);
+const maxRequestBodyBytes = Number.isFinite(requestedBodyLimit) ? Math.max(1_000_000, requestedBodyLimit) : 5 * 1024 * 1024;
+const releaseVersion = process.env.RELEASE_VERSION || "development";
 const store = createClassroomStore({ dbPath });
 const providers = createClassroomProviders();
+
+class HttpError extends Error {
+  constructor(status, message) {
+    super(message);
+    this.status = status;
+  }
+}
 
 function sendJson(response, status, body) {
   response.writeHead(status, {
@@ -58,11 +69,15 @@ async function readBody(request) {
   let size = 0;
   for await (const chunk of request) {
     size += chunk.byteLength;
-    if (size > 1_000_000) throw new Error("Request body too large");
+    if (size > maxRequestBodyBytes) throw new HttpError(413, "Request body too large");
     chunks.push(chunk);
   }
   if (chunks.length === 0) return {};
-  return JSON.parse(Buffer.concat(chunks).toString("utf8"));
+  try {
+    return JSON.parse(Buffer.concat(chunks).toString("utf8"));
+  } catch {
+    throw new HttpError(400, "Invalid JSON body");
+  }
 }
 
 async function handleSpeechSpeak(request, response) {
@@ -148,7 +163,7 @@ async function handleMoralReview(request, response, reviewId, action) {
 async function routeRequest(request, response) {
   const url = new URL(request.url || "/", `http://${request.headers.host || "localhost"}`);
   if (request.method === "GET" && url.pathname === "/api/health") {
-    return sendJson(response, 200, { ok: true, dbPath, classroom: store.getHealth(), providers: providers.getHealth() });
+    return sendJson(response, 200, { ok: true, releaseVersion, dbPath, classroom: store.getHealth(), providers: providers.getHealth() });
   }
   if (request.method === "GET" && url.pathname === "/api/classroom") {
     return sendJson(response, 200, await store.getSnapshot());
@@ -191,7 +206,7 @@ const server = createServer(async (request, response) => {
     }
     return await routeRequest(request, response);
   } catch (error) {
-    if (error instanceof ClassroomStoreError || error instanceof ProviderError) {
+    if (error instanceof HttpError || error instanceof ClassroomStoreError || error instanceof ProviderError) {
       return sendError(response, error.status, error.message, {
         ...(error.code ? { code: error.code } : {}),
         ...(typeof error.retryable === "boolean" ? { retryable: error.retryable } : {}),
@@ -203,7 +218,7 @@ const server = createServer(async (request, response) => {
 });
 
 await store.initialize();
-server.listen(port, "0.0.0.0", () => {
-  console.log(`Beihai API listening on http://localhost:${port}`);
+server.listen(port, host, () => {
+  console.log(`Beihai API listening on http://${host}:${port}`);
   console.log(`Database: ${dbPath}`);
 });

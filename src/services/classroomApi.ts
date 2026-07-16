@@ -1,5 +1,5 @@
 /**
- * [INPUT]: 依赖浏览器 fetch、types 的课堂/语音响应契约与 Vite API 地址。
+ * [INPUT]: 依赖浏览器 fetch、types 的课堂/语音响应契约与可选 Vite API 地址。
  * [OUTPUT]: 对外提供携带稳定 operationId 的课堂写重试、语音 HTTP Adapter、结构化错误与降级分类。
  * [POS]: services 的本地 API 边界，统一请求编码、未知结果同操作重试和服务器可用性语义。
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -14,13 +14,7 @@ import type {
   SpeechSynthesisResponse,
 } from "../types";
 
-function getDefaultApiBaseUrl() {
-  if (typeof window === "undefined") return "http://localhost:5174";
-  const { protocol, hostname } = window.location;
-  return `${protocol}//${hostname}:5174`;
-}
-
-const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? getDefaultApiBaseUrl()).replace(/\/$/, "");
+const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/$/, "");
 
 export class ClassroomApiError extends Error {
   status: number;

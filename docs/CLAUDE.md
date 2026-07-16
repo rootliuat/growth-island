@@ -12,6 +12,7 @@ overnight-project-ui-maturity-goal.md: 项目 UI 成熟度夜间改进目标。
 overnight-ui-polish-goal.md: UI 精修夜间目标。
 p0-change-scope-audit.md: P0 变更范围审计记录。
 product-spec.md: Growth Island 核心产品规格。
+production-deployment-guide.md: HTTPS 单实例线上部署、持久化、访问保护、目标白板门禁与回滚指南。
 provider-runtime-guide.md: DeepSeek、腾讯语音等真实 Provider 运行指南。
 superpowers/: 已确认设计规格，记录实现前的范围、契约与验证策略。
 three-screen-product-structure.md: 三屏产品结构与导航职责。

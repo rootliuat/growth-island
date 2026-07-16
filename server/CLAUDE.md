@@ -2,7 +2,7 @@
 > L2 | 父级: /CLAUDE.md
 
 成员清单
-beihai-api.mjs: 薄 HTTP 入口，负责请求解析、路由、错误映射和进程启动。
+beihai-api.mjs: 薄 HTTP 入口，负责有限请求体解析、路由、错误映射和可配置监听进程启动。
 classroom-providers.mjs: 课堂 Provider 深 Module，封装腾讯语音、DeepSeek、mock、超时与规则降级。
 classroom-snapshot-file.mjs: 课堂文件持久化深 Module，独占 schema v1/revision 校验、目录同步补偿、20 份滚动快照和最高 revision 恢复。
 classroom-store.mjs: 课堂数据事务深 Module，独占串行事务、operationId 类型/指纹去重和 ledger/review/profile 规则。
