@@ -2,9 +2,9 @@
 > L2 | 父级: /src/CLAUDE.md
 
 成员清单
-GrowthIslandView.tsx: 纯展示 Adapter，同步装配首页并以稳定 lazy/Suspense 边界按需加载活动 Module 与弹层。
-useClassroomSession.ts: 课堂数据会话深 Module，集中快照、server/local/unavailable 权威、降级提交、备份和浏览器持久化。
-useMoralSpeakWorkflow.ts: 说成长会话深 Module，集中录音、识别、复核、审批锁和陈旧响应保护。
+GrowthIslandView.tsx: 纯展示 Adapter，同步装配首页地图、复核右轨和课堂队列，并以稳定 lazy/Suspense 边界按需加载活动 Module 与弹层。
+useClassroomSession.ts: 课堂数据会话深 Module，集中快照、预期权威本机提交、约束完成/降级/不确定转换、同操作恢复和备份。
+useMoralSpeakWorkflow.ts: 说成长会话深 Module，集中录音、识别、复核、审批载荷冻结、恢复退出锁、幂等点亮重试和陈旧响应保护。
 useGrowthIslandQaBridge.ts: 开发期 QA Adapter，维持 window.__growthIsland* 自动化 Interface。
 useGrowthFeedback.ts: 全局成长反馈深 Module，集中反馈状态、自动消退计时与清理。
 useSpiritAssetPreload.ts: 首页精灵资产预载 Module，集中优先级、分批调度和取消清理。

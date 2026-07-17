@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 ../01-tokens.css 以及前序 cascade 片段。
- * [OUTPUT]: 对外提供shell、老师栏、基础卡片和旧课堂面板第 2 段样式。
+ * [OUTPUT]: 对外提供 shell、老师栏、基础卡片、文本提交反馈和旧课堂面板第 2 段样式。
  * [POS]: styles/shell 的 cascade 片段 2/2，由 ../index.css 按顺序导入。
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -120,6 +120,12 @@
 .submit-dialogue:disabled {
   cursor: wait;
   opacity: 0.72;
+}
+
+.dialogue-submit-error {
+  margin: 10px 0 0;
+  color: #a33f32;
+  font-weight: 900;
 }
 
 .dialogue-result {

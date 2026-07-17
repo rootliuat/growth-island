@@ -1,5 +1,5 @@
 /**
- * [INPUT]: 依赖地图区域、精灵运行数据、v4 标牌资产与 Pixi 文本/图形容器。
+ * [INPUT]: 依赖地图区域、相机缩放阈值、精灵运行数据、v4 标牌资产与 Pixi 文本/图形容器。
  * [OUTPUT]: 对外提供 LabelLayer，管理区域标牌、精灵状态标签及手势态精简显示。
  * [POS]: game/pixi 的语义标注层，被 WorldScene 编排并在交互时保留当前孩子定位。
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -8,6 +8,7 @@
 import { Container, Graphics, Text } from "pixi.js";
 import { assetScaleRules, getRegionSignWidth } from "../assetScaleRules";
 import { palette } from "../artDirection";
+import { activityBubbleZoomThreshold } from "../cameraConfig";
 import { regions } from "../regionConfig";
 import type { MapRegion, WorldMapData, WorldSpirit } from "../types";
 import { v4MapAssets } from "../v4MapAssets";
@@ -111,7 +112,7 @@ export class LabelLayer {
       const currentRing = label.getChildByLabel("current-ring") as Graphics | undefined;
       if (currentRing) currentRing.visible = selected;
       const bubble = label.getChildByLabel("activity-bubble");
-      if (bubble) bubble.visible = selected && Boolean(meta?.hasActivity) && zoom >= 1.48;
+      if (bubble) bubble.visible = selected && Boolean(meta?.hasActivity) && zoom >= activityBubbleZoomThreshold;
     });
   }
 

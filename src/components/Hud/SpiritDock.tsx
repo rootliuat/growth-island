@@ -1,4 +1,11 @@
-import { Box, ChevronDown, Search, Users } from "lucide-react";
+/**
+ * [INPUT]: 依赖孩子/精灵进度、精灵资产解析、当前说成长队列与待复核入口动作。
+ * [OUTPUT]: 对外提供 SpiritDock 组件，支持当前孩子、全班选择、待复核入口与成功后的下一位快捷动作。
+ * [POS]: components/Hud 的首页底部课堂队列，负责孩子导航而不持有业务状态。
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
+
+import { Box, ChevronDown, ClipboardCheck, Search, Users } from "lucide-react";
 import type { CSSProperties } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ChildWithProgress, SpiritDefinition } from "../../types";
@@ -10,11 +17,25 @@ interface SpiritDockProps {
   selectedChildId: string;
   onSelectChild: (childId: string) => void;
   onOpenShowcase?: (childId: string) => void;
+  pendingReviewCount?: number;
+  onOpenPendingReviews?: () => void;
+  nextChild?: ChildWithProgress;
+  onSelectNextChild?: (childId: string) => void;
 }
 
 const regionFilters = ["全部", "红树林", "贝壳湾", "珍珠湾", "小镇", "老街", "算术湾"];
 
-export function SpiritDock({ childrenWithProgress, spiritsById, selectedChildId, onSelectChild, onOpenShowcase }: SpiritDockProps) {
+export function SpiritDock({
+  childrenWithProgress,
+  spiritsById,
+  selectedChildId,
+  onSelectChild,
+  onOpenShowcase,
+  pendingReviewCount = 0,
+  onOpenPendingReviews,
+  nextChild,
+  onSelectNextChild,
+}: SpiritDockProps) {
   const dockScrollRef = useRef<HTMLDivElement | null>(null);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("全部");
@@ -71,7 +92,7 @@ export function SpiritDock({ childrenWithProgress, spiritsById, selectedChildId,
           onClick={() => onSelectChild(selectedChild.id)}
         >
           <span className="dock-avatar">
-            {selectedAsset?.url ? <img src={selectedAsset.url} alt="" /> : <span className="dock-avatar-label">{selectedChild.name.slice(0, 1)}</span>}
+            {selectedAsset?.url ? <img src={selectedAsset.url} alt="" width={48} height={48} /> : <span className="dock-avatar-label">{selectedChild.name.slice(0, 1)}</span>}
           </span>
           <span className="dock-summary-copy">
             <small>{selectedRoleLabel}</small>
@@ -89,6 +110,17 @@ export function SpiritDock({ childrenWithProgress, spiritsById, selectedChildId,
           <Users size={17} />
           全班
         </button>
+        {nextChild ? (
+          <button type="button" className="dock-next-child" onClick={() => (onSelectNextChild ?? onSelectChild)(nextChild.id)}>
+            一键下一位：{nextChild.name}
+          </button>
+        ) : null}
+        {pendingReviewCount > 0 && onOpenPendingReviews ? (
+          <button type="button" className="dock-pending-reviews" onClick={onOpenPendingReviews}>
+            <ClipboardCheck size={16} />
+            老师待办 {pendingReviewCount}
+          </button>
+        ) : null}
       </section>
     );
   }
@@ -139,12 +171,18 @@ export function SpiritDock({ childrenWithProgress, spiritsById, selectedChildId,
         aria-label={`${selectedAriaLabel}：${selectedChild.name}，查看自己的精灵，全班${childrenWithProgress.length}人`}
       >
         <span className="dock-avatar">
-          {selectedAsset?.url ? <img src={selectedAsset.url} alt="" /> : <span className="dock-avatar-label">{selectedChild.name.slice(0, 1)}</span>}
+          {selectedAsset?.url ? <img src={selectedAsset.url} alt="" width={48} height={48} /> : <span className="dock-avatar-label">{selectedChild.name.slice(0, 1)}</span>}
         </span>
         <span className="dock-selected-copy">
           <strong>{selectedChild.name}</strong>
           <em>{selectedStatus}</em>
           <small>全班 {childrenWithProgress.length}</small>
+          {pendingReviewCount > 0 && onOpenPendingReviews ? (
+            <button type="button" className="dock-pending-reviews expanded" onClick={onOpenPendingReviews}>
+              <ClipboardCheck size={16} />
+              老师待办 {pendingReviewCount}
+            </button>
+          ) : null}
         </span>
         {onOpenShowcase ? (
           <button
@@ -173,7 +211,18 @@ export function SpiritDock({ childrenWithProgress, spiritsById, selectedChildId,
               onClick={() => selectChildFromRoster(child.id)}
             >
               <span className="dock-avatar" style={{ "--dock-accent": spirit?.accent ?? "#6ebf8b" } as CSSProperties}>
-                {asset?.url ? <img src={asset.url} alt="" /> : <span className="dock-avatar-label">{child.name.slice(0, 1)}</span>}
+                {asset?.url ? (
+                  <img
+                    src={asset.url}
+                    alt=""
+                    width={60}
+                    height={60}
+                    loading={child.id === selectedChildId ? undefined : "lazy"}
+                    decoding="async"
+                  />
+                ) : (
+                  <span className="dock-avatar-label">{child.name.slice(0, 1)}</span>
+                )}
               </span>
               <strong>{child.name}</strong>
               <em>点我说</em>

@@ -15,7 +15,7 @@
 11-modules.css: 后续模块、移动端和白板触控最终覆盖第 11/14 段，保持原 cascade 顺序。
 12-modules.css: 后续模块、移动端和白板触控最终覆盖第 12/14 段，保持原 cascade 顺序。
 13-modules.css: 后续模块、移动端和白板触控最终覆盖第 13/14 段，保持原 cascade 顺序。
-14-modules.css: 后续模块、移动端和白板触控最终覆盖第 14/14 段，保持原 cascade 顺序。
+14-modules.css: 后续模块、老师复核响应式右轨/浮卡/Sheet、移动端和白板触控最终覆盖第 14/14 段，保持原 cascade 顺序。
 
 法则: 只能追加同域覆盖；跨域样式回到 src/styles/index.css 调整顺序。
 

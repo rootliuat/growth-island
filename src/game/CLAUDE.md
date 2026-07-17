@@ -7,6 +7,7 @@ mapPlacements/: 分区维护原始地图摆放数据，避免一个巨型配置�
 pixi/: PixiJS 地图运行时层，负责渲染、交互、LOD、限帧和动效。
 v4MapAssets.ts: v4 地图资产 URL、材质化 placement 和首页资产宽度。
 assetScaleRules.ts: 地图资产缩放规则。
+cameraConfig.ts: 地图相机单一配置源，并派生活动气泡可达缩放阈值。
 mapAssetPlacement.ts: RawMapPlacement/MapPlacement 类型与 materialize/compare 工具。
 
 法则: 地图数据分区维护，运行时消费聚合 Interface；不把主岛改成实时 3D。

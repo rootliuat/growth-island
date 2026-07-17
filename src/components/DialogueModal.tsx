@@ -1,3 +1,10 @@
+/**
+ * [INPUT]: 依赖 React 本地表单状态、共享孩子/评估类型和外部异步文本评估动作。
+ * [OUTPUT]: 对外提供 DialogueModal，只有权威快照确认后显示结果，并明确呈现提交失败。
+ * [POS]: components 的文本成长建议弹窗，与说成长语音链路共享评估结果但不拥有课堂数据。
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
+
 import { useState } from "react";
 import { MessageCircle, WandSparkles, X } from "lucide-react";
 import type { ChildWithProgress, MoralEvaluationResult } from "../types";
@@ -18,12 +25,17 @@ const sampleTexts = [
 export function DialogueModal({ child, onClose, onSubmit }: DialogueModalProps) {
   const [text, setText] = useState(sampleTexts[0]);
   const [result, setResult] = useState<MoralEvaluationResult | null>(null);
+  const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const submit = async () => {
     setSubmitting(true);
+    setError("");
     try {
       setResult(await onSubmit(text));
+    } catch (submitError) {
+      setResult(null);
+      setError(submitError instanceof Error ? submitError.message : "提交未完成，请重新试一次");
     } finally {
       setSubmitting(false);
     }
@@ -68,6 +80,8 @@ export function DialogueModal({ child, onClose, onSubmit }: DialogueModalProps) 
           <WandSparkles size={22} />
           {submitting ? "贝壳在听" : "生成贝壳建议"}
         </button>
+
+        {error ? <p className="dialogue-submit-error" role="alert">{error}</p> : null}
 
         {result && (
           <div className="dialogue-result">

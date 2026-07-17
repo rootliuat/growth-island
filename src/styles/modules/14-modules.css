@@ -265,6 +265,382 @@
   }
 }
 
+/* P15 teacher review rail: one evidence-first surface across classroom screens. */
+.home-screen-shell .hud-rail .teacher-review-corner-card {
+  position: static;
+  width: 100%;
+  max-width: none;
+  max-height: 100%;
+  gap: 10px;
+  padding: 14px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  border: 1px solid rgba(214, 177, 106, 0.56);
+  border-radius: 20px;
+  background: #fff8ea;
+  box-shadow: 0 12px 26px rgba(23, 76, 90, 0.14);
+  backdrop-filter: none;
+  overscroll-behavior: contain;
+}
+
+.teacher-review-corner-card:focus {
+  outline: none;
+}
+
+.teacher-review-corner-card:focus-visible {
+  outline: 3px solid rgba(246, 179, 82, 0.82);
+  outline-offset: -3px;
+}
+
+.home-screen-shell .teacher-review-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: start;
+  gap: 7px;
+}
+
+.home-screen-shell .teacher-review-main strong {
+  max-width: 100%;
+  color: #174c5a;
+  font-size: 20px;
+  text-align: left;
+}
+
+.home-screen-shell .review-transcript {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid rgba(214, 177, 106, 0.38);
+  border-radius: 14px;
+  background: #fffdf4;
+}
+
+.home-screen-shell .review-transcript-label {
+  justify-self: start;
+}
+
+.home-screen-shell .review-transcript .teacher-review-transcript-line {
+  display: -webkit-box;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 0;
+  color: #174c5a;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.48;
+  white-space: pre-wrap;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow-wrap: anywhere;
+}
+
+.home-screen-shell .review-transcript[open] > .review-confidence {
+  display: flex;
+}
+
+.home-screen-shell .review-transcript[open] > .teacher-review-transcript-line {
+  display: block;
+  overflow: visible;
+  -webkit-line-clamp: unset;
+}
+
+.teacher-review-transcript-editor {
+  width: 100%;
+  min-height: 88px;
+  resize: vertical;
+  padding: 10px;
+  border: 1px solid rgba(45, 159, 178, 0.38);
+  border-radius: 12px;
+  color: #174c5a;
+  background: #ffffff;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 750;
+  line-height: 1.45;
+}
+
+.teacher-review-transcript-editor:focus-visible {
+  outline: 3px solid rgba(246, 179, 82, 0.72);
+  outline-offset: 2px;
+}
+
+.teacher-review-suggestion {
+  display: grid;
+  gap: 6px;
+}
+
+.teacher-review-suggestion > span {
+  color: rgba(23, 76, 90, 0.68);
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.teacher-review-suggestion .energy-chip {
+  width: fit-content;
+  max-width: 100%;
+  min-height: 40px;
+  overflow-wrap: anywhere;
+}
+
+.home-screen-shell .teacher-review-actions {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.home-screen-shell .teacher-review-actions .approve {
+  grid-column: 1 / -1;
+  min-height: 56px;
+}
+
+.home-screen-shell .teacher-review-actions .skip {
+  color: rgba(23, 76, 90, 0.66);
+  background: transparent;
+  box-shadow: inset 0 0 0 1px rgba(23, 76, 90, 0.1);
+}
+
+.moral-success-copy {
+  display: grid;
+  gap: 3px;
+  text-align: left;
+}
+
+.moral-success-copy small {
+  color: rgba(23, 76, 90, 0.72);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.moral-error-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+.moral-error-actions button,
+.dock-next-child,
+.dock-pending-reviews {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 14px;
+  border: 1px solid rgba(23, 76, 90, 0.15);
+  border-radius: 999px;
+  color: #174c5a;
+  background: #fff8ea;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 950;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.moral-error-actions .moral-teacher-takeover,
+.dock-next-child {
+  color: #fffdf4;
+  border-color: #ff7a59;
+  background: #ff7a59;
+}
+
+.moral-error-actions .moral-cancel-button {
+  position: static;
+  color: rgba(23, 76, 90, 0.7);
+  background: transparent;
+  box-shadow: none;
+}
+
+.home-screen-shell .spirit-dock.collapsed {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.home-screen-shell .spirit-dock.collapsed .dock-selected-summary {
+  width: 100%;
+  min-width: 0;
+}
+
+.home-screen-shell .spirit-dock.collapsed:has(.dock-next-child, .dock-pending-reviews) {
+  width: min(430px, calc(100% - 28px));
+}
+
+.dock-next-child,
+.dock-pending-reviews {
+  white-space: nowrap;
+}
+
+.dock-pending-reviews {
+  color: #174c5a;
+  border-color: rgba(45, 159, 178, 0.3);
+  background: #eaf8f5;
+}
+
+.spirit-dock.expanded .dock-pending-reviews {
+  width: fit-content;
+  min-height: 44px;
+  margin-top: 2px;
+  padding-inline: 9px;
+}
+
+.spirit-dock.expanded .dock-selected-copy:has(.dock-pending-reviews) > em,
+.spirit-dock.expanded .dock-selected-copy:has(.dock-pending-reviews) > small {
+  display: none;
+}
+
+.home-screen-shell .moral-speak-overlay.pendingReview .spirit-speech-bubble {
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid rgba(214, 177, 106, 0.44);
+  color: #174c5a;
+  background: #fff8ea;
+  box-shadow: 0 8px 18px rgba(23, 76, 90, 0.1);
+  font-size: 14px;
+}
+
+@media (min-width: 1280px) {
+  .home-screen-shell .product-workspace .game-layout:has(.world-map-shell.moral-stage-pendingReview) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) clamp(352px, 20vw, 376px);
+    gap: 14px;
+  }
+
+  .home-screen-shell .home-module:has(.world-map-shell.moral-stage-pendingReview) .game-topbar {
+    display: none;
+  }
+
+  .home-screen-shell .home-module:has(.world-map-shell.moral-stage-pendingReview) .spirit-dock:not(.collapsed) {
+    right: calc(clamp(352px, 20vw, 376px) + 28px);
+  }
+
+  .home-screen-shell .game-layout:has(.world-map-shell.moral-stage-pendingReview) .hud-rail,
+  .home-screen-shell .world-map-shell.moral-stage-pendingReview ~ .hud-rail {
+    position: relative;
+    inset: auto;
+    z-index: 12;
+    display: block;
+    width: auto;
+    max-height: 100%;
+    overflow: hidden;
+  }
+
+  .home-screen-shell .hud-rail .teacher-review-corner-card {
+    height: 100%;
+    align-content: start;
+  }
+}
+
+@media (min-width: 2000px) {
+  .home-screen-shell .home-module {
+    background-color: #73d7dd;
+    background-image: url("/assets/map/v4-runtime/batch11/v4-ocean-base-tile.webp");
+    background-size: 820px 820px;
+  }
+
+  .home-screen-shell .product-workspace .game-layout:has(.world-map-shell.moral-stage-pendingReview) {
+    grid-template-columns: minmax(0, 2200px) 376px;
+    justify-content: center;
+    background: transparent;
+  }
+}
+
+@media (min-width: 721px) and (max-width: 1279px) {
+  .home-screen-shell .product-workspace .game-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .home-screen-shell .game-layout:has(.world-map-shell.moral-stage-pendingReview) .hud-rail,
+  .home-screen-shell .world-map-shell.moral-stage-pendingReview ~ .hud-rail {
+    position: absolute;
+    top: auto;
+    right: 16px;
+    bottom: 16px;
+    left: auto;
+    z-index: 46;
+    display: block;
+    width: min(368px, calc(100% - 32px));
+    max-height: calc(100% - 32px);
+    overflow: visible;
+  }
+
+  .home-screen-shell .hud-rail .teacher-review-corner-card {
+    max-height: min(640px, calc(100dvh - 132px));
+  }
+}
+
+@media (max-width: 720px) {
+  .home-screen-shell .game-layout:has(.world-map-shell.moral-stage-pendingReview) .hud-rail,
+  .home-screen-shell .world-map-shell.moral-stage-pendingReview ~ .hud-rail {
+    position: absolute;
+    inset: auto 0 126px;
+    z-index: 48;
+    display: block;
+    width: 100%;
+    max-height: min(64dvh, calc(100% - 150px));
+    overflow: visible;
+  }
+
+  .home-screen-shell .hud-rail .teacher-review-corner-card {
+    max-height: min(64dvh, calc(100% - 150px));
+    padding: 12px 12px calc(12px + env(safe-area-inset-bottom));
+    border-radius: 22px;
+    box-shadow: 0 -8px 26px rgba(23, 76, 90, 0.18);
+  }
+
+  .home-screen-shell .teacher-review-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    padding-top: 8px;
+    padding-bottom: env(safe-area-inset-bottom);
+    background: #fff8ea;
+  }
+
+  .home-screen-shell .teacher-review-main strong {
+    font-size: 18px;
+  }
+
+  .home-screen-shell .spirit-dock.collapsed {
+    grid-template-columns: minmax(0, 1fr) auto;
+    width: auto;
+  }
+
+  .home-screen-shell .spirit-dock.collapsed .dock-next-child,
+  .home-screen-shell .spirit-dock.collapsed .dock-pending-reviews {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .home-screen-shell .home-module:has(.spirit-dock.collapsed .dock-pending-reviews) .map-scene-gate {
+    bottom: 136px;
+  }
+
+  .home-screen-shell .home-module:has(.spirit-dock.collapsed .dock-next-child) .map-scene-gate {
+    bottom: 184px;
+  }
+
+  .moral-error-actions {
+    width: min(100%, 360px);
+  }
+
+  .moral-error-actions button {
+    flex: 1 1 132px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .teacher-review-transcript-editor,
+  .moral-error-actions button,
+  .dock-next-child,
+  .dock-pending-reviews {
+    scroll-behavior: auto;
+    transition: none;
+  }
+}
+
 /* P14 whiteboard clarity pass: keep the child loop crisp and single-task. */
 .home-screen-shell .home-module:has(.world-map-shell:not(.moral-stage-idle)) .dock-showcase-button {
   display: none;
