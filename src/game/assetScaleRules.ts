@@ -1,3 +1,10 @@
+/**
+ * [INPUT]: 依赖地图 HomeType 与 WorldPoint 类型。
+ * [OUTPUT]: 对外提供地图资产缩放规则、家园/精灵尺寸解析和门口聚焦目标计算。
+ * [POS]: game 的视觉尺度单一配置源，被 mapPlacements、v4MapAssets 与 Pixi 图层消费。
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
+
 import type { HomeType, WorldPoint } from "./types";
 
 export const assetScaleRules = {

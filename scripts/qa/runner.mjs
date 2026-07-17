@@ -4072,8 +4072,8 @@ async function inspectPage(browser, check, viewport) {
       issues.push("moral ledger reapprove did not recover with one stable operation");
     }
     if (!uncertainReplay?.focusInsideReview) issues.push("moral review did not receive focus");
-    if (uncertainReplay?.final?.nextStage !== "ready" || uncertainReplay?.final?.nextChildId === uncertainReplay?.childId) {
-      issues.push("moral next-child shortcut did not enter the next ready turn");
+    if (uncertainReplay?.final?.nextStage !== "ready" || uncertainReplay?.final?.nextChildId === uncertainReplay?.childId || uncertainReplay?.final?.focusedChildId !== uncertainReplay?.final?.nextChildId || moralFlowDetails?.recovery?.coldSelection?.consistent !== true) {
+      issues.push("moral next-child or cold-start selection did not focus the current spirit");
     }
     const teacherTakeover = moralFlowDetails?.recovery?.teacherTakeover;
     if (teacherTakeover?.matchingLedgerCount !== 1 || teacherTakeover?.ledgerDelta !== 1) {

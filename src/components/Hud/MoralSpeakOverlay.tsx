@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 moralSpeakSession 的视图与重放锁状态、virtueEnergy 的能量色彩及老师接管/跳过动作。
- * [OUTPUT]: 对外提供 MoralSpeakOverlay 组件，在不确定点亮重放时隐藏可改变载荷的接管动作。
+ * [OUTPUT]: 对外提供 MoralSpeakOverlay 组件与当前孩子 QA 标记，在不确定点亮重放时隐藏可改变载荷的接管动作。
  * [POS]: HUD 的儿童自助说成长浮层，只负责渲染与按钮回调，不持有流程状态。
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -95,7 +95,7 @@ export function MoralSpeakOverlay({
           );
         })}
       </div>
-      <div className="moral-turn-chip" aria-label={`当前孩子：${child.name}，${turnStatusLabel}`}>
+      <div className="moral-turn-chip" data-child-id={child.id} aria-label={`当前孩子：${child.name}，${turnStatusLabel}`}>
         <strong>{child.name}</strong>
         <span>{turnStatusLabel}</span>
       </div>

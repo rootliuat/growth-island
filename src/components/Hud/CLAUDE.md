@@ -6,7 +6,7 @@ GameTopBar.tsx: 首页顶部课堂状态 HUD，白板常驻显示真实数据去
 GrowthFeedbackOverlay.tsx: 全局成长反馈浮层，只消费 growthFeedback 视图契约。
 GrowthLogPanel.tsx: 成长记录和待看队列 HUD 面板。
 HudPanelTabs.tsx: HUD 面板 tab 定义。
-MoralSpeakOverlay.tsx: 儿童自助说成长浮层，区分识别/判断进度并暴露重试、老师接管、跳过动作。
+MoralSpeakOverlay.tsx: 儿童自助说成长浮层，标记当前孩子并区分识别/判断进度，暴露重试、老师接管、跳过动作。
 SpiritDetailPanel.tsx: 当前精灵详情面板。
 SpiritDock.tsx: 底部幼儿精灵队列，提供待复核入口与成功后的下一位快捷动作。
 SpiritModelStage3D.tsx: Three.js 精灵/奖励模型舞台。

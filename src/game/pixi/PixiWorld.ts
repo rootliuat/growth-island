@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 PixiJS Application/Culler/Ticker、CameraController、DomStaticMapLayer、InteractionManager 和 WorldScene。
- * [OUTPUT]: 对外提供 PixiWorld 类，管理首页地图挂载、DOM 静态底图、相机、交互唤醒、渲染清晰度与生命周期。
+ * [OUTPUT]: 对外提供 PixiWorld 类，管理首页地图挂载、最新读模型、DOM 静态底图、相机、交互唤醒、渲染清晰度、QA 诊断与生命周期。
  * [POS]: game/pixi 的地图运行时主控 Module，被 PixiWorldMap React Adapter 持有。
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -21,6 +21,7 @@ const selectedIdleMaxFps = 24;
 const pointerWakeMs = 560;
 const pointerWakeThrottleMs = 96;
 const qaSelectedDatasetWriteMs = 120;
+const maxQaMountDelayMs = 2_000;
 const selfServiceHotspotIds = [...v4DecorPlacements, ...v4LandmarkPlacements]
   .filter((placement) => placement.interactive === "self-service")
   .map((placement) => placement.id);
@@ -50,6 +51,7 @@ export class PixiWorld {
   private interactionActive = false;
   private disposed = false;
   private pendingStaticCacheRefresh = false;
+  private pendingFocusChildId?: string;
   private selectedIdleAnimation = false;
   private renderResolution = minRenderResolution;
   private baseRenderResolution = minRenderResolution;
@@ -118,6 +120,11 @@ export class PixiWorld {
     if (this.app) return;
     this.disposed = false;
     this.host = host;
+    host.dataset.mountState = "starting";
+    const params = new URLSearchParams(window.location.search);
+    const qaMountDelayMs = import.meta.env.DEV && params.has("qa") ? Math.min(maxQaMountDelayMs, Math.max(0, Number(params.get("qaPixiMountDelay")) || 0)) : 0;
+    if (qaMountDelayMs) await new Promise((resolve) => window.setTimeout(resolve, qaMountDelayMs));
+    if (this.disposed) return;
     host.querySelectorAll("canvas.pixi-world-canvas").forEach((canvas) => canvas.remove());
     host.querySelectorAll(".pixi-static-map-layer").forEach((layer) => layer.remove());
     const app = new Application();
@@ -193,7 +200,9 @@ export class PixiWorld {
       app.canvas.removeEventListener("wheel", this.handleWheelInteraction);
       window.removeEventListener("growth-island-asset-loaded", this.wakeFromAssetLoad);
     });
-    if (this.lastData) this.scene.updateData(this.lastData);
+    if (this.lastData) this.update(this.lastData);
+    if (this.pendingFocusChildId) this.focusChild(this.pendingFocusChildId);
+    host.dataset.mountState = "mounted";
   }
 
   update(data: WorldMapData) {
@@ -208,6 +217,7 @@ export class PixiWorld {
       );
       this.app.canvas.dataset.energyRegions = data.regionEnergy.map((item) => item.regionId).join(",");
       this.app.canvas.dataset.energyRegionCount = String(data.regionEnergy.length);
+      this.app.canvas.dataset.selectedChildId = data.selectedChildId;
       this.app.canvas.dataset.currentEnergyRegion = currentEnergy?.regionId ?? "";
       this.app.canvas.dataset.selectedActivityToken = selfServiceEnergy
         ? "能量"
@@ -220,6 +230,7 @@ export class PixiWorld {
   }
 
   focusFullIsland() {
+    this.pendingFocusChildId = undefined;
     this.viewMode = "overview";
     this.restoreBaseResolution();
     this.scene?.focusFullIsland();
@@ -227,6 +238,12 @@ export class PixiWorld {
   }
 
   focusSelected() {
+    const childId = this.lastData?.selectedChildId;
+    if (childId) {
+      this.focusChild(childId);
+      return;
+    }
+    this.pendingFocusChildId = undefined;
     this.viewMode = "focused";
     this.restoreBaseResolution();
     this.scene?.focusSelected();
@@ -235,12 +252,17 @@ export class PixiWorld {
 
   focusChild(childId: string) {
     this.viewMode = "focused";
+    this.pendingFocusChildId = childId;
     this.restoreBaseResolution();
+    if (!this.scene) return;
+    this.pendingFocusChildId = undefined;
+    if (this.app?.canvas) this.app.canvas.dataset.focusedChildId = childId;
     this.scene?.focusChild(childId);
     this.wake(1400);
   }
 
   focusRegion(regionId: RegionId) {
+    this.pendingFocusChildId = undefined;
     this.viewMode = "focused";
     this.restoreBaseResolution();
     this.scene?.focusRegion(regionId);
@@ -248,6 +270,7 @@ export class PixiWorld {
   }
 
   zoomBy(delta: number) {
+    this.pendingFocusChildId = undefined;
     this.viewMode = "manual";
     this.restoreBaseResolution();
     this.camera?.zoomBy(delta);
@@ -405,6 +428,7 @@ export class PixiWorld {
 
   destroy() {
     this.disposed = true;
+    this.pendingFocusChildId = undefined;
     this.setGlobalInteractionActive(false);
     window.clearTimeout(this.idleTimer);
     window.clearTimeout(this.interactionTimer);

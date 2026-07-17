@@ -1,6 +1,6 @@
 /**
- * [INPUT]: 依赖 Playwright Page、开发期说成长 QA hooks 与 /api/ledger 幂等写入契约。
- * [OUTPUT]: 对外提供 exerciseMoralRecoveryFlow，验证 4xx 可退出、未知写结果恢复、重放锁、老师接管、焦点和下一位动作。
+ * [INPUT]: 依赖 Playwright Page、开发期 Pixi 延迟挂载/说成长 QA hooks 与 /api/ledger 幂等写入契约。
+ * [OUTPUT]: 对外提供 exerciseMoralRecoveryFlow，验证冷启动选人、4xx 可退出、未知写结果恢复、重放锁、老师接管、焦点和下一位动作。
  * [POS]: scripts/qa 的说成长恢复纵切 Module，被 runner 编排且不拥有浏览器生命周期。
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -12,6 +12,39 @@ function countMatchingLedger(records, childId, reason) {
 async function clearMoralSpeak(page) {
   await page.evaluate(() => window.__growthIslandClearMoralSpeakForQa?.());
   await page.waitForFunction(() => window.__growthIslandMoralSpeakStage === "idle", null, { timeout: 3500 });
+}
+
+async function exerciseColdMapSelection(page) {
+  const coldPage = await page.context().newPage();
+  const url = new URL(page.url());
+  url.searchParams.set("qaPixiMountDelay", "900");
+  try {
+    await coldPage.goto(url.toString(), { waitUntil: "domcontentloaded" });
+    await coldPage.waitForFunction(() => typeof window.__growthIslandSelectMapChildForQa === "function", null, { timeout: 5000 });
+    await coldPage.waitForSelector(".pixi-world-host[data-mount-state='starting']", { timeout: 5000 });
+    const targetChildId = await coldPage.evaluate(() => {
+      const childId = (window.__growthIslandChildIds ?? [])[12];
+      return childId && window.__growthIslandSelectMapChildForQa?.(childId) ? childId : "";
+    });
+    await coldPage.waitForSelector(".pixi-world-canvas", { timeout: 5000 });
+    await coldPage.waitForSelector(".pixi-world-host[data-mount-state='mounted']", { timeout: 5000 });
+    return coldPage.evaluate((targetChildId) => ({
+      targetChildId,
+      appChildId: window.__growthIslandSelectedChildId,
+      domChildId: document.querySelector(".moral-turn-chip")?.dataset.childId ?? "",
+      mapChildId: document.querySelector(".pixi-world-canvas")?.dataset.selectedChildId ?? "",
+      focusedChildId: document.querySelector(".pixi-world-canvas")?.dataset.focusedChildId ?? "",
+      consistent: [
+        targetChildId,
+        window.__growthIslandSelectedChildId,
+        document.querySelector(".moral-turn-chip")?.dataset.childId,
+        document.querySelector(".pixi-world-canvas")?.dataset.selectedChildId,
+        document.querySelector(".pixi-world-canvas")?.dataset.focusedChildId,
+      ].every((childId) => childId === targetChildId),
+    }), targetChildId);
+  } finally {
+    await coldPage.close();
+  }
 }
 
 async function exerciseDeterministicApprovalFailure(page) {
@@ -141,6 +174,7 @@ async function exerciseUncertainLedgerReplay(page) {
       ).length,
       nextStage: window.__growthIslandMoralSpeakStage,
       nextChildId: window.__growthIslandSelectedChildId,
+      focusedChildId: document.querySelector(".pixi-world-canvas")?.dataset.focusedChildId ?? "",
       syncStatus: window.__growthIslandSyncStatus,
     }), { childId: seed.childId, reason });
     return { beforeCount, childId: seed.childId, failure, final, focusInsideReview, operationIds };
@@ -190,8 +224,9 @@ async function exerciseTeacherTakeover(page) {
 }
 
 export async function exerciseMoralRecoveryFlow(page) {
+  const coldSelection = await exerciseColdMapSelection(page);
   const deterministicFailure = await exerciseDeterministicApprovalFailure(page);
   const uncertainReplay = await exerciseUncertainLedgerReplay(page);
   const teacherTakeover = await exerciseTeacherTakeover(page);
-  return { deterministicFailure, teacherTakeover, uncertainReplay };
+  return { coldSelection, deterministicFailure, teacherTakeover, uncertainReplay };
 }

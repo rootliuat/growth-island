@@ -1,3 +1,10 @@
+/**
+ * [INPUT]: 依赖 PixiJS、精灵资产规则、相机配置和 WorldMapData 精灵节点数据。
+ * [OUTPUT]: 对外提供 SpiritLayer，渲染、加载、筛选、聚焦反馈并驱动精灵动画。
+ * [POS]: game/pixi 的动态精灵层，与 HomeLayer 共用 actor 层并由 WorldScene 编排。
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
+
 import { Container, Graphics, Rectangle, Sprite, Text, Ticker } from "pixi.js";
 import { assetScaleRules, getDoorFocusTarget, getSpiritTargetWidth } from "../assetScaleRules";
 import { palette } from "../artDirection";
