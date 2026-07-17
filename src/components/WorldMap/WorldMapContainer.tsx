@@ -1,5 +1,5 @@
 /**
- * [INPUT]: 依赖 PixiWorldMap、HUD 浮层、说成长状态和孩子/精灵进度数据。
+ * [INPUT]: 依赖 PixiWorldMap、儿童说成长浮层状态和孩子/精灵进度数据。
  * [OUTPUT]: 对外提供 WorldMapContainer 组件。
  * [POS]: components/WorldMap 的 React 桥接层，把 App 状态接入 PixiJS 主地图。
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -24,7 +24,6 @@ import {
 } from "lucide-react";
 import type { MoralSpeakViewState } from "../../domain/moralSpeakSession";
 import { MoralSpeakOverlay } from "../Hud/MoralSpeakOverlay";
-import { TeacherMoralReviewCard } from "../Hud/TeacherMoralReviewCard";
 import type { PixiWorldMapHandle } from "./PixiWorldMap";
 import { virtueCategories } from "../../data/spirits";
 import { getEnergyGlyphAsset } from "../../domain/energyAssets";
@@ -53,10 +52,8 @@ interface WorldMapContainerProps {
   onStartMoralSpeak?: () => void;
   onStopMoralSpeak?: () => void;
   onRetryMoralSpeak?: () => void;
-  onApproveMoralSpeak?: () => void;
-  onAdjustMoralSpeak?: (category: VirtueCategory, delta: 10 | 20 | 30) => void;
   onDeferMoralSpeak?: () => void;
-  onRespeakMoralSpeak?: () => void;
+  onTeacherTakeover?: () => void;
   onSkipMoralSpeak?: () => void;
 }
 
@@ -400,22 +397,10 @@ export const WorldMapContainer = forwardRef<PixiWorldMapHandle, WorldMapContaine
         onStart={props.onStartMoralSpeak ?? (() => undefined)}
         onStop={props.onStopMoralSpeak ?? (() => undefined)}
         onRetry={props.onRetryMoralSpeak ?? (() => undefined)}
+        onTeacherTakeover={props.onTeacherTakeover}
+        onSkip={props.onSkipMoralSpeak}
         onClose={props.onDeferMoralSpeak ?? (() => undefined)}
       />
-      {moralSpeak.stage === "pendingReview" ? (
-        <TeacherMoralReviewCard
-          key={moralSpeak.reviewId ?? `${moralSpeak.childId ?? "child"}:${moralSpeak.transcript ?? ""}`}
-          child={moralSpeakChild}
-          transcript={moralSpeak.transcript}
-          result={moralSpeak.result}
-          busy={moralSpeak.approving === true}
-          onApprove={props.onApproveMoralSpeak ?? (() => undefined)}
-          onAdjust={props.onAdjustMoralSpeak ?? (() => undefined)}
-          onDefer={props.onDeferMoralSpeak ?? (() => undefined)}
-          onRespeak={props.onRespeakMoralSpeak ?? (() => undefined)}
-          onSkip={props.onSkipMoralSpeak ?? (() => undefined)}
-        />
-      ) : null}
     </section>
   );
 });

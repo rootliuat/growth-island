@@ -2,7 +2,7 @@
 > L2 | 父级: /tests/CLAUDE.md
 
 成员清单
-beihaiApi.test.ts: 课堂 API 业务保护测试，覆盖 ledger、撤销、德育复核入账和教师显式修正。
+beihaiApi.test.ts: 课堂 API 业务保护测试，覆盖 release health、请求体上限、ledger、撤销、德育复核入账和教师显式修正。
 classroomCrashRecovery.test.ts: 课堂进程级恢复验收，覆盖 SIGKILL 后重启与主文件损坏后恢复最后提交。
 classroomRecoveryApi.test.ts: 课堂恢复 HTTP 契约测试，覆盖 degraded health、结构化 503 和独立 ASR 可用性。
 classroomSnapshotFile.test.mjs: 课堂文件持久化 Interface 测试，覆盖 schema、fsync 失败、20 份轮转、最高 revision 恢复和 degraded。

@@ -1,5 +1,5 @@
 /**
- * [INPUT]: 依赖孩子进度、精灵定义、说成长状态、3D 奖励预览和老师确认卡。
+ * [INPUT]: 依赖孩子进度、精灵定义、说成长状态、老师接管/原话修订动作、3D 奖励预览和老师确认卡。
  * [OUTPUT]: 对外提供 ChildProfileModule 组件。
  * [POS]: components/modules 的精灵小屋页面，承载孩子唯一 2D 精灵与小屋内说成长入口。
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -32,6 +32,8 @@ interface ChildProfileModuleProps {
   onStartMoralSpeak: () => void;
   onStopMoralSpeak: () => void;
   onRetryMoralSpeak: () => void;
+  onTeacherTakeover: () => void;
+  onUpdateMoralTranscript: (text: string) => void;
   onApproveMoralSpeak: () => void;
   onAdjustMoralSpeak: (category: VirtueCategory, delta: 10 | 20 | 30) => void;
   onRespeakMoralSpeak: () => void;
@@ -115,6 +117,8 @@ export function ChildProfileModule({
   onStartMoralSpeak,
   onStopMoralSpeak,
   onRetryMoralSpeak,
+  onTeacherTakeover,
+  onUpdateMoralTranscript,
   onApproveMoralSpeak,
   onAdjustMoralSpeak,
   onRespeakMoralSpeak,
@@ -291,6 +295,8 @@ export function ChildProfileModule({
                   onStart={onStartMoralSpeak}
                   onStop={onStopMoralSpeak}
                   onRetry={onRetryMoralSpeak}
+                  onTeacherTakeover={onTeacherTakeover}
+                  onSkip={onSkipMoralSpeak}
                   onClose={onDeferMoralSpeak}
                 />
                 {activeMoralSpeak.stage === "pendingReview" ? (
@@ -300,6 +306,8 @@ export function ChildProfileModule({
                     transcript={activeMoralSpeak.transcript}
                     result={activeMoralSpeak.result}
                     busy={activeMoralSpeak.approving === true}
+                    manualTakeover={activeMoralSpeak.manualTakeover === true}
+                    onTranscriptChange={onUpdateMoralTranscript}
                     onApprove={onApproveMoralSpeak}
                     onAdjust={onAdjustMoralSpeak}
                     onDefer={onDeferMoralSpeak}

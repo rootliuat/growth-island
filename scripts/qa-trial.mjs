@@ -80,7 +80,7 @@ async function startApi() {
 
 async function startVite() {
   return spawnBackground("vite", process.execPath, ["node_modules/vite/bin/vite.js", "--host", "127.0.0.1", "--port", String(vitePort), "--strictPort"], {
-    VITE_API_BASE_URL: apiBaseUrl,
+    BEIHAI_API_PROXY_TARGET: apiBaseUrl,
   });
 }
 

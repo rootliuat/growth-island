@@ -11,6 +11,7 @@ import { GameTopBar } from "../components/Hud/GameTopBar";
 import { GrowthFeedbackOverlay } from "../components/Hud/GrowthFeedbackOverlay";
 import { SpiritDetailPanel } from "../components/Hud/SpiritDetailPanel";
 import { SpiritDock } from "../components/Hud/SpiritDock";
+import { TeacherMoralReviewCard } from "../components/Hud/TeacherMoralReviewCard";
 import { ModulePlaceholder } from "../components/modules/ModulePlaceholder";
 import type { AppModuleId } from "../components/modules/moduleConfig";
 import { WorldMapContainer } from "../components/WorldMap/WorldMapContainer";
@@ -143,6 +144,7 @@ export interface GrowthIslandViewRuntime {
   selectChildFromDock: (childId: string) => void;
   selectChildFromMap: (childId: string) => void;
   selectChildFromProfile: (childId: string) => void;
+  selectNextMoralSpeak: (childId: string) => void;
   setActiveModule: (moduleId: AppModuleId) => void;
   setDialogueOpen: Dispatch<SetStateAction<boolean>>;
   setPkPair: Dispatch<SetStateAction<{ playerId: string; opponentId: string } | null>>;
@@ -160,11 +162,13 @@ export interface GrowthIslandViewRuntime {
   stopMoralSpeakRecording: (cancel?: boolean) => void;
   submitDialogue: (text: string) => Promise<MoralEvaluationResult>;
   syncStatus: SyncStatus;
+  takeoverMoralSpeak: () => void;
   dataAuthority: ClassroomDataAuthority;
   classroomNotice?: string;
   teacherMode: boolean;
   toggleTeacherModeSetting: () => void;
   undoLast: (recordId?: string) => void;
+  updateMoralTranscript: (text: string) => void;
   updateSelectedChild: (patch: Partial<ChildProfile>) => void;
   worldMapRef: RefObject<PixiWorldMapHandle | null>;
 }
@@ -181,12 +185,21 @@ export function GrowthIslandView(runtime: GrowthIslandViewRuntime) {
     recordLotteryDraw, recordMathPkWin, recordTeacherWorkbench, redeemShopReward,
     rejectReview, rejectVoiceSuggestion, resetRollCall, respeakMoralSpeak, retryMoralSpeak, returnToHome,
     rollCallCalledIds, rollCallCurrentId, rollCallExcludeCalled, saveCurrentSettings, selectedChild,
-    selectedSpirit, selectedSpiritAsset, selectChildFromDock, selectChildFromMap, selectChildFromProfile,
+    selectedSpirit, selectedSpiritAsset, selectChildFromDock, selectChildFromMap, selectChildFromProfile, selectNextMoralSpeak,
     setActiveModule, setDialogueOpen, setPkPair, setRollCallExcludeCalled, setSelectedChildId,
     setShowcaseChildId, settingsChanges, showcaseChild, showcaseSpirit, showcaseSpiritAsset, shopRedemptions,
     skipMoralSpeakChild, spiritsById, startMoralSpeak, stopMoralSpeakRecording, submitDialogue, syncStatus,
-    teacherMode, toggleTeacherModeSetting, undoLast, updateSelectedChild, worldMapRef, dataAuthority, classroomNotice,
+    takeoverMoralSpeak, teacherMode, toggleTeacherModeSetting, undoLast, updateMoralTranscript, updateSelectedChild,
+    worldMapRef, dataAuthority, classroomNotice,
   } = runtime;
+
+  const moralSpeakChild = moralSpeak.childId
+    ? childrenWithProgress.find((child) => child.id === moralSpeak.childId) ?? selectedChild
+    : selectedChild;
+  const selectedChildIndex = childrenWithProgress.findIndex((child) => child.id === moralSpeakChild.id);
+  const nextChild = (moralSpeak.stage === "success" || moralSpeak.handoffReady) && childrenWithProgress.length > 1
+    ? childrenWithProgress[(selectedChildIndex + 1 + childrenWithProgress.length) % childrenWithProgress.length]
+    : undefined;
 
   return (
     <AppShell
@@ -229,23 +242,38 @@ export function GrowthIslandView(runtime: GrowthIslandViewRuntime) {
               onStartMoralSpeak={startMoralSpeak}
               onStopMoralSpeak={stopMoralSpeakRecording}
               onRetryMoralSpeak={retryMoralSpeak}
-              onApproveMoralSpeak={approveMoralSpeak}
-              onAdjustMoralSpeak={adjustMoralSpeak}
-              onRespeakMoralSpeak={respeakMoralSpeak}
+              onTeacherTakeover={takeoverMoralSpeak}
               onSkipMoralSpeak={skipMoralSpeakChild}
               onDeferMoralSpeak={deferMoralSpeak}
             />
 
             <aside className="hud-rail">
-              <SpiritDetailPanel
-                child={selectedChild}
-                spirit={selectedSpirit}
-                spiritAssetUrl={selectedSpiritAsset?.url}
-                recentRecords={recentRecords.filter((record) => record.delta > 0)}
-                onOpenProfile={openChildProfile}
-                onStartSelfService={(childId) => focusChildOnHome(childId, { prepareMoralSpeak: true })}
-                onOpenShowcase={openSpiritShowcase}
-              />
+              {moralSpeak.stage === "pendingReview" ? (
+                <TeacherMoralReviewCard
+                  key={moralSpeak.reviewId ?? `${moralSpeak.childId ?? "child"}:manual`}
+                  child={moralSpeakChild}
+                  transcript={moralSpeak.transcript}
+                  result={moralSpeak.result}
+                  busy={moralSpeak.approving === true}
+                  manualTakeover={moralSpeak.manualTakeover === true}
+                  onTranscriptChange={updateMoralTranscript}
+                  onApprove={approveMoralSpeak}
+                  onAdjust={adjustMoralSpeak}
+                  onDefer={deferMoralSpeak}
+                  onRespeak={respeakMoralSpeak}
+                  onSkip={skipMoralSpeakChild}
+                />
+              ) : (
+                <SpiritDetailPanel
+                  child={selectedChild}
+                  spirit={selectedSpirit}
+                  spiritAssetUrl={selectedSpiritAsset?.url}
+                  recentRecords={recentRecords.filter((record) => record.delta > 0)}
+                  onOpenProfile={openChildProfile}
+                  onStartSelfService={(childId) => focusChildOnHome(childId, { prepareMoralSpeak: true })}
+                  onOpenShowcase={openSpiritShowcase}
+                />
+              )}
             </aside>
           </section>
 
@@ -255,6 +283,10 @@ export function GrowthIslandView(runtime: GrowthIslandViewRuntime) {
             selectedChildId={selectedChild.id}
             onSelectChild={selectChildFromDock}
             onOpenShowcase={openSpiritShowcase}
+            pendingReviewCount={pendingReviews.length}
+            onOpenPendingReviews={() => setActiveModule("teacher-workbench")}
+            nextChild={nextChild}
+            onSelectNextChild={selectNextMoralSpeak}
           />
         </section>
       ) : activeModule === "roll-call" ? (
@@ -358,6 +390,8 @@ export function GrowthIslandView(runtime: GrowthIslandViewRuntime) {
           onStartMoralSpeak={startMoralSpeak}
           onStopMoralSpeak={stopMoralSpeakRecording}
           onRetryMoralSpeak={retryMoralSpeak}
+          onTeacherTakeover={takeoverMoralSpeak}
+          onUpdateMoralTranscript={updateMoralTranscript}
           onApproveMoralSpeak={approveMoralSpeak}
           onAdjustMoralSpeak={adjustMoralSpeak}
           onRespeakMoralSpeak={respeakMoralSpeak}

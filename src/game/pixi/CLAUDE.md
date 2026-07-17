@@ -2,7 +2,7 @@
 > L2 | 父级: /src/game/CLAUDE.md
 
 成员清单
-PixiWorld.ts: PixiJS 地图运行时主控，管理挂载、相机、交互唤醒、渲染清晰度、限帧和销毁。
+PixiWorld.ts: PixiJS 地图运行时主控，管理异步挂载期最新读模型与待执行孩子聚焦、相机、交互唤醒、渲染清晰度、QA 诊断、限帧和销毁。
 WorldScene.ts: 地图场景编排，组合地图图层并在手势态暂停非必要渲染。
 CameraController.ts: Pixi viewport 相机 Adapter，负责缩放、拖拽和聚焦动画。
 DomStaticMapLayer.ts: DOM 静态底图 Adapter，承载不可点击的主岛大图并去重同步 Pixi 相机变换。

@@ -9,6 +9,7 @@
 - 安装依赖：`npm ci`
 - 生成白板清晰版地图资源：`npm run assets:map-hidpi`
 - 跑试教自动验收：`npm run qa:trial`
+- 跑自动发布前检查：`npm run qa:release:auto`
 - 跑生产预览 smoke：`npm run qa:preview-smoke`
 - 在目标白板跑真实麦克风校准：`REAL_MIC_TARGET_COUNT=3 npm run qa:real-mic`
 - 校准通过后跑 10 人连续语音：`REAL_MIC_TARGET_COUNT=10 npm run qa:real-mic`
@@ -55,6 +56,7 @@
 - 儿童主界面不出现 `XP`、`AI建议`、`置信度`、`确认入账` 等后台词。
 - 自助成长确认后只产生一条 ledger 记录，且包含老师确认信息。
 - 目标白板静止首页保持约 60 FPS；拖动/缩放以物理设备为准，目标不低于 45 FPS，不能用降低地图清晰度掩盖卡顿。
+- 线上预发布必须使用 HTTPS 同源 `/api`、非 development 的 `releaseVersion`、真实腾讯 ASR 和受保护的单实例持久化服务；详细步骤见 `docs/production-deployment-guide.md`。
 - 强杀进程后重启，最后一次已确认课堂记录仍存在；破坏主文件后能从最近有效快照恢复。
 
 ## 5. 自动验收命令
@@ -89,9 +91,12 @@ npm run qa:preview-smoke
 
 `npm run qa:real-mic` 通过标准：
 
+- 本地模式使用生产构建；线上模式必须设置 HTTPS `REAL_MIC_BASE_URL`。
+- 首位孩子必须在目标白板真实处理麦克风权限提示，脚本不得预授权；报告最终权限必须为 `granted`。
+- 地图 wheel/drag 均不低于 45 FPS，active 与 settled 渲染倍率和 backing ratio 均不低于 1（允许 0.99 测量误差）。
 - 3 人校准最终 3/3 完成。
-- 10 人连续试教最终 10/10 完成，首次识别至少 9/10。
-- 单次 ASR 不超过 12 秒，老师点亮后每人只产生一条成长账本记录。
+- 10 名不同孩子连续试教最终 10/10 完成，首次识别至少 9/10。
+- 腾讯 ASR 必须真实启用；单次 ASR 不超过 12 秒，WebM 必须转 WAV，老师点亮后每名孩子只产生一条成长账本记录。
 - 报告路径：`qa-artifacts/latest/real-mic-report.json`；报告不得包含音频或完整转写文本。
 
 ## 6. 必看截图

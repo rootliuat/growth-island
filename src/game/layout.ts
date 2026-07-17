@@ -1,3 +1,10 @@
+/**
+ * [INPUT]: 依赖精灵资产、成长能量规则、家园槽位与课堂孩子/账本数据。
+ * [OUTPUT]: 对外提供 buildWorldMapData，将课堂读模型投影为 Pixi 世界数据。
+ * [POS]: game 的地图布局 Adapter，连接 domain 进度与 pixi WorldScene。
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
+
 import { getSpiritAsset } from "../domain/spiritAssets";
 import { formatSignedXp } from "../domain/virtueEnergy";
 import type { ChildWithProgress, LedgerRecord, SpiritDefinition } from "../types";

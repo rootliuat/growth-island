@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 moralRecorder、speechDiagnostics、classroomApi、德育规则、课堂数据会话写入能力、地图控制句柄和开发期 QA 录音窗口。
- * [OUTPUT]: 对外提供 useMoralSpeakWorkflow，返回说成长状态、同音频单次重试、用户动作、选择守卫和 QA 控制面。
- * [POS]: app 的说成长会话深 Module，独占录音资源、session ID、审批锁与状态转换。
+ * [OUTPUT]: 对外提供 useMoralSpeakWorkflow，返回分阶段恢复、老师接管、冻结载荷与退出锁定的幂等点亮重试、用户动作和 QA 控制面。
+ * [POS]: app 的说成长会话深 Module，独占录音资源、session ID、审批载荷、审批锁与状态转换。
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -9,14 +9,17 @@ import { useEffect, useRef, useState, type Dispatch, type RefObject, type SetSta
 import { blobToBase64, getMoralRecorderSettings, prepareMoralAudioForTranscription } from "../browser/moralRecorder";
 import { finishSpeechDiagnostic, startSpeechDiagnostic, updateSpeechDiagnostic } from "../browser/speechDiagnostics";
 import type { PixiWorldMapHandle } from "../components/WorldMap/PixiWorldMap";
-import type { SyncStatus } from "../domain/appState";
+import { UncertainClassroomWriteError, type SyncStatus } from "../domain/appState";
 import type { GrowthFeedback } from "../domain/growthFeedback";
 import { evaluateMoralText } from "../domain/moralAgent";
 import {
+  createMoralApprovalOperation,
+  createMoralSpeakManualTakeoverState,
   getMoralSpeakLockedChildId,
   getMoralSpeakFailurePresentation,
   getMoralSpeakSummary,
   isCurrentMoralApprovalTarget,
+  isMoralApprovalReplayLocked,
   isMoralSpeakSessionActive,
   nextMoralSpeakSessionId,
   type MoralSpeakViewState,
@@ -35,6 +38,7 @@ import type {
   ChildWithProgress,
   ClassroomSnapshot,
   LedgerRecordInput,
+  MoralAgentResponse,
   MoralEvaluationResult,
   MoralReviewItem,
   VirtueCategory,
@@ -44,19 +48,19 @@ interface MoralSpeakWorkflowInput {
   applySnapshot: (snapshot: ClassroomSnapshot) => boolean;
   children: ChildWithProgress[];
   clearFeedback: () => void;
-  commitLedger: (input: LedgerRecordInput) => Promise<void>;
-  commitLocalMoralReviews: (update: (current: MoralReviewItem[]) => MoralReviewItem[]) => boolean;
+  commitLedger: (input: LedgerRecordInput, options?: { replayUncertainWrite?: boolean }) => Promise<void>;
+  commitLocalMoralReviews: (update: (current: MoralReviewItem[]) => MoralReviewItem[], expectedAuthority: "server" | "local") => boolean;
   markServerWriteUncertain: () => void;
   selectedChild: ChildWithProgress;
   setLastEvaluation: Dispatch<SetStateAction<MoralEvaluationResult | undefined>>;
   setMoralReviews: Dispatch<SetStateAction<MoralReviewItem[]>>;
   setSelectedChildId: Dispatch<SetStateAction<string>>;
   setSyncStatus: Dispatch<SetStateAction<SyncStatus>>;
+  settleServerRequest: () => boolean;
   showFeedback: (feedback: Omit<GrowthFeedback, "id">) => void;
   syncStatus: SyncStatus;
   worldMapRef: RefObject<PixiWorldMapHandle | null>;
 }
-
 interface MoralSpeakQaWindow extends Window {
   __growthIslandForceMoralMicErrorForQa?: boolean;
   __growthIslandMoralAutoStopMsForQa?: number;
@@ -82,6 +86,8 @@ export function useMoralSpeakWorkflow(input: MoralSpeakWorkflowInput) {
   const recordingCancelledRef = useRef(false);
   const approvingRef = useRef(false);
   const sessionRef = useRef(0);
+  const approvalOperationIdRef = useRef(crypto.randomUUID());
+  const approvalPayloadRef = useRef<Readonly<LedgerRecordInput> | undefined>(undefined);
   const diagnosticAttemptRef = useRef<string | undefined>(undefined);
   const retryAudioRef = useRef<{
     child: ChildWithProgress;
@@ -89,7 +95,6 @@ export function useMoralSpeakWorkflow(input: MoralSpeakWorkflowInput) {
     voiceFormat: string;
     attemptId?: string;
   } | undefined>(undefined);
-
   const clearRecordedAudio = () => {
     retryAudioRef.current = undefined;
   };
@@ -127,7 +132,6 @@ export function useMoralSpeakWorkflow(input: MoralSpeakWorkflowInput) {
     timersRef.current.forEach((timer) => window.clearTimeout(timer));
     timersRef.current = [];
   };
-
   const stopTracks = () => {
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
@@ -153,6 +157,8 @@ export function useMoralSpeakWorkflow(input: MoralSpeakWorkflowInput) {
   };
 
   const beginSession = () => {
+    approvalOperationIdRef.current = crypto.randomUUID();
+    approvalPayloadRef.current = undefined;
     sessionRef.current = nextMoralSpeakSessionId(sessionRef.current);
     return sessionRef.current;
   };
@@ -160,7 +166,6 @@ export function useMoralSpeakWorkflow(input: MoralSpeakWorkflowInput) {
   const invalidateSession = () => {
     sessionRef.current = nextMoralSpeakSessionId(sessionRef.current);
   };
-
   const isSessionActive = (sessionId: number, childId?: string) =>
     isMoralSpeakSessionActive({
       currentSessionId: sessionRef.current,
@@ -173,6 +178,7 @@ export function useMoralSpeakWorkflow(input: MoralSpeakWorkflowInput) {
     isCurrentMoralApprovalTarget(stateRef.current, childId, reviewId);
 
   const prepare = (childId: string) => {
+    if (isMoralApprovalReplayLocked(stateRef.current)) return;
     beginSession();
     clearTimers();
     stopRecording(true);
@@ -198,7 +204,8 @@ export function useMoralSpeakWorkflow(input: MoralSpeakWorkflowInput) {
     return true;
   };
 
-  const reset = (options: { focusIsland?: boolean } = {}) => {
+  const reset = (options: { focusIsland?: boolean; force?: boolean } = {}) => {
+    if (isMoralApprovalReplayLocked(stateRef.current) && !options.force) return;
     invalidateSession();
     clearTimers();
     stopRecording(true);
@@ -210,8 +217,9 @@ export function useMoralSpeakWorkflow(input: MoralSpeakWorkflowInput) {
     if (options.focusIsland ?? true) input.worldMapRef.current?.focusFullIsland();
   };
 
-  const returnToIslandIdle = () => {
+  const returnToIslandIdle = (handoff?: { childId: string; childName: string }) => {
     reset({ focusIsland: true });
+    if (handoff) setState({ stage: "idle", childId: handoff.childId, previousChildName: handoff.childName, handoffReady: true });
     schedule(() => input.worldMapRef.current?.focusFullIsland(), 140);
   };
 
@@ -232,21 +240,25 @@ export function useMoralSpeakWorkflow(input: MoralSpeakWorkflowInput) {
     prepare(childId);
   };
 
+  const selectNext = (childId: string) => {
+    if (stateRef.current.stage !== "success") return selectFromDock(childId);
+    reset({ focusIsland: false });
+    input.setSelectedChildId(childId);
+    prepare(childId);
+  };
+
   const submitDialogue = async (text: string) => {
     if (input.syncStatus === "unavailable") throw new Error("课堂数据暂不可用");
     if (input.syncStatus !== "offline") {
       input.setSyncStatus("saving");
-      const operationId = crypto.randomUUID();
+      let response: MoralAgentResponse | undefined;
       try {
-        const response = await evaluateMoralRecord({
+        response = await evaluateMoralRecord({
           childId: input.selectedChild.id,
           operatorChildId: input.selectedChild.id,
           transcript: text,
-          operationId,
+          operationId: crypto.randomUUID(),
         });
-        input.setLastEvaluation(response.result);
-        if (!input.applySnapshot(response.snapshot)) throw new TypeError("课堂数据权威已变化");
-        return response.result;
       } catch (error) {
         if (isDefiniteClassroomUnavailable(error)) {
           // 明确在写入前不可用，可以安全进入本机规则。
@@ -254,9 +266,14 @@ export function useMoralSpeakWorkflow(input: MoralSpeakWorkflowInput) {
           input.markServerWriteUncertain();
           throw error;
         } else {
-          input.setSyncStatus("online");
+          input.settleServerRequest();
           throw error;
         }
+      }
+      if (response) {
+        if (!input.applySnapshot(response.snapshot)) throw new Error("课堂数据来源已切换，本次结果未确认，请重新提交");
+        input.setLastEvaluation(response.result);
+        return response.result;
       }
     }
 
@@ -272,7 +289,7 @@ export function useMoralSpeakWorkflow(input: MoralSpeakWorkflowInput) {
       createdAt: new Date().toISOString(),
       operationId: crypto.randomUUID(),
     };
-    if (!input.commitLocalMoralReviews((current) => [review, ...current])) throw new Error("本机课堂数据保存失败");
+    if (!input.commitLocalMoralReviews((current) => [review, ...current], input.syncStatus === "offline" ? "local" : "server")) throw new Error("本机课堂数据保存失败");
     return result;
   };
 
@@ -285,12 +302,13 @@ export function useMoralSpeakWorkflow(input: MoralSpeakWorkflowInput) {
     if (!isSessionActive(sessionId, child.id)) return;
     const cleanTranscript = transcript.trim();
     if (!cleanTranscript) {
-      setState({ stage: "error", childId: child.id, error: "没听清，可以再说一次" });
+      setState({ stage: "error", childId: child.id, error: "没听清，可以再说一次", retryMode: "rerecord" });
       return;
     }
+    setState({ stage: "recognizing", childId: child.id, transcript: cleanTranscript, processingStep: "evaluating" });
 
     if (input.syncStatus === "unavailable") {
-      setState({ stage: "error", childId: child.id, error: "课堂数据暂不可用，请老师先恢复备份" });
+      setState({ stage: "error", childId: child.id, transcript: cleanTranscript, error: "课堂数据暂不可用，请老师先恢复备份", retryMode: "none" });
       return;
     }
     if (input.syncStatus !== "offline") {
@@ -302,22 +320,22 @@ export function useMoralSpeakWorkflow(input: MoralSpeakWorkflowInput) {
           const rejectionOperationId = crypto.randomUUID();
           try {
             const snapshot = await rejectMoralReview(response.reviewItem.id, child.id, "已取消", rejectionOperationId);
-            if (!input.applySnapshot(snapshot)) input.markServerWriteUncertain();
+            input.applySnapshot(snapshot);
           } catch (error) {
             if (isDefiniteClassroomUnavailable(error)) {
               input.commitLocalMoralReviews(() =>
                 (response.snapshot.moralReviews ?? []).map((review) => review.id === response.reviewItem.id
                   ? { ...review, status: "rejected", rejectionReason: "已取消", rejectionOperationId }
-                  : review),
+                  : review), "server",
               );
             } else if (isClassroomAvailabilityFailure(error)) input.markServerWriteUncertain();
-            else input.setSyncStatus("online");
+            else input.settleServerRequest();
           }
           return;
         }
         input.setLastEvaluation(response.result);
         if (!input.applySnapshot(response.snapshot)) {
-          input.markServerWriteUncertain();
+          setState({ stage: "error", childId: child.id, transcript: cleanTranscript, error: "课堂数据来源已切换，请重新开始", retryMode: "none" });
           return;
         }
         input.setSelectedChildId(child.id);
@@ -336,11 +354,11 @@ export function useMoralSpeakWorkflow(input: MoralSpeakWorkflowInput) {
           // 明确未进入课堂写事务，下面安全写入本机复核。
         } else if (isClassroomAvailabilityFailure(error)) {
           input.markServerWriteUncertain();
-          setState({ stage: "error", childId: child.id, error: "保存结果待确认，请老师检查服务后刷新" });
+          setState({ stage: "error", childId: child.id, transcript: cleanTranscript, error: "保存结果待确认，请老师检查服务后刷新", retryMode: "none" });
           return;
         } else {
-          input.setSyncStatus("online");
-          setState({ stage: "error", childId: child.id, error: "复核请求未通过，请老师检查后重试" });
+          input.settleServerRequest();
+          setState({ stage: "error", childId: child.id, transcript: cleanTranscript, error: "成长判断未完成，请老师重试", retryMode: "reevaluate" });
           return;
         }
       }
@@ -359,8 +377,8 @@ export function useMoralSpeakWorkflow(input: MoralSpeakWorkflowInput) {
       createdAt: new Date().toISOString(),
       operationId: crypto.randomUUID(),
     };
-    if (!input.commitLocalMoralReviews((current) => [review, ...current])) {
-      setState({ stage: "error", childId: child.id, error: "本机保存失败，请老师先导出数据" });
+    if (!input.commitLocalMoralReviews((current) => [review, ...current], input.syncStatus === "offline" ? "local" : "server")) {
+      setState({ stage: "error", childId: child.id, transcript: cleanTranscript, result, error: "本机保存失败，请老师先导出数据", retryMode: "none" });
       return;
     }
     input.clearFeedback();
@@ -383,7 +401,7 @@ export function useMoralSpeakWorkflow(input: MoralSpeakWorkflowInput) {
     attemptId?: string,
   ) => {
     if (!isSessionActive(sessionId, child.id)) return;
-    setState({ stage: "recognizing", childId: child.id });
+    setState({ stage: "recognizing", childId: child.id, processingStep: "transcribing" });
     updateSpeechDiagnostic(attemptId, { outcome: "recognizing", retryCount });
     const startedAt = performance.now();
     try {
@@ -441,7 +459,7 @@ export function useMoralSpeakWorkflow(input: MoralSpeakWorkflowInput) {
       status: "pending_review",
       createdAt: new Date().toISOString(),
     };
-    if (!input.commitLocalMoralReviews((current) => [review, ...current])) return;
+    if (!input.commitLocalMoralReviews((current) => [review, ...current], input.syncStatus === "offline" ? "local" : "server")) return;
     input.clearFeedback();
     setState({
       stage: "pendingReview",
@@ -463,7 +481,7 @@ export function useMoralSpeakWorkflow(input: MoralSpeakWorkflowInput) {
 
     const qaWindow = window as MoralSpeakQaWindow;
     if (import.meta.env.DEV && qaWindow.__growthIslandForceMoralMicErrorForQa) {
-      setState({ stage: "error", childId: child.id, error: "麦克风没准备好，请老师帮忙" });
+      setSpeechFailure(child.id, "microphone_unavailable");
       return;
     }
     const settings = getMoralRecorderSettings();
@@ -552,18 +570,16 @@ export function useMoralSpeakWorkflow(input: MoralSpeakWorkflowInput) {
           : review,
       );
     if (input.syncStatus === "offline") {
-      input.commitLocalMoralReviews(updateReviews);
+      input.commitLocalMoralReviews(updateReviews, "local");
       return;
     }
     input.setSyncStatus("saving");
     rejectMoralReview(reviewId, input.selectedChild.id, reason, operationId)
-      .then((snapshot) => {
-        if (!input.applySnapshot(snapshot)) input.markServerWriteUncertain();
-      })
+      .then((snapshot) => { input.applySnapshot(snapshot); })
       .catch((error) => {
-        if (isDefiniteClassroomUnavailable(error)) input.commitLocalMoralReviews(updateReviews);
+        if (isDefiniteClassroomUnavailable(error)) input.commitLocalMoralReviews(updateReviews, "server");
         else if (isClassroomAvailabilityFailure(error)) input.markServerWriteUncertain();
-        else input.setSyncStatus("online");
+        else input.settleServerRequest();
       });
   };
 
@@ -571,6 +587,17 @@ export function useMoralSpeakWorkflow(input: MoralSpeakWorkflowInput) {
     if (approvingRef.current) return;
     const childId = state.childId ?? input.selectedChild.id;
     const cachedAudio = retryAudioRef.current;
+    if (state.stage === "error" && state.retryMode === "reapprove") {
+      void approve();
+      return;
+    }
+    if (state.stage === "error" && state.retryMode === "reevaluate" && state.transcript) {
+      const child = input.children.find((item) => item.id === childId) ?? input.selectedChild;
+      const sessionId = beginSession();
+      input.setSelectedChildId(childId);
+      void finishWithTranscript(child, state.transcript, state.summary, sessionId);
+      return;
+    }
     if (state.stage === "error" && state.retryMode === "retranscribe" && cachedAudio?.child.id === childId) {
       const sessionId = beginSession();
       input.setSelectedChildId(childId);
@@ -593,41 +620,37 @@ export function useMoralSpeakWorkflow(input: MoralSpeakWorkflowInput) {
     setState({ stage: "ready", childId });
   };
 
-  const approve = async () => {
-    if (state.stage !== "pendingReview" || !state.result || !state.childId || !canApproveMoralGrowth(state.result)) return;
+  async function approve() {
+    const approvalState = stateRef.current;
+    if (!approvalState.result || !approvalState.childId || !canApproveMoralGrowth(approvalState.result)) return;
+    if (!isCurrentMoralApprovalTarget(approvalState, approvalState.childId, approvalState.reviewId)) return;
     if (approvingRef.current) return;
+    const result = approvalState.result;
+    const childId = approvalState.childId;
+    const reviewId = approvalState.reviewId;
+    const replaying = isMoralApprovalReplayLocked(approvalState);
+    const operation = replaying
+      ? approvalPayloadRef.current
+      : createMoralApprovalOperation(approvalState, input.selectedChild.id, approvalOperationIdRef.current);
+    if (!operation) return;
+    if (!replaying) approvalPayloadRef.current = operation;
     approvingRef.current = true;
     clearTimers();
-    const result = state.result;
-    const transcript = state.transcript ?? "孩子自助成长记录";
-    const childId = state.childId;
-    const reviewId = state.reviewId;
     const completedChild = input.children.find((child) => child.id === childId) ?? input.selectedChild;
     setState((current) => (isApprovalTarget(childId, reviewId) ? { ...current, approving: true } : current));
 
     try {
-      await input.commitLedger({
-        childId,
-        operatorChildId: input.selectedChild.id,
-        operatorRole: "teacher",
-        delta: result.xpDelta,
-        source: "dialogue-agent",
-        category: result.category,
-        reason: `自助成长：${transcript}`,
-        aiSuggested: true,
-        reviewStatus: "approved",
-        reviewId,
-        teacherAdjustedReview: state.adjusted === true,
-      });
-    } catch {
+      await input.commitLedger(operation, { replayUncertainWrite: replaying });
+    } catch (error) {
       if (!isApprovalTarget(childId, reviewId)) {
         approvingRef.current = false;
         return;
       }
       approvingRef.current = false;
+      const uncertainWrite = error instanceof UncertainClassroomWriteError;
       setState((current) =>
         isApprovalTarget(childId, reviewId)
-          ? { ...current, stage: "error", approving: false, error: "请老师稍后再确认" }
+          ? { ...current, stage: "error", approving: false, error: uncertainWrite ? "成长账本暂未写入，请重试点亮" : "成长账本未写入，可关闭后刷新确认", retryMode: uncertainWrite ? "reapprove" : "none" }
           : current,
       );
       return;
@@ -645,9 +668,11 @@ export function useMoralSpeakWorkflow(input: MoralSpeakWorkflowInput) {
         ),
       );
     }
+    approvalPayloadRef.current = undefined;
+    const committedResult = { ...result, category: operation.category, xpDelta: operation.delta as MoralEvaluationResult["xpDelta"] };
     setState((current) =>
       isApprovalTarget(childId, reviewId)
-        ? { ...current, stage: "success", approving: false, result, previousChildName: completedChild.name }
+        ? { ...current, stage: "success", approving: false, result: committedResult, previousChildName: completedChild.name }
         : current,
     );
     finishSpeechDiagnostic(diagnosticAttemptRef.current, "approved");
@@ -656,21 +681,35 @@ export function useMoralSpeakWorkflow(input: MoralSpeakWorkflowInput) {
     input.clearFeedback();
     schedule(() => {
       approvingRef.current = false;
-      returnToIslandIdle();
+      returnToIslandIdle({ childId, childName: completedChild.name });
       schedule(() => {
         input.showFeedback({
           kind: "status",
           tone: "neutral",
-          title: "下一位可以点精灵",
-          detail: "孩子自己选择精灵继续",
+          title: "请下一位点精灵",
+          detail: "点自己的精灵就能继续",
           childName: completedChild.name,
         });
       }, 0);
-    }, 2400);
+    }, 1100);
+  }
+
+  const takeover = () => {
+    if (approvingRef.current || isMoralApprovalReplayLocked(stateRef.current)) return;
+    const childId = state.childId ?? input.selectedChild.id;
+    clearTimers();
+    stopRecording(true);
+    input.setSelectedChildId(childId);
+    setState((current) => createMoralSpeakManualTakeoverState(current, childId));
+  };
+
+  const updateTranscript = (transcript: string) => {
+    if (isMoralApprovalReplayLocked(stateRef.current)) return;
+    setState((current) => current.manualTakeover ? { ...current, transcript } : current);
   };
 
   const adjust = (category: VirtueCategory, delta: 10 | 20 | 30) => {
-    if (approvingRef.current) return;
+    if (approvingRef.current || isMoralApprovalReplayLocked(stateRef.current)) return;
     setState((current) => {
       if (!current.result) return current;
       const result = {
@@ -691,11 +730,10 @@ export function useMoralSpeakWorkflow(input: MoralSpeakWorkflowInput) {
   };
 
   const respeak = () => {
-    if (approvingRef.current) return;
+    if (approvingRef.current || isMoralApprovalReplayLocked(stateRef.current)) return;
     beginSession();
     clearTimers();
     stopRecording(true);
-    approvingRef.current = false;
     clearRecordedAudio();
     rejectCurrentReview("补说");
     const childId = state.childId ?? input.selectedChild.id;
@@ -704,16 +742,15 @@ export function useMoralSpeakWorkflow(input: MoralSpeakWorkflowInput) {
   };
 
   const skip = () => {
-    if (approvingRef.current) return;
+    if (approvingRef.current || isMoralApprovalReplayLocked(stateRef.current)) return;
     clearTimers();
     stopRecording(true);
-    approvingRef.current = false;
     rejectCurrentReview("跳过这位");
     returnToIslandIdle();
   };
 
   const defer = () => {
-    if (approvingRef.current) return;
+    if (approvingRef.current || isMoralApprovalReplayLocked(stateRef.current)) return;
     const child = state.childId ? input.children.find((item) => item.id === state.childId) : undefined;
     reset({ focusIsland: true });
     if (state.stage === "pendingReview" && child) {
@@ -741,20 +778,17 @@ export function useMoralSpeakWorkflow(input: MoralSpeakWorkflowInput) {
     setState({ stage: "recognizing", childId: child.id });
     return true;
   };
-
-  useEffect(() => () => {
-    clearTimers();
-    stopRecording(true);
-  }, []);
+  useEffect(() => () => { clearTimers(); stopRecording(true); }, []);
 
   return {
     state,
-    actions: { adjust, approve, defer, prepare, reset, respeak, retry, selectFromDock, selectFromMap, skip, start, stop: stopRecording, submitDialogue },
+    actions: { adjust, approve, defer, prepare, reset, respeak, retry, selectFromDock, selectFromMap, selectNext, skip, start, stop: stopRecording, submitDialogue, takeover, updateTranscript },
     guardSelection,
     qa: {
       finish: qaFinish,
       setRecognizing: qaSetRecognizing,
       startReview: (child: ChildWithProgress, transcript: string, summary: string) => {
+        beginSession();
         clearTimers();
         approvingRef.current = false;
         input.setSelectedChildId(child.id);

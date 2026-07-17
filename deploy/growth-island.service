@@ -1,0 +1,28 @@
+# [INPUT]: 依赖 /opt/growth-island 源码、/etc/growth-island/runtime.env 和可写持久目录。
+# [OUTPUT]: 对外提供受 systemd 监管的单实例 Beihai API 进程。
+# [POS]: deploy 的 API 进程模板，由 Nginx 通过 127.0.0.1:5174 独占访问。
+# [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+
+[Unit]
+Description=Growth Island classroom API
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=growth-island
+Group=growth-island
+WorkingDirectory=/opt/growth-island
+EnvironmentFile=/etc/growth-island/runtime.env
+ExecStart=/usr/bin/node server/beihai-api.mjs
+Restart=on-failure
+RestartSec=2
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/growth-island
+
+[Install]
+WantedBy=multi-user.target

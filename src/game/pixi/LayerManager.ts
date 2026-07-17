@@ -1,3 +1,10 @@
+/**
+ * [INPUT]: 依赖 PixiJS Container。
+ * [OUTPUT]: 对外提供 LayerName 与 LayerManager，建立稳定地图图层树和共享 actor 层。
+ * [POS]: game/pixi 的图层结构根，被 WorldScene 统一持有。
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
+
 import { Container } from "pixi.js";
 
 export type LayerName =

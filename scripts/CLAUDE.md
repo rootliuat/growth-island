@@ -3,8 +3,9 @@
 
 成员清单
 qa-visual.mjs: 视觉 QA 兼容入口，加载 scripts/qa/runner.mjs。
-qa-real-mic.mjs: 独占端口的真实物理麦克风人工试教门禁，输出无音频、无全文的脱敏报告。
+qa-real-mic.mjs: 本地生产预览或 HTTPS 预发布的真实白板门禁，统一 45 FPS、腾讯语音、3+10 人与单账本脱敏证据。
 qa-preview-smoke.mjs: 独占端口使用生产 manifest、预览与系统 Chrome 验收首页，并阻止延迟运行图被提前加载。
+qa-p0-trace.mjs: 使用系统 Chrome/CDP 记录 renderer，并对首页 wheel 与教师台滚动做按需性能 trace。
 qa-trial.mjs: 试教 QA 编排入口，独占端口与恢复数据并串联视觉和资源门禁。
 qa-p4-provider-smoke.mjs: 真实 Provider 链路 smoke，拒绝未知端口服务并输出脱敏报告。
 qa-database.mjs: QA 数据库重置工具，只清理指定测试数据库自己的主文件、快照和残留。

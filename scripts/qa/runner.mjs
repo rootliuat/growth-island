@@ -1,5 +1,5 @@
 /**
- * [INPUT]: 依赖 Playwright、QA check catalog、home/operations QA Module、Vite 页面和本地 QA hooks。
+ * [INPUT]: 依赖 Playwright、QA check catalog、home/operations/moral recovery QA Module、Vite 页面和本地 QA hooks。
  * [OUTPUT]: 对外执行视觉/触控/性能 QA 并写入 qa-artifacts/latest/report.json。
  * [POS]: scripts/qa 的浏览器与报告编排核心，已委托首页和课堂运营域，仍承载待拆分的遗留流程。
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -25,6 +25,7 @@ import {
   measureHomePerformanceSoak,
   waitForPixiIdle,
 } from "./home-tools.mjs";
+import { exerciseMoralRecoveryFlow } from "./moral-recovery-flow.mjs";
 
 const baseUrl = process.env.QA_BASE_URL || "http://127.0.0.1:5173";
 const outputDir = path.resolve("qa-artifacts/latest");
@@ -842,6 +843,7 @@ async function exerciseMoralSpeakFlow(page, readyScreenshot, pendingScreenshot, 
   const childIndexes = options.childIndexes ?? [0, 4, 8];
   const children = [];
   const islandHotspotEntry = await exerciseIslandSelfServiceHotspot(page);
+  const recovery = await exerciseMoralRecoveryFlow(page);
 
   for (const [index, childIndex] of childIndexes.entries()) {
     const dockEntry = await selectDockChildByIndex(page, childIndex);
@@ -863,6 +865,7 @@ async function exerciseMoralSpeakFlow(page, readyScreenshot, pendingScreenshot, 
   const completedChildIds = children.map((child) => child.final.completedChildId);
   return {
     children,
+    recovery,
     islandHotspotEntry,
     completedChildCount: children.length,
     uniqueChildCount: new Set(completedChildIds).size,
@@ -3931,7 +3934,8 @@ async function inspectPage(browser, check, viewport) {
       (!moralFlowDetails?.pending?.teacherCardText.includes("等老师") &&
         !moralFlowDetails?.pending?.teacherCardText.includes("请老师帮忙")) ||
       !moralFlowDetails?.pending?.teacherCardText.includes("点亮") ||
-      !moralFlowDetails?.pending?.teacherCardText.includes("修正")
+      (!moralFlowDetails?.pending?.teacherCardText.includes("修正") &&
+        !moralFlowDetails?.pending?.teacherCardText.includes("调能量"))
     ) {
       issues.push("moral speak teacher card missing confirmation actions");
     }
@@ -4034,6 +4038,46 @@ async function inspectPage(browser, check, viewport) {
     if (moralFlowDetails?.final?.hasQueuedNextTurnUi) issues.push("moral speak still shows queued next-child UI");
     if (!feedbackShowsAction(moralFlowDetails?.final?.handoffFeedback, "status", /下一位.*点精灵|孩子自己选择精灵/)) {
       issues.push("moral speak handoff feedback missing after return to island");
+    }
+    const uncertainReplay = moralFlowDetails?.recovery?.uncertainReplay;
+    const deterministicFailure = moralFlowDetails?.recovery?.deterministicFailure;
+    if (
+      deterministicFailure?.retryMode !== "none" ||
+      deterministicFailure?.syncStatus !== "online" ||
+      deterministicFailure?.retryVisible !== false ||
+      deterministicFailure?.takeoverVisible !== true ||
+      deterministicFailure?.skipVisible !== true ||
+      deterministicFailure?.closeVisible !== true ||
+      deterministicFailure?.afterCloseStage !== "idle"
+    ) {
+      issues.push("moral deterministic approval failure entered a locked or non-dismissible state");
+    }
+    if (
+      uncertainReplay?.failure?.stage !== "error" ||
+      uncertainReplay?.failure?.retryMode !== "reapprove" ||
+      uncertainReplay?.failure?.syncStatus !== "unavailable" ||
+      uncertainReplay?.failure?.retryText !== "重试点亮" ||
+      uncertainReplay?.failure?.takeoverVisible !== false ||
+      uncertainReplay?.failure?.skipVisible !== false ||
+      uncertainReplay?.failure?.closeVisible !== false
+    ) {
+      issues.push("moral ledger unknown-result recovery did not expose reapprove action");
+    }
+    if (
+      uncertainReplay?.operationIds?.length < 3 ||
+      new Set(uncertainReplay?.operationIds ?? []).size !== 1 ||
+      uncertainReplay?.final?.matchingLedgerCount !== uncertainReplay?.beforeCount + 1 ||
+      uncertainReplay?.final?.syncStatus !== "online"
+    ) {
+      issues.push("moral ledger reapprove did not recover with one stable operation");
+    }
+    if (!uncertainReplay?.focusInsideReview) issues.push("moral review did not receive focus");
+    if (uncertainReplay?.final?.nextStage !== "ready" || uncertainReplay?.final?.nextChildId === uncertainReplay?.childId || uncertainReplay?.final?.focusedChildId !== uncertainReplay?.final?.nextChildId || moralFlowDetails?.recovery?.coldSelection?.consistent !== true) {
+      issues.push("moral next-child or cold-start selection did not focus the current spirit");
+    }
+    const teacherTakeover = moralFlowDetails?.recovery?.teacherTakeover;
+    if (teacherTakeover?.matchingLedgerCount !== 1 || teacherTakeover?.ledgerDelta !== 1) {
+      issues.push("moral teacher takeover did not produce exactly one edited ledger record");
     }
     if (!moralFlowDetails?.final?.singleLedgerWrite) issues.push("moral speak duplicate or missing ledger write");
     const ledger = moralFlowDetails?.final?.ledgerContract;

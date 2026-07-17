@@ -2,7 +2,7 @@
 
 Date: 2026-06-02
 
-This guide documents the runtime provider configuration for the P2 child self-service moral flow and the P3 provider stability layer.
+This guide documents the runtime provider configuration for the child self-service moral flow and the production release gate.
 
 ## Runtime Flow
 
@@ -23,7 +23,7 @@ The browser records with the first supported format from:
 - `audio/webm;codecs=opus`
 - `audio/webm`
 
-The frontend sends base64 audio and a `voiceFormat` hint to `/api/speech/transcribe`.
+The frontend sends base64 audio and a `voiceFormat` hint to same-origin `/api/speech/transcribe`. Local Vite development and preview proxy `/api` to the Node service; production Nginx owns the same boundary.
 
 ## Required Commands
 
@@ -49,7 +49,9 @@ REAL_MIC_TARGET_COUNT=3 npm run qa:real-mic
 REAL_MIC_TARGET_COUNT=10 npm run qa:real-mic
 ```
 
-The command opens a headed Chrome window. Complete the normal child flow in that window. It writes `qa-artifacts/latest/real-mic-report.json` with formats, byte counts, timings, failure codes, retry counts, and ledger totals. It never stores audio or full transcripts.
+The command first builds and opens a headed Chrome against a local production preview. Complete the normal child flow in that window. It writes `qa-artifacts/latest/real-mic-report.json` with device renderer, cold-start timing, original-resolution wheel/drag FPS, formats, byte counts, timings, failure codes, retry counts, and per-child ledger totals. It never stores audio or full transcripts.
+
+For an HTTPS staging or production-equivalent origin, set `REAL_MIC_BASE_URL`; optional Basic Auth credentials use `REAL_MIC_HTTP_USERNAME` and `REAL_MIC_HTTP_PASSWORD`. Non-loopback HTTP targets are rejected. Full commands and the single-instance deployment boundary are documented in `docs/production-deployment-guide.md`.
 
 `npm run qa:visual` does not require a microphone. It uses a QA-only hook to exercise the review UI consistently in CI.
 
@@ -176,5 +178,5 @@ Expected output includes the mock transcript and the page reaches `pendingReview
 - Do not expose Tencent or DeepSeek secrets in logs, screenshots, or QA artifacts.
 - Do not treat `npm run qa:visual` as proof that real ASR works; it verifies the UI flow.
 - Treat `npm run qa:p4-providers` as proof that the configured provider chain is working in the current environment.
-- Treat `npm run qa:real-mic` as the physical-device release gate: 3/3 calibration, then 10/10 eventual completion with at least 9/10 first-pass recognition.
+- Treat `npm run qa:real-mic` as the physical-device release gate: production build or HTTPS staging, original render resolution, wheel/drag at least 45 FPS, 3/3 calibration, then 10/10 eventual completion with at least 9/10 first-pass recognition and one ledger record per distinct child.
 - For physical classroom deployment, verify the whiteboard browser can grant microphone permission and that Tencent ASR accepts the browser's recorded format.

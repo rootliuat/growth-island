@@ -1,7 +1,7 @@
 /**
- * [INPUT]: 依赖 React 生命周期、PixiWorld 运行时、地图布局与课堂孩子/账本数据。
+ * [INPUT]: 依赖 React 生命周期、PixiWorld 运行时、地图布局与最新课堂孩子/账本数据。
  * [OUTPUT]: 对外提供 PixiWorldMap 组件与 PixiWorldMapHandle 命令接口。
- * [POS]: components/WorldMap 的懒加载运行时桥，负责挂载/销毁 Pixi 世界并同步 React 状态。
+ * [POS]: components/WorldMap 的懒加载运行时桥，挂载期由 PixiWorld 保存最新读模型，避免旧闭包覆盖当前孩子。
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -87,17 +87,9 @@ export const PixiWorldMap = forwardRef<PixiWorldMapHandle, PixiWorldMapProps>(fu
       onPrepareMoralSpeak: () => onPrepareMoralSpeakRef.current?.(),
     });
     worldRef.current = world;
-    let cancelled = false;
-    world.mount(hostRef.current).then(() => {
-      if (cancelled) {
-        world.destroy();
-        return;
-      }
-      world.update(mapData);
-    });
+    void world.mount(hostRef.current);
 
     return () => {
-      cancelled = true;
       world.destroy();
       worldRef.current = null;
     };
